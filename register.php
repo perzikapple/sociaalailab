@@ -98,6 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <a href="verantwoord-ai.html" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Verantwoorde AI</a>
             <a href="wie-zijn-we.html" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Wie zijn we?</a>
             <a href="contact.html" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Contact</a>
+            <a href="register.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Registratie</a>
         </div>
     </div>
 </nav>
