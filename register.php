@@ -15,7 +15,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = 'Passwords do not match.';
     } else {
         $hashedPass = password_hash($pass, PASSWORD_DEFAULT);
-        $stmt = $pdo->prepare("INSERT INTO account (email, ww, admin) VALUES (?, ?, ?)");
+  $stmt = $pdo->prepare(
+    "INSERT INTO accounts (email, wachtwoord, admin) VALUES (?, ?, ?)"
+);
         try {
             $stmt->execute([$email, $hashedPass, $isAdmin]);
             $message = 'Registration successful!';
