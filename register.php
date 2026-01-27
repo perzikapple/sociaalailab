@@ -5,7 +5,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email']);
     $pass = $_POST['password'];
     $confirmPass = $_POST['confirm_password'];
-    $isAdmin = isset($_POST['admin']) ? 1 : 0;
 
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $message = 'Invalid email format.';
@@ -15,9 +14,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = 'Passwords do not match.';
     } else {
         $hashedPass = password_hash($pass, PASSWORD_DEFAULT);
-        $stmt = $pdo->prepare("INSERT INTO account (email, ww, admin) VALUES (?, ?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO account (email, ww) VALUES (?, ?)");
         try {
-            $stmt->execute([$email, $hashedPass, $isAdmin]);
+            $stmt->execute([$email, $hashedPass]);
             $message = 'Registration successful!';
         } catch (PDOException $e) {
             $message = 'Registration failed: ' . $e->getMessage();
@@ -122,11 +121,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div>
                 <label for="confirm_password" class="block text-gray-700">Bevestig wachtwoord:</label>
                 <input type="password" id="confirm_password" name="confirm_password" required class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00811F]">
-            </div>
-            <div>
-                <label class="flex items-center">
-                    <input type="checkbox" name="admin" class="mr-2"> Admin account
-                </label>
             </div>
             <button type="submit" class="bg-[#00811F] text-white px-6 py-2 rounded-md hover:bg-green-700 transition">Registreer</button>
         </form>
@@ -285,22 +279,22 @@ setInterval(() => {
             margin-top: 10px;
             margin-bottom: 10px;
         }
-        .navigatie{
+        .navigatie{a (max-width: 1024px) {       }
             display: flex;
-            flex-direction: column;
-            justify-content: space-evenly;
+            flex-direction: column;px;splay: flex;
+            justify-content: space-evenly;mn;
             align-items: flex-start;
-        }
-          .slide{
-            background-size: contain;
-            background-repeat: no-repeat;
+        }lex-start;
+          .slide{   display: flex;
+            background-size: contain;direction: column;
+            background-repeat: no-repeat;enly;n;
             background-position: center;
         }
-    }
-     @media (min-width: 760px) {
-        .hamburger{
-            display: none;
+    } .slide{
+     @media (min-width: 760px) {       background-size: contain;
+        .hamburger{o-repeat;
+            display: none;und-position: center;
         }
       
-    }
+    }media (min-width: 760px) { 
 </style>
