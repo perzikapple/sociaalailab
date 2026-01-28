@@ -1,4 +1,5 @@
-﻿<style>
+﻿<?php session_start(); ?>
+<style>
 @media (max-width: 1024px) {
   .mobile{
     flex-direction: column;
@@ -21,7 +22,6 @@
 
 <body class="bg-gradient-to-br from-[#00811F] to-[#b9eb34]">
 
-
 <div class="banner-wrapper">
     <div class="banner banner-1 active">
         <img class="" src="../images/banner_website_01.jpg">
@@ -34,41 +34,42 @@
 <!-- Navigatie -->
 <nav class="bg-white shadow-md">
     <div class="navigatie max-w-6xl mx-auto px-4 py-3 flex justify-center md:justify-between items-center">
-
         <!-- Hamburger knop alleen op mobiel -->
         <button id="mobile-menu-toggle" class=" hamburger md:hidden self-end text-gray-700 focus:outline-none" aria-label="Open navigatie">
             <i class="fa-solid fa-bars text-2xl"></i>
         </button>
 
-        <!-- Menu links (exact dezelfde inhoud, alleen ingepakt + id + hidden-klasse) -->
+        <!-- Menu links -->
         <div id="mobile-menu" class="menu hidden md:flex pr-5 space-x-8 font-medium">
-            <a href="../index.htm" class="menu block m-4 text-gray-700 hover:text-[#00811F]  transition"><i class="fa-solid fa-house"></i> Voorpagina</a>
-            <a href="../agenda.html" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Agenda</a>
-            <a href="../over.html" class="menu block  m-4 text-gray-700 hover:text-[#00811F] transition">Voor wie?</a>
+            <a href="../index.php" class="menu block m-4 text-gray-700 hover:text-[#00811F]  transition"><i class="fa-solid fa-house"></i> Voorpagina</a>
+            <a href="../agenda.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Agenda</a>
+            <a href="../over.php" class="menu block  m-4 text-gray-700 hover:text-[#00811F] transition">Voor wie?</a>
 
             <!-- Programma met dropdown -->
             <div class="relative" id="programma-dropdown">
-                <!-- Toggle knop -->
                 <button id="programma-toggle" aria-haspopup="true" aria-expanded="false" class="menu flex items-center gap-2 text-gray-700 hover:text-[#00811F] transition font-medium focus:outline-none">
                     <span>Wat doen we?</span>
-                    <!-- pijl die roteert bij open -->
-                    
                 </button>
 
-                <!-- Dropdown menu (verborgen standaard) -->
                 <div id="programma-menu" class="hidden absolute top-0 mt-8 w-56 bg-white border border-gray-200 shadow-lg py-2 z-50 focus:outline-none" role="menu" aria-labelledby="programma-toggle">
-                    <!-- Elke link is role=menuitem voor a11y -->
-                    <a href="kennis.html" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Kennis & vaardigheden</a>
-                    <a href="actie.html" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Actie, onderzoek & ontwerp</a>
-                    <a href="faciliteit.html" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Faciliteit van het Lab
-                    </a>
-                    <!-- voeg meer items toe naar behoefte -->
+                    <a href="kennis.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Kennis & vaardigheden</a>
+                    <a href="actie.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Actie, onderzoek & ontwerp</a>
+                    <a href="faciliteit.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Faciliteit van het Lab</a>
                 </div>
             </div>
 
-            <a href="../verantwoord-ai.html" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Verantwoorde AI</a>
-            <a href="../wie-zijn-we.html" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Wie zijn we?</a>
-            <a href="../contact.html" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Contact</a>
+            <a href="../verantwoord-ai.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Verantwoorde AI</a>
+            <a href="../wie-zijn-we.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Wie zijn we?</a>
+            <a href="../contact.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Contact</a>
+            <?php if (isset($_SESSION['user'])): ?>
+                <a href="../logout.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Logout</a>
+            <?php else: ?>
+                <a href="../login.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Login</a>
+                <a href="../registratie.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Registratie</a>
+            <?php endif; ?>
+            <?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
+                <a href="../admin.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Admin</a>
+            <?php endif; ?>
         </div>
     </div>
 </nav>
@@ -78,13 +79,13 @@
     
     <div class="mobile flex  items-center justify-center">
          <div class="bg-white p-6  shadow-lg max-w-xl mt-6 w-full border-r text-center">
-            <a href="kennis.html"><h1 class="text-2xl text-[#00811F] font-semibold">Kennis & Vaardigheden</h1></a>
+            <a href="kennis.php"><h1 class="text-2xl text-[#00811F] font-semibold">Kennis & Vaardigheden</h1></a>
         </div>
         <div class="bg-white p-6 max-w-xl mt-6 w-full text-center border-r border-gray-500">
-            <a href="actie.html"><h1 class="text-2xl hover:text-[#00811F] font-semibold">Actie, Onderzoek & Ontwerp</h1></a>
+            <a href="actie.php"><h1 class="text-2xl hover:text-[#00811F] font-semibold">Actie, Onderzoek & Ontwerp</h1></a>
         </div>
          <div class="bg-white p-6  max-w-xl mt-6 w-full text-center">
-            <a href="faciliteit.html"><h1 class="text-2xl hover:text-[#00811F] font-semibold">Faciliteiten</h1></a>
+            <a href="faciliteit.php"><h1 class="text-2xl hover:text-[#00811F] font-semibold">Faciliteiten</h1></a>
         </div>
     </div>
 
@@ -195,27 +196,17 @@
     (function() {
         const toggle = document.getElementById('programma-toggle');
         const menu = document.getElementById('programma-menu');
-        const caret = document.getElementById('programma-caret');
 
         if (!toggle || !menu) return;
 
         function openMenu() {
             menu.classList.remove('hidden');
             toggle.setAttribute('aria-expanded', 'true');
-            if (caret) {
-                caret.classList.add('rotate-180');
-            }
-            // focus eerste item voor keyboard users
-            const first = menu.querySelector('[role="menuitem"]');
-            if (first) first.focus();
         }
 
         function closeMenu() {
             menu.classList.add('hidden');
             toggle.setAttribute('aria-expanded', 'false');
-            if (caret) {
-                caret.classList.remove('rotate-180');
-            }
             toggle.focus();
         }
 
@@ -224,13 +215,11 @@
             else closeMenu();
         }
 
-        // klik op de knop: toggle
         toggle.addEventListener('click', function(e){
             e.preventDefault();
             toggleMenu();
         });
 
-        // keyboard op de knop: Enter of Space opent/toggle
         toggle.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
@@ -241,14 +230,12 @@
             }
         });
 
-        // sluit op escape
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 if (!menu.classList.contains('hidden')) closeMenu();
             }
         });
 
-        // klik buiten: sluit menu
         document.addEventListener('click', function(e) {
             const target = e.target;
             if (!menu.contains(target) && !toggle.contains(target)) {
@@ -256,10 +243,9 @@
             }
         });
 
-        // optioneel: sluit en navigeer op menuitem click (voor a tags standaard)
         const items = menu.querySelectorAll('[role="menuitem"]');
         items.forEach(item => {
-            item.setAttribute('tabindex', '0'); // focusable
+            item.setAttribute('tabindex', '0');
             item.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
                     closeMenu();
@@ -276,7 +262,6 @@
         });
     })();
 
-<!-- Extra script alleen voor het mobiele hamburger-menu -->
     (function () {
         const mobileToggle = document.getElementById('mobile-menu-toggle');
         const mobileMenu = document.getElementById('mobile-menu');
@@ -288,15 +273,14 @@
         });
     })();
 
-const banners = document.querySelectorAll('.banner');
-let current = 0;
+    const banners = document.querySelectorAll('.banner');
+    let current = 0;
 
-setInterval(() => {
-  banners[current].classList.remove('active');
-  current = (current + 1) % banners.length;
-  banners[current].classList.add('active');
-}, 10000);
-
+    setInterval(() => {
+      banners[current].classList.remove('active');
+      current = (current + 1) % banners.length;
+      banners[current].classList.add('active');
+    }, 10000);
 </script>
 
 </body>
@@ -308,10 +292,9 @@ setInterval(() => {
 }
 
 .banner {
-  grid-area: 1 / 1; /* zelfde grid-cel */
+  grid-area: 1 / 1;
 }
 
-/* voorbeeld fade */
 .banner {
   opacity: 0;
   transition: opacity 1s ease;
@@ -321,43 +304,22 @@ setInterval(() => {
   opacity: 1;
 }
 
-.slide {
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  opacity: 0;
-  transition: opacity 1s ease-in-out;
+@media (max-width: 1024px) {
+    .menu{
+        margin-top: 10px;
+        margin-bottom: 10px;
+    }
+    .navigatie{
+        display: flex;
+        flex-direction: column;
+        justify-content: space-evenly;
+        align-items: flex-start;
+    }
 }
 
-.slide.active {
-  opacity: 1;
-}
-
-/* Mobile fix */
-@media (max-width: 768px) {
-}
-    @media (max-width: 1024px) {
-        .menu{
-            margin-top: 10px;
-            margin-bottom: 10px;
-        }
-        .navigatie{
-            display: flex;
-            flex-direction: column;
-            justify-content: space-evenly;
-            align-items: flex-start;
-        }
-          .slide{
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-        }
+@media (min-width: 760px) {
+    .hamburger{
+        display: none;
     }
-     @media (min-width: 760px) {
-        .hamburger{
-            display: none;
-        }
-      
-    }
+}
 </style>

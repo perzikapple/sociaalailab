@@ -1,4 +1,5 @@
-﻿<style>
+﻿<?php session_start(); ?>
+<style>
 @media (max-width: 1024px) {
   .mobile{
     flex-direction: column;
@@ -42,9 +43,9 @@
 
         <!-- Menu links (exact dezelfde inhoud, alleen ingepakt + id + hidden-klasse) -->
         <div id="mobile-menu" class="menu hidden md:flex pr-5 space-x-8 font-medium">
-            <a href="../index.htm" class="menu block m-4 text-gray-700 hover:text-[#00811F]  transition"><i class="fa-solid fa-house"></i> Voorpagina</a>
-            <a href="../agenda.html" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Agenda</a>
-            <a href="../over.html" class="menu block  m-4 text-gray-700 hover:text-[#00811F] transition">Voor wie?</a>
+            <a href="../index.php" class="menu block m-4 text-gray-700 hover:text-[#00811F]  transition"><i class="fa-solid fa-house"></i> Voorpagina</a>
+            <a href="../agenda.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Agenda</a>
+            <a href="../over.php" class="menu block  m-4 text-gray-700 hover:text-[#00811F] transition">Voor wie?</a>
 
             <!-- Programma met dropdown -->
             <div class="relative" id="programma-dropdown">
@@ -58,17 +59,26 @@
                 <!-- Dropdown menu (verborgen standaard) -->
                 <div id="programma-menu" class="hidden absolute top-0 mt-8 w-56 bg-white border border-gray-200 shadow-lg py-2 z-50 focus:outline-none" role="menu" aria-labelledby="programma-toggle">
                     <!-- Elke link is role=menuitem voor a11y -->
-                    <a href="kennis.html" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Kennis & vaardigheden</a>
-                    <a href="actie.html" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Actie, onderzoek & ontwerp</a>
-                    <a href="faciliteit.html" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Faciliteit van het Lab
+                    <a href="kennis.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Kennis & vaardigheden</a>
+                    <a href="actie.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Actie, onderzoek & ontwerp</a>
+                    <a href="faciliteit.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Faciliteit van het Lab
                     </a>
                     <!-- voeg meer items toe naar behoefte -->
                 </div>
             </div>
 
-            <a href="../verantwoord-ai.html" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Verantwoorde AI</a>
-            <a href="../wie-zijn-we.html" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Wie zijn we?</a>
-            <a href="../contact.html" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Contact</a>
+            <a href="../verantwoord-ai.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Verantwoorde AI</a>
+            <a href="../wie-zijn-we.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Wie zijn we?</a>
+            <a href="../contact.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Contact</a>
+            <?php if (isset($_SESSION['user'])): ?>
+                <a href="../logout.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Logout</a>
+            <?php else: ?>
+                <a href="../login.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Login</a>
+                <a href="../registratie.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Registratie</a>
+            <?php endif; ?>
+            <?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
+                <a href="../admin.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Admin</a>
+            <?php endif; ?>
         </div>
     </div>
 </nav>
@@ -78,13 +88,13 @@
     
     <div class="mobile flex  items-center justify-center">
          <div class="bg-white p-6  shadow-lg max-w-xl mt-6 w-full border-r text-center">
-            <a href="kennis.html"><h1 class="text-2xl hover:text-[#00811F] font-semibold">Kennis & Vaardigheden</h1></a>
+            <a href="kennis.php"><h1 class="text-2xl hover:text-[#00811F] font-semibold">Kennis & Vaardigheden</h1></a>
         </div>
         <div class="bg-white p-6 max-w-xl mt-6 w-full text-center border-r border-gray-500">
-            <a href="actie.html"><h1 class="text-2xl text-[#00811F] font-semibold">Actie, Onderzoek & Ontwerp</h1></a>
+            <a href="actie.php"><h1 class="text-2xl text-[#00811F] font-semibold">Actie, Onderzoek & Ontwerp</h1></a>
         </div>
          <div class="bg-white p-6  max-w-xl mt-6 w-full text-center">
-            <a href="faciliteit.html"><h1 class="text-2xl hover:text-[#00811F] font-semibold">Faciliteiten</h1></a>
+            <a href="faciliteit.php"><h1 class="text-2xl hover:text-[#00811F] font-semibold">Faciliteiten</h1></a>
         </div>
     </div>
              
