@@ -33,8 +33,8 @@
         <!-- Menu links (exact dezelfde inhoud, alleen ingepakt + id + hidden-klasse) -->
         <div id="mobile-menu" class="menu hidden md:flex pr-5 space-x-8 font-medium">
             <a href="index.php" class="menu block m-4 text-gray-700 hover:text-[#00811F]  transition"><i class="fa-solid fa-house"></i> Voorpagina</a>
-            <a href="agenda.html" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Agenda</a>
-            <a href="over.html" class="menu block  m-4 text-gray-700 hover:text-[#00811F] transition">Voor wie?</a>
+            <a href="agenda.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Agenda</a>
+            <a href="over.php" class="menu block  m-4 text-gray-700 hover:text-[#00811F] transition">Voor wie?</a>
 
             <!-- Programma met dropdown -->
             <div class="relative" id="programma-dropdown">
@@ -48,17 +48,17 @@
                 <!-- Dropdown menu (verborgen standaard) -->
                 <div id="programma-menu" class="hidden absolute top-0 mt-8 w-56 bg-white border border-gray-200 shadow-lg py-2 z-50 focus:outline-none" role="menu" aria-labelledby="programma-toggle">
                     <!-- Elke link is role=menuitem voor a11y -->
-                    <a href="programma/kennis.html" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Kennis & vaardigheden</a>
-                    <a href="programma/actie.html" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Actie, onderzoek & ontwerp</a>
-                    <a href="programma/faciliteit.html" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Faciliteit van het Lab
+                    <a href="programma/kennis.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Kennis & vaardigheden</a>
+                    <a href="programma/actie.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Actie, onderzoek & ontwerp</a>
+                    <a href="programma/faciliteit.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Faciliteit van het Lab
                     </a>
                     <!-- voeg meer items toe naar behoefte -->
                 </div>
             </div>
 
-            <a href="verantwoord-ai.html" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Verantwoorde AI</a>
-            <a href="wie-zijn-we.html" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Wie zijn we?</a>
-            <a href="contact.html" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Contact</a>
+            <a href="verantwoord-ai.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Verantwoorde AI</a>
+            <a href="wie-zijn-we.phpl" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Wie zijn we?</a>
+            <a href="contact.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Contact</a>
             <a href="login.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">login</a>
             <?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
                 <a href="admin.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Admin</a>
@@ -71,10 +71,10 @@
 <main>
      <div class="mobile flex  items-center justify-center">
          <div class="bg-white p-6 shadow-lg max-w-xl mt-6 w-full border-r text-center">
-            <a href="agenda.html"><h1 class="text-2xl text-[#00811F] font-semibold">Agenda</h1></a>
+            <a href="agenda.php"><h1 class="text-2xl text-[#00811F] font-semibold">Agenda</h1></a>
         </div>
         <div class="bg-white p-6 max-w-xl mt-6 w-full text-center border-r border-gray-500">
-            <a href="terugblik.html"><h1 class="text-2xl hover:text-[#00811F] font-semibold">Terugblik</h1></a>
+            <a href="terugblik.php"><h1 class="text-2xl hover:text-[#00811F] font-semibold">Terugblik</h1></a>
         </div>
     </div>
     <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
