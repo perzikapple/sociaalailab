@@ -9,10 +9,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $message = 'Invalid email format.';
     } else {
-        $stmt = $pdo->prepare("SELECT ww, admin FROM account WHERE email = ?");
+        $stmt = $pdo->prepare("SELECT wachtwoord, admin FROM accounts WHERE email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
-        if ($user && password_verify($pass, $user['ww'])) {
+        if ($user && password_verify($pass, $user['wachtwoord'])) {
             $_SESSION['user'] = $email;
             $_SESSION['admin'] = $user['admin'];
             $message = 'Login successful!';
@@ -122,6 +122,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <button type="submit" class="bg-[#00811F] text-white px-6 py-2 rounded-md hover:bg-green-700 transition">Log in</button>
         </form>
+
+        <!-- Link to registration page -->
+        <p class="mt-4 text-center">Don't have an account? <a href="register.php" class="text-[#00811F] hover:underline">Register here</a></p>
     </section>
 </main>
 
