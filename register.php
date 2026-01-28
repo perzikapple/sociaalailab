@@ -1,4 +1,5 @@
 <?php
+session_start();
 require 'db.php';
 $message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -14,13 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = 'Passwords do not match.';
     } else {
         $hashedPass = password_hash($pass, PASSWORD_DEFAULT);
-<<<<<<< HEAD
         $stmt = $pdo->prepare("INSERT INTO account (email, ww) VALUES (?, ?)");
-=======
-  $stmt = $pdo->prepare(
-    "INSERT INTO accounts (email, wachtwoord, admin) VALUES (?, ?, ?)"
-);
->>>>>>> cc6ae9cd8febdbd40b1beaa47b229c517f65af84
         try {
             $stmt->execute([$email, $hashedPass]);
             $message = 'Registration successful!';
@@ -104,6 +99,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <a href="wie-zijn-we.html" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Wie zijn we?</a>
             <a href="contact.html" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Contact</a>
             <a href="register.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Registratie</a>
+            <?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
+                <a href="admin.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Admin</a>
+            <?php endif; ?>
         </div>
     </div>
 </nav>

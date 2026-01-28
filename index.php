@@ -1,4 +1,5 @@
-﻿<style>
+﻿<?php session_start(); ?>
+<style>
 @media (min-width: 1024px) {
   .flexrow {
     flex-direction: row;
@@ -37,7 +38,6 @@
 <!-- Navigatie -->
 <nav class="bg-white shadow-md">
     <div class="navigatie max-w-6xl mx-auto px-4 py-3 flex justify-center md:justify-between items-center">
-
         <!-- Hamburger knop alleen op mobiel -->
         <button id="mobile-menu-toggle" class=" hamburger md:hidden self-end text-gray-700 focus:outline-none" aria-label="Open navigatie">
             <i class="fa-solid fa-bars text-2xl"></i>
@@ -45,7 +45,7 @@
 
         <!-- Menu links (exact dezelfde inhoud, alleen ingepakt + id + hidden-klasse) -->
         <div id="mobile-menu" class="menu hidden md:flex pr-5 space-x-8 font-medium">
-            <a href="index.htm" class="menu block m-4 text-gray-700 hover:text-[#00811F]  transition"><i class="fa-solid fa-house"></i> Voorpagina</a>
+            <a href="index.php" class="menu block m-4 text-gray-700 hover:text-[#00811F]  transition"><i class="fa-solid fa-house"></i> Voorpagina</a>
             <a href="agenda.html" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Agenda</a>
             <a href="over.html" class="menu block  m-4 text-gray-700 hover:text-[#00811F] transition">Voor wie?</a>
 
@@ -72,7 +72,10 @@
             <a href="verantwoord-ai.html" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Verantwoorde AI</a>
             <a href="wie-zijn-we.html" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Wie zijn we?</a>
             <a href="contact.html" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Contact</a>
-            <a href="register.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Registratie</a>
+            <a href="login.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">login</a>
+            <?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
+                <a href="admin.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Admin</a>
+            <?php endif; ?>
         </div>
     </div>
 </nav>
