@@ -74,98 +74,41 @@
 
 <!-- Pagina content -->
 <main>
-     <div class="mobile flex  items-center justify-center">
-         <div class="bg-white p-6 shadow-lg max-w-xl mt-6 w-full border-r text-center">
-            <a href="agenda.php"><h1 class="text-2xl text-[#00811F] font-semibold">Agenda</h1></a>
-        </div>
-        <div class="bg-white p-6 max-w-xl mt-6 w-full text-center border-r border-gray-500">
-            <a href="terugblik.php"><h1 class="text-2xl hover:text-[#00811F] font-semibold">Terugblik</h1></a>
-        </div>
-    </div>
+<?php
+require 'db.php';
+$stmt = $pdo->prepare("SELECT * FROM events WHERE date >= CURDATE() ORDER BY date, time");
+$stmt->execute();
+$events = $stmt->fetchAll();
+foreach ($events as $event):
+?>
     <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
         <div class="flex-1">
-        <span class="inline-block bg-[#00811F] text-white text-sm font-medium px-4 py-1 mb-4">
-            Evenement
-        </span>
-            <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900">
-                 Studenten en bewoners verkennen de sociale invloed van AI
-            </h2>
-           <div class="space-y-4">
+            <span class="inline-block bg-[#00811F] text-white text-sm font-medium px-4 py-1 mb-4">Evenement</span>
+            <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($event['title']); ?></h2>
+            <div class="space-y-4">
                 <div class="flex items-center space-x-3">
                     <i class="fa-regular fa-calendar text-[#00811F] ml-[2px]  text-3xl"></i>
-                    <p class="text-gray-700"><strong> Wanneer:</strong> 1 november - 1 februari 2025</p>
+                    <p class="text-gray-700"><strong> Wanneer:</strong> <?php echo htmlspecialchars($event['date']); ?> <?php echo $event['time'] ? '- ' . htmlspecialchars($event['time']) : ''; ?></p>
                 </div>
                 <div class="flex items-center space-x-3">
                     <i class="fa-solid fa-location-dot text-[#00811F] ml-1 text-3xl"></i>
-                    <p class="text-gray-700 ml-1 "><strong>Waar:</strong> Rotterdam - Hillevliet 90</p>
+                    <p class="text-gray-700 ml-1 "><strong>Waar:</strong> <?php echo htmlspecialchars($event['location'] ?: 'Rotterdam - Hillevliet 90'); ?></p>
                 </div>
                 <div class="flex mb-6 space-x-3">
                     <i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>
-                    <p class="text-gray-700 pb-3 "><strong> Wat:</strong> Samen met bewoners uit de omgeving van de Hillevliet, onderzoeken studenten wat AI betekent voor de wijk. Ze vertalen dit gezamenlijk (co-creatie) naar een creatief eindresultaat, zoals een muurschildering, publicatie of interviewreeks.  </p>
+                    <p class="text-gray-700 pb-3 "><strong> Wat:</strong> <?php echo nl2br(htmlspecialchars($event['description'])); ?></p>
                 </div>
             </div>
         </div>
         <div class="flex-1">
-            <img src="images/event/Agenda_event_2_Studenten_en_bewoners_verkennen_de_sociale_invloed_van_AI.jpg" alt="SociaalAI Inspiratiedag" class="w-full h-auto object-cover shadow-md">
+            <img src="<?php echo $event['image'] ? 'uploads/' . htmlspecialchars($event['image']) : 'images/event/Agenda_event_2_Studenten_en_bewoners_verkennen_de_sociale_invloed_van_AI.jpg'; ?>" alt="" class="w-full h-auto object-cover shadow-md">
         </div>
     </section>
+<?php endforeach; ?>
 
-      <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
-        <div class="flex-1">
-        <span class="inline-block bg-[#00811F] text-white text-sm font-medium px-4 py-1 mb-4">
-            Evenement
-        </span>
-            <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900">
-                 PizzAI-sessie van AI010
-            </h2>
-           <div class="space-y-4">
-                <div class="flex items-center space-x-3">
-                    <i class="fa-regular fa-calendar text-[#00811F] ml-[2px]  text-3xl"></i>
-                    <p class="text-gray-700"><strong> Wanneer:</strong> Woensdag 11 februari om 18:00 (Inloop: 17:00)</p>
-                </div>
-                <div class="flex items-center space-x-3">
-                    <i class="fa-solid fa-location-dot text-[#00811F] ml-1 text-3xl"></i>
-                    <p class="text-gray-700 ml-1 "><strong>Waar:</strong> Rotterdam - Hillevliet 90, Ruimte 0.25</p>
-                </div>
-                <div class="flex mb-6 space-x-3">
-                    <i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>
-                    <p class="text-gray-700 pb-3 "><strong> Wat:</strong> AI010 is de AI-community van Rotterdam, voor ondernemers, makers en vernieuwers. AI010 verbindt mensen die met AI aan de slag willen in hun bedrijf, organisatie of creatieve project. Deze avond werkt het Sociaal AI Lab samen met AI010 met een avond over AI. Aanmelding verloopt via AI010, zie onderstaande link naar de groepen van AI010.  </p>
-                </div>
-            </div>
-             <a href="//www.ai010.nl/over#groepen" class="inline-block bg-[#00811F] text-white font-medium px-6 py-2 hover:bg-green-700 transition">
-                    Meer info
-                </a>
-        </div>
-    </section>
-
-       <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
-        <div class="flex-1">
-        <span class="inline-block bg-[#00811F] text-white text-sm font-medium px-4 py-1 mb-4">
-            Evenement
-        </span>
-            <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900">
-                 AI en verkiezingen:​​ Wat kun je vertrouwen?
-            </h2>
-           <div class="space-y-4">
-                <div class="flex items-center space-x-3">
-                    <i class="fa-regular fa-calendar text-[#00811F] ml-[2px]  text-3xl"></i>
-                    <p class="text-gray-700"><strong> Wanneer:</strong> Maandag 9 maart van 19:00 - 20:00 (Inloop: 18:45)</p>
-                </div>
-                <div class="flex items-center space-x-3">
-                    <i class="fa-solid fa-location-dot text-[#00811F] ml-1 text-3xl"></i>
-                    <p class="text-gray-700 ml-1 "><strong>Waar:</strong> Rotterdam - Hillevliet 90, Ruimte 0.25</p>
-                </div>
-                <div class="flex mb-6 space-x-3">
-                    <i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>
-                    <p class="text-gray-700 pb-3 "><strong> Wat:</strong>Chatbots worden steeds vaker gebruikt om informatie te zoeken over verkiezingen. Maar kun je die informatie vertrouwen? Helpt AI je om zelf een goede keuze te maken, of beïnvloedt het je zonder dat je het merkt?
-Tijdens deze avond in het Sociaal AI Lab Rotterdam praten we over de invloed van AI op verkiezingen. Nadeche Orie van Omroep Rijnmond vertelt over R-motie, een chatbot die is gebruikt bij de Tweede Kamerverkiezingen van 2025 en nu wordt doorontwikkeld voor de gemeenteraadsverkiezingen. Samen bespreken we wat deze ervaringen betekenen voor het gebruik van AI bij verkiezingen.</p></div>
-            </div>
-             <a href="//www.sociaalailab.aanmelder.nl/home" class="inline-block bg-[#00811F] text-white font-medium px-6 py-2 hover:bg-green-700 transition">
-                    Meer info
-                </a>
-        </div>
-    </section>
-
+<?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
+    <a href="admin.php" title="Voeg evenement toe" class="fixed bottom-6 right-6 bg-[#00811F] text-white rounded-full w-12 h-12 flex items-center justify-center text-3xl shadow-lg">+</a>
+<?php endif; ?>
 </main>
 
 <footer class="bg-white mt-16 shadow-inner">
