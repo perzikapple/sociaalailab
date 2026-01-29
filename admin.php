@@ -27,6 +27,7 @@ function handleUpload($fileField) {
 // Verwerk POST acties
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
+    $currentUser = $_SESSION['user'] ?? null; // email van ingelogde gebruiker (kan null zijn)
     if ($action === 'create') {
         $title = trim($_POST['title'] ?? '');
         $date = $_POST['date'] ?? '';
@@ -41,8 +42,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message = $upload['error'];
             } else {
                 $imageName = $upload['name'] ?? null;
-                $stmt = $pdo->prepare('INSERT INTO events (title, date, time, description, image, location) VALUES (?, ?, ?, ?, ?, ?)');
-                $stmt->execute([$title, $date, $time ?: null, $description, $imageName, $location ?: null]);
+                // voeg updated_at en updated_by toe bij insert
+                $stmt = $pdo->prepare('INSERT INTO events (title, date, time, description, image, location, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, NOW(), ?)');
+                $stmt->execute([$title, $date, $time ?: null, $description, $imageName, $location ?: null, $currentUser]);
                 header('Location: admin.php?ok=create');
                 exit;
             }
@@ -68,8 +70,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message = $upload['error'];
             } else {
                 $imageName = $upload['name'] ?? $oldImage;
-                $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, time=?, description=?, image=?, location=? WHERE id=?');
-                $stmt->execute([$title, $date, $time ?: null, $description, $imageName, $location ?: null, $id]);
+                // update nu ook updated_at en updated_by
+                $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, time=?, description=?, image=?, location=?, updated_at=NOW(), updated_by=? WHERE id=?');
+                $stmt->execute([$title, $date, $time ?: null, $description, $imageName, $location ?: null, $currentUser, $id]);
                 // indien nieuwe upload en oud bestaat: verwijderen
                 if (!empty($upload['name']) && $oldImage && file_exists(__DIR__ . '/uploads/' . $oldImage)) {
                     @unlink(__DIR__ . '/uploads/' . $oldImage);
@@ -163,6 +166,14 @@ $events = $stmt->fetchAll();
                 <label>Beschrijving</label>
                 <textarea name="description" rows="4" class="w-full border px-3 py-2"><?php echo htmlspecialchars($editEvent['description']); ?></textarea>
             </div>
+
+            <!-- Toon wie/wanneer laatst aangepast -->
+            <?php if (!empty($editEvent['updated_at']) || !empty($editEvent['updated_by'])): ?>
+                <div class="text-sm text-gray-600">
+                    Laatst aangepast door: <?php echo htmlspecialchars($editEvent['updated_by'] ?? 'onbekend'); ?> op <?php echo htmlspecialchars($editEvent['updated_at'] ?? 'onbekend'); ?>
+                </div>
+            <?php endif; ?>
+
             <div>
                 <label>Vervang foto (optioneel)</label>
                 <input type="file" name="image" accept="image/*" />
@@ -211,7 +222,7 @@ $events = $stmt->fetchAll();
 
     <section class="mt-8">
         <h2 class="text-xl font-semibold mb-4">Bestaande evenementen</h2>
-        <div class="space-y-6"> <!-- wrapper voegt consistente ruimte tussen items -->
+        <div class="space-y-6">
         <?php foreach ($events as $e): ?>
             <div class="bg-white p-6 shadow-md border border-gray-200 rounded-lg flex justify-between items-start">
                 <div>
@@ -221,6 +232,11 @@ $events = $stmt->fetchAll();
                     <?php endif; ?>
                     <p class="text-sm text-gray-600"><?php echo htmlspecialchars($e['date'] . ' ' . ($e['time'] ?: '')); ?></p>
                     <p><?php echo nl2br(htmlspecialchars($e['description'])); ?></p>
+
+                    <!-- Toon wie/wanneer laatst aangepast -->
+                    <?php if (!empty($e['updated_at']) || !empty($e['updated_by'])): ?>
+                        <p class="text-xs text-gray-500 mt-2">Laatst aangepast door <?php echo htmlspecialchars($e['updated_by'] ?? 'onbekend'); ?> op <?php echo htmlspecialchars($e['updated_at'] ?? 'onbekend'); ?></p>
+                    <?php endif; ?>
                 </div>
                 <div class="flex flex-col items-end gap-2">
                     <?php if ($e['image']): ?>
