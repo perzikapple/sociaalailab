@@ -34,6 +34,7 @@
         <div id="mobile-menu" class="menu hidden md:flex pr-5 space-x-8 font-medium">
             <a href="index.php" class="menu block m-4 text-gray-700 hover:text-[#00811F]  transition"><i class="fa-solid fa-house"></i> Voorpagina</a>
             <a href="agenda.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Agenda</a>
+            <a href="terugblikken.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Terugblikken</a>
             <a href="over.php" class="menu block  m-4 text-gray-700 hover:text-[#00811F] transition">Voor wie?</a>
 
             <!-- Programma met dropdown -->
