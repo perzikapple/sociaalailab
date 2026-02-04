@@ -1,0 +1,108 @@
+/* Common Banner Styles - Used in all pages with banners */
+.banner-wrapper {
+  display: grid;
+}
+
+.banner {
+  grid-area: 1 / 1;
+}
+
+.banner {
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+
+.banner.active {
+  opacity: 1;
+}
+
+.slide {
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 1s ease-in-out;
+}
+
+.slide.active {
+  opacity: 1;
+}
+
+/* Common Navigation Media Queries - Used in all pages */
+@media (max-width: 1024px) {
+    .menu{
+        margin-top: 10px;
+        margin-bottom: 10px;
+    }
+    .navigatie{
+        display: flex;
+        flex-direction: column;
+        justify-content: space-evenly;
+        align-items: flex-start;
+    }
+      .slide{
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+    }
+}
+
+@media (min-width: 760px) {
+    .hamburger{
+        display: none;
+    }
+}
+
+/* Index and Login Page Specific */
+@media (min-width: 1024px) {
+  .flexrow {
+    flex-direction: row;
+  }
+  .kolom2{
+    margin: 0 10px;
+  }
+}
+
+/* Contact Page Specific */
+@media (min-width: 1024px) {
+  .map{
+    width: 600px;
+    height: 450px;
+  }
+}
+
+/* Event Page Specific */
+.margin{
+    margin:36px;
+}
+
+@media (max-width: 1024px) {
+  .mobile{
+    flex-direction: column;
+  }
+  .margin{
+    margin-top:20px;
+    margin-bottom: 0;
+  }
+}
+
+/* Programma Pages (kennis.php, actie.php, faciliteit.php) Specific */
+@media (max-width: 1024px) {
+  .mobile{
+    flex-direction: column;
+  }
+  .mobile-col{
+    flex-direction: column;
+  }
+}
+
+/* Index Page - Slide Animation */
+.slide2 {
+    display: none;
+    transform: translateX(210%);
+    padding-right: 32px;
+}
+#slide {
+    overflow: hidden;
+}

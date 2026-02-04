@@ -122,6 +122,7 @@ $events = $stmt->fetchAll();
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Admin - Evenementen</title>
 <link rel="stylesheet" href="build/assets/app-DozK-03z.css">
+<link rel="stylesheet" href="custom.css">
 </head>
 <body class="bg-gradient-to-br from-[#00811F] to-[#b9eb34]">
 <nav class="bg-white shadow-md p-4 max-w-6xl mx-auto">

@@ -1,19 +1,11 @@
 ﻿<?php session_start(); ?>
-<style>
-@media (min-width: 1024px) {
-  .map{
-    width: 600px;
-    height: 450px;
-  }
-}
-</style>
 
 <!doctype html>
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="preload" as="style" href="build/assets/app-DozK-03z.css"><link rel="modulepreload" as="script" href="build/assets/app-CAiCLEjY.js"><link rel="stylesheet" href="build/assets/app-DozK-03z.css"><script type="module" src="build/assets/app-CAiCLEjY.js"></script>    <title>contact</title>
+    <link rel="preload" as="style" href="build/assets/app-DozK-03z.css"><link rel="modulepreload" as="script" href="build/assets/app-CAiCLEjY.js"><link rel="stylesheet" href="build/assets/app-DozK-03z.css"><link rel="stylesheet" href="custom.css"><script type="module" src="build/assets/app-CAiCLEjY.js"></script>    <title>contact</title>
     <meta name="description" content="SociaalAI helpt inwoners sterker te staan in een steeds digitalere wereld. We doen dit door Rotterdammers actief mee te laten denken, praten en beslissen over kunstmatige intelligentie.">
     <link rel="icon" type="image/png" href="images/Pixels_icon.png">
     <link rel="stylesheet" href="ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -247,63 +239,3 @@ setInterval(() => {
 
 </body>
 </html>
-
-<style>
-.banner-wrapper {
-  display: grid;
-}
-
-.banner {
-  grid-area: 1 / 1; /* zelfde grid-cel */
-}
-
-/* voorbeeld fade */
-.banner {
-  opacity: 0;
-  transition: opacity 1s ease;
-}
-
-.banner.active {
-  opacity: 1;
-}
-
-.slide {
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  opacity: 0;
-  transition: opacity 1s ease-in-out;
-}
-
-.slide.active {
-  opacity: 1;
-}
-
-/* Mobile fix */
-@media (max-width: 768px) {
-}
-    @media (max-width: 1024px) {
-        .menu{
-            margin-top: 10px;
-            margin-bottom: 10px;
-        }
-        .navigatie{
-            display: flex;
-            flex-direction: column;
-            justify-content: space-evenly;
-            align-items: flex-start;
-        }
-          .slide{
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-        }
-    }
-     @media (min-width: 760px) {
-        .hamburger{
-            display: none;
-        }
-      
-    }
-</style>
