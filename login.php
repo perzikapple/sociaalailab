@@ -89,7 +89,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <a href="logout.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Logout</a>
             <?php else: ?>
                 <a href="login.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Login</a>
-                <a href="registratie.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Registratie</a>
             <?php endif; ?>
             <?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
                 <a href="admin.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Admin</a>
