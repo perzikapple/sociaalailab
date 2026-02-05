@@ -1,6 +1,10 @@
 <?php
 session_start();
 require 'db.php';
+
+// Fetch banners
+$banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: 'images/banner_website_01.jpg';
+$banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: 'images/banner_website_02.jpg';
 $message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email']);
@@ -40,10 +44,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <div class="banner-wrapper">
     <div class="banner banner-1 active">
-        <img class="" src="images/banner_website_01.jpg">
+        <img class="" src="<?php echo htmlspecialchars($banner1); ?>">
     </div>
     <div class="banner banner-2">
-        <img class="" src="images/banner_website_02.jpg">
+        <img class="" src="<?php echo htmlspecialchars($banner2); ?>">
     </div>
 </div>
 

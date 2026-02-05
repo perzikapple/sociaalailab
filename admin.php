@@ -24,6 +24,10 @@ function handleUpload($fileField) {
     return ['name' => $imageName];
 }
 
+// Fetch current banners
+$banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: 'images/banner_website_01.jpg';
+$banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: 'images/banner_website_02.jpg';
+
 // Verwerk POST acties
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
@@ -98,6 +102,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $message = 'Evenement niet gevonden.';
         }
+    } elseif ($action === 'update_banner') {
+        $banner1_file = handleUpload('banner1');
+        if ($banner1_file) {
+            $path = 'uploads/' . $banner1_file['name'];
+            $pdo->prepare("UPDATE settings SET setting_value = ? WHERE setting_key = 'banner1'")->execute([$path]);
+        }
+        $banner2_file = handleUpload('banner2');
+        if ($banner2_file) {
+            $path = 'uploads/' . $banner2_file['name'];
+            $pdo->prepare("UPDATE settings SET setting_value = ? WHERE setting_key = 'banner2'")->execute([$path]);
+        }
+        $message = 'Banners bijgewerkt.';
     }
 }
 
@@ -131,12 +147,22 @@ $page = $_GET['page'] ?? 'agenda';
 <body class="bg-gradient-to-br from-[#00811F] to-[#b9eb34]">
 <nav class="bg-white shadow-md p-4 max-w-6xl mx-auto">
     <div class="flex justify-between items-center">
-        <h1 class="text-lg font-bold">Admin - Evenementen</h1>
-        <a href="index.php" class="text-[#00811F]">Terug naar site</a>
+        <h1 class="text-lg font-bold">Admin Panel</h1>
+        <div class="flex gap-4">
+            <a href="?page=agenda" class="text-[#00811F] hover:underline">Agenda</a>
+            <a href="?page=banner" class="text-[#00811F] hover:underline">Banner</a>
+            <a href="index.php" class="text-[#00811F] hover:underline">Terug naar site</a>
+        </div>
     </div>
 </nav>
 
 <main class="max-w-6xl mx-auto p-6">
+    <?php if (!empty($message)): ?>
+    <div class="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
+        <?php echo htmlspecialchars($message); ?>
+    </div>
+    <?php endif; ?>
+    <?php if ($page == 'agenda'): ?>
     <div class="flex gap-6">
         <aside class="w-64 bg-white p-4 shadow rounded">
             <h3 class="font-semibold text-lg mb-3">Admin Navigatie</h3>
@@ -288,6 +314,34 @@ $page = $_GET['page'] ?? 'agenda';
             <?php endif; ?>
         </div>
     </div>
+    <?php elseif ($page == 'banner'): ?>
+    <h2 class="text-xl font-semibold mb-4">Banner Beheer</h2>
+    <div class="bg-white p-6 shadow-md rounded">
+        <h3 class="text-lg font-medium mb-4">Huidige Banners</h3>
+        <div class="flex gap-4 mb-6">
+            <div>
+                <p>Banner 1:</p>
+                <img src="<?php echo htmlspecialchars($banner1); ?>" alt="Banner 1" class="w-48 h-auto border">
+            </div>
+            <div>
+                <p>Banner 2:</p>
+                <img src="<?php echo htmlspecialchars($banner2); ?>" alt="Banner 2" class="w-48 h-auto border">
+            </div>
+        </div>
+        <form method="POST" enctype="multipart/form-data" class="space-y-4">
+            <input type="hidden" name="action" value="update_banner">
+            <div>
+                <label class="block text-sm font-medium">Nieuwe Banner 1:</label>
+                <input type="file" name="banner1" accept="image/*" class="mt-1">
+            </div>
+            <div>
+                <label class="block text-sm font-medium">Nieuwe Banner 2:</label>
+                <input type="file" name="banner2" accept="image/*" class="mt-1">
+            </div>
+            <button type="submit" class="bg-[#00811F] text-white px-4 py-2 rounded hover:bg-green-700">Update Banners</button>
+        </form>
+    </div>
+    <?php endif; ?>
 </main>
 </body>
 </html>
