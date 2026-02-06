@@ -49,6 +49,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // voeg updated_at en updated_by toe bij insert
                 $stmt = $pdo->prepare('INSERT INTO events (title, date, time, description, image, location, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, NOW(), ?)');
                 $stmt->execute([$title, $date, $time ?: null, $description, $imageName, $location ?: null, $currentUser]);
+                $eventId = $pdo->lastInsertId();
+                // Audit log: event created
+                audit_log($pdo, 'create', 'events', $eventId, 'title: ' . $title, $currentUser);
                 header('Location: admin.php?ok=create');
                 exit;
             }
@@ -77,6 +80,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // update nu ook updated_at en updated_by
                 $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, time=?, description=?, image=?, location=?, updated_at=NOW(), updated_by=? WHERE id=?');
                 $stmt->execute([$title, $date, $time ?: null, $description, $imageName, $location ?: null, $currentUser, $id]);
+                // Audit log: event updated
+                audit_log($pdo, 'update', 'events', $id, 'title: ' . $title, $currentUser);
                 // indien nieuwe upload en oud bestaat: verwijderen
                 if (!empty($upload['name']) && $oldImage && file_exists(__DIR__ . '/uploads/' . $oldImage)) {
                     @unlink(__DIR__ . '/uploads/' . $oldImage);
@@ -97,6 +102,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $stmt = $pdo->prepare('DELETE FROM events WHERE id = ?');
             $stmt->execute([$id]);
+            // Audit log: event deleted
+            audit_log($pdo, 'delete', 'events', $id, null, $currentUser);
             header('Location: admin.php?ok=delete');
             exit;
         } else {
@@ -107,11 +114,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($banner1_file) {
             $path = 'uploads/' . $banner1_file['name'];
             $pdo->prepare("UPDATE settings SET setting_value = ? WHERE setting_key = 'banner1'")->execute([$path]);
+            audit_log($pdo, 'update', 'settings', null, 'banner1 set to ' . $path, $currentUser);
         }
         $banner2_file = handleUpload('banner2');
         if ($banner2_file) {
             $path = 'uploads/' . $banner2_file['name'];
             $pdo->prepare("UPDATE settings SET setting_value = ? WHERE setting_key = 'banner2'")->execute([$path]);
+            audit_log($pdo, 'update', 'settings', null, 'banner2 set to ' . $path, $currentUser);
         }
         $message = 'Banners bijgewerkt.';
     }

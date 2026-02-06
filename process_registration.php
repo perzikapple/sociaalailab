@@ -33,6 +33,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     if ($stmt->execute()) {
         echo "Registration successful!";
+        // Audit log: new account created (performed by the registering user)
+        $newId = $conn->insert_id;
+        $safeUser = $conn->real_escape_string($user);
+        $conn->query("INSERT INTO audit_logs (action, table_name, record_id, details, performed_by, created_at) VALUES ('create', 'accounts', '" . $newId . "', 'new account registered', '" . $safeUser . "', NOW())");
         // Redirect to login page or success page
         header("Location: login.php");
         exit;
