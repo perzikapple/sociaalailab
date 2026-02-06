@@ -126,6 +126,80 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Handle page management (create_page, update_page, delete_page)
+$pageAction = $_POST['page_action'] ?? '';
+if ($pageAction === 'create_page') {
+    $pageKey = $_POST['page_key'] ?? '';
+    $title = trim($_POST['title'] ?? '');
+    $body = trim($_POST['body'] ?? '');
+    
+    if (empty($pageKey) || empty($title)) {
+        $message = 'Page key en titel zijn verplicht.';
+    } else {
+        $meta = [];
+        if (!empty($_POST['date'])) $meta['date'] = $_POST['date'];
+        if (!empty($_POST['time'])) $meta['time'] = $_POST['time'];
+        if (!empty($_POST['address'])) $meta['address'] = $_POST['address'];
+        if (!empty($_POST['email'])) $meta['email'] = $_POST['email'];
+        if (!empty($_POST['map_embed'])) $meta['map_embed'] = $_POST['map_embed'];
+        if (!empty($_POST['partners'])) $meta['partners'] = $_POST['partners'];
+        
+        $upload = handleUpload('page_image');
+        $imageName = $upload['name'] ?? null;
+        
+        $stmt = $pdo->prepare('INSERT INTO pages (page_key, title, body, image, meta, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())');
+        $stmt->execute([$pageKey, $title, $body, $imageName, json_encode($meta)]);
+        audit_log($pdo, 'create', 'pages', $pdo->lastInsertId(), 'page_key: ' . $pageKey, $currentUser);
+        $message = 'Pagina item aangemaakt.';
+    }
+} elseif ($pageAction === 'update_page') {
+    $id = (int)$_POST['id'] ?? 0;
+    $pageKey = $_POST['page_key'] ?? '';
+    $title = trim($_POST['title'] ?? '');
+    $body = trim($_POST['body'] ?? '');
+    
+    if ($id && $title) {
+        $stmt = $pdo->prepare('SELECT image FROM pages WHERE id = ?');
+        $stmt->execute([$id]);
+        $row = $stmt->fetch();
+        $oldImage = $row ? $row['image'] : null;
+        
+        $meta = [];
+        if (!empty($_POST['date'])) $meta['date'] = $_POST['date'];
+        if (!empty($_POST['time'])) $meta['time'] = $_POST['time'];
+        if (!empty($_POST['address'])) $meta['address'] = $_POST['address'];
+        if (!empty($_POST['email'])) $meta['email'] = $_POST['email'];
+        if (!empty($_POST['map_embed'])) $meta['map_embed'] = $_POST['map_embed'];
+        if (!empty($_POST['partners'])) $meta['partners'] = $_POST['partners'];
+        
+        $upload = handleUpload('page_image');
+        $imageName = $upload['name'] ?? $oldImage;
+        
+        $stmt = $pdo->prepare('UPDATE pages SET title=?, body=?, image=?, meta=?, updated_at=NOW() WHERE id=?');
+        $stmt->execute([$title, $body, $imageName, json_encode($meta), $id]);
+        
+        if (!empty($upload['name']) && $oldImage && file_exists(__DIR__ . '/uploads/' . $oldImage)) {
+            @unlink(__DIR__ . '/uploads/' . $oldImage);
+        }
+        audit_log($pdo, 'update', 'pages', $id, 'page_key: ' . $pageKey, $currentUser);
+        $message = 'Pagina item bijgewerkt.';
+    }
+} elseif ($pageAction === 'delete_page') {
+    $id = (int)$_POST['id'] ?? 0;
+    if ($id) {
+        $stmt = $pdo->prepare('SELECT image FROM pages WHERE id = ?');
+        $stmt->execute([$id]);
+        $row = $stmt->fetch();
+        if ($row && $row['image'] && file_exists(__DIR__ . '/uploads/' . $row['image'])) {
+            @unlink(__DIR__ . '/uploads/' . $row['image']);
+        }
+        $stmt = $pdo->prepare('DELETE FROM pages WHERE id = ?');
+        $stmt->execute([$id]);
+        audit_log($pdo, 'delete', 'pages', $id, null, $currentUser);
+        $message = 'Pagina item verwijderd.';
+    }
+}
+
 // Edit modus
 $editEvent = null;
 if (!empty($_GET['edit'])) {
@@ -133,6 +207,15 @@ if (!empty($_GET['edit'])) {
     $stmt = $pdo->prepare('SELECT * FROM events WHERE id = ?');
     $stmt->execute([$id]);
     $editEvent = $stmt->fetch();
+}
+
+// Edit page mode
+$editPage = null;
+if (!empty($_GET['edit_page'])) {
+    $id = (int)$_GET['edit_page'];
+    $stmt = $pdo->prepare('SELECT * FROM pages WHERE id = ?');
+    $stmt->execute([$id]);
+    $editPage = $stmt->fetch();
 }
 
 // Haal events voor overzicht
@@ -171,7 +254,7 @@ $page = $_GET['page'] ?? 'agenda';
         <?php echo htmlspecialchars($message); ?>
     </div>
     <?php endif; ?>
-    <?php if ($page == 'agenda'): ?>
+    
     <div class="flex gap-6">
         <aside class="w-64 bg-white p-4 shadow rounded">
             <h3 class="font-semibold text-lg mb-3">Admin Navigatie</h3>
@@ -312,7 +395,7 @@ $page = $_GET['page'] ?? 'agenda';
                     <?php endforeach; ?>
                     </div>
                 </section>
-            <?php else: ?>
+            <?php elseif ($page != 'banner'): ?>
                 <?php
                 // dynamic beheer voor page content (per page aangepaste velden)
                 $pageKey = $page;
@@ -428,10 +511,7 @@ $page = $_GET['page'] ?? 'agenda';
                         </div>
                     <?php endforeach; endif; ?>
                 </section>
-             <?php endif; ?>
-        </div>
-    </div>
-    <?php elseif ($page == 'banner'): ?>
+             <?php elseif ($page == 'banner'): ?>
     <h2 class="text-xl font-semibold mb-4">Banner Beheer</h2>
     <div class="bg-white p-6 shadow-md rounded">
         <h3 class="text-lg font-medium mb-4">Huidige Banners</h3>
@@ -459,6 +539,8 @@ $page = $_GET['page'] ?? 'agenda';
         </form>
     </div>
     <?php endif; ?>
+        </div>
+    </div>
 </main>
 </body>
 </html>

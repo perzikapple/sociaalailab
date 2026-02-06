@@ -9,6 +9,11 @@ $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = '
 // Adjust paths for subfolder
 $banner1 = str_replace(['images/', 'uploads/'], ['../images/', '../uploads/'], $banner1);
 $banner2 = str_replace(['images/', 'uploads/'], ['../images/', '../uploads/'], $banner2);
+
+// Fetch text blocks for programma-actie page
+$stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'programma-actie' ORDER BY created_at ASC");
+$stmt->execute();
+$pageBlocks = $stmt->fetchAll();
 ?>
 <style>
 @media (max-width: 1024px) {
@@ -96,6 +101,29 @@ $banner2 = str_replace(['images/', 'uploads/'], ['../images/', '../uploads/'], $
 
 <!-- Pagina content -->
 <main>
+    <?php
+    // Display custom text blocks from admin
+    foreach ($pageBlocks as $block):
+        $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
+        $hasImage = !empty($block['image']);
+        $imageClass = $hasImage ? 'with-image' : '';
+    ?>
+        <section class="text-block <?php echo htmlspecialchars($imageClass); ?> bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
+            <?php if ($hasImage): ?>
+                <div class="text-block-image-container">
+                    <img src="../uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" class="text-block-image">
+                </div>
+            <?php endif; ?>
+            <div class="text-block-content">
+                <?php if (!empty($block['title'])): ?>
+                    <h3 class="text-2xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($block['title']); ?></h3>
+                <?php endif; ?>
+                <?php if (!empty($block['body'])): ?>
+                    <div class="text-gray-700 leading-relaxed"><?php echo nl2br(htmlspecialchars($block['body'])); ?></div>
+                <?php endif; ?>
+            </div>
+        </section>
+    <?php endforeach; ?>
     
     <div class="mobile flex  items-center justify-center">
          <div class="bg-white p-6  shadow-lg max-w-xl mt-6 w-full border-r text-center">
