@@ -278,14 +278,122 @@ $page = $_GET['page'] ?? 'agenda';
                     </div>
                 </section>
             <?php else: ?>
-                <section class="bg-white shadow-lg p-6 rounded">
-                    <h2 class="text-xl font-semibold mb-4">Admin: <?php echo htmlspecialchars($page); ?></h2>
-                    <p class="text-sm text-gray-700 mb-4">Deze pagina is een admin-placeholder voor de publieke pagina. Hier kun je later specifieke beheerfuncties toevoegen (content editor, afbeeldingen, instellingen).</p>
-                    <div class="bg-gray-50 border border-dashed border-gray-200 p-4 rounded">
-                        <p class="text-sm text-gray-600">Voor nu: lijst van relevante items of bewerkformulieren verschijnen hier.</p>
-                    </div>
+                <?php
+                // dynamic beheer voor page content (per page aangepaste velden)
+                $pageKey = $page;
+                // bepaal velden per page
+                $fields = ['title','body','image'];
+                $extraLabels = [];
+                switch ($pageKey) {
+                    case 'terugblikken':
+                        $fields = ['title','date','time','body','image'];
+                        $extraLabels['date'] = 'Datum';
+                        $extraLabels['time'] = 'Tijd';
+                        break;
+                    case 'contact':
+                        $fields = ['title','body','address','email','map_embed','image'];
+                        $extraLabels['address']='Adres';
+                        $extraLabels['email']='E-mail';
+                        $extraLabels['map_embed']='Map embed';
+                        break;
+                    case 'over':
+                    case 'verantwoord-ai':
+                        $fields = ['title','body','image'];
+                        break;
+                    case 'wie-zijn-we':
+                        $fields = ['title','partners','image'];
+                        $extraLabels['partners']='Partners (comma-separated)';
+                        break;
+                    case 'programma-actie':
+                    case 'programma-faciliteit':
+                    case 'programma-kennis':
+                        $fields = ['title','body','image'];
+                        break;
+                    default:
+                        $fields = ['title','body','image'];
+                }
+
+                // haal bestaande items van deze page_key
+                $stmt = $pdo->prepare('SELECT * FROM pages WHERE page_key = ? ORDER BY created_at DESC');
+                $stmt->execute([$pageKey]);
+                $pageItems = $stmt->fetchAll();
+                ?>
+                <section class="bg-white p-6 shadow-md mb-6">
+                    <h2 class="font-semibold mb-4">Beheer: <?php echo htmlspecialchars($pageKey); ?></h2>
+                    <form method="POST" enctype="multipart/form-data" class="space-y-4 bg-gray-50 p-4">
+                        <input type="hidden" name="page_action" value="<?php echo $editPage ? 'update_page' : 'create_page'; ?>">
+                        <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
+                        <?php if ($editPage): ?>
+                            <input type="hidden" name="id" value="<?php echo (int)$editPage['id']; ?>">
+                        <?php endif; ?>
+
+                        <?php if (in_array('title',$fields)): ?>
+                            <div><label>Titel</label><input name="title" value="<?php echo htmlspecialchars($editPage['title'] ?? ''); ?>" class="w-full border px-3 py-2" /></div>
+                        <?php endif; ?>
+
+                        <?php if (in_array('date',$fields)): ?>
+                            <div class="grid grid-cols-2 gap-4"><div><label>Datum</label><input type="date" name="date" value="<?php echo htmlspecialchars($editPage ? ($editPage['meta'] ? json_decode($editPage['meta'], true)['date'] ?? '' : '') : ''); ?>" class="w-full border px-3 py-2" /></div>
+                            <div><label>Tijd</label><input type="time" name="time" value="<?php echo htmlspecialchars($editPage ? (json_decode($editPage['meta'] ?? 'null', true)['time'] ?? '') : ''); ?>" class="w-full border px-3 py-2" /></div></div>
+                        <?php endif; ?>
+
+                        <?php if (in_array('body',$fields)): ?>
+                            <div><label>Beschrijving</label><textarea name="body" rows="4" class="w-full border px-3 py-2"><?php echo htmlspecialchars($editPage['body'] ?? ''); ?></textarea></div>
+                        <?php endif; ?>
+
+                        <?php if (in_array('address',$fields)): ?>
+                            <div><label>Adres</label><input name="address" value="<?php echo htmlspecialchars($editPage ? (json_decode($editPage['meta'] ?? 'null', true)['address'] ?? '') : ''); ?>" class="w-full border px-3 py-2" /></div>
+                        <?php endif; ?>
+                        <?php if (in_array('email',$fields)): ?>
+                            <div><label>E-mail</label><input name="email" value="<?php echo htmlspecialchars($editPage ? (json_decode($editPage['meta'] ?? 'null', true)['email'] ?? '') : ''); ?>" class="w-full border px-3 py-2" /></div>
+                        <?php endif; ?>
+                        <?php if (in_array('map_embed',$fields)): ?>
+                            <div><label>Map embed (iframe)</label><textarea name="map_embed" rows="3" class="w-full border px-3 py-2"><?php echo htmlspecialchars($editPage ? (json_decode($editPage['meta'] ?? 'null', true)['map_embed'] ?? '') : ''); ?></textarea></div>
+                        <?php endif; ?>
+                        <?php if (in_array('partners',$fields)): ?>
+                            <div><label>Partners</label><textarea name="partners" rows="3" class="w-full border px-3 py-2"><?php echo htmlspecialchars($editPage ? (json_decode($editPage['meta'] ?? 'null', true)['partners'] ?? '') : ''); ?></textarea></div>
+                        <?php endif; ?>
+
+                        <div>
+                            <label>Afbeelding (optioneel)</label>
+                            <input type="file" name="page_image" accept="image/*" />
+                            <?php if (!empty($editPage['image'])): ?>
+                                <div class="mt-2"><small>Huidige afbeelding:</small><br><img src="uploads/<?php echo htmlspecialchars($editPage['image']); ?>" class="w-48 mt-2" alt=""></div>
+                            <?php endif; ?>
+                        </div>
+
+                        <div><button class="bg-[#00811F] text-white px-4 py-2 rounded"><?php echo $editPage ? 'Opslaan' : 'Maak item'; ?></button>
+                            <?php if ($editPage): ?><a href="admin.php?page=<?php echo urlencode($pageKey); ?>" class="ml-2 px-4 py-2 border rounded">Annuleer</a><?php endif; ?>
+                        </div>
+                    </form>
                 </section>
-            <?php endif; ?>
+
+                <section class="bg-white p-6 shadow-md">
+                    <h3 class="font-semibold mb-4">Bestaande items</h3>
+                    <?php if (empty($pageItems)): ?>
+                        <div class="text-gray-600">Geen items voor deze pagina.</div>
+                    <?php else: foreach ($pageItems as $it): $metaArr = $it['meta'] ? json_decode($it['meta'], true) : []; ?>
+                        <div class="border p-4 mb-3 rounded flex justify-between items-start">
+                            <div>
+                                <strong><?php echo htmlspecialchars($it['title'] ?? ''); ?></strong>
+                                <div class="text-sm text-gray-600"><?php echo nl2br(htmlspecialchars($it['body'] ? mb_strimwidth($it['body'],0,200,'...') : '')); ?></div>
+                                <?php if (!empty($metaArr['address'])): ?><div class="text-sm">Adres: <?php echo htmlspecialchars($metaArr['address']); ?></div><?php endif; ?>
+                            </div>
+                            <div class="flex flex-col items-end gap-2">
+                                <?php if (!empty($it['image'])): ?><img src="uploads/<?php echo htmlspecialchars($it['image']); ?>" class="w-32 h-20 object-cover mb-2" alt=""><?php endif; ?>
+                                <div class="flex gap-2">
+                                    <a href="admin.php?edit_page=<?php echo (int)$it['id']; ?>&page=<?php echo urlencode($pageKey); ?>" class="px-3 py-1 border rounded">Bewerk</a>
+                                    <form method="POST" onsubmit="return confirm('Weet je het zeker dat je dit item wilt verwijderen?');" style="display:inline-block;">
+                                        <input type="hidden" name="page_action" value="delete_page">
+                                        <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
+                                        <input type="hidden" name="id" value="<?php echo (int)$it['id']; ?>">
+                                        <button class="px-3 py-1 border rounded text-red-600 hover:bg-red-100">Verwijder</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; endif; ?>
+                </section>
+             <?php endif; ?>
         </div>
     </div>
 </main>
