@@ -80,6 +80,43 @@ $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = '
     </div>
 
     <?php
+    // Display custom text blocks from admin
+    $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'terugblikken' ORDER BY created_at ASC");
+    $stmt->execute();
+    $pageBlocks = $stmt->fetchAll();
+    foreach ($pageBlocks as $block):
+        $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
+        $hasImage = !empty($block['image']);
+        $imageClass = $hasImage ? 'with-image' : '';
+    ?>
+        <section class="text-block <?php echo htmlspecialchars($imageClass); ?> bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
+            <?php if ($hasImage): ?>
+                <div class="text-block-image-container">
+                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" class="text-block-image">
+                </div>
+            <?php endif; ?>
+            <div class="text-block-content">
+                <?php if (!empty($block['title'])): ?>
+                    <h3 class="text-2xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($block['title']); ?></h3>
+                <?php endif; ?>
+                <?php if (!empty($block['body'])): ?>
+                    <div class="text-gray-700 leading-relaxed"><?php echo nl2br(htmlspecialchars($block['body'])); ?></div>
+                <?php endif; ?>
+                <?php if (!empty($metaArr['date']) || !empty($metaArr['time'])): ?>
+                    <div class="text-gray-600 text-sm mt-2">
+                        <?php if (!empty($metaArr['date'])): ?>
+                            <span><strong>Datum:</strong> <?php echo htmlspecialchars($metaArr['date']); ?></span>
+                        <?php endif; ?>
+                        <?php if (!empty($metaArr['time'])): ?>
+                            <span class="ml-4"><strong>Tijd:</strong> <?php echo htmlspecialchars($metaArr['time']); ?></span>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </section>
+    <?php endforeach; ?>
+
+    <?php
     require 'db.php';
     $stmt = $pdo->prepare("SELECT * FROM events WHERE date < CURDATE() ORDER BY date DESC, time DESC");
     $stmt->execute();

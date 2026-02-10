@@ -262,13 +262,13 @@ $page = $_GET['page'] ?? 'agenda';
                 <?php $active = function($k) use ($page){ return $k===$page ? 'text-white bg-[#00811F] px-3 py-1 rounded block' : 'text-[#00811F] hover:bg-gray-100 px-3 py-1 rounded block'; }; ?>
                 <li><a class="<?php echo $active('agenda'); ?>" href="admin.php?page=agenda">Agenda (Evenementen)</a></li>
                 <li><a class="<?php echo $active('terugblikken'); ?>" href="admin.php?page=terugblikken">Terugblikken</a></li>
-                <li><a class="<?php echo $active('contact'); ?>" href="admin.php?page=contact">Contact</a></li>
-                <li><a class="<?php echo $active('over'); ?>" href="admin.php?page=over">Over</a></li>
+                <li><a class="<?php echo $active('over'); ?>" href="admin.php?page=over">Voor wie?</a></li>
                 <li><a class="<?php echo $active('verantwoord-ai'); ?>" href="admin.php?page=verantwoord-ai">Verantwoord AI</a></li>
                 <li><a class="<?php echo $active('wie-zijn-we'); ?>" href="admin.php?page=wie-zijn-we">Wie Zijn We</a></li>
                 <li><a class="<?php echo $active('programma-actie'); ?>" href="admin.php?page=programma-actie">Programma: Actie</a></li>
                 <li><a class="<?php echo $active('programma-faciliteit'); ?>" href="admin.php?page=programma-faciliteit">Programma: Faciliteit</a></li>
                 <li><a class="<?php echo $active('programma-kennis'); ?>" href="admin.php?page=programma-kennis">Programma: Kennis</a></li>
+                <li><a class="<?php echo $active('contact'); ?>" href="admin.php?page=contact">Contact</a></li>
             </ul>
         </aside>
 

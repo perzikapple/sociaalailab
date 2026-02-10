@@ -19,10 +19,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $message = 'Invalid email format.';
     } else {
+        // Gebruik de juiste tabelnaam: accounts
         $stmt = $pdo->prepare("SELECT wachtwoord, admin FROM accounts WHERE email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
-        if ($user && password_verify($pass, $user['wachtwoord'])) {
+        // Vergelijk wachtwoord direct, geen password_verify meer
+        if ($user && $user['wachtwoord'] === $pass) {
             $_SESSION['user'] = $email;
             $_SESSION['admin'] = $user['admin'];
             header('Location: index.php');
