@@ -2,9 +2,37 @@
 session_start();
 require 'db.php';
 
-// Fetch banners
-$banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: 'images/banner_website_01.jpg';
-$banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: 'images/banner_website_02.jpg';
+// Fallback banners
+$banner1 = 'images/banner_website_01.jpg';
+$banner2 = 'images/banner_website_02.jpg';
+
+// Fallback page blocks
+$fallbackBlocks = [
+    [
+        'title' => 'Contact',
+        'body' => 'Dit is een voorbeeld van een contactblok.',
+        'image' => '',
+        'meta' => json_encode(['address' => 'Hillevliet 90, 3074 KD Rotterdam', 'email' => 'digitaleinclusie@rotterdam.nl'])
+    ]
+];
+
+try {
+    $b1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn();
+    $b2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn();
+    if ($b1) $banner1 = $b1;
+    if ($b2) $banner2 = $b2;
+} catch (Exception $e) {
+    // fallback blijft actief
+}
+
+try {
+    $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'contact' ORDER BY created_at ASC");
+    $stmt->execute();
+    $pageBlocks = $stmt->fetchAll();
+    if (!$pageBlocks) $pageBlocks = $fallbackBlocks;
+} catch (Exception $e) {
+    $pageBlocks = $fallbackBlocks;
+}
 ?>
 
 <!doctype html>
@@ -109,9 +137,6 @@ $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = '
             
     <?php
     // Display custom text blocks from admin
-    $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'contact' ORDER BY created_at ASC");
-    $stmt->execute();
-    $pageBlocks = $stmt->fetchAll();
     foreach ($pageBlocks as $block):
         $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
         $hasImage = !empty($block['image']);

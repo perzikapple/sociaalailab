@@ -2,14 +2,32 @@
 session_start();
 require 'db.php';
 
-// Fetch banners
-$banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: 'images/banner_website_01.jpg';
-$banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: 'images/banner_website_02.jpg';
+// Fallback banners
+$banner1 = 'images/banner_website_01.jpg';
+$banner2 = 'images/banner_website_02.jpg';
 
-// Fetch text blocks for event page
-$stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'event' ORDER BY created_at ASC");
-$stmt->execute();
-$pageBlocks = $stmt->fetchAll();
+// Fallback page blocks
+$fallbackBlocks = [
+    [
+        'title' => 'Voorbeeld Event',
+        'body' => 'Dit is een voorbeeld van een event-tekstblok.',
+        'image' => '',
+        'meta' => null
+    ]
+];
+
+try {
+    $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: $banner1;
+    $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: $banner2;
+
+    $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'event' ORDER BY created_at ASC");
+    $stmt->execute();
+    $pageBlocks = $stmt->fetchAll();
+    if (!$pageBlocks) $pageBlocks = $fallbackBlocks;
+} catch (Exception $e) {
+    $pageBlocks = $fallbackBlocks;
+}
+
 ?>
 
 <!doctype html>

@@ -2,18 +2,29 @@
 session_start();
 require '../db.php';
 
-// Fetch banners
-$banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: '../images/banner_website_01.jpg';
-$banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: '../images/banner_website_02.jpg';
+// Fallback banners
+$banner1 = '../images/banner_website_01.jpg';
+$banner2 = '../images/banner_website_02.jpg';
 
-// Adjust paths for subfolder
-$banner1 = str_replace(['images/', 'uploads/'], ['../images/', '../uploads/'], $banner1);
-$banner2 = str_replace(['images/', 'uploads/'], ['../images/', '../uploads/'], $banner2);
+// Fallback page blocks
+$fallbackBlocks = [
+    [
+        'title' => 'Voorbeeld Faciliteit',
+        'body' => 'Dit is een voorbeeld van een tekstblok voor faciliteit.',
+        'image' => '',
+        'meta' => null
+    ]
+];
 
-// Fetch text blocks for programma-faciliteit page
-$stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'programma-faciliteit' ORDER BY created_at ASC");
-$stmt->execute();
-$pageBlocks = $stmt->fetchAll();
+try {
+    $b1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn();
+    $b2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn();
+    if ($b1) $banner1 = str_replace(['images/', 'uploads/'], ['../images/', '../uploads/'], $b1);
+    if ($b2) $banner2 = str_replace(['images/', 'uploads/'], ['../images/', '../uploads/'], $b2);
+} catch (Exception $e) {
+    // fallback blijft actief
+}
+
 ?>
 <style>
 @media (max-width: 1024px) {

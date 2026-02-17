@@ -2,14 +2,55 @@
 session_start();
 require 'db.php';
 
-// Fetch banners
-$banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: 'images/banner_website_01.jpg';
-$banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: 'images/banner_website_02.jpg';
+// Fallback banners
+$banner1 = 'images/banner_website_01.jpg';
+$banner2 = 'images/banner_website_02.jpg';
 
-// Fetch text blocks for index page
-$stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'index' ORDER BY created_at ASC");
-$stmt->execute();
-$pageBlocks = $stmt->fetchAll();
+// Fallback page blocks
+$fallbackBlocks = [
+    [
+        'title' => 'Welkom bij het Sociaal AI Lab!',
+        'body' => 'Dit is een voorbeeldtekst. Hier komt uitleg over het Sociaal AI Lab Rotterdam.',
+        'image' => '',
+        'meta' => null
+    ]
+];
+
+// Fallback events
+$fallbackEvents = [
+    [
+        'title' => 'Voorbeeld Evenement',
+        'date' => date('Y-m-d', strtotime('+7 days')),
+        'time' => '15:00',
+        'description' => 'Dit is een voorbeeld van een evenement. Hier komt de beschrijving.',
+        'location' => 'Rotterdam - Hillevliet 90',
+        'image' => ''
+    ]
+];
+
+try {
+    // Fetch banners
+    $b1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn();
+    $b2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn();
+    if ($b1) $banner1 = $b1;
+    if ($b2) $banner2 = $b2;
+
+    // Fetch text blocks for index page
+    $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'index' ORDER BY created_at ASC");
+    $stmt->execute();
+    $pageBlocks = $stmt->fetchAll();
+    if (!$pageBlocks) $pageBlocks = $fallbackBlocks;
+
+    // Fetch upcoming events (max 2)
+    $stmt = $pdo->prepare("SELECT * FROM events WHERE date >= CURDATE() ORDER BY date, time LIMIT 2");
+    $stmt->execute();
+    $events = $stmt->fetchAll();
+    if (!$events) $events = $fallbackEvents;
+} catch (Exception $e) {
+    // Database niet bereikbaar: gebruik fallback
+    $pageBlocks = $fallbackBlocks;
+    $events = $fallbackEvents;
+}
 ?>
 
 <!doctype html>

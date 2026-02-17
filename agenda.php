@@ -2,9 +2,33 @@
 session_start();
 require 'db.php';
 
-// Fetch banners
-$banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: 'images/banner_website_01.jpg';
-$banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: 'images/banner_website_02.jpg';
+// Fallback banners
+$banner1 = 'images/banner_website_01.jpg';
+$banner2 = 'images/banner_website_02.jpg';
+
+// Fallback events
+$fallbackEvents = [
+    [
+        'title' => 'Voorbeeld Evenement',
+        'date' => date('Y-m-d', strtotime('+7 days')),
+        'time' => '15:00',
+        'description' => 'Dit is een voorbeeld van een evenement.',
+        'location' => 'Rotterdam - Hillevliet 90',
+        'image' => ''
+    ]
+];
+
+try {
+    $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: $banner1;
+    $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: $banner2;
+
+    $stmt = $pdo->prepare("SELECT * FROM events WHERE date >= CURDATE() ORDER BY date, time");
+    $stmt->execute();
+    $events = $stmt->fetchAll();
+    if (!$events) $events = $fallbackEvents;
+} catch (Exception $e) {
+    $events = $fallbackEvents;
+}
 ?>
 <!doctype html>
 <html lang="nl">
