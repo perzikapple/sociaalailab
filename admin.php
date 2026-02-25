@@ -736,11 +736,7 @@ $page = $_GET['page'] ?? 'agenda';
                         <h2 class="text-2xl font-bold">Beheer: <?php echo htmlspecialchars($pageName); ?></h2>
                     </div>
 
-                    <?php if (!$editPage): ?>
-                        <button onclick="openPageModal()" class="btn btn-primary mb-6">
-                            <i class="fa-solid fa-plus"></i> Nieuw Item
-                        </button>
-                    <?php else: ?>
+                    <?php if ($editPage): ?>
                         <a href="admin.php?page=<?php echo urlencode($pageKey); ?>" class="btn btn-secondary mb-6">
                             <i class="fa-solid fa-arrow-left"></i> Terug
                         </a>

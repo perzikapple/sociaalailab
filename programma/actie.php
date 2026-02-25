@@ -21,8 +21,13 @@ try {
     $b2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn();
     if ($b1) $banner1 = str_replace(['images/', 'uploads/'], ['../images/', '../uploads/'], $b1);
     if ($b2) $banner2 = str_replace(['images/', 'uploads/'], ['../images/', '../uploads/'], $b2);
+    $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'programma-actie' ORDER BY created_at ASC");
+    $stmt->execute();
+    $pageBlocks = $stmt->fetchAll();
+    if (!$pageBlocks) $pageBlocks = $fallbackBlocks;
 } catch (Exception $e) {
     // fallback blijft actief
+    $pageBlocks = $fallbackBlocks;
 }
 
 ?>
