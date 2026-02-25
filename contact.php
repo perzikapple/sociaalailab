@@ -1,6 +1,7 @@
 ﻿<?php 
 session_start();
 require 'db.php';
+require 'helpers.php';
 
 $banner1 = 'images/banner_website_01.jpg';
 $banner2 = 'images/banner_website_02.jpg';
@@ -109,9 +110,14 @@ try {
         <div class="flex-1">
             <h1 class="font-bold text-2xl">Sociaal AI Lab Rotterdam</h1>
             <div>
-                Hillevliet 90<br>
-                3074 KD Rotterdam<br>
-                <p><a href="mailto:digitaleinclusie@rotterdam.nl">digitaleinclusie@rotterdam.nl</a></p><br>
+                <?php $mainAddr = 'Hillevliet 90, 3074 KD Rotterdam'; ?>
+                <p>
+                    <a href="<?php echo googleMapsDirectionsUrl($mainAddr); ?>" target="_blank" rel="noopener noreferrer" class="underline hover:text-[#00811F]">
+                        Hillevliet 90<br>
+                        3074 KD Rotterdam
+                    </a>
+                </p>
+                <p><a href="mailto:digitaleinclusie@rotterdam.nl">digitaleinclusie@rotterdam.nl</a></p>
             </div>
             <iframe class="map" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4924.161289441116!2d4.5037668125406105!3d51.89599238212385!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47c433097cf8a783%3A0x6aabf347bcd316ef!2sHillevliet%2090%2C%203074%20KD%20Rotterdam!5e0!3m2!1sen!2snl!4v1763988130581!5m2!1sen!2snl" width="auto" height="auto" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
             <br>
@@ -139,7 +145,8 @@ try {
                     <div class="text-gray-700 leading-relaxed"><?php echo nl2br(htmlspecialchars($block['body'])); ?></div>
                 <?php endif; ?>
                 <?php if (!empty($metaArr['address'])): ?>
-                    <div class="text-gray-700 mt-2"><strong>Adres:</strong> <?php echo htmlspecialchars($metaArr['address']); ?></div>
+                    <?php $addr = $metaArr['address']; ?>
+                    <div class="text-gray-700 mt-2"><strong>Adres:</strong> <a href="<?php echo googleMapsDirectionsUrl($addr); ?>" target="_blank" rel="noopener noreferrer" class="underline hover:text-[#00811F]"><?php echo htmlspecialchars($addr); ?></a></div>
                 <?php endif; ?>
                 <?php if (!empty($metaArr['email'])): ?>
                     <div class="text-gray-700"><strong>Email:</strong> <?php echo htmlspecialchars($metaArr['email']); ?></div>

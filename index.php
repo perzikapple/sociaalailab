@@ -1,6 +1,7 @@
 ﻿<?php 
 session_start();
 require 'db.php';
+require 'helpers.php';
 
 $banner1 = 'images/banner_website_01.jpg';
 $banner2 = 'images/banner_website_02.jpg';
@@ -201,13 +202,15 @@ foreach ($events as $event):
         <span class="inline-block bg-[#00811F] text-white text-sm font-medium px-4 py-1 mb-4">Evenement</span>
         <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($event['title']); ?></h2>
         <div class="space-y-4">
-            <div class="flex items-center space-x-3">
-                <i class="fa-regular fa-calendar text-[#00811F] ml-[2px]  text-3xl"></i>
-                <p class="text-gray-700"><strong> Wanneer:</strong> <?php echo htmlspecialchars($event['date']); ?> <?php echo $event['time'] ? ' - ' . htmlspecialchars($event['time']) : ''; ?></p>
-            </div>
+                <div class="flex items-center space-x-3">
+                    <i class="fa-regular fa-calendar text-[#00811F] ml-[2px]  text-3xl"></i>
+                    <?php $dateDisplay = formatEventDateDisplay($event['date']); $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : ''; ?>
+                    <p class="text-gray-700"><strong> Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?><?php if ($timeDisplay) echo ' - ' . htmlspecialchars($timeDisplay); ?></p>
+                </div>
             <div class="flex items-center space-x-3">
                 <i class="fa-solid fa-location-dot text-[#00811F] ml-1 text-3xl"></i>
-                <p class="text-gray-700 ml-1 "><strong>Waar:</strong> <?php echo htmlspecialchars($event['location'] ?: 'Rotterdam - Hillevliet 90'); ?></p>
+                <?php $loc = $event['location'] ?: 'Rotterdam - Hillevliet 90'; ?>
+                <p class="text-gray-700 ml-1 "><strong>Waar:</strong> <a href="<?php echo googleMapsDirectionsUrl($loc); ?>" target="_blank" rel="noopener noreferrer" class="underline hover:text-[#00811F]"><?php echo htmlspecialchars($loc); ?></a></p>
             </div>
             <div class="flex mb-6 space-x-3">
                 <i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>
