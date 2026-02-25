@@ -516,10 +516,7 @@ $page = $_GET['page'] ?? 'agenda';
                     <i class="fa-solid fa-house"></i> Homepage
                 </a>
                 <a href="admin.php?page=agenda-page" class="sidebar-link <?php echo $page==='agenda-page' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-calendar-list"></i> Agenda Pagina
-                </a>
-                <a href="admin.php?page=event" class="sidebar-link <?php echo $page==='event' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-star"></i> Event Pagina
+                    <i class="fa-solid fa-calendar"></i> Agenda
                 </a>
                 <a href="admin.php?page=terugblikken" class="sidebar-link <?php echo $page==='terugblikken' ? 'active' : ''; ?>">
                     <i class="fa-solid fa-history"></i> Terugblikken
@@ -553,6 +550,12 @@ $page = $_GET['page'] ?? 'agenda';
         <div class="lg:col-span-3">
 
             <?php if ($page === 'agenda'): ?>
+                <div class="card p-6">
+                    <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
+                        <i class="fa-solid fa-calendar text-2xl text-[#00811F]"></i>
+                        <h2 class="text-2xl font-bold">Beheer: Evenementen</h2>
+                    </div>
+
                 <?php if ($editEvent): ?>
                     <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4">
                         <h2 class="font-semibold">Bewerk evenement</h2>
@@ -727,10 +730,121 @@ $page = $_GET['page'] ?? 'agenda';
                 ];
                 $pageName = $pageNames[$pageKey] ?? ucfirst(str_replace('-', ' ', $pageKey));
                 ?>
-                <!-- (rest of your pages code stays the same as you had it) -->
-                <!-- ... -->
                 <div class="card p-6">
-                    <p>Pagina beheer code is hetzelfde als jouw versie (niet aangepast voor de modal).</p>
+                    <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
+                        <i class="fa-solid fa-file-pen text-2xl text-[#00811F]"></i>
+                        <h2 class="text-2xl font-bold">Beheer: <?php echo htmlspecialchars($pageName); ?></h2>
+                    </div>
+
+                    <?php if (!$editPage): ?>
+                        <button onclick="openPageModal()" class="btn btn-primary mb-6">
+                            <i class="fa-solid fa-plus"></i> Nieuw Item
+                        </button>
+                    <?php else: ?>
+                        <a href="admin.php?page=<?php echo urlencode($pageKey); ?>" class="btn btn-secondary mb-6">
+                            <i class="fa-solid fa-arrow-left"></i> Terug
+                        </a>
+                    <?php endif; ?>
+
+                    <?php if ($editPage): ?>
+                        <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6">
+                            <h3 class="font-semibold text-lg">Bewerk Item</h3>
+                            <input type="hidden" name="page_action" value="update_page">
+                            <input type="hidden" name="id" value="<?php echo (int)$editPage['id']; ?>">
+                            <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
+
+                            <div>
+                                <label class="form-label">Titel</label>
+                                <input name="title" required class="form-input" value="<?php echo htmlspecialchars($editPage['title']); ?>" />
+                            </div>
+
+                            <div>
+                                <label class="form-label">Inhoud</label>
+                                <textarea name="body" rows="6" class="form-textarea"><?php echo htmlspecialchars($editPage['body']); ?></textarea>
+                            </div>
+
+                            <div>
+                                <label class="form-label">Afbeelding (optioneel)</label>
+                                <input type="file" name="image" accept="image/*" class="form-input" />
+                                <?php if (!empty($editPage['image'])): ?>
+                                    <p class="text-sm mt-2 text-gray-600">Huidige afbeelding: <?php echo htmlspecialchars($editPage['image']); ?></p>
+                                <?php endif; ?>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa-solid fa-save"></i> Opslaan
+                            </button>
+                        </form>
+                    <?php else: ?>
+                        <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6">
+                            <h3 class="font-semibold text-lg">Nieuw Item</h3>
+                            <input type="hidden" name="page_action" value="create_page">
+                            <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
+
+                            <div>
+                                <label class="form-label">Titel</label>
+                                <input name="title" required class="form-input" />
+                            </div>
+
+                            <div>
+                                <label class="form-label">Inhoud</label>
+                                <textarea name="body" rows="6" class="form-textarea"></textarea>
+                            </div>
+
+                            <div>
+                                <label class="form-label">Afbeelding (optioneel)</label>
+                                <input type="file" name="image" accept="image/*" class="form-input" />
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa-solid fa-plus"></i> Toevoegen
+                            </button>
+                        </form>
+                    <?php endif; ?>
+
+                    <div class="card p-6">
+                        <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
+                            <i class="fa-solid fa-list text-2xl text-[#00811F]"></i>
+                            <h3 class="text-xl font-bold">Bestaande Items</h3>
+                        </div>
+                        <?php if (empty($pageItems)): ?>
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fa-solid fa-inbox text-4xl mb-2"></i>
+                                <p>Geen items toegevoegd voor deze pagina</p>
+                            </div>
+                        <?php else: ?>
+                            <div class="space-y-4">
+                            <?php foreach ($pageItems as $it): ?>
+                                <div class="border border-gray-200 rounded p-4 hover:shadow-md transition">
+                                    <div class="flex justify-between items-start gap-4">
+                                        <div class="flex-1">
+                                            <h4 class="font-bold text-lg text-gray-800"><?php echo htmlspecialchars($it['title'] ?? ''); ?></h4>
+                                            <p class="text-sm text-gray-600 mt-1 line-clamp-2"><?php echo nl2br(htmlspecialchars($it['body'] ? mb_strimwidth($it['body'],0,150,'...') : '')); ?></p>
+                                        </div>
+                                        <div class="flex gap-2 flex-shrink-0">
+                                            <?php if (!empty($it['image'])): ?>
+                                                <img src="uploads/<?php echo htmlspecialchars($it['image']); ?>" class="w-20 h-20 object-cover rounded" alt="">
+                                            <?php endif; ?>
+                                            <div class="flex flex-col gap-1">
+                                                <a href="admin.php?edit_page=<?php echo (int)$it['id']; ?>&page=<?php echo urlencode($pageKey); ?>" class="btn btn-secondary btn-sm">
+                                                    <i class="fa-solid fa-pencil"></i> Bewerk
+                                                </a>
+                                                <form method="POST" onsubmit="return confirm('Verwijder dit item?');" style="display:inline;">
+                                                    <input type="hidden" name="page_action" value="delete_page">
+                                                    <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
+                                                    <input type="hidden" name="id" value="<?php echo (int)$it['id']; ?>">
+                                                    <button type="submit" class="btn btn-danger btn-sm w-full">
+                                                        <i class="fa-solid fa-trash"></i> Verwijder
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
                 </div>
 
             <?php elseif ($page == 'banner'): ?>
