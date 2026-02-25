@@ -23,12 +23,12 @@ try {
 }
 
 try {
+    seed_page_blocks($pdo, 'contact', $fallbackBlocks);
     $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'contact' ORDER BY created_at ASC");
     $stmt->execute();
     $pageBlocks = $stmt->fetchAll();
-    if (!$pageBlocks) $pageBlocks = $fallbackBlocks;
 } catch (Exception $e) {
-    $pageBlocks = $fallbackBlocks;
+    $pageBlocks = [];
 }
 ?>
 

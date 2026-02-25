@@ -541,7 +541,7 @@ $page = $_GET['page'] ?? 'agenda';
             <nav class="divide-y">
                 <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Beheer</div>
                 <a href="admin.php?page=agenda" class="sidebar-link <?php echo $page==='agenda' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-calendar"></i> Evenementen
+                    <i class="fa-solid fa-calendar"></i> Agenda
                 </a>
                 <a href="admin.php?page=banner" class="sidebar-link <?php echo $page==='banner' ? 'active' : ''; ?>">
                     <i class="fa-solid fa-image"></i> Banners
@@ -551,8 +551,8 @@ $page = $_GET['page'] ?? 'agenda';
                 <a href="admin.php?page=index" class="sidebar-link <?php echo $page==='index' ? 'active' : ''; ?>">
                     <i class="fa-solid fa-house"></i> Homepage
                 </a>
-                <a href="admin.php?page=agenda-page" class="sidebar-link <?php echo $page==='agenda-page' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-calendar"></i> Agenda
+                <a href="admin.php?page=event" class="sidebar-link <?php echo $page==='event' ? 'active' : ''; ?>">
+                    <i class="fa-solid fa-calendar-check"></i> Evenementen
                 </a>
                 <a href="admin.php?page=terugblikken" class="sidebar-link <?php echo $page==='terugblikken' ? 'active' : ''; ?>">
                     <i class="fa-solid fa-history"></i> Terugblikken
@@ -589,7 +589,7 @@ $page = $_GET['page'] ?? 'agenda';
                 <div class="card p-6">
                     <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
                         <i class="fa-solid fa-calendar text-2xl text-[#00811F]"></i>
-                        <h2 class="text-2xl font-bold">Beheer: Evenementen</h2>
+                        <h2 class="text-2xl font-bold">Beheer: Agenda</h2>
                     </div>
 
                 <?php if ($editEvent): ?>
@@ -753,8 +753,7 @@ $page = $_GET['page'] ?? 'agenda';
 
                 $pageNames = [
                     'index' => 'Homepage',
-                    'agenda-page' => 'Agenda Pagina',
-                    'event' => 'Event Pagina',
+                    'event' => 'Evenementen',
                     'terugblikken' => 'Terugblikken',
                     'contact' => 'Contact',
                     'over' => 'Voor wie?',

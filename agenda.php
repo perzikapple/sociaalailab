@@ -20,12 +20,12 @@ try {
     $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: $banner1;
     $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: $banner2;
 
+    seed_events($pdo, $fallbackEvents);
     $stmt = $pdo->prepare("SELECT * FROM events WHERE date >= CURDATE() ORDER BY date, time");
     $stmt->execute();
     $events = $stmt->fetchAll();
-    if (!$events) $events = $fallbackEvents;
 } catch (Exception $e) {
-    $events = $fallbackEvents;
+    $events = [];
 }
 ?>
 <!doctype html>

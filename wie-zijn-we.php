@@ -18,12 +18,12 @@ try {
     $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: $banner1;
     $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: $banner2;
 
+    seed_page_blocks($pdo, 'wie-zijn-we', $fallbackBlocks);
     $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'wie-zijn-we' ORDER BY created_at ASC");
     $stmt->execute();
     $pageBlocks = $stmt->fetchAll();
-    if (!$pageBlocks) $pageBlocks = $fallbackBlocks;
 } catch (Exception $e) {
-    $pageBlocks = $fallbackBlocks;
+    $pageBlocks = [];
 }
 ?>
 <!doctype html>

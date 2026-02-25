@@ -35,17 +35,17 @@ try {
 
 try {
     $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'terugblikken' ORDER BY created_at ASC");
+    seed_page_blocks($pdo, 'terugblikken', $fallbackBlocks);
     $stmt->execute();
     $pageBlocks = $stmt->fetchAll();
-    if (!$pageBlocks) $pageBlocks = $fallbackBlocks;
 
+    seed_events($pdo, $fallbackEvents);
     $stmt = $pdo->prepare("SELECT * FROM events WHERE date < CURDATE() ORDER BY date DESC, time DESC");
     $stmt->execute();
     $events = $stmt->fetchAll();
-    if (!$events) $events = $fallbackEvents;
 } catch (Exception $e) {
-    $pageBlocks = $fallbackBlocks;
-    $events = $fallbackEvents;
+    $pageBlocks = [];
+    $events = [];
 }
 ?>
 <!doctype html>

@@ -22,12 +22,12 @@ try {
     $banner1 = str_replace(['images/', 'uploads/'], ['../images/', '../uploads/'], $banner1);
     $banner2 = str_replace(['images/', 'uploads/'], ['../images/', '../uploads/'], $banner2);
 
+    seed_page_blocks($pdo, 'programma-kennis', $fallbackBlocks);
     $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'programma-kennis' ORDER BY created_at ASC");
     $stmt->execute();
     $pageBlocks = $stmt->fetchAll();
-    if (!$pageBlocks) $pageBlocks = $fallbackBlocks;
 } catch (Exception $e) {
-    $pageBlocks = $fallbackBlocks;
+    $pageBlocks = [];
 }
 
 ?>

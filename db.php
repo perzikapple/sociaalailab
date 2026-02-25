@@ -83,6 +83,49 @@ try {
             }
         }
     }
+
+    if (!function_exists('seed_page_blocks')) {
+        function seed_page_blocks($pdo, $pageKey, $fallbackBlocks) {
+            if (empty($fallbackBlocks)) return;
+            $stmt = $pdo->prepare('SELECT COUNT(*) FROM pages WHERE page_key = ?');
+            $stmt->execute([$pageKey]);
+            if ((int)$stmt->fetchColumn() > 0) return;
+
+            $insert = $pdo->prepare('INSERT INTO pages (page_key, title, body, image, meta, created_at) VALUES (?, ?, ?, ?, ?, NOW())');
+            foreach ($fallbackBlocks as $block) {
+                $insert->execute([
+                    $pageKey,
+                    $block['title'] ?? null,
+                    $block['body'] ?? null,
+                    $block['image'] ?? null,
+                    $block['meta'] ?? null,
+                ]);
+            }
+        }
+    }
+
+    if (!function_exists('seed_events')) {
+        function seed_events($pdo, $fallbackEvents) {
+            if (empty($fallbackEvents)) return;
+            $check = $pdo->prepare('SELECT COUNT(*) FROM events WHERE title = ? AND date = ?');
+            $insert = $pdo->prepare('INSERT INTO events (title, date, time, description, location, image, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())');
+            foreach ($fallbackEvents as $event) {
+                $title = $event['title'] ?? null;
+                $date = $event['date'] ?? null;
+                if (!$title || !$date) continue;
+                $check->execute([$title, $date]);
+                if ((int)$check->fetchColumn() > 0) continue;
+                $insert->execute([
+                    $title,
+                    $date,
+                    $event['time'] ?? null,
+                    $event['description'] ?? null,
+                    $event['location'] ?? null,
+                    $event['image'] ?? null,
+                ]);
+            }
+        }
+    }
 } catch (PDOException $e) {
     die("Database connection failed: " . $e->getMessage());
 }

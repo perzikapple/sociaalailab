@@ -31,18 +31,18 @@ try {
     if ($b1) $banner1 = $b1;
     if ($b2) $banner2 = $b2;
 
+    seed_page_blocks($pdo, 'index', $fallbackBlocks);
     $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'index' ORDER BY created_at ASC");
     $stmt->execute();
     $pageBlocks = $stmt->fetchAll();
-    if (!$pageBlocks) $pageBlocks = $fallbackBlocks;
 
+    seed_events($pdo, $fallbackEvents);
     $stmt = $pdo->prepare("SELECT * FROM events WHERE date >= CURDATE() ORDER BY date, time LIMIT 2");
     $stmt->execute();
     $events = $stmt->fetchAll();
-    if (!$events) $events = $fallbackEvents;
 } catch (Exception $e) {
-    $pageBlocks = $fallbackBlocks;
-    $events = $fallbackEvents;
+    $pageBlocks = [];
+    $events = [];
 }
 ?>
 
