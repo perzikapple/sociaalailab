@@ -2,11 +2,9 @@
 session_start();
 require 'db.php';
 
-// Fallback banners
 $banner1 = 'images/banner_website_01.jpg';
 $banner2 = 'images/banner_website_02.jpg';
 
-// Fallback page blocks
 $fallbackBlocks = [
     [
         'title' => 'Welkom bij het Sociaal AI Lab!',
@@ -16,7 +14,6 @@ $fallbackBlocks = [
     ]
 ];
 
-// Fallback events
 $fallbackEvents = [
     [
         'title' => 'Voorbeeld Evenement',
@@ -29,25 +26,21 @@ $fallbackEvents = [
 ];
 
 try {
-    // Fetch banners
     $b1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn();
     $b2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn();
     if ($b1) $banner1 = $b1;
     if ($b2) $banner2 = $b2;
 
-    // Fetch text blocks for index page
     $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'index' ORDER BY created_at ASC");
     $stmt->execute();
     $pageBlocks = $stmt->fetchAll();
     if (!$pageBlocks) $pageBlocks = $fallbackBlocks;
 
-    // Fetch upcoming events (max 2)
     $stmt = $pdo->prepare("SELECT * FROM events WHERE date >= CURDATE() ORDER BY date, time LIMIT 2");
     $stmt->execute();
     $events = $stmt->fetchAll();
     if (!$events) $events = $fallbackEvents;
 } catch (Exception $e) {
-    // Database niet bereikbaar: gebruik fallback
     $pageBlocks = $fallbackBlocks;
     $events = $fallbackEvents;
 }
@@ -76,49 +69,36 @@ try {
     </div>
 </div>
 
-<!-- Navigatie -->
 <nav class="bg-white shadow-md">
     <div class="navigatie max-w-6xl mx-auto px-4 py-3 flex justify-center md:justify-between items-center">
-        <!-- Hamburger knop alleen op mobiel -->
         <button id="mobile-menu-toggle" class=" hamburger md:hidden self-end text-gray-700 focus:outline-none" aria-label="Open navigatie">
             <i class="fa-solid fa-bars text-2xl"></i>
         </button>
 
-        <!-- Menu links (exact dezelfde inhoud, alleen ingepakt + id + hidden-klasse) -->
-        <div id="mobile-menu" class="menu hidden md:flex pr-5 space-x-8 font-medium">
-            <a href="index.php" class="menu block m-4 text-gray-700 hover:text-[#00811F]  transition"><i class="fa-solid fa-house"></i> Voorpagina</a>
-            <a href="agenda.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Agenda</a>
-            <a href="terugblikken.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Terugblikken</a>
-            <a href="over.php" class="menu block  m-4 text-gray-700 hover:text-[#00811F] transition">Voor wie?</a>
+        <div id="mobile-menu" class="menu hidden md:flex pr-5 space-x-8 font-medium items-center">
+            <a href="index.php" class="menu inline-flex items-center gap-1 text-gray-700 hover:text-[#00811F] transition"><i class="fa-solid fa-house"></i> Voorpagina</a>
+            <a href="agenda.php" class="menu text-gray-700 hover:text-[#00811F] transition">Agenda</a>
+            <a href="event.php" class="menu text-gray-700 hover:text-[#00811F] transition">Evenementen</a>
+            <a href="terugblikken.php" class="menu text-gray-700 hover:text-[#00811F] transition">Terugblikken</a>
+            <a href="over.php" class="menu text-gray-700 hover:text-[#00811F] transition">Voor wie?</a>
 
-            <!-- Programma met dropdown -->
             <div class="relative" id="programma-dropdown">
-                <!-- Toggle knop -->
                 <button id="programma-toggle" aria-haspopup="true" aria-expanded="false" class="menu flex items-center gap-2 text-gray-700 hover:text-[#00811F] transition font-medium focus:outline-none">
                     <span>Wat doen we?</span>
-                    <!-- pijl die roteert bij open -->
                     
                 </button>
 
-                <!-- Dropdown menu (verborgen standaard) -->
                 <div id="programma-menu" class="hidden absolute top-0 mt-8 w-56 bg-white border border-gray-200 shadow-lg py-2 z-50 focus:outline-none" role="menu" aria-labelledby="programma-toggle">
-                    <!-- Elke link is role=menuitem voor a11y -->
                     <a href="programma/kennis.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Kennis & vaardigheden</a>
                     <a href="programma/actie.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Actie, onderzoek & ontwerp</a>
                     <a href="programma/faciliteit.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Faciliteit van het Lab
                     </a>
-                    <!-- voeg meer items toe naar behoefte -->
                 </div>
             </div>
 
-            <a href="verantwoord-ai.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Verantwoorde AI</a>
-            <a href="wie-zijn-we.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Wie zijn we?</a>
-            <a href="contact.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Contact</a>
-            <?php if (isset($_SESSION['user'])): ?>
-                <a href="logout.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Logout</a>
-            <?php else: ?>
-                <a href="login.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Login</a>
-            <?php endif; ?>
+            <a href="verantwoord-ai.php" class="menu text-gray-700 hover:text-[#00811F] transition">Verantwoorde AI</a>
+            <a href="wie-zijn-we.php" class="menu text-gray-700 hover:text-[#00811F] transition">Wie zijn we?</a>
+            <a href="contact.php" class="menu text-gray-700 hover:text-[#00811F] transition">Contact</a>
             <?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
                 <a href="admin.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Admin</a>
             <?php endif; ?>
@@ -126,7 +106,6 @@ try {
     </div>
 </nav>
 
-<!-- Pagina content -->
 <main>
     
     <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg mt- p-8 max-w-6xl mx-auto my-12">
@@ -143,7 +122,6 @@ try {
         </div>
     </section>
     <div class="flex flex-col flexrow justify-evenly w-full max-w-6xl mx-auto ">
-        <!-- Kolom 1 -->
         <div class="space-y-6">
 
              <div class=" bg-white shadow-lg  pt-0 pb-6 mb-4 min-h-[220px] max-w-sm mx-auto ">
@@ -156,7 +134,6 @@ try {
                 </p>
             </div>
         </div>
-         <!-- Kolom 2 -->
          <div class="space-y-6">
             <div class="kolom2 bg-white shadow-lg  pt-0 pb-6 mb-4 min-h-[220px] max-w-sm mx-auto ">
                 <div class="flex flex-1 items-center justify-center">
@@ -168,7 +145,6 @@ try {
                 </p>
             </div>
         </div>
-        <!-- Kolom 3 -->
         <div class="space-y-6">
             <div class="bg-white shadow-lg  pt-0 pb-6 min-h-[220px] max-w-sm mx-auto ">
                 <div class="flex flex-1 items-center justify-center">
@@ -191,7 +167,6 @@ try {
         </div></section>
 
 <?php
-// Display custom text blocks from admin
 foreach ($pageBlocks as $block):
     $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
     $hasImage = !empty($block['image']);
@@ -214,9 +189,7 @@ foreach ($pageBlocks as $block):
     </section>
 <?php endforeach; ?>
         
-<!--Event 1  -->
 <?php
-// Haal upcoming events (max 2) op
 require 'db.php';
 $stmt = $pdo->prepare("SELECT * FROM events WHERE date >= CURDATE() ORDER BY date, time LIMIT 2");
 $stmt->execute();
@@ -248,87 +221,9 @@ foreach ($events as $event):
 </section>
 <?php endforeach; ?>
 
-<!-- + knop voor admins -->
 <?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
     <a href="admin.php" title="Voeg evenement toe" class="fixed bottom-6 right-6 bg-[#00811F] text-white rounded-full w-12 h-12 flex items-center justify-center text-3xl shadow-lg">+</a>
 <?php endif; ?>
-    <!--Hoogtepunten
-      <div class="mobile flex  items-center justify-center">
-         <div class="bg-white p-6  shadow-lg max-w-xl mt-6 w-full border-r text-center">
-            <a href="https://sociaalailab.nl/hoogtepunten"><h1 class="text-2xl hover:text-[#00811F] font-semibold">Hoogtepunten</h1></a>
-        </div>
-    </div>
-          
-    <section id="slide" class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg max-w-6xl mx-auto my-12">
-        
-        <div class="slide1 flex-1 p-8">
-            <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900">  
-            OPEN MIDDAG EN OPEN AVOND IN HET AI LAB
-            Ontdek wat slimme technologie kan betekenen 
-            </h2>
-           <div class="space-y-4">
-                <div class="flex mb-6 space-x-3">
-                    <p class="text-gray-700 pb-3 ">Ontdek de wereld van slimme technologie in het Sociaal AI Lab Rotterdam.
-                    Op 17 december staan de deuren wijd open voor iedereen die nieuwsgierig is naar AI.
-                    Praat met Digiderius, speel het Waardenspel en zie de Wijkbot in actie.
-                    Maak een digitale kerstkaart, ontdek hoe technologie de stad ingaat en wat AI voor
-                    jou kan betekenen. Vrije inloop.</div>
-            </div>
-              <a href="/event" class="inline-block bg-[#00811F] text-white font-medium px-6 py-2 hover:bg-green-700 transition">
-                    Bekijk hoogtepunten
-            </a>
-        </div>
-        <div class="slide1 flex-1">
-            <img src="https://sociaalailab.nl/images/event/open_middag&amp;open_avond.jpg"
-                 alt="SociaalAI Inspiratiedag"
-                 class="w-full h-auto object-cover shadow-md">
-        </div>
-
-        <div class="slide2 flex-1 p-8">
-            <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900">  
-            OPEN MIDDAG EN OPEN AVOND IN HET AI LAB
-            Ontdek wat slimme technologie kan betekenen 
-            </h2>
-           <div class="space-y-4">
-                <div class="flex mb-6 space-x-3">
-                    <p class="text-gray-700 pb-3 ">Ontdek de wereld van slimme technologie in het Sociaal AI Lab Rotterdam.
-                    Op 17 december staan de deuren wijd open voor iedereen die nieuwsgierig is naar AI.
-                    Praat met Digiderius, speel het Waardenspel en zie de Wijkbot in actie.
-                    Maak een digitale kerstkaart, ontdek hoe technologie de stad ingaat en wat AI voor
-                    jou kan betekenen. Vrije inloop.</div>
-            </div> 
-              <a href="/event" class="inline-block bg-[#00811F] text-white font-medium px-6 py-2 hover:bg-green-700 transition">
-                    Bekijk hoogtepunten
-            </a>
-        </div>
-        <div class="slide2 flex-1">
-            <img src="https://sociaalailab.nl/images/event/open_middag&amp;open_avond.jpg"
-                 alt="SociaalAI Inspiratiedag"
-                 class="w-full h-auto object-cover shadow-md">
-        </div>
-
-    </section>
-
-        padding-right: 32px;
-        position: relative;      /* zodat we left kunnen gebruiken */
-        width: 100%;
-        transition: left 0.5s ease-in-out;
-        animation: slideLeft 5s forwards;
-        animation-delay: 10s;     /* wachten 5 seconden voordat animatie start */
-        overflow:   hidden;
-}
-
-/* animatie */
-@keyframes slideLeft {
-  0% {
-    left: 0;               /* beginpositie */
-  }
-  100% {
-    left: -100%;           /* helemaal naar links */
-  }
-}   
-    </style>
--->
 <a href="contact.php">
     <div class="flex items-center justify-center">
         <i class="text-[#cc0033] fa-3x fa-regular fa-envelope-open"></i>
@@ -379,7 +274,6 @@ foreach ($events as $event):
             if (caret) {
                 caret.classList.add('rotate-180');
             }
-            // focus eerste item voor keyboard users
             const first = menu.querySelector('[role="menuitem"]');
             if (first) first.focus();
         }
@@ -398,13 +292,11 @@ foreach ($events as $event):
             else closeMenu();
         }
 
-        // klik op de knop: toggle
         toggle.addEventListener('click', function(e){
             e.preventDefault();
             toggleMenu();
         });
 
-        // keyboard op de knop: Enter of Space opent/toggle
         toggle.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
@@ -415,14 +307,12 @@ foreach ($events as $event):
             }
         });
 
-        // sluit op escape
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 if (!menu.classList.contains('hidden')) closeMenu();
             }
         });
 
-        // klik buiten: sluit menu
         document.addEventListener('click', function(e) {
             const target = e.target;
             if (!menu.contains(target) && !toggle.contains(target)) {
@@ -430,10 +320,9 @@ foreach ($events as $event):
             }
         });
 
-        // optioneel: sluit en navigeer op menuitem click (voor a tags standaard)
         const items = menu.querySelectorAll('[role="menuitem"]');
         items.forEach(item => {
-            item.setAttribute('tabindex', '0'); // focusable
+            item.setAttribute('tabindex', '0'); 
             item.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
                     closeMenu();
@@ -450,7 +339,6 @@ foreach ($events as $event):
         });
     })();
 
-<!-- Extra script alleen voor het mobiele hamburger-menu -->
     (function () {
         const mobileToggle = document.getElementById('mobile-menu-toggle');
         const mobileMenu = document.getElementById('mobile-menu');
@@ -471,7 +359,10 @@ setInterval(() => {
   banners[current].classList.add('active');
 }, 10000);
 
+
+
 </script>
 
+</main>
 </body>
 </html>

@@ -2,11 +2,9 @@
 session_start();
 require 'db.php';
 
-// Fetch banners
 $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: 'images/banner_website_01.jpg';
 $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: 'images/banner_website_02.jpg';
 
-// Fetch text blocks for over page
 $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'over' ORDER BY created_at ASC");
 $stmt->execute();
 $pageBlocks = $stmt->fetchAll();
@@ -24,7 +22,6 @@ $pageBlocks = $stmt->fetchAll();
 
 <body class="bg-gradient-to-br from-[#00811F] to-[#b9eb34]">
 
-
 <div class="banner-wrapper">
     <div class="banner banner-1 active">
         <img class="" src="<?php echo htmlspecialchars($banner1); ?>">
@@ -34,49 +31,36 @@ $pageBlocks = $stmt->fetchAll();
     </div>
 </div>
 
-<!-- Navigatie -->
 <nav class="bg-white shadow-md">
     <div class="navigatie max-w-6xl mx-auto px-4 py-3 flex justify-center md:justify-between items-center">
-        <!-- Hamburger knop alleen op mobiel -->
         <button id="mobile-menu-toggle" class=" hamburger md:hidden self-end text-gray-700 focus:outline-none" aria-label="Open navigatie">
             <i class="fa-solid fa-bars text-2xl"></i>
         </button>
 
-        <!-- Menu links (exact dezelfde inhoud, alleen ingepakt + id + hidden-klasse) -->
-        <div id="mobile-menu" class="menu hidden md:flex pr-5 space-x-8 font-medium">
-            <a href="index.php" class="menu block m-4 text-gray-700 hover:text-[#00811F]  transition"><i class="fa-solid fa-house"></i> Voorpagina</a>
-            <a href="agenda.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Agenda</a>
-            <a href="terugblikken.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Terugblikken</a>
-            <a href="over.php" class="menu block  m-4 text-gray-700 hover:text-[#00811F] transition">Voor wie?</a>
+        <div id="mobile-menu" class="menu hidden md:flex pr-5 space-x-8 font-medium items-center">
+            <a href="index.php" class="menu inline-flex items-center gap-1 text-gray-700 hover:text-[#00811F] transition"><i class="fa-solid fa-house"></i> Voorpagina</a>
+            <a href="agenda.php" class="menu text-gray-700 hover:text-[#00811F] transition">Agenda</a>
+            <a href="event.php" class="menu text-gray-700 hover:text-[#00811F] transition">Evenementen</a>
+            <a href="terugblikken.php" class="menu text-gray-700 hover:text-[#00811F] transition">Terugblikken</a>
+            <a href="over.php" class="menu text-gray-700 hover:text-[#00811F] transition">Voor wie?</a>
 
-            <!-- Programma met dropdown -->
             <div class="relative" id="programma-dropdown">
-                <!-- Toggle knop -->
                 <button id="programma-toggle" aria-haspopup="true" aria-expanded="false" class="menu flex items-center gap-2 text-gray-700 hover:text-[#00811F] transition font-medium focus:outline-none">
                     <span>Wat doen we?</span>
-                    <!-- pijl die roteert bij open -->
                     
                 </button>
 
-                <!-- Dropdown menu (verborgen standaard) -->
                 <div id="programma-menu" class="hidden absolute top-0 mt-8 w-56 bg-white border border-gray-200 shadow-lg py-2 z-50 focus:outline-none" role="menu" aria-labelledby="programma-toggle">
-                    <!-- Elke link is role=menuitem voor a11y -->
                     <a href="programma/kennis.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Kennis & vaardigheden</a>
                     <a href="programma/actie.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Actie, onderzoek & ontwerp</a>
                     <a href="programma/faciliteit.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Faciliteit van het Lab
                     </a>
-                    <!-- voeg meer items toe naar behoefte -->
                 </div>
             </div>
 
             <a href="verantwoord-ai.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Verantwoorde AI</a>
             <a href="wie-zijn-we.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Wie zijn we?</a>
             <a href="contact.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Contact</a>
-            <?php if (isset($_SESSION['user'])): ?>
-                <a href="logout.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Logout</a>
-            <?php else: ?>
-                <a href="login.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Login</a>
-            <?php endif; ?>
             <?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
                 <a href="admin.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Admin</a>
             <?php endif; ?>
@@ -84,10 +68,8 @@ $pageBlocks = $stmt->fetchAll();
     </div>
 </nav>
 
-<!-- Pagina content -->
 <main>
     <?php
-    // Display custom text blocks from admin
     foreach ($pageBlocks as $block):
         $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
         $hasImage = !empty($block['image']);
@@ -244,7 +226,6 @@ $pageBlocks = $stmt->fetchAll();
             if (caret) {
                 caret.classList.add('rotate-180');
             }
-            // focus eerste item voor keyboard users
             const first = menu.querySelector('[role="menuitem"]');
             if (first) first.focus();
         }
@@ -263,13 +244,11 @@ $pageBlocks = $stmt->fetchAll();
             else closeMenu();
         }
 
-        // klik op de knop: toggle
         toggle.addEventListener('click', function(e){
             e.preventDefault();
             toggleMenu();
         });
 
-        // keyboard op de knop: Enter of Space opent/toggle
         toggle.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
@@ -280,14 +259,12 @@ $pageBlocks = $stmt->fetchAll();
             }
         });
 
-        // sluit op escape
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 if (!menu.classList.contains('hidden')) closeMenu();
             }
         });
 
-        // klik buiten: sluit menu
         document.addEventListener('click', function(e) {
             const target = e.target;
             if (!menu.contains(target) && !toggle.contains(target)) {
@@ -295,10 +272,9 @@ $pageBlocks = $stmt->fetchAll();
             }
         });
 
-        // optioneel: sluit en navigeer op menuitem click (voor a tags standaard)
         const items = menu.querySelectorAll('[role="menuitem"]');
         items.forEach(item => {
-            item.setAttribute('tabindex', '0'); // focusable
+            item.setAttribute('tabindex', '0'); 
             item.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
                     closeMenu();
@@ -315,7 +291,6 @@ $pageBlocks = $stmt->fetchAll();
         });
     })();
 
-<!-- Extra script alleen voor het mobiele hamburger-menu -->
     (function () {
         const mobileToggle = document.getElementById('mobile-menu-toggle');
         const mobileMenu = document.getElementById('mobile-menu');
@@ -347,10 +322,9 @@ setInterval(() => {
 }
 
 .banner {
-  grid-area: 1 / 1; /* zelfde grid-cel */
+  grid-area: 1 / 1; 
 }
 
-/* voorbeeld fade */
 .banner {
   opacity: 0;
   transition: opacity 1s ease;
@@ -373,7 +347,6 @@ setInterval(() => {
   opacity: 1;
 }
 
-/* Mobile fix */
 @media (max-width: 768px) {
 }
     @media (max-width: 1024px) {
@@ -399,4 +372,6 @@ setInterval(() => {
         }
       
     }
-</style>
+</style></div>
+</body>
+</html>

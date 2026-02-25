@@ -101,7 +101,6 @@
     overflow: hidden;
 }
 
-/* Text block styling for page content */
 .text-block {
     display: flex;
     flex-direction: column;

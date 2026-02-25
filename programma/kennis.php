@@ -63,11 +63,11 @@ try {
         </button>
 
         <!-- Menu links -->
-        <div id="mobile-menu" class="menu hidden md:flex pr-5 space-x-8 font-medium">
-            <a href="../index.php" class="menu block m-4 text-gray-700 hover:text-[#00811F]  transition"><i class="fa-solid fa-house"></i> Voorpagina</a>
-            <a href="../agenda.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Agenda</a>
-            <a href="../terugblikken.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Terugblikken</a>
-            <a href="../over.php" class="menu block  m-4 text-gray-700 hover:text-[#00811F] transition">Voor wie?</a>
+        <div id="mobile-menu" class="menu hidden md:flex pr-5 space-x-8 font-medium items-center">
+            <a href="../index.php" class="menu inline-flex items-center gap-1 text-gray-700 hover:text-[#00811F] transition"><i class="fa-solid fa-house"></i> Voorpagina</a>
+            <a href="../agenda.php" class="menu text-gray-700 hover:text-[#00811F] transition">Agenda</a>
+            <a href="../terugblikken.php" class="menu text-gray-700 hover:text-[#00811F] transition">Terugblikken</a>
+            <a href="../over.php" class="menu text-gray-700 hover:text-[#00811F] transition">Voor wie?</a>
 
             <!-- Programma met dropdown -->
             <div class="relative" id="programma-dropdown">
@@ -85,11 +85,6 @@ try {
             <a href="../verantwoord-ai.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Verantwoorde AI</a>
             <a href="../wie-zijn-we.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Wie zijn we?</a>
             <a href="../contact.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Contact</a>
-            <?php if (isset($_SESSION['user'])): ?>
-                <a href="../logout.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Logout</a>
-            <?php else: ?>
-                <a href="../login.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Login</a>
-            <?php endif; ?>
             <?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
                 <a href="../admin.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Admin</a>
             <?php endif; ?>

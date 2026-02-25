@@ -232,53 +232,254 @@ $page = $_GET['page'] ?? 'agenda';
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Admin - Evenementen</title>
+<title>Admin - SociaalAI Lab</title>
 <link rel="stylesheet" href="build/assets/app-DozK-03z.css">
 <link rel="stylesheet" href="custom.css">
+<link rel="stylesheet" href="ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+    body {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        min-height: 100vh;
+    }
+    .admin-header {
+        background: linear-gradient(135deg, #00811F 0%, #00a030 100%);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .tab-button {
+        transition: all 0.3s ease;
+        border-bottom: 3px solid transparent;
+    }
+    .tab-button.active {
+        border-bottom-color: #00811F;
+        color: #00811F;
+        font-weight: 600;
+    }
+    .card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        transition: box-shadow 0.3s ease;
+    }
+    .card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+    .form-label {
+        display: block;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+    }
+    .form-input, .form-textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 1rem;
+        transition: border-color 0.2s;
+    }
+    .form-input:focus, .form-textarea:focus {
+        outline: none;
+        border-color: #00811F;
+        box-shadow: 0 0 0 3px rgba(0, 129, 31, 0.1);
+    }
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 6px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .btn-primary {
+        background: #00811F;
+        color: white;
+    }
+    .btn-primary:hover {
+        background: #006817;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 129, 31, 0.3);
+    }
+    .btn-secondary {
+        background: #e0e0e0;
+        color: #333;
+    }
+    .btn-secondary:hover {
+        background: #d0d0d0;
+    }
+    .btn-danger {
+        background: #dc3545;
+        color: white;
+    }
+    .btn-danger:hover {
+        background: #c82333;
+    }
+    .alert {
+        padding: 1rem;
+        border-radius: 6px;
+        margin-bottom: 1.5rem;
+    }
+    .alert-success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    .alert-error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+    .event-list {
+        display: grid;
+        gap: 1rem;
+    }
+    .event-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.25rem;
+        border-left: 4px solid #00811F;
+    }
+    .event-info h3 {
+        margin: 0 0 0.5rem 0;
+        color: #333;
+        font-size: 1.1rem;
+    }
+    .event-meta {
+        font-size: 0.9rem;
+        color: #666;
+    }
+    .event-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+    .sidebar {
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        height: fit-content;
+    }
+    .sidebar-header {
+        background: linear-gradient(135deg, #00811F 0%, #00a030 100%);
+        color: white;
+        padding: 1rem;
+        font-weight: 600;
+    }
+    .sidebar-link {
+        display: block;
+        padding: 0.75rem 1rem;
+        color: #333;
+        text-decoration: none;
+        border-left: 3px solid transparent;
+        transition: all 0.2s;
+    }
+    .sidebar-link:hover {
+        background: #f5f5f5;
+        border-left-color: #00811F;
+    }
+    .btn-sm {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+    }
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+</style>
 </head>
-<body class="bg-gradient-to-br from-[#00811F] to-[#b9eb34]">
-<nav class="bg-white shadow-md p-4 max-w-6xl mx-auto">
-    <div class="flex justify-between items-center">
-        <h1 class="text-lg font-bold">Admin Panel</h1>
-        <div class="flex gap-4">
-            <a href="?page=agenda" class="text-[#00811F] hover:underline">Agenda</a>
-            <a href="?page=banner" class="text-[#00811F] hover:underline">Banner</a>
-            <a href="index.php" class="text-[#00811F] hover:underline">Terug naar site</a>
+<body>
+<nav class="admin-header text-white p-4 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto flex justify-between items-center">
+        <div class="flex items-center gap-2">
+            <i class="fa-solid fa-gears text-2xl"></i>
+            <h1 class="text-2xl font-bold">Admin Panel</h1>
+        </div>
+        <div class="flex gap-3">
+            <a href="index.php" class="btn btn-secondary text-sm">
+                <i class="fa-solid fa-arrow-left"></i> Terug naar site
+            </a>
+            <a href="logout.php" class="btn btn-secondary text-sm">
+                <i class="fa-solid fa-sign-out-alt"></i> Uitloggen
+            </a>
         </div>
     </div>
 </nav>
 
-<main class="max-w-6xl mx-auto p-6">
+<main class="max-w-7xl mx-auto p-6">
     <?php if (!empty($message)): ?>
-    <div class="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
-        <?php echo htmlspecialchars($message); ?>
+    <div class="alert alert-error">
+        <i class="fa-solid fa-exclamation-circle"></i> <?php echo htmlspecialchars($message); ?>
     </div>
     <?php endif; ?>
     
-    <div class="flex gap-6">
-        <aside class="w-64 bg-white p-4 shadow rounded">
-            <h3 class="font-semibold text-lg mb-3">Admin Navigatie</h3>
-            <ul class="space-y-2 text-sm">
-                <?php $active = function($k) use ($page){ return $k===$page ? 'text-white bg-[#00811F] px-3 py-1 rounded block' : 'text-[#00811F] hover:bg-gray-100 px-3 py-1 rounded block'; }; ?>
-                <li><a class="<?php echo $active('agenda'); ?>" href="admin.php?page=agenda">Agenda (Evenementen)</a></li>
-                <li><a class="<?php echo $active('terugblikken'); ?>" href="admin.php?page=terugblikken">Terugblikken</a></li>
-                <li><a class="<?php echo $active('over'); ?>" href="admin.php?page=over">Voor wie?</a></li>
-                <li><a class="<?php echo $active('verantwoord-ai'); ?>" href="admin.php?page=verantwoord-ai">Verantwoord AI</a></li>
-                <li><a class="<?php echo $active('wie-zijn-we'); ?>" href="admin.php?page=wie-zijn-we">Wie Zijn We</a></li>
-                <li><a class="<?php echo $active('programma-actie'); ?>" href="admin.php?page=programma-actie">Programma: Actie</a></li>
-                <li><a class="<?php echo $active('programma-faciliteit'); ?>" href="admin.php?page=programma-faciliteit">Programma: Faciliteit</a></li>
-                <li><a class="<?php echo $active('programma-kennis'); ?>" href="admin.php?page=programma-kennis">Programma: Kennis</a></li>
-                <li><a class="<?php echo $active('contact'); ?>" href="admin.php?page=contact">Contact</a></li>
-            </ul>
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fa-solid fa-list"></i> Navigatie
+            </div>
+            <nav class="divide-y">
+                <!-- Hoofdsecties -->
+                <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Beheer</div>
+                <a href="admin.php?page=agenda" class="sidebar-link <?php echo $page==='agenda' ? 'active' : ''; ?>">
+                    <i class="fa-solid fa-calendar"></i> Evenementen
+                </a>
+                <a href="admin.php?page=banner" class="sidebar-link <?php echo $page==='banner' ? 'active' : ''; ?>">
+                    <i class="fa-solid fa-image"></i> Banners
+                </a>
+                
+                <!-- Pagina's secties -->
+                <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Pagina's</div>
+                <a href="admin.php?page=index" class="sidebar-link <?php echo $page==='index' ? 'active' : ''; ?>">
+                    <i class="fa-solid fa-house"></i> Homepage
+                </a>
+                <a href="admin.php?page=agenda-page" class="sidebar-link <?php echo $page==='agenda-page' ? 'active' : ''; ?>">
+                    <i class="fa-solid fa-calendar-list"></i> Agenda Pagina
+                </a>
+                <a href="admin.php?page=event" class="sidebar-link <?php echo $page==='event' ? 'active' : ''; ?>">
+                    <i class="fa-solid fa-star"></i> Event Pagina
+                </a>
+                <a href="admin.php?page=terugblikken" class="sidebar-link <?php echo $page==='terugblikken' ? 'active' : ''; ?>">
+                    <i class="fa-solid fa-history"></i> Terugblikken
+                </a>
+                <a href="admin.php?page=over" class="sidebar-link <?php echo $page==='over' ? 'active' : ''; ?>">
+                    <i class="fa-solid fa-info-circle"></i> Voor wie?
+                </a>
+                <a href="admin.php?page=wie-zijn-we" class="sidebar-link <?php echo $page==='wie-zijn-we' ? 'active' : ''; ?>">
+                    <i class="fa-solid fa-people-group"></i> Wie zijn we?
+                </a>
+                <a href="admin.php?page=verantwoord-ai" class="sidebar-link <?php echo $page==='verantwoord-ai' ? 'active' : ''; ?>">
+                    <i class="fa-solid fa-shield"></i> Verantwoord AI
+                </a>
+                <a href="admin.php?page=contact" class="sidebar-link <?php echo $page==='contact' ? 'active' : ''; ?>">
+                    <i class="fa-solid fa-envelope"></i> Contact
+                </a>
+                
+                <!-- Programma's -->
+                <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Programma's</div>
+                <a href="admin.php?page=programma-actie" class="sidebar-link <?php echo $page==='programma-actie' ? 'active' : ''; ?>">
+                    <i class="fa-solid fa-bolt"></i> Actie, Onderzoek
+                </a>
+                <a href="admin.php?page=programma-faciliteit" class="sidebar-link <?php echo $page==='programma-faciliteit' ? 'active' : ''; ?>">
+                    <i class="fa-solid fa-building"></i> Faciliteit
+                </a>
+                <a href="admin.php?page=programma-kennis" class="sidebar-link <?php echo $page==='programma-kennis' ? 'active' : ''; ?>">
+                    <i class="fa-solid fa-book"></i> Kennis & Vaardigheden
+                </a>
+            </nav>
         </aside>
 
-        <div class="flex-1">
-            <?php if (!empty($_GET['ok'])): ?>
-                <div class="mb-4 p-3 bg-green-100">Actie succesvol: <?php echo htmlspecialchars($_GET['ok']); ?></div>
-            <?php endif; ?>
-            <?php if ($message): ?>
-                <div class="mb-4 p-3 bg-red-100"><?php echo htmlspecialchars($message); ?></div>
-            <?php endif; ?>
+        <div class="lg:col-span-3">
 
             <?php if ($page === 'agenda'): ?>
                 <?php if ($editEvent): ?>
@@ -361,69 +562,92 @@ $page = $_GET['page'] ?? 'agenda';
                     </form>
                 <?php endif; ?>
 
-                <section class="mt-8">
-                    <h2 class="text-xl font-semibold mb-4">Bestaande evenementen</h2>
-                    <div class="space-y-6">
-                    <?php foreach ($events as $e): ?>
-                        <div class="bg-white p-6 shadow-md border border-gray-200 rounded-lg flex justify-between items-start">
-                            <div>
-                                <h3 class="font-bold"><?php echo htmlspecialchars($e['title']); ?></h3>
-                                <?php if (!empty($e['location'])): ?>
-                                    <p class="text-sm text-gray-700"><?php echo 'Locatie: ' . htmlspecialchars($e['location']); ?></p>
-                                <?php endif; ?>
-                                <p class="text-sm text-gray-600"><?php echo htmlspecialchars($e['date'] . ' ' . ($e['time'] ?: '')); ?></p>
-                                <p><?php echo nl2br(htmlspecialchars($e['description'])); ?></p>
-
-                                <?php if (!empty($e['updated_at']) || !empty($e['updated_by'])): ?>
-                                    <p class="text-xs text-gray-500 mt-2">Laatst aangepast door <?php echo htmlspecialchars($e['updated_by'] ?? 'onbekend'); ?> op <?php echo htmlspecialchars($e['updated_at'] ?? 'onbekend'); ?></p>
-                                <?php endif; ?>
-                            </div>
-                            <div class="flex flex-col items-end gap-2">
-                                <?php if ($e['image']): ?>
-                                    <img src="uploads/<?php echo htmlspecialchars($e['image']); ?>" alt="" class="w-32 h-20 object-cover mb-2">
-                                <?php endif; ?>
-                                <div class="flex gap-2">
-                                    <a href="admin.php?edit=<?php echo (int)$e['id']; ?>&page=agenda" class="px-3 py-1 border rounded">Bewerk</a>
-                                    <form method="POST" onsubmit="return confirm('Weet je het zeker dat je dit evenement wilt verwijderen?');" style="display:inline-block;">
-                                        <input type="hidden" name="action" value="delete">
-                                        <input type="hidden" name="id" value="<?php echo (int)$e['id']; ?>">
-                                        <button class="px-3 py-1 border rounded text-red-600 hover:bg-red-100">Verwijder</button>
-                                    </form>
+                
+                <div class="event-list">
+                    <?php if (empty($events)): ?>
+                        <div class="card p-6 text-center text-gray-500">
+                            <i class="fa-solid fa-calendar-xmark text-4xl mb-2"></i>
+                            <p>Geen evenementen gevonden</p>
+                        </div>
+                    <?php else: ?>
+                        <?php foreach ($events as $e): ?>
+                            <div class="card event-item">
+                                <div class="event-info flex-1">
+                                    <h3><?php echo htmlspecialchars($e['title']); ?></h3>
+                                    <div class="event-meta">
+                                        <i class="fa-solid fa-calendar"></i> <?php echo htmlspecialchars($e['date']); ?>
+                                        <?php if (!empty($e['time'])): ?>
+                                            <i class="fa-solid fa-clock ml-2"></i> <?php echo htmlspecialchars($e['time']); ?>
+                                        <?php endif; ?>
+                                        <?php if (!empty($e['location'])): ?>
+                                            <i class="fa-solid fa-location-dot ml-2"></i> <?php echo htmlspecialchars($e['location']); ?>
+                                        <?php endif; ?>
+                                    </div>
+                                    <?php if (!empty($e['description'])): ?>
+                                        <p class="text-sm mt-2 line-clamp-2"><?php echo htmlspecialchars(mb_strimwidth($e['description'], 0, 150, '...')); ?></p>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="event-actions flex-shrink-0">
+                                    <?php if ($e['image']): ?>
+                                        <img src="uploads/<?php echo htmlspecialchars($e['image']); ?>" class="w-24 h-24 object-cover rounded mb-2" alt="Event">
+                                    <?php endif; ?>
+                                    <div class="flex gap-2">
+                                        <a href="admin.php?edit=<?php echo (int)$e['id']; ?>&page=agenda" class="btn btn-secondary btn-sm" title="Bewerk">
+                                            <i class="fa-solid fa-pencil"></i> Bewerk
+                                        </a>
+                                        <form method="POST" onsubmit="return confirm('Verwijder dit evenement?');" style="display:inline;">
+                                            <input type="hidden" name="action" value="delete">
+                                            <input type="hidden" name="id" value="<?php echo (int)$e['id']; ?>">
+                                            <button class="btn btn-danger btn-sm">
+                                                <i class="fa-solid fa-trash"></i> Verwijder
+                                            </button>
+                                        </form>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    <?php endforeach; ?>
-                    </div>
-                </section>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            
             <?php elseif ($page != 'banner'): ?>
                 <?php
-                // dynamic beheer voor page content (per page aangepaste velden)
                 $pageKey = $page;
-                // bepaal velden per page
                 $fields = ['title','body','image'];
                 $extraLabels = [];
                 switch ($pageKey) {
+                    case 'index':
+                        $fields = ['title','body','image'];
+                        break;
+                    case 'agenda-page':
+                        $fields = ['title','body','image'];
+                        break;
+                    case 'event':
+                        $fields = ['title','body','image'];
+                        break;
                     case 'terugblikken':
-                        $fields = ['title','date','time','body','image'];
-                        $extraLabels['date'] = 'Datum';
-                        $extraLabels['time'] = 'Tijd';
+                        $fields = ['title','body','image'];
                         break;
                     case 'contact':
                         $fields = ['title','body','address','email','map_embed','image'];
                         $extraLabels['address']='Adres';
                         $extraLabels['email']='E-mail';
-                        $extraLabels['map_embed']='Map embed';
+                        $extraLabels['map_embed']='Map embed (iframe)';
                         break;
                     case 'over':
+                        $fields = ['title','body','image'];
+                        break;
                     case 'verantwoord-ai':
                         $fields = ['title','body','image'];
                         break;
                     case 'wie-zijn-we':
-                        $fields = ['title','partners','image'];
-                        $extraLabels['partners']='Partners (comma-separated)';
+                        $fields = ['title','body','image'];
                         break;
                     case 'programma-actie':
+                        $fields = ['title','body','image'];
+                        break;
                     case 'programma-faciliteit':
+                        $fields = ['title','body','image'];
+                        break;
                     case 'programma-kennis':
                         $fields = ['title','body','image'];
                         break;
@@ -431,116 +655,187 @@ $page = $_GET['page'] ?? 'agenda';
                         $fields = ['title','body','image'];
                 }
 
-                // haal bestaande items van deze page_key
                 $stmt = $pdo->prepare('SELECT * FROM pages WHERE page_key = ? ORDER BY created_at DESC');
                 $stmt->execute([$pageKey]);
                 $pageItems = $stmt->fetchAll();
+
+                $pageNames = [
+                    'index' => 'Homepage',
+                    'agenda-page' => 'Agenda Pagina',
+                    'event' => 'Event Pagina',
+                    'terugblikken' => 'Terugblikken',
+                    'contact' => 'Contact',
+                    'over' => 'Voor wie?',
+                    'verantwoord-ai' => 'Verantwoord AI',
+                    'wie-zijn-we' => 'Wie zijn we?',
+                    'programma-actie' => 'Programma: Actie, Onderzoek & Ontwerp',
+                    'programma-faciliteit' => 'Programma: Faciliteit van het Lab',
+                    'programma-kennis' => 'Programma: Kennis & Vaardigheden',
+                ];
+                $pageName = $pageNames[$pageKey] ?? ucfirst(str_replace('-', ' ', $pageKey));
                 ?>
-                <section class="bg-white p-6 shadow-md mb-6">
-                    <h2 class="font-semibold mb-4">Beheer: <?php echo htmlspecialchars($pageKey); ?></h2>
-                    <form method="POST" enctype="multipart/form-data" class="space-y-4 bg-gray-50 p-4">
+                <div class="card p-6 mb-6">
+                    <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
+                        <i class="fa-solid fa-file-pen text-2xl text-[#00811F]"></i>
+                        <h2 class="text-2xl font-bold">Beheer: <?php echo htmlspecialchars($pageName); ?></h2>
+                    </div>
+                    <form method="POST" enctype="multipart/form-data" class="space-y-4 bg-gray-50 p-4 rounded">
                         <input type="hidden" name="page_action" value="<?php echo $editPage ? 'update_page' : 'create_page'; ?>">
+
                         <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
                         <?php if ($editPage): ?>
                             <input type="hidden" name="id" value="<?php echo (int)$editPage['id']; ?>">
                         <?php endif; ?>
 
                         <?php if (in_array('title',$fields)): ?>
-                            <div><label>Titel</label><input name="title" value="<?php echo htmlspecialchars($editPage['title'] ?? ''); ?>" class="w-full border px-3 py-2" /></div>
-                        <?php endif; ?>
-
-                        <?php if (in_array('date',$fields)): ?>
-                            <div class="grid grid-cols-2 gap-4"><div><label>Datum</label><input type="date" name="date" value="<?php echo htmlspecialchars($editPage ? ($editPage['meta'] ? json_decode($editPage['meta'], true)['date'] ?? '' : '') : ''); ?>" class="w-full border px-3 py-2" /></div>
-                            <div><label>Tijd</label><input type="time" name="time" value="<?php echo htmlspecialchars($editPage ? (json_decode($editPage['meta'] ?? 'null', true)['time'] ?? '') : ''); ?>" class="w-full border px-3 py-2" /></div></div>
+                            <div class="form-group">
+                                <label class="form-label">Titel *</label>
+                                <input name="title" value="<?php echo htmlspecialchars($editPage['title'] ?? ''); ?>" required class="form-input" />
+                            </div>
                         <?php endif; ?>
 
                         <?php if (in_array('body',$fields)): ?>
-                            <div><label>Beschrijving</label><textarea name="body" rows="4" class="w-full border px-3 py-2"><?php echo htmlspecialchars($editPage['body'] ?? ''); ?></textarea></div>
+                            <div class="form-group">
+                                <label class="form-label">Beschrijving</label>
+                                <textarea name="body" rows="5" class="form-textarea"><?php echo htmlspecialchars($editPage['body'] ?? ''); ?></textarea>
+                            </div>
                         <?php endif; ?>
 
                         <?php if (in_array('address',$fields)): ?>
-                            <div><label>Adres</label><input name="address" value="<?php echo htmlspecialchars($editPage ? (json_decode($editPage['meta'] ?? 'null', true)['address'] ?? '') : ''); ?>" class="w-full border px-3 py-2" /></div>
+                            <div class="form-group">
+                                <label class="form-label">Adres</label>
+                                <input name="address" value="<?php echo htmlspecialchars($editPage ? (json_decode($editPage['meta'] ?? 'null', true)['address'] ?? '') : ''); ?>" class="form-input" />
+                            </div>
                         <?php endif; ?>
+                        
                         <?php if (in_array('email',$fields)): ?>
-                            <div><label>E-mail</label><input name="email" value="<?php echo htmlspecialchars($editPage ? (json_decode($editPage['meta'] ?? 'null', true)['email'] ?? '') : ''); ?>" class="w-full border px-3 py-2" /></div>
+                            <div class="form-group">
+                                <label class="form-label">E-mail</label>
+                                <input type="email" name="email" value="<?php echo htmlspecialchars($editPage ? (json_decode($editPage['meta'] ?? 'null', true)['email'] ?? '') : ''); ?>" class="form-input" />
+                            </div>
                         <?php endif; ?>
+                        
                         <?php if (in_array('map_embed',$fields)): ?>
-                            <div><label>Map embed (iframe)</label><textarea name="map_embed" rows="3" class="w-full border px-3 py-2"><?php echo htmlspecialchars($editPage ? (json_decode($editPage['meta'] ?? 'null', true)['map_embed'] ?? '') : ''); ?></textarea></div>
-                        <?php endif; ?>
-                        <?php if (in_array('partners',$fields)): ?>
-                            <div><label>Partners</label><textarea name="partners" rows="3" class="w-full border px-3 py-2"><?php echo htmlspecialchars($editPage ? (json_decode($editPage['meta'] ?? 'null', true)['partners'] ?? '') : ''); ?></textarea></div>
+                            <div class="form-group">
+                                <label class="form-label">Google Map Embed (iframe code)</label>
+                                <textarea name="map_embed" rows="3" class="form-textarea" placeholder="Plak hier de iframe code van Google Maps"><?php echo htmlspecialchars($editPage ? (json_decode($editPage['meta'] ?? 'null', true)['map_embed'] ?? '') : ''); ?></textarea>
+                                <small class="text-gray-600">Ga naar Google Maps, zoek een locatie, klik op "Delen", selecteer "Kaart insluiten" en kopieer de code</small>
+                            </div>
                         <?php endif; ?>
 
-                        <div>
-                            <label>Afbeelding (optioneel)</label>
-                            <input type="file" name="page_image" accept="image/*" />
+                        <div class="form-group">
+                            <label class="form-label">Afbeelding (optioneel)</label>
+                            <input type="file" name="page_image" accept="image/*" class="form-input" />
                             <?php if (!empty($editPage['image'])): ?>
-                                <div class="mt-2"><small>Huidige afbeelding:</small><br><img src="uploads/<?php echo htmlspecialchars($editPage['image']); ?>" class="w-48 mt-2" alt=""></div>
+                                <div class="mt-3">
+                                    <small class="text-gray-600">Huidige afbeelding:</small>
+                                    <img src="uploads/<?php echo htmlspecialchars($editPage['image']); ?>" class="w-32 h-32 object-cover rounded mt-2" alt="">
+                                </div>
                             <?php endif; ?>
                         </div>
 
-                        <div><button class="bg-[#00811F] text-white px-4 py-2 rounded"><?php echo $editPage ? 'Opslaan' : 'Maak item'; ?></button>
-                            <?php if ($editPage): ?><a href="admin.php?page=<?php echo urlencode($pageKey); ?>" class="ml-2 px-4 py-2 border rounded">Annuleer</a><?php endif; ?>
+                        <div class="flex gap-2 pt-4 border-t">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa-solid fa-save"></i> <?php echo $editPage ? 'Opslaan' : 'Voeg toe'; ?>
+                            </button>
+                            <?php if ($editPage): ?>
+                                <a href="admin.php?page=<?php echo urlencode($pageKey); ?>" class="btn btn-secondary">
+                                    <i class="fa-solid fa-times"></i> Annuleer
+                                </a>
+                            <?php endif; ?>
                         </div>
                     </form>
-                </section>
+                </div>
 
-                <section class="bg-white p-6 shadow-md">
-                    <h3 class="font-semibold mb-4">Bestaande items</h3>
+                <div class="card p-6">
+                    <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
+                        <i class="fa-solid fa-list text-2xl text-[#00811F]"></i>
+                        <h3 class="text-xl font-bold">Bestaande Content</h3>
+                    </div>
                     <?php if (empty($pageItems)): ?>
-                        <div class="text-gray-600">Geen items voor deze pagina.</div>
-                    <?php else: foreach ($pageItems as $it): $metaArr = $it['meta'] ? json_decode($it['meta'], true) : []; ?>
-                        <div class="border p-4 mb-3 rounded flex justify-between items-start">
-                            <div>
-                                <strong><?php echo htmlspecialchars($it['title'] ?? ''); ?></strong>
-                                <div class="text-sm text-gray-600"><?php echo nl2br(htmlspecialchars($it['body'] ? mb_strimwidth($it['body'],0,200,'...') : '')); ?></div>
-                                <?php if (!empty($metaArr['address'])): ?><div class="text-sm">Adres: <?php echo htmlspecialchars($metaArr['address']); ?></div><?php endif; ?>
-                            </div>
-                            <div class="flex flex-col items-end gap-2">
-                                <?php if (!empty($it['image'])): ?><img src="uploads/<?php echo htmlspecialchars($it['image']); ?>" class="w-32 h-20 object-cover mb-2" alt=""><?php endif; ?>
-                                <div class="flex gap-2">
-                                    <a href="admin.php?edit_page=<?php echo (int)$it['id']; ?>&page=<?php echo urlencode($pageKey); ?>" class="px-3 py-1 border rounded">Bewerk</a>
-                                    <form method="POST" onsubmit="return confirm('Weet je het zeker dat je dit item wilt verwijderen?');" style="display:inline-block;">
-                                        <input type="hidden" name="page_action" value="delete_page">
-                                        <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
-                                        <input type="hidden" name="id" value="<?php echo (int)$it['id']; ?>">
-                                        <button class="px-3 py-1 border rounded text-red-600 hover:bg-red-100">Verwijder</button>
-                                    </form>
+                        <div class="text-center py-8 text-gray-500">
+                            <i class="fa-solid fa-inbox text-4xl mb-2"></i>
+                            <p>Geen content toegevoegd voor deze pagina</p>
+                        </div>
+                    <?php else: ?>
+                        <div class="space-y-4">
+                        <?php foreach ($pageItems as $it): $metaArr = $it['meta'] ? json_decode($it['meta'], true) : []; ?>
+                            <div class="border border-gray-200 rounded p-4 hover:shadow-md transition">
+                                <div class="flex justify-between items-start gap-4">
+                                    <div class="flex-1">
+                                        <h4 class="font-bold text-lg text-gray-800"><?php echo htmlspecialchars($it['title'] ?? ''); ?></h4>
+                                        <p class="text-sm text-gray-600 mt-1 line-clamp-2"><?php echo nl2br(htmlspecialchars($it['body'] ? mb_strimwidth($it['body'],0,150,'...') : '')); ?></p>
+                                        <?php if (!empty($metaArr['address'])): ?><p class="text-sm text-gray-500 mt-1"><i class="fa-solid fa-location-dot"></i> <?php echo htmlspecialchars($metaArr['address']); ?></p><?php endif; ?>
+                                    </div>
+                                    <div class="flex gap-2 flex-shrink-0">
+                                        <?php if (!empty($it['image'])): ?>
+                                            <img src="uploads/<?php echo htmlspecialchars($it['image']); ?>" class="w-20 h-20 object-cover rounded" alt="">
+                                        <?php endif; ?>
+                                        <div class="flex flex-col gap-1">
+                                            <a href="admin.php?edit_page=<?php echo (int)$it['id']; ?>&page=<?php echo urlencode($pageKey); ?>" class="btn btn-secondary btn-sm">
+                                                <i class="fa-solid fa-pencil"></i> Bewerk
+                                            </a>
+                                            <form method="POST" onsubmit="return confirm('Verwijder deze content?');" style="display:inline;">
+                                                <input type="hidden" name="page_action" value="delete_page">
+                                                <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
+                                                <input type="hidden" name="id" value="<?php echo (int)$it['id']; ?>">
+                                                <button type="submit" class="btn btn-danger btn-sm w-full">
+                                                    <i class="fa-solid fa-trash"></i> Verwijder
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+                        <?php endforeach; ?>
                         </div>
-                    <?php endforeach; endif; ?>
-                </section>
-             <?php elseif ($page == 'banner'): ?>
-    <h2 class="text-xl font-semibold mb-4">Banner Beheer</h2>
-    <div class="bg-white p-6 shadow-md rounded">
-        <h3 class="text-lg font-medium mb-4">Huidige Banners</h3>
-        <div class="flex gap-4 mb-6">
-            <div>
-                <p>Banner 1:</p>
-                <img src="<?php echo htmlspecialchars($banner1); ?>" alt="Banner 1" class="w-48 h-auto border">
-            </div>
-            <div>
-                <p>Banner 2:</p>
-                <img src="<?php echo htmlspecialchars($banner2); ?>" alt="Banner 2" class="w-48 h-auto border">
-            </div>
-        </div>
-        <form method="POST" enctype="multipart/form-data" class="space-y-4">
-            <input type="hidden" name="action" value="update_banner">
-            <div>
-                <label class="block text-sm font-medium">Nieuwe Banner 1:</label>
-                <input type="file" name="banner1" accept="image/*" class="mt-1">
-            </div>
-            <div>
-                <label class="block text-sm font-medium">Nieuwe Banner 2:</label>
-                <input type="file" name="banner2" accept="image/*" class="mt-1">
-            </div>
-            <button type="submit" class="bg-[#00811F] text-white px-4 py-2 rounded hover:bg-green-700">Update Banners</button>
-        </form>
-    </div>
-    <?php endif; ?>
+                    <?php endif; ?>
+                </div>
+            <?php elseif ($page == 'banner'): ?>
+                <div class="card p-6">
+                    <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
+                        <i class="fa-solid fa-image text-2xl text-[#00811F]"></i>
+                        <h2 class="text-2xl font-bold">Banner Beheer</h2>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <p class="font-semibold mb-2">Banner 1</p>
+                            <img src="<?php echo htmlspecialchars($banner1); ?>" alt="Banner 1" class="w-full h-auto border rounded-lg shadow">
+                        </div>
+                        <div>
+                            <p class="font-semibold mb-2">Banner 2</p>
+                            <img src="<?php echo htmlspecialchars($banner2); ?>" alt="Banner 2" class="w-full h-auto border rounded-lg shadow">
+                        </div>
+                    </div>
+                    
+                    <form method="POST" enctype="multipart/form-data" class="space-y-4">
+                        <input type="hidden" name="action" value="update_banner">
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="form-group">
+                                <label class="form-label">Vervang Banner 1</label>
+                                <input type="file" name="banner1" accept="image/*" class="form-input" />
+                                <small class="text-gray-600">Aanbevolen formaat: 1920x600px</small>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Vervang Banner 2</label>
+                                <input type="file" name="banner2" accept="image/*" class="form-input" />
+                                <small class="text-gray-600">Aanbevolen formaat: 1920x600px</small>
+                            </div>
+                        </div>
+                        
+                        <div class="flex gap-2 pt-4 border-t">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa-solid fa-save"></i> Banners Bijwerken
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 </main>
+
 </body>
 </html>
