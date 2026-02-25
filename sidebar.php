@@ -1,5 +1,4 @@
 <?php
-// Get current page for active state
 $current_page = basename($_SERVER['PHP_SELF']);
 ?>
 
@@ -109,12 +108,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const toggle = document.getElementById('sidebar-toggle');
     const submenuToggles = document.querySelectorAll('.sidebar-menu-toggle');
 
-    // Toggle sidebar
     toggle.addEventListener('click', function() {
         sidebar.classList.toggle('open');
     });
 
-    // Toggle submenus
     submenuToggles.forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
@@ -124,7 +121,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Close sidebar when clicking a link
     const sidebarLinks = document.querySelectorAll('.sidebar-menu a');
     sidebarLinks.forEach(link => {
         link.addEventListener('click', function() {

@@ -7,37 +7,30 @@ $dbname = "sociaalai";
 
 $conn = new mysqli($servername, $username, $password, $dbname);
 
-// Check connection
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Check if form is submitted
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $user = $_POST['username'];
     $pass = $_POST['password'];
 
-    // Validate input
     if (empty($user) || empty($pass)) {
         echo "Username and password are required.";
         exit;
     }
 
-    // Hash the password for security
     $hashed_password = password_hash($pass, PASSWORD_DEFAULT);
 
-    // Insert user into database
     $sql = "INSERT INTO accounts (email, wachtwoord) VALUES (?, ?)";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("ss", $user, $hashed_password);
 
     if ($stmt->execute()) {
         echo "Registration successful!";
-        // Audit log: new account created (performed by the registering user)
         $newId = $conn->insert_id;
         $safeUser = $conn->real_escape_string($user);
         $conn->query("INSERT INTO audit_logs (action, table_name, record_id, details, performed_by, created_at) VALUES ('create', 'accounts', '" . $newId . "', 'new account registered', '" . $safeUser . "', NOW())");
-        // Redirect to login page or success page
         header("Location: login.php");
         exit;
     } else {

@@ -123,6 +123,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             audit_log($pdo, 'update', 'settings', null, 'banner2 set to ' . $path, $currentUser);
         }
         $message = 'Banners bijgewerkt.';
+    } elseif ($action === 'reset_banners') {
+        $defaultBanner1 = 'images/banner_website_01.jpg';
+        $defaultBanner2 = 'images/banner_website_02.jpg';
+        $pdo->prepare("UPDATE settings SET setting_value = ? WHERE setting_key = 'banner1'")->execute([$defaultBanner1]);
+        $pdo->prepare("UPDATE settings SET setting_value = ? WHERE setting_key = 'banner2'")->execute([$defaultBanner2]);
+        audit_log($pdo, 'update', 'settings', null, 'banners reset to default', $currentUser);
+        $banner1 = $defaultBanner1;
+        $banner2 = $defaultBanner2;
+        $message = 'Banners zijn teruggezet naar de standaard waarden.';
     }
 }
 
@@ -830,6 +839,13 @@ $page = $_GET['page'] ?? 'agenda';
                                 <i class="fa-solid fa-save"></i> Banners Bijwerken
                             </button>
                         </div>
+                    </form>
+                    
+                    <form method="POST" onsubmit="return confirm('Weet je zeker dat je de banners wilt resetten naar de standaard afbeeldingen?');" class="mt-4 pt-4 border-t">
+                        <input type="hidden" name="action" value="reset_banners">
+                        <button type="submit" class="btn btn-secondary">
+                            <i class="fa-solid fa-rotate-left"></i> Reset naar Standaard Banners
+                        </button>
                     </form>
                 </div>
             <?php endif; ?>

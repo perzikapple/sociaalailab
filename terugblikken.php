@@ -2,11 +2,9 @@
 session_start();
 require 'db.php';
 
-// Fallback banners
 $banner1 = 'images/banner_website_01.jpg';
 $banner2 = 'images/banner_website_02.jpg';
 
-// Fallback page blocks
 $fallbackBlocks = [
     [
         'title' => 'Voorbeeld Terugblik',
@@ -16,7 +14,6 @@ $fallbackBlocks = [
     ]
 ];
 
-// Fallback events
 $fallbackEvents = [
     [
         'title' => 'Voorbeeld Voorbij Evenement',
@@ -34,7 +31,6 @@ try {
     if ($b1) $banner1 = $b1;
     if ($b2) $banner2 = $b2;
 } catch (Exception $e) {
-    // fallback blijft actief
 }
 
 try {
@@ -75,15 +71,12 @@ try {
     </div>
 </div>
 
-<!-- Navigatie -->
 <nav class="bg-white shadow-md">
     <div class="navigatie max-w-6xl mx-auto px-4 py-3 flex justify-center md:justify-between items-center">
-        <!-- Hamburger knop alleen op mobiel -->
         <button id="mobile-menu-toggle" class=" hamburger md:hidden self-end text-gray-700 focus:outline-none" aria-label="Open navigatie">
             <i class="fa-solid fa-bars text-2xl"></i>
         </button>
 
-        <!-- Menu links (exact dezelfde inhoud, alleen ingepakt + id + hidden-klasse) -->
         <div id="mobile-menu" class="menu hidden md:flex pr-5 space-x-8 font-medium items-center">
             <a href="index.php" class="menu inline-flex items-center gap-1 text-gray-700 hover:text-[#00811F] transition"><i class="fa-solid fa-house"></i> Voorpagina</a>
             <a href="agenda.php" class="menu text-gray-700 hover:text-[#00811F] transition">Agenda</a>
@@ -91,17 +84,13 @@ try {
             <a href="terugblikken.php" class="menu text-gray-700 hover:text-[#00811F] transition">Terugblikken</a>
             <a href="over.php" class="menu text-gray-700 hover:text-[#00811F] transition">Voor wie?</a>
 
-            <!-- Programma met dropdown -->
             <div class="relative" id="programma-dropdown">
-                <!-- Toggle knop -->
                 <button id="programma-toggle" aria-haspopup="true" aria-expanded="false" class="menu flex items-center gap-2 text-gray-700 hover:text-[#00811F] transition font-medium focus:outline-none">
                     <span>Wat doen we?</span>
-                    <!-- pijl die roteert bij open -->
                     
                 </button>
 
                 <div id="programma-menu" class="hidden absolute top-0 mt-8 w-56 bg-white border border-gray-200 shadow-lg py-2 z-50 focus:outline-none" role="menu" aria-labelledby="programma-toggle">
-                    <!-- Elke link is role=menuitem voor a11y -->
                     <a href="programma/kennis.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Kennis & vaardigheden</a>
                     <a href="programma/actie.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Actie, onderzoek & ontwerp</a>
                     <a href="programma/faciliteit.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Faciliteit van het Lab
@@ -119,7 +108,6 @@ try {
     </div>
 </nav>
 
-<!-- Pagina content -->
 <main>
     <div class="mobile flex items-center justify-center">
         <div class="bg-white p-6 shadow-lg max-w-xl mt-6 w-full border-r text-center">
@@ -131,7 +119,6 @@ try {
     </div>
 
     <?php
-    // Display custom text blocks from admin
     $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'terugblikken' ORDER BY created_at ASC");
     $stmt->execute();
     $pageBlocks = $stmt->fetchAll();
@@ -228,7 +215,6 @@ try {
 </footer>
 
 <script>
-// ...existing script code (dropdown menu, mobile menu, banners)...
     (function() {
         const toggle = document.getElementById('programma-toggle');
         const menu = document.getElementById('programma-menu');
