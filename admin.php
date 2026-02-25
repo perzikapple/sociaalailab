@@ -24,6 +24,37 @@ function handleUpload($fileField) {
     return ['name' => $imageName];
 }
 
+function formatEventDateDisplay($dateValue) {
+    if (empty($dateValue)) return '';
+    $ts = strtotime((string)$dateValue);
+    if ($ts === false) return (string)$dateValue;
+    $monthsNl = [
+        1 => 'januari',
+        2 => 'februari',
+        3 => 'maart',
+        4 => 'april',
+        5 => 'mei',
+        6 => 'juni',
+        7 => 'juli',
+        8 => 'augustus',
+        9 => 'september',
+        10 => 'oktober',
+        11 => 'november',
+        12 => 'december',
+    ];
+    $day = (int)date('j', $ts);
+    $month = $monthsNl[(int)date('n', $ts)] ?? date('F', $ts);
+    $year = date('Y', $ts);
+    return $day . ' ' . $month . ' ' . $year;
+}
+
+function formatEventTimeDisplay($timeValue) {
+    if (empty($timeValue)) return '';
+    $ts = strtotime((string)$timeValue);
+    if ($ts === false) return (string)$timeValue;
+    return date('H:i', $ts);
+}
+
 // Fetch current banners
 $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: 'images/banner_website_01.jpg';
 $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: 'images/banner_website_02.jpg';
@@ -477,6 +508,11 @@ $page = $_GET['page'] ?? 'agenda';
         <div class="flex items-center gap-2">
             <i class="fa-solid fa-gears text-2xl"></i>
             <h1 class="text-2xl font-bold">Admin Panel</h1>
+            <?php if (!empty($_SESSION['voornaam']) || !empty($_SESSION['user'])): ?>
+                <span class="text-sm md:text-base font-medium bg-white/20 px-3 py-1 rounded-full">
+                    Welkom <?php echo htmlspecialchars($_SESSION['voornaam'] ?? $_SESSION['user']); ?>
+                </span>
+            <?php endif; ?>
         </div>
         <div class="flex gap-3">
             <a href="index.php" class="btn btn-secondary text-sm">
@@ -645,9 +681,9 @@ $page = $_GET['page'] ?? 'agenda';
                                 <div class="event-info flex-1">
                                     <h3><?php echo htmlspecialchars($e['title']); ?></h3>
                                     <div class="event-meta">
-                                        <i class="fa-solid fa-calendar"></i> <?php echo htmlspecialchars($e['date']); ?>
+                                        <i class="fa-solid fa-calendar"></i> <?php echo htmlspecialchars(formatEventDateDisplay($e['date'])); ?>
                                         <?php if (!empty($e['time'])): ?>
-                                            <i class="fa-solid fa-clock ml-2"></i> <?php echo htmlspecialchars($e['time']); ?>
+                                            <i class="fa-solid fa-clock ml-2"></i> <?php echo htmlspecialchars(formatEventTimeDisplay($e['time'])); ?>
                                         <?php endif; ?>
                                         <?php if (!empty($e['location'])): ?>
                                             <i class="fa-solid fa-location-dot ml-2"></i> <?php echo htmlspecialchars($e['location']); ?>
