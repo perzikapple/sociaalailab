@@ -7,13 +7,14 @@ require 'helpers.php';
 $banner1 = 'images/banner_website_01.jpg';
 $banner2 = 'images/banner_website_02.jpg';
 
-// Fallback page blocks
-$fallbackBlocks = [
+$fallbackEvents = [
     [
-        'title' => 'Voorbeeld Event',
-        'body' => 'Dit is een voorbeeld van een event-tekstblok.',
-        'image' => '',
-        'meta' => null
+        'title' => 'Voorbeeld Evenement',
+        'date' => date('Y-m-d', strtotime('+7 days')),
+        'time' => '15:00',
+        'description' => 'Dit is een voorbeeld van een evenement.',
+        'location' => 'Rotterdam - Hillevliet 90',
+        'image' => ''
     ]
 ];
 
@@ -21,12 +22,19 @@ try {
     $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: $banner1;
     $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: $banner2;
 
-    seed_page_blocks($pdo, 'event', $fallbackBlocks);
-    $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'event' ORDER BY created_at ASC");
+    seed_events($pdo, $fallbackEvents);
+    
+    // Haal evenementen pagina intro blok op
+    $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'evenementen' ORDER BY created_at ASC");
     $stmt->execute();
     $pageBlocks = $stmt->fetchAll();
+    
+    $stmt = $pdo->prepare("SELECT * FROM events WHERE date >= CURDATE() AND date <= DATE_ADD(CURDATE(), INTERVAL 14 DAY) ORDER BY date, time");
+    $stmt->execute();
+    $events = $stmt->fetchAll();
 } catch (Exception $e) {
     $pageBlocks = [];
+    $events = [];
 }
 
 ?>
@@ -91,98 +99,67 @@ try {
 </nav>
 
 <main>
-    <?php
-    foreach ($pageBlocks as $block):
-        $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
-        $hasImage = !empty($block['image']);
-        $imageClass = $hasImage ? 'with-image' : '';
-    ?>
-        <section class="text-block <?php echo htmlspecialchars($imageClass); ?> bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
-            <?php if ($hasImage): ?>
-                <div class="text-block-image-container">
-                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" class="text-block-image">
-                </div>
-            <?php endif; ?>
-            <div class="text-block-content">
-                <?php if (!empty($block['title'])): ?>
-                    <h3 class="text-2xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($block['title']); ?></h3>
-                <?php endif; ?>
-                <?php if (!empty($block['body'])): ?>
-                    <div class="text-gray-700 leading-relaxed"><?php echo nl2br(htmlspecialchars($block['body'])); ?></div>
-                <?php endif; ?>
-            </div>
+    <?php foreach ($pageBlocks as $block): ?>
+        <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
+            <h1 class="text-3xl font-bold text-gray-900 mb-4"><?php echo htmlspecialchars($block['title']); ?></h1>
+            <p class="text-gray-700 text-lg"><?php echo nl2br(htmlspecialchars($block['body'])); ?></p>
         </section>
     <?php endforeach; ?>
-        <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
-        <div class="flex-1">
-        <span class="inline-block bg-[#00811F] text-white text-sm font-medium px-4 py-1 mb-4">
-            Evenement
-        </span>
-            <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900">  
-            OPEN MIDDAG EN OPEN AVOND IN HET AI LAB
-            Ontdek wat slimme technologie kan betekenen 
-            </h2>
-           <div class="space-y-4">
-                <div class="flex items-center space-x-3">
-                    <i class="fa-regular fa-calendar text-[#00811F] ml-[2px]  text-3xl"></i>
-                    <p class="text-gray-700"><strong> Wanneer:</strong> Woensdag 17 december</p>
-                </div>
-                <div class="flex items-center space-x-3">
-                    <i class="fa-regular fa-clock text-[#00811F] text-3xl"></i>
-                    <p class="text-gray-700"><strong>Hoelaat:</strong> Tussen 15:00 en 21:00 uur</p>
-                </div>
-                <div class="flex items-center space-x-3">
-                    <i class="fa-solid fa-location-dot text-[#00811F] ml-1 text-3xl"></i>
-                    <?php $loc = 'Rotterdam - Hillevliet 90'; ?>
-                    <p class="text-gray-700 ml-1 "><strong>Waar:</strong> <a href="<?php echo googleMapsDirectionsUrl($loc); ?>" target="_blank" rel="noopener noreferrer" class="underline hover:text-[#00811F]"><?php echo htmlspecialchars($loc); ?></a></p>
-                </div>
-                <div class="flex mb-6 space-x-3">
-                    <i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>
-                    <p class="text-gray-700 pb-3 "><strong> Wat:</strong> Ontdek de wereld van slimme technologie in het Sociaal AI Lab Rotterdam.
-                    Op 17 december staan de deuren wijd open voor iedereen die nieuwsgierig is naar AI.
-                    Praat met Digiderius, speel het Waardenspel en zie de Wijkbot in actie.
-                    Maak een digitale kerstkaart, ontdek hoe technologie de stad ingaat en wat AI voor
-                    jou kan betekenen. Vrije inloop.</p></div>
-            </div>
-        </div>
-        <div class="flex-1">
-            <img src="images/event/open_middag%26open_avond.jpg" alt="SociaalAI Inspiratiedag" class="w-full h-auto object-cover shadow-md">
-        </div>
-    </section>
-    <div class="mobile flex justify-evenly">
 
-        <div class="margin bg-white shadow-lg p-4">
-            <div class=" p-6  ">
-                <h3 class="text-xl font-semibold ">Tijdens de open middag kunt u:</h3>
-                <ul class="list-disc list-inside">
-                    <li>In gesprek met Digiderius: Wat als je gewoon in gesprek kan gaan met AI?</li>
-                    <li>Het Waardenspel spelen: wat vindt u belangrijk in uw omgeving?</li>
-                    <li> De Wijkbot zien werken</li>
-                    <li> Uw eigen digitale kerstkaart maken</li>
-                    <li> De Labkar bekijken: waarmee we slimme technologie naar andere plekken in de stad brengen</li>
-                </ul>
-            </div>
-        </div>
-
-                <div class=" margin bg-white shadow-lg p-4">
-                    <div class=" p-6">
-                        <h3 class="text-xl font-semibold ">Wat is er te beleven?</h3>
-                        <ul class="list-disc list-inside">
-                            <li>In gesprek met Digiderius</li>
-                            <li>Ervaren hoe praten en een gesprek met AI werkt.</li>
-                            <li>Het Waardenspel</li>
-                            <li>Onderzoeken wat belangrijk is in de wijk en hoe technologie kan ondersteunen.</li>
-                            <li>De Wijkbot in actie</li>
-                            <li>Bekijk hoe deze robot in huis, tuin, keuken of in een huis van de wijk zou kunnen worden ingezet.</li>
-                            <li>De Labkar</li>
-                            <li>Ontdekken hoe we slimme technologie naar andere plekken in de stad brengen.</li>
-                            <li>Digitale kerstkaarten maken</li>
-                            <li>Een creatieve kennismaking met slimme tools</li>
-                        </ul>
-
+    <?php if (empty($events)): ?>
+        <section class="bg-white shadow-lg p-8 max-w-4xl mx-auto my-12 text-center">
+            <h2 class="text-2xl font-semibold text-gray-900 mb-2">Geen evenementen in de komende 2 weken</h2>
+            <p class="text-gray-700">Houd de agenda in de gaten voor nieuwe activiteiten.</p>
+        </section>
+    <?php else: ?>
+        <?php foreach ($events as $event): ?>
+            <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
+                <div class="flex-1">
+                    <span class="inline-block bg-[#00811F] text-white text-sm font-medium px-4 py-1 mb-4">Evenement</span>
+                    <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($event['title']); ?></h2>
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-3">
+                            <i class="fa-regular fa-calendar text-[#00811F] ml-[2px]  text-3xl"></i>
+                            <?php $dateDisplay = formatEventDateDisplay($event['date']); $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : ''; ?>
+                            <p class="text-gray-700"><strong> Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?><?php if ($timeDisplay) echo ' - ' . htmlspecialchars($timeDisplay); ?></p>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i class="fa-solid fa-location-dot text-[#00811F] ml-1 text-3xl"></i>
+                            <?php $loc = $event['location'] ?: 'Rotterdam - Hillevliet 90'; ?>
+                            <p class="text-gray-700 ml-1 "><strong>Waar:</strong> <a href="<?php echo googleMapsDirectionsUrl($loc); ?>" target="_blank" rel="noopener noreferrer" class="underline hover:text-[#00811F]"><?php echo htmlspecialchars($loc); ?></a></p>
+                        </div>
+                        <div class="flex mb-6 space-x-3">
+                            <i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>
+                            <p class="text-gray-700 pb-3 "><strong> Wat:</strong> <?php echo nl2br(htmlspecialchars($event['description'])); ?></p>
+                        </div>
                     </div>
-                </div>     
-</div></main>
+                    <?php if (!empty($event['show_signup_button'])): ?>
+                    <button type="button" class="inschrijven-button mt-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition" data-event-title="<?php echo htmlspecialchars($event['title']); ?>">
+                        Inschrijven
+                    </button>
+                    <?php endif; ?>
+                </div>
+                <?php if ($event['image']): ?>
+                <div class="flex-1">
+                    <img src="uploads/<?php echo htmlspecialchars($event['image']); ?>" alt="" class="w-full h-auto object-cover shadow-md">
+                </div>
+                <?php endif; ?>
+            </section>
+        <?php endforeach; ?>
+    <?php endif; ?>
+</main>
+
+<div id="signup-modal" class="hidden fixed top-0 left-0 right-0 bg-green-100 border-b-4 border-[#00811F] p-4 z-50 shadow-lg" role="alert">
+    <div class="max-w-6xl mx-auto flex items-center justify-between gap-4">
+        <div>
+            <h2 class="font-semibold text-gray-900">Inschrijving ontvangen!</h2>
+            <p id="signup-modal-body" class="text-gray-700 mt-1">Je inschrijving is ontvangen. We nemen snel contact met je op.</p>
+        </div>
+        <button type="button" id="signup-modal-close" class="text-gray-600 hover:text-gray-900 flex-shrink-0" aria-label="Sluiten">
+            <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+    </div>
+</div>
 
 <footer class="bg-white mt-16 shadow-inner">
     <div class="flex justify-evenly py-6 items-center space-x-4">
@@ -309,10 +286,40 @@ setInterval(() => {
   banners[current].classList.add('active');
 }, 10000);
 
-</script>
+(function () {
+    const buttons = document.querySelectorAll('.inschrijven-button');
+    const modal = document.getElementById('signup-modal');
+    const body = document.getElementById('signup-modal-body');
+    const closeBtn = document.getElementById('signup-modal-close');
+    if (!buttons.length || !modal || !body || !closeBtn) return;
 
-</body>
-</html>
+    let closeTimeout = null;
+
+    function closeModal() {
+        modal.classList.add('hidden');
+        if (closeTimeout) clearTimeout(closeTimeout);
+    }
+
+    function openModal(eventTitle) {
+        body.textContent = 'Je inschrijving voor ' + eventTitle + ' is ontvangen. We nemen snel contact met je op.';
+        modal.classList.remove('hidden');
+        
+        // Auto-close after 5 seconds
+        if (closeTimeout) clearTimeout(closeTimeout);
+        closeTimeout = setTimeout(closeModal, 5000);
+    }
+
+    buttons.forEach((button) => {
+        button.addEventListener('click', function () {
+            const title = this.getAttribute('data-event-title') || 'dit evenement';
+            openModal(title);
+        });
+    });
+
+    closeBtn.addEventListener('click', closeModal);
+})();
+
+</script>
 
 <style>
 .banner-wrapper {
@@ -370,6 +377,6 @@ setInterval(() => {
         }
       
     }
-</style></div>
+</style>
 </body>
 </html>

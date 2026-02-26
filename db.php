@@ -53,6 +53,9 @@ try {
     if (!in_array('updated_by', $columns)) {
         $pdo->exec("ALTER TABLE events ADD COLUMN updated_by VARCHAR(255) DEFAULT NULL");
     }
+    if (!in_array('show_signup_button', $columns)) {
+        $pdo->exec("ALTER TABLE events ADD COLUMN show_signup_button TINYINT(1) DEFAULT 1");
+    }
 
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS settings (
@@ -63,6 +66,20 @@ try {
     ");
     $pdo->exec("INSERT IGNORE INTO settings (setting_key, setting_value) VALUES ('banner1', 'images/banner_website_01.jpg')");
     $pdo->exec("INSERT IGNORE INTO settings (setting_key, setting_value) VALUES ('banner2', 'images/banner_website_02.jpg')");
+    
+    // Seed default evenementen pagina blok
+    $pdo->exec("
+        INSERT IGNORE INTO pages (page_key, title, body, image, meta, created_at, updated_at)
+        VALUES (
+            'evenementen',
+            'Evenementen',
+            'Dit is de evenementen pagina. Hier zie je alle evenementen voor de komende 2 weken.',
+            NULL,
+            NULL,
+            NOW(),
+            NOW()
+        )
+    ");
     $pdo->exec("CREATE TABLE IF NOT EXISTS audit_logs (
             id INT AUTO_INCREMENT PRIMARY KEY,
             action VARCHAR(50) NOT NULL,
