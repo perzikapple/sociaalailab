@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $message = 'Invalid email format.';
     } else {
-        $stmt = $pdo->prepare("SELECT wachtwoord, admin, voornaam FROM accounts WHERE email = ?");
+        $stmt = $pdo->prepare("SELECT wachtwoord, admin FROM accounts WHERE email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
         if ($user && $user['wachtwoord'] === $pass) {
