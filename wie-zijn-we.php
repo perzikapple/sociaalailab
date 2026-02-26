@@ -51,7 +51,7 @@ try {
 
 <nav class="bg-white shadow-md">
     <div class="navigatie max-w-6xl mx-auto px-4 py-3 flex justify-center md:justify-between items-center">
-        <button id="mobile-menu-toggle" class=" hamburger md:hidden self-end text-gray-700 focus:outline-none" aria-label="Open navigatie">
+        <button id="mobile-menu-toggle" class=" hamburger md:hidden self-end text-gray-700 focus:outline-none" aria-label="Open navigatie" aria-expanded="false">
             <i class="fa-solid fa-bars text-2xl"></i>
         </button>
 
@@ -329,7 +329,9 @@ try {
         if (!mobileToggle || !mobileMenu) return;
 
         mobileToggle.addEventListener('click', function () {
-            mobileMenu.classList.toggle('hidden');
+            const isHidden = mobileMenu.classList.toggle('hidden');
+            mobileMenu.classList.toggle('open', !isHidden);
+            mobileToggle.setAttribute('aria-expanded', (!isHidden).toString());
         });
     })();
 
@@ -346,61 +348,3 @@ setInterval(() => {
 
 </body>
 </html>
-
-<style>
-.banner-wrapper {
-  display: grid;
-}
-
-.banner {
-  grid-area: 1 / 1; 
-}
-
-.banner {
-  opacity: 0;
-  transition: opacity 1s ease;
-}
-
-.banner.active {
-  opacity: 1;
-}
-
-.slide {
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  opacity: 0;
-  transition: opacity 1s ease-in-out;
-}
-
-.slide.active {
-  opacity: 1;
-}
-
-@media (max-width: 768px) {
-}
-    @media (max-width: 1024px) {
-        .menu{
-            margin-top: 10px;
-            margin-bottom: 10px;
-        }
-        .navigatie{
-            display: flex;
-            flex-direction: column;
-            justify-content: space-evenly;
-            align-items: flex-start;
-        }
-          .slide{
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-        }
-    }
-     @media (min-width: 760px) {
-        .hamburger{
-            display: none;
-        }
-      
-    }
-</style>

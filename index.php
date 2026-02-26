@@ -72,7 +72,7 @@ try {
 
 <nav class="bg-white shadow-md">
     <div class="navigatie max-w-6xl mx-auto px-4 py-3 flex justify-center md:justify-between items-center">
-        <button id="mobile-menu-toggle" class=" hamburger md:hidden self-end text-gray-700 focus:outline-none" aria-label="Open navigatie">
+        <button id="mobile-menu-toggle" class=" hamburger md:hidden self-end text-gray-700 focus:outline-none" aria-label="Open navigatie" aria-expanded="false">
             <i class="fa-solid fa-bars text-2xl"></i>
         </button>
 
@@ -349,7 +349,10 @@ foreach ($events as $event):
         if (!mobileToggle || !mobileMenu) return;
 
         mobileToggle.addEventListener('click', function () {
-            mobileMenu.classList.toggle('hidden');
+            // toggle visibility and keep ARIA state up to date
+            const isHidden = mobileMenu.classList.toggle('hidden');
+            mobileMenu.classList.toggle('open', !isHidden);
+            mobileToggle.setAttribute('aria-expanded', (!isHidden).toString());
         });
     })();
 
