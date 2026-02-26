@@ -1,7 +1,6 @@
 ﻿<?php 
 session_start();
 require 'db.php';
-require 'helpers.php';
 
 $banner1 = 'images/banner_website_01.jpg';
 $banner2 = 'images/banner_website_02.jpg';
@@ -52,7 +51,7 @@ try {
 
 <nav class="bg-white shadow-md">
     <div class="navigatie max-w-6xl mx-auto px-4 py-3 flex justify-center md:justify-between items-center">
-        <button id="mobile-menu-toggle" class=" hamburger md:hidden self-end text-gray-700 focus:outline-none" aria-label="Open navigatie" aria-expanded="false">
+        <button id="mobile-menu-toggle" class=" hamburger md:hidden self-end text-gray-700 focus:outline-none" aria-label="Open navigatie">
             <i class="fa-solid fa-bars text-2xl"></i>
         </button>
 
@@ -112,13 +111,11 @@ foreach ($events as $event):
             <div class="space-y-4">
                 <div class="flex items-center space-x-3">
                     <i class="fa-regular fa-calendar text-[#00811F] ml-[2px]  text-3xl"></i>
-                    <?php $dateDisplay = formatEventDateDisplay($event['date']); $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : ''; ?>
-                    <p class="text-gray-700"><strong> Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?><?php if ($timeDisplay) echo ' - ' . htmlspecialchars($timeDisplay); ?></p>
+                    <p class="text-gray-700"><strong> Wanneer:</strong> <?php echo htmlspecialchars($event['date']); ?> <?php echo $event['time'] ? '- ' . htmlspecialchars($event['time']) : ''; ?></p>
                 </div>
                 <div class="flex items-center space-x-3">
                     <i class="fa-solid fa-location-dot text-[#00811F] ml-1 text-3xl"></i>
-                    <?php $loc = $event['location'] ?: 'Rotterdam - Hillevliet 90'; ?>
-                    <p class="text-gray-700 ml-1 "><strong>Waar:</strong> <a href="<?php echo googleMapsDirectionsUrl($loc); ?>" target="_blank" rel="noopener noreferrer" class="underline hover:text-[#00811F]"><?php echo htmlspecialchars($loc); ?></a></p>
+                    <p class="text-gray-700 ml-1 "><strong>Waar:</strong> <?php echo htmlspecialchars($event['location'] ?: 'Rotterdam - Hillevliet 90'); ?></p>
                 </div>
                 <div class="flex mb-6 space-x-3">
                     <i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>
@@ -126,9 +123,11 @@ foreach ($events as $event):
                 </div>
             </div>
         </div>
+        <?php if ($event['image']): ?>
         <div class="flex-1">
-            <img src="<?php echo $event['image'] ? 'uploads/' . htmlspecialchars($event['image']) : 'images/event/Agenda_event_2_Studenten_en_bewoners_verkennen_de_sociale_invloed_van_AI.jpg'; ?>" alt="" class="w-full h-auto object-cover shadow-md">
+            <img src="uploads/<?php echo htmlspecialchars($event['image']); ?>" alt="" class="w-full h-auto object-cover shadow-md">
         </div>
+        <?php endif; ?>
     </section>
 <?php endforeach; ?>
 
@@ -136,7 +135,32 @@ foreach ($events as $event):
     <a href="admin.php" title="Voeg evenement toe" class="fixed bottom-6 right-6 bg-[#00811F] text-white rounded-full w-12 h-12 flex items-center justify-center text-3xl shadow-lg">+</a>
 <?php endif; ?>
 </main>
-<?php include __DIR__ . '/footer.php'; ?>
+
+<footer class="bg-white mt-16 shadow-inner">
+    <div class="flex justify-evenly py-6 items-center space-x-4">
+
+        <div class="w-32 h-20 flex items-center justify-center">
+            <img alt="logo techniek collage Rotterdam" src="images/Techniek_College_Rotterdam_logoOP.png" class="max-w-full max-h-full object-contain">
+        </div>
+
+        <div class="w-32 h-20 flex items-center justify-center">
+            <img alt="logo hogeschool Rotterdam" src="images/Hogeschool_Rotterdam.png" class="max-w-full max-h-full object-contain">
+        </div>
+
+        <div class="w-32 h-20 flex items-center justify-center">
+            <img alt="logo gemeente Rotterdam " src="images/Gemeente_Rotterdam.png" class="max-w-full max-h-full object-contain">
+        </div>
+
+        <div class="w-32 h-20 flex items-center justify-center">
+            <img alt="erasmus universiteit" src="images/Erasmus_uni.png" class="max-w-full max-h-full object-contain">
+        </div>
+
+        <div class="w-32 h-20 flex items-center justify-center">
+            <img alt="Erasmus Centre for Data Analytics" src="images/Erasmus_DataOP.png" class="max-w-full max-h-full object-contain">
+        </div>
+
+    </div>
+</footer>
 
 <script>
     (function() {
@@ -224,9 +248,7 @@ foreach ($events as $event):
         if (!mobileToggle || !mobileMenu) return;
 
         mobileToggle.addEventListener('click', function () {
-            const isHidden = mobileMenu.classList.toggle('hidden');
-            mobileMenu.classList.toggle('open', !isHidden);
-            mobileToggle.setAttribute('aria-expanded', (!isHidden).toString());
+            mobileMenu.classList.toggle('hidden');
         });
     })();
 
@@ -244,6 +266,62 @@ setInterval(() => {
 </body>
 </html>
 
-</div>
+<style>
+.banner-wrapper {
+  display: grid;
+}
+
+.banner {
+  grid-area: 1 / 1;
+}
+
+.banner {
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+
+.banner.active {
+  opacity: 1;
+}
+
+.slide {
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 1s ease-in-out;
+}
+
+.slide.active {
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+}
+    @media (max-width: 1024px) {
+        .menu{
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+        .navigatie{
+            display: flex;
+            flex-direction: column;
+            justify-content: space-evenly;
+            align-items: flex-start;
+        }
+          .slide{
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+    }
+     @media (min-width: 760px) {
+        .hamburger{
+            display: none;
+        }
+      
+    }
+</style></div>
 </body>
 </html>

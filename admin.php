@@ -70,6 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $time = $_POST['time'] ?? null;
         $description = trim($_POST['description'] ?? '');
         $location = trim($_POST['location'] ?? '');
+        $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
 
         if ($title === '' || $date === '') {
             $message = 'Titel en datum zijn verplicht.';
@@ -80,8 +81,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $imageName = $upload['name'] ?? null;
                 // voeg updated_at en updated_by toe bij insert
-                $stmt = $pdo->prepare('INSERT INTO events (title, date, time, description, image, location, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, NOW(), ?)');
-                $stmt->execute([$title, $date, $time ?: null, $description, $imageName, $location ?: null, $currentUser]);
+                $stmt = $pdo->prepare('INSERT INTO events (title, date, time, description, image, location, show_signup_button, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?)');
+                $stmt->execute([$title, $date, $time ?: null, $description, $imageName, $location ?: null, $showSignupButton, $currentUser]);
                 $eventId = $pdo->lastInsertId();
                 // Audit log: event created
                 audit_log($pdo, 'create', 'events', $eventId, 'title: ' . $title, $currentUser);
@@ -97,6 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $time = $_POST['time'] ?? null;
         $description = trim($_POST['description'] ?? '');
         $location = trim($_POST['location'] ?? '');
+        $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
 
         if ($title === '' || $date === '') {
             $message = 'Titel en datum zijn verplicht.';
@@ -113,8 +115,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $imageName = $upload['name'] ?? $oldImage;
                 // update nu ook updated_at en updated_by
-                $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, time=?, description=?, image=?, location=?, updated_at=NOW(), updated_by=? WHERE id=?');
-                $stmt->execute([$title, $date, $time ?: null, $description, $imageName, $location ?: null, $currentUser, $id]);
+                $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, time=?, description=?, image=?, location=?, show_signup_button=?, updated_at=NOW(), updated_by=? WHERE id=?');
+                $stmt->execute([$title, $date, $time ?: null, $description, $imageName, $location ?: null, $showSignupButton, $currentUser, $id]);
                 // Audit log: event updated
                 audit_log($pdo, 'update', 'events', $id, 'title: ' . $title, $currentUser);
 
@@ -185,117 +187,116 @@ if ($pageAction === 'create_page') {
         $message = 'Page key en titel zijn verplicht.';
     } else {
         $meta = [];
-        if (!empty($_POST['date'])) $meta['date'] = $_POST['date'];
-        if (!empty($_POST['time'])) $meta['time'] = $_POST['time'];
-        if (!empty($_POST['address'])) $meta['address'] = $_POST['address'];
-        if (!empty($_POST['email'])) $meta['email'] = $_POST['email'];
-        if (!empty($_POST['map_embed'])) $meta['map_embed'] = $_POST['map_embed'];
-        if (!empty($_POST['partners'])) $meta['partners'] = $_POST['partners'];
+
+        // Extra velden voor evenementen pagina
+        if ($pageKey === 'evenementen') {
+            if (!empty($_POST['date'])) $meta['date'] = $_POST['date'];
+            if (!empty($_POST['time'])) $meta['time'] = $_POST['time'];
+            if (!empty($_POST['location'])) $meta['location'] = $_POST['location'];
+            if (!empty($_POST['image'])) $meta['image'] = $_POST['image'];
+        }
+
+        // Extra velden voor contact pagina
+        if ($pageKey === 'contact') {
+            if (!empty($_POST['address'])) $meta['address'] = $_POST['address'];
+            if (!empty($_POST['email'])) $meta['email'] = $_POST['email'];
+            if (!empty($_POST['map_embed'])) $meta['map_embed'] = $_POST['map_embed'];
+        }
 
         $upload = handleUpload('page_image');
         $imageName = $upload['name'] ?? null;
 
-        // Get the max sort_order for this page_key and increment it
-        $stmt = $pdo->prepare('SELECT MAX(sort_order) FROM pages WHERE page_key = ?');
-        $stmt->execute([$pageKey]);
-        $maxOrder = (int)$stmt->fetchColumn() ?? 0;
-        $newOrder = $maxOrder + 1;
+        $stmt = $pdo->prepare(
+            'INSERT INTO pages (page_key, title, body, image, meta, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, NOW(), NOW())'
+        );
 
-        $stmt = $pdo->prepare('INSERT INTO pages (page_key, title, body, image, meta, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())');
-        $stmt->execute([$pageKey, $title, $body, $imageName, json_encode($meta), $newOrder]);
+        $stmt->execute([
+            $pageKey,
+            $title,
+            $body,
+            $imageName,
+            json_encode($meta)
+        ]);
+
         audit_log($pdo, 'create', 'pages', $pdo->lastInsertId(), 'page_key: ' . $pageKey, $currentUser);
+
         $message = 'Pagina item aangemaakt.';
     }
 } elseif ($pageAction === 'update_page') {
+
     $id = (int)($_POST['id'] ?? 0);
     $pageKey = $_POST['page_key'] ?? '';
     $title = trim($_POST['title'] ?? '');
     $body = trim($_POST['body'] ?? '');
 
     if ($id && $title) {
+
         $stmt = $pdo->prepare('SELECT image FROM pages WHERE id = ?');
         $stmt->execute([$id]);
         $row = $stmt->fetch();
         $oldImage = $row ? $row['image'] : null;
 
         $meta = [];
-        if (!empty($_POST['date'])) $meta['date'] = $_POST['date'];
-        if (!empty($_POST['time'])) $meta['time'] = $_POST['time'];
-        if (!empty($_POST['address'])) $meta['address'] = $_POST['address'];
-        if (!empty($_POST['email'])) $meta['email'] = $_POST['email'];
-        if (!empty($_POST['map_embed'])) $meta['map_embed'] = $_POST['map_embed'];
-        if (!empty($_POST['partners'])) $meta['partners'] = $_POST['partners'];
+
+        if ($pageKey === 'evenementen') {
+            if (!empty($_POST['date'])) $meta['date'] = $_POST['date'];
+            if (!empty($_POST['time'])) $meta['time'] = $_POST['time'];
+            if (!empty($_POST['location'])) $meta['location'] = $_POST['location'];
+            if (!empty($_POST['image'])) $meta['image'] = $_POST['image'];
+        }
+
+        if ($pageKey === 'contact') {
+            if (!empty($_POST['address'])) $meta['address'] = $_POST['address'];
+            if (!empty($_POST['email'])) $meta['email'] = $_POST['email'];
+            if (!empty($_POST['map_embed'])) $meta['map_embed'] = $_POST['map_embed'];
+        }
 
         $upload = handleUpload('page_image');
         $imageName = $upload['name'] ?? $oldImage;
 
-        $stmt = $pdo->prepare('UPDATE pages SET title=?, body=?, image=?, meta=?, updated_at=NOW() WHERE id=?');
-        $stmt->execute([$title, $body, $imageName, json_encode($meta), $id]);
+        $stmt = $pdo->prepare(
+            'UPDATE pages
+             SET title=?, body=?, image=?, meta=?, updated_at=NOW()
+             WHERE id=?'
+        );
+
+        $stmt->execute([
+            $title,
+            $body,
+            $imageName,
+            json_encode($meta),
+            $id
+        ]);
 
         if (!empty($upload['name']) && $oldImage && file_exists(__DIR__ . '/uploads/' . $oldImage)) {
             @unlink(__DIR__ . '/uploads/' . $oldImage);
         }
+
         audit_log($pdo, 'update', 'pages', $id, 'page_key: ' . $pageKey, $currentUser);
+
         $message = 'Pagina item bijgewerkt.';
     }
 } elseif ($pageAction === 'delete_page') {
+
     $id = (int)($_POST['id'] ?? 0);
+
     if ($id) {
+
         $stmt = $pdo->prepare('SELECT image FROM pages WHERE id = ?');
         $stmt->execute([$id]);
         $row = $stmt->fetch();
+
         if ($row && $row['image'] && file_exists(__DIR__ . '/uploads/' . $row['image'])) {
             @unlink(__DIR__ . '/uploads/' . $row['image']);
         }
+
         $stmt = $pdo->prepare('DELETE FROM pages WHERE id = ?');
         $stmt->execute([$id]);
+
         audit_log($pdo, 'delete', 'pages', $id, null, $currentUser);
+
         $message = 'Pagina item verwijderd.';
-    }
-} elseif ($pageAction === 'reorder_page') {
-    $id = (int)($_POST['id'] ?? 0);
-    $direction = $_POST['direction'] ?? '';
-    $pageKey = $_POST['page_key'] ?? '';
-    
-    if ($id && $direction && $pageKey) {
-        // Get current sort_order
-        $stmt = $pdo->prepare('SELECT sort_order FROM pages WHERE id = ? AND page_key = ?');
-        $stmt->execute([$id, $pageKey]);
-        $current = $stmt->fetch();
-        
-        if ($current) {
-            $currentOrder = (int)$current['sort_order'];
-            
-            if ($direction === 'up') {
-                // Move up: find item with sort_order = currentOrder - 1 and swap
-                $stmt = $pdo->prepare('SELECT id, sort_order FROM pages WHERE page_key = ? AND sort_order < ? ORDER BY sort_order DESC LIMIT 1');
-                $stmt->execute([$pageKey, $currentOrder]);
-                $targetItem = $stmt->fetch();
-                
-                if ($targetItem) {
-                    $targetOrder = (int)$targetItem['sort_order'];
-                    // Swap the sort_order values
-                    $pdo->prepare('UPDATE pages SET sort_order = ? WHERE id = ?')->execute([$targetOrder, $id]);
-                    $pdo->prepare('UPDATE pages SET sort_order = ? WHERE id = ?')->execute([$currentOrder, $targetItem['id']]);
-                    audit_log($pdo, 'update', 'pages', $id, 'moved up', $currentUser);
-                }
-            } elseif ($direction === 'down') {
-                // Move down: find item with sort_order = currentOrder + 1 and swap
-                $stmt = $pdo->prepare('SELECT id, sort_order FROM pages WHERE page_key = ? AND sort_order > ? ORDER BY sort_order ASC LIMIT 1');
-                $stmt->execute([$pageKey, $currentOrder]);
-                $targetItem = $stmt->fetch();
-                
-                if ($targetItem) {
-                    $targetOrder = (int)$targetItem['sort_order'];
-                    // Swap the sort_order values
-                    $pdo->prepare('UPDATE pages SET sort_order = ? WHERE id = ?')->execute([$targetOrder, $id]);
-                    $pdo->prepare('UPDATE pages SET sort_order = ? WHERE id = ?')->execute([$currentOrder, $targetItem['id']]);
-                    audit_log($pdo, 'update', 'pages', $id, 'moved down', $currentUser);
-                }
-            }
-            header('Location: admin.php?page=' . urlencode($pageKey) . '&ok=reorder');
-            exit;
-        }
     }
 }
 
@@ -550,34 +551,6 @@ $page = $_GET['page'] ?? 'agenda';
         .event-image-wrap.is-open .event-image-preview {
             transform: translateY(0) scale(1);
         }
-
-        /* make action buttons larger, stacked and easy to tap on mobile */
-        .event-actions {
-            flex-direction: column;
-            align-items: stretch;
-        }
-        .event-actions .btn {
-            width: 100%;
-            justify-content: center; /* center icon+text */
-            padding: 1rem; /* larger tap area */
-            font-size: 1rem;
-        }
-        .event-actions .btn + .btn {
-            margin-top: 0.5rem;
-        }
-
-        /* smaller event cards and text on phones */
-        .event-item {
-            flex-direction: column;
-            align-items: stretch;
-            padding: 0.75rem;
-        }
-        .event-info h3 {
-            font-size: 1rem;
-        }
-        .event-meta {
-            font-size: 0.8rem;
-        }
     }
 </style>
 </head>
@@ -622,6 +595,9 @@ $page = $_GET['page'] ?? 'agenda';
                 <a href="admin.php?page=agenda" class="sidebar-link <?php echo $page==='agenda' ? 'active' : ''; ?>">
                     <i class="fa-solid fa-calendar"></i> Agenda
                 </a>
+                <a href="admin.php?page=evenementen" class="sidebar-link <?php echo $page==='evenementen' ? 'active' : ''; ?>">
+                    <i class="fa-solid fa-calendar-check"></i> Evenementen
+                </a>
                 <a href="admin.php?page=banner" class="sidebar-link <?php echo $page==='banner' ? 'active' : ''; ?>">
                     <i class="fa-solid fa-image"></i> Banners
                 </a>
@@ -629,9 +605,6 @@ $page = $_GET['page'] ?? 'agenda';
                 <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Pagina's</div>
                 <a href="admin.php?page=index" class="sidebar-link <?php echo $page==='index' ? 'active' : ''; ?>">
                     <i class="fa-solid fa-house"></i> Homepage
-                </a>
-                <a href="admin.php?page=event" class="sidebar-link <?php echo $page==='event' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-calendar-check"></i> Evenementen
                 </a>
                 <a href="admin.php?page=terugblikken" class="sidebar-link <?php echo $page==='terugblikken' ? 'active' : ''; ?>">
                     <i class="fa-solid fa-history"></i> Terugblikken
@@ -712,6 +685,10 @@ $page = $_GET['page'] ?? 'agenda';
                                 <div class="mt-2"><small>Huidige afbeelding:</small><br><img src="uploads/<?php echo htmlspecialchars($editEvent['image']); ?>" class="w-48 mt-2" alt=""></div>
                             <?php endif; ?>
                         </div>
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="show_signup_button" name="show_signup_button" class="w-4 h-4" <?php echo (!empty($editEvent['show_signup_button']) ? 'checked' : ''); ?> />
+                            <label for="show_signup_button" class="text-sm">Toon inschrijf knop op evenementenpagina</label>
+                        </div>
                         <div class="flex gap-2">
                             <button class="bg-[#00811F] text-white px-4 py-2 rounded">Opslaan</button>
                             <a href="admin.php?page=agenda" class="px-4 py-2 border rounded">Annuleer</a>
@@ -746,6 +723,10 @@ $page = $_GET['page'] ?? 'agenda';
                         <div>
                             <label>Foto (optioneel)</label>
                             <input type="file" name="image" accept="image/*" />
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="show_signup_button_create" name="show_signup_button" class="w-4 h-4" checked />
+                            <label for="show_signup_button_create" class="text-sm">Toon inschrijf knop op evenementenpagina</label>
                         </div>
                         <button class="bg-[#00811F] text-white px-4 py-2 rounded">Maak evenement</button>
                     </form>
@@ -822,32 +803,21 @@ $page = $_GET['page'] ?? 'agenda';
                         $extraLabels['email']='E-mail';
                         $extraLabels['map_embed']='Map embed (iframe)';
                         break;
+                    case 'evenementen':
+                        $fields = ['title','body','date','time','location','image'];
+                        $extraLabels['date']='Wanneer (datum)';
+                        $extraLabels['time']='Tijd';
+                        $extraLabels['location']='Waar (locatie)';
+                        break;
                     default:
                         $fields = ['title','body','image'];
                 }
-
-                $stmt = $pdo->prepare('SELECT * FROM pages WHERE page_key = ? ORDER BY sort_order ASC');
-                $stmt->execute([$pageKey]);
-                $pageItems = $stmt->fetchAll();
-
-                $pageNames = [
-                    'index' => 'Homepage',
-                    'event' => 'Evenementen',
-                    'terugblikken' => 'Terugblikken',
-                    'contact' => 'Contact',
-                    'over' => 'Voor wie?',
-                    'verantwoord-ai' => 'Verantwoord AI',
-                    'wie-zijn-we' => 'Wie zijn we?',
-                    'programma-actie' => 'Programma: Actie, Onderzoek & Ontwerp',
-                    'programma-faciliteit' => 'Programma: Faciliteit van het Lab',
-                    'programma-kennis' => 'Programma: Kennis & Vaardigheden',
-                ];
-                $pageName = $pageNames[$pageKey] ?? ucfirst(str_replace('-', ' ', $pageKey));
                 ?>
+
                 <div class="card p-6">
                     <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
                         <i class="fa-solid fa-file-pen text-2xl text-[#00811F]"></i>
-                        <h2 class="text-2xl font-bold">Beheer: <?php echo htmlspecialchars($pageName); ?></h2>
+                        <h2 class="text-2xl font-bold">Beheer: <?php echo htmlspecialchars($pageKey); ?></h2>
                     </div>
 
                     <?php if ($editPage): ?>
@@ -924,10 +894,7 @@ $page = $_GET['page'] ?? 'agenda';
                             </div>
                         <?php else: ?>
                             <div class="space-y-4">
-                            <?php foreach ($pageItems as $index => $it): 
-                                $isFirst = ($index === 0);
-                                $isLast = ($index === count($pageItems) - 1);
-                            ?>
+                            <?php foreach ($pageItems as $it): ?>
                                 <div class="border border-gray-200 rounded p-4 hover:shadow-md transition">
                                     <div class="flex justify-between items-start gap-4">
                                         <div class="flex-1">
@@ -939,39 +906,6 @@ $page = $_GET['page'] ?? 'agenda';
                                                 <img src="uploads/<?php echo htmlspecialchars($it['image']); ?>" class="w-20 h-20 object-cover rounded" alt="">
                                             <?php endif; ?>
                                             <div class="flex flex-col gap-1">
-                                                <div class="flex gap-1">
-                                                    <?php if (!$isFirst): ?>
-                                                        <form method="POST" style="display:inline;">
-                                                            <input type="hidden" name="page_action" value="reorder_page">
-                                                            <input type="hidden" name="id" value="<?php echo (int)$it['id']; ?>">
-                                                            <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
-                                                            <input type="hidden" name="direction" value="up">
-                                                            <button type="submit" class="btn btn-secondary btn-sm" title="Verplaats omhoog">
-                                                                <i class="fa-solid fa-arrow-up"></i>
-                                                            </button>
-                                                        </form>
-                                                    <?php else: ?>
-                                                        <div class="btn btn-secondary btn-sm opacity-50 cursor-not-allowed" title="Eerste item">
-                                                            <i class="fa-solid fa-arrow-up"></i>
-                                                        </div>
-                                                    <?php endif; ?>
-                                                    
-                                                    <?php if (!$isLast): ?>
-                                                        <form method="POST" style="display:inline;">
-                                                            <input type="hidden" name="page_action" value="reorder_page">
-                                                            <input type="hidden" name="id" value="<?php echo (int)$it['id']; ?>">
-                                                            <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
-                                                            <input type="hidden" name="direction" value="down">
-                                                            <button type="submit" class="btn btn-secondary btn-sm" title="Verplaats omlaag">
-                                                                <i class="fa-solid fa-arrow-down"></i>
-                                                            </button>
-                                                        </form>
-                                                    <?php else: ?>
-                                                        <div class="btn btn-secondary btn-sm opacity-50 cursor-not-allowed" title="Laatste item">
-                                                            <i class="fa-solid fa-arrow-down"></i>
-                                                        </div>
-                                                    <?php endif; ?>
-                                                </div>
                                                 <a href="admin.php?edit_page=<?php echo (int)$it['id']; ?>&page=<?php echo urlencode($pageKey); ?>" class="btn btn-secondary btn-sm">
                                                     <i class="fa-solid fa-pencil"></i> Bewerk
                                                 </a>
