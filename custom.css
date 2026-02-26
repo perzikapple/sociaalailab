@@ -244,3 +244,80 @@ img, video {
         font-size: 0.9rem;
     }
 }
+
+/* Footer enhancements */
+.site-footer .footer-logos {
+  gap: 0.75rem;
+}
+.site-footer .footer-logo img {
+  max-width: 130px;
+  width: 100%;
+  height: auto;
+  display: block;
+}
+@media (max-width: 640px) {
+  .site-footer {
+    margin-top: 1.5rem;
+  }
+  .site-footer .footer-logo {
+    width: 40%;
+    max-width: 140px;
+  }
+}
+@media (min-width: 641px) and (max-width: 1024px) {
+  .site-footer .footer-logo {
+    width: 28%;
+    max-width: 160px;
+  }
+}
+@media (min-width: 1025px) {
+  .site-footer .footer-logo {
+    width: auto;
+  }
+}
+
+
+/* Footer improvements: responsive logo grid and sizing */
+.site-footer {
+  background-color: #8bb330;
+  padding: 2rem 1rem;
+}
+.site-footer .footer-logos {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  /* logos already sized via other rules */
+}
+.site-footer .footer-logo {
+  flex: 0 0 auto;
+}
+.site-footer .footer-logo img {
+  max-width: 140px;
+  max-height: 70px;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+@media (min-width: 768px) {
+  .site-footer .footer-logo img {
+    max-width: 180px;
+    max-height: 90px;
+  }
+}
+
+@media (max-width: 480px) {
+  .site-footer {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  .site-footer .footer-heading {
+    font-size: 1rem;
+  }
+  .site-footer .footer-logos {
+    gap: 0.6rem;
+  }
+}
+

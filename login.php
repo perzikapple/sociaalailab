@@ -17,57 +17,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $message = 'Invalid email format.';
     } else {
-        $stmt = $pdo->prepare("SELECT wachtwoord, admin, voornaam FROM accounts WHERE email = ?");
-        $stmt->execute([$email]);
-        $user = $stmt->fetch();
-        if ($user && $user['wachtwoord'] === $pass) {
-            $_SESSION['user'] = $email;
-            $_SESSION['admin'] = $user['admin'];
-            $_SESSION['voornaam'] = $user['voornaam'] ?? '';
-            header('Location: index.php');
-            exit;
-        } else {
-            $message = 'Invalid email or password.';
-        }
-    }
-}
-?>
-
-<!doctype html>
-<html lang="nl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="preload" as="style" href="build/assets/app-DozK-03z.css"><link rel="modulepreload" as="script" href="build/assets/app-CAiCLEjY.js"><link rel="stylesheet" href="build/assets/app-DozK-03z.css"><link rel="stylesheet" href="custom.css"><script type="module" src="build/assets/app-CAiCLEjY.js"></script>
-    <title>Login - SociaalAI Lab</title>
-    <meta name="description" content="Log in bij het SociaalAI Lab Rotterdam.">
-    <link rel="icon" type="image/png" href="images/Pixels_icon.png">
-    <link rel="stylesheet" href="ajax/libs/font-awesome/6.5.0/css/all.min.css">
-</head>
-
-<body class="bg-gradient-to-br from-[#00811F] to-[#b9eb34]">
-
-<div class="banner-wrapper">
-    <div class="banner banner-1 active">
-        <img class="" src="<?php echo htmlspecialchars($banner1); ?>">
-    </div>
-    <div class="banner banner-2">
-        <img class="" src="<?php echo htmlspecialchars($banner2); ?>">
-    </div>
-</div>
-
-<nav class="bg-white shadow-md">
-    <div class="navigatie max-w-6xl mx-auto px-4 py-3 flex justify-center md:justify-between items-center">
-        <button id="mobile-menu-toggle" class=" hamburger md:hidden self-end text-gray-700 focus:outline-none" aria-label="Open navigatie" aria-expanded="false">
-            <i class="fa-solid fa-bars text-2xl"></i>
-        </button>
-
-        <div id="mobile-menu" class="menu hidden md:flex pr-5 space-x-8 font-medium items-center">
-            <a href="index.php" class="menu inline-flex items-center gap-1 text-gray-700 hover:text-[#00811F] transition"><i class="fa-solid fa-house"></i> Voorpagina</a>
-            <a href="agenda.php" class="menu text-gray-700 hover:text-[#00811F] transition">Agenda</a>
-            <a href="terugblikken.php" class="menu text-gray-700 hover:text-[#00811F] transition">Terugblikken</a>
-            <a href="over.php" class="menu text-gray-700 hover:text-[#00811F] transition">Voor wie?</a>
-
             <div class="relative" id="programma-dropdown">
                 <button id="programma-toggle" aria-haspopup="true" aria-expanded="false" class="menu flex items-center gap-2 text-gray-700 hover:text-[#00811F] transition font-medium focus:outline-none">
                     <span>Wat doen we?</span>
@@ -132,30 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </section>
 </main>
 
-<footer class="bg-white mt-16 shadow-inner">
-    <div class="flex justify-evenly py-6 items-center space-x-4">
-        <div class="w-32 h-20 flex items-center justify-center">
-            <img alt="logo techniek collage Rotterdam" src="images/Techniek_College_Rotterdam_logoOP.png" class="max-w-full max-h-full object-contain">
-        </div>
-
-        <div class="w-32 h-20 flex items-center justify-center">
-            <img alt="logo hogeschool Rotterdam" src="images/Hogeschool_Rotterdam.png" class="max-w-full max-h-full object-contain">
-        </div>
-
-        <div class="w-32 h-20 flex items-center justify-center">
-            <img alt="logo gemeente Rotterdam " src="images/Gemeente_Rotterdam.png" class="max-w-full max-h-full object-contain">
-        </div>
-
-        <div class="w-32 h-20 flex items-center justify-center">
-            <img alt="erasmus universiteit" src="images/Erasmus_uni.png" class="max-w-full max-h-full object-contain">
-        </div>
-
-        <div class="w-32 h-20 flex items-center justify-center">
-            <img alt="Erasmus Centre for Data Analytics" src="images/Erasmus_DataOP.png" class="max-w-full max-h-full object-contain">
-        </div>
-
-    </div>
-</footer>
+<?php include __DIR__ . '/footer.php'; ?>
 
 <script>
     (function() {

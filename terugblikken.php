@@ -13,32 +13,6 @@ $fallbackBlocks = [
         'image' => '',
         'meta' => null
     ]
-];
-
-$fallbackEvents = [
-    [
-        'title' => 'Voorbeeld Voorbij Evenement',
-        'date' => date('Y-m-d', strtotime('-7 days')),
-        'time' => '19:00',
-        'description' => 'Dit is een voorbeeld van een afgelopen evenement.',
-        'location' => 'Rotterdam - Hillevliet 90',
-        'image' => ''
-    ]
-];
-
-try {
-    $b1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn();
-    $b2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn();
-    if ($b1) $banner1 = $b1;
-    if ($b2) $banner2 = $b2;
-} catch (Exception $e) {
-}
-
-try {
-    $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'terugblikken' ORDER BY created_at ASC");
-    seed_page_blocks($pdo, 'terugblikken', $fallbackBlocks);
-    $stmt->execute();
-    $pageBlocks = $stmt->fetchAll();
 
     seed_events($pdo, $fallbackEvents);
     $stmt = $pdo->prepare("SELECT * FROM events WHERE date < CURDATE() ORDER BY date DESC, time DESC");
@@ -48,33 +22,7 @@ try {
     $pageBlocks = [];
     $events = [];
 }
-?>
-<!doctype html>
-<html lang="nl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="preload" as="style" href="build/assets/app-DozK-03z.css"><link rel="modulepreload" as="script" href="build/assets/app-CAiCLEjY.js"><link rel="stylesheet" href="build/assets/app-DozK-03z.css"><link rel="stylesheet" href="custom.css"><script type="module" src="build/assets/app-CAiCLEjY.js"></script>    <title>Terugblik - Evenementen</title>
-    <meta name="description" content="SociaalAI helpt inwoners sterker te staan in een steeds digitalere wereld. We doen dit door Rotterdammers actief mee te laten denken, praten en beslissen over kunstmatige intelligentie.">
-    <link rel="icon" type="image/png" href="images/Pixels_icon.png">
-    <link rel="stylesheet" href="ajax/libs/font-awesome/6.5.0/css/all.min.css">
-</head>
 
-<body class="bg-gradient-to-br from-[#00811F] to-[#b9eb34]">
-
-
-<div class="banner-wrapper">
-    <div class="banner banner-1 active">
-        <img class="" src="<?php echo htmlspecialchars($banner1); ?>">
-    </div>
-    <div class="banner banner-2">
-        <img class="" src="<?php echo htmlspecialchars($banner2); ?>">
-    </div>
-</div>
-
-<nav class="bg-white shadow-md">
-    <div class="navigatie max-w-6xl mx-auto px-4 py-3 flex justify-center md:justify-between items-center">
-        <button id="mobile-menu-toggle" class=" hamburger md:hidden self-end text-gray-700 focus:outline-none" aria-label="Open navigatie" aria-expanded="false">
             <i class="fa-solid fa-bars text-2xl"></i>
         </button>
 
@@ -197,25 +145,7 @@ try {
     <?php endif; ?>
 </main>
 
-<footer class="bg-white mt-16 shadow-inner">
-    <div class="flex justify-evenly py-6 items-center space-x-4">
-        <div class="w-32 h-20 flex items-center justify-center">
-            <img alt="logo techniek collage Rotterdam" src="images/Techniek_College_Rotterdam_logoOP.png" class="max-w-full max-h-full object-contain">
-        </div>
-        <div class="w-32 h-20 flex items-center justify-center">
-            <img alt="logo hogeschool Rotterdam" src="images/Hogeschool_Rotterdam.png" class="max-w-full max-h-full object-contain">
-        </div>
-        <div class="w-32 h-20 flex items-center justify-center">
-            <img alt="logo gemeente Rotterdam " src="images/Gemeente_Rotterdam.png" class="max-w-full max-h-full object-contain">
-        </div>
-        <div class="w-32 h-20 flex items-center justify-center">
-            <img alt="erasmus universiteit" src="images/Erasmus_uni.png" class="max-w-full max-h-full object-contain">
-        </div>
-        <div class="w-32 h-20 flex items-center justify-center">
-            <img alt="Erasmus Centre for Data Analytics" src="images/Erasmus_DataOP.png" class="max-w-full max-h-full object-contain">
-        </div>
-    </div>
-</footer>
+<?php include __DIR__ . '/footer.php'; ?>
 
 <script>
     (function() {
