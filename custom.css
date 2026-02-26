@@ -126,3 +126,198 @@
     height: auto;
     border-radius: 0.5rem;
 }
+
+/* --- responsive enhancements --- */
+/* ensure all images and media scale within their containers */
+img, video {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* container utility for consistent padding */
+.container {
+    width: 100%;
+    padding: 0 1rem;
+    box-sizing: border-box;
+    margin: 0 auto;
+    max-width: 1200px;
+}
+
+/* mobile-first layout adjustments */
+.flexrow {
+    display: flex;
+    flex-direction: column;
+}
+
+@media (min-width: 1024px) {
+    .flexrow {
+        flex-direction: row;
+    }
+}
+
+/* make hamburger visible on small screens and hide on larger ones */
+.hamburger {
+    display: block;
+    /* small upward offset on mobile so there’s a 10px gap above */
+}
+
+@media (min-width: 768px) {
+    .hamburger {
+        display: none;
+    }
+}
+
+/* stack nav items vertically on narrow viewports (only the top-level wrapper) */
+#mobile-menu {
+    display: none;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+}
+
+/* visible variant overrides for the wrapper */
+#mobile-menu.open,
+#mobile-menu:not(.hidden) {
+    display: flex;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+}
+
+/* make each direct child of the wrapper stack neatly and occupy full width */
+#mobile-menu.open > *,
+#mobile-menu:not(.hidden) > * {
+    display: block;
+    width: 100%;
+    text-align: left;
+}
+
+/* mobile-only overlay behavior: transform the drop‑down into a scrollable panel */
+@media (max-width: 767px) {
+    /* keep parent positioned so top:100% refers to its bottom */
+    .navigatie {
+        position: relative;
+        z-index: 49; /* ensure menu appears above other content but below header if needed */
+    }
+    /* wrapper slides down by expanding height */
+    #mobile-menu {
+        position: absolute;
+        /* start just below the hamburger button; subtract a bit to pull the panel up */
+        top: calc(100% - 10px);
+        left: 0;
+        right: 0;
+        background: white;
+        z-index: 50;
+        max-height: 0;
+        overflow-y: hidden;
+        padding: 0;
+        transition: max-height 0.3s ease, padding 0.3s ease;
+    }
+    #mobile-menu.open {
+        max-height: 90vh;
+        overflow-y: auto;
+        padding: 1rem 0;
+    }
+    /* reinforce full-width links inside the panel */
+    #mobile-menu.open > * {
+        width: 100%;
+    }
+}
+
+@media (min-width: 768px) {
+    #mobile-menu {
+        display: flex !important;
+        flex-direction: row;
+        gap: 1rem;
+        flex-wrap: nowrap;
+    }
+    #mobile-menu > a,
+    #mobile-menu > .relative {
+        white-space: nowrap;
+    }
+}
+
+/* small font-size tweak for tiny screens */
+@media (max-width: 480px) {
+    body {
+        font-size: 0.9rem;
+    }
+}
+
+/* Footer enhancements */
+.site-footer .footer-logos {
+  gap: 0.75rem;
+}
+.site-footer .footer-logo img {
+  max-width: 130px;
+  width: 100%;
+  height: auto;
+  display: block;
+}
+@media (max-width: 640px) {
+  .site-footer {
+    margin-top: 1.5rem;
+  }
+  .site-footer .footer-logo {
+    width: 40%;
+    max-width: 140px;
+  }
+}
+@media (min-width: 641px) and (max-width: 1024px) {
+  .site-footer .footer-logo {
+    width: 28%;
+    max-width: 160px;
+  }
+}
+@media (min-width: 1025px) {
+  .site-footer .footer-logo {
+    width: auto;
+  }
+}
+
+
+/* Footer improvements: responsive logo grid and sizing */
+.site-footer {
+  background-color: #8bb330;
+  padding: 2rem 1rem;
+}
+.site-footer .footer-logos {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  /* logos already sized via other rules */
+}
+.site-footer .footer-logo {
+  flex: 0 0 auto;
+}
+.site-footer .footer-logo img {
+  max-width: 140px;
+  max-height: 70px;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+@media (min-width: 768px) {
+  .site-footer .footer-logo img {
+    max-width: 180px;
+    max-height: 90px;
+  }
+}
+
+@media (max-width: 480px) {
+  .site-footer {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  .site-footer .footer-heading {
+    font-size: 1rem;
+  }
+  .site-footer .footer-logos {
+    gap: 0.6rem;
+  }
+}
+

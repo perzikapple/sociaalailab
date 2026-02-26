@@ -14,33 +14,8 @@ $fallbackBlocks = [
         'image' => '',
         'meta' => null
     ]
-];
+    <?php include __DIR__ . '/../footer.php'; ?>
 
-try {
-    $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: $banner1;
-    $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: $banner2;
-    $banner1 = str_replace(['images/', 'uploads/'], ['../images/', '../uploads/'], $banner1);
-    $banner2 = str_replace(['images/', 'uploads/'], ['../images/', '../uploads/'], $banner2);
-
-    seed_page_blocks($pdo, 'programma-kennis', $fallbackBlocks);
-    $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'programma-kennis' ORDER BY created_at ASC");
-    $stmt->execute();
-    $pageBlocks = $stmt->fetchAll();
-} catch (Exception $e) {
-    $pageBlocks = [];
-}
-
-?>
-
-<!doctype html>
-<html lang="nl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="preload" as="style" href="../build/assets/app-DozK-03z.css"><link rel="modulepreload" as="script" href="../build/assets/app-CAiCLEjY.js"><link rel="stylesheet" href="../build/assets/app-DozK-03z.css"><link rel="stylesheet" href="../custom.css"><script type="module" src="../build/assets/app-CAiCLEjY.js"></script>    <title>hoogtenpunten</title>
-    <meta name="description" content="SociaalAI helpt inwoners sterker te staan in een steeds digitalere wereld. We doen dit door Rotterdammers actief mee te laten denken, praten en beslissen over kunstmatige intelligentie.">
-    <link rel="icon" type="image/png" href="../images/Pixels_icon.png">
-    <link rel="stylesheet" href="../ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 
 <body class="bg-gradient-to-br from-[#00811F] to-[#b9eb34]">
@@ -52,33 +27,8 @@ try {
     <div class="banner banner-2">
         <img class="" src="<?php echo htmlspecialchars($banner2); ?>">
     </div>
-</div>
+    <?php include __DIR__ . '/../footer.php'; ?>
 
-<!-- Navigatie -->
-<nav class="bg-white shadow-md">
-    <div class="navigatie max-w-6xl mx-auto px-4 py-3 flex justify-center md:justify-between items-center">
-        <!-- Hamburger knop alleen op mobiel -->
-        <button id="mobile-menu-toggle" class=" hamburger md:hidden self-end text-gray-700 focus:outline-none" aria-label="Open navigatie">
-            <i class="fa-solid fa-bars text-2xl"></i>
-        </button>
-
-        <!-- Menu links -->
-        <div id="mobile-menu" class="menu hidden md:flex pr-5 space-x-8 font-medium items-center">
-            <a href="../index.php" class="menu inline-flex items-center gap-1 text-gray-700 hover:text-[#00811F] transition"><i class="fa-solid fa-house"></i> Voorpagina</a>
-            <a href="../agenda.php" class="menu text-gray-700 hover:text-[#00811F] transition">Agenda</a>
-            <a href="../terugblikken.php" class="menu text-gray-700 hover:text-[#00811F] transition">Terugblikken</a>
-            <a href="../over.php" class="menu text-gray-700 hover:text-[#00811F] transition">Voor wie?</a>
-
-            <!-- Programma met dropdown -->
-            <div class="relative" id="programma-dropdown">
-                <button id="programma-toggle" aria-haspopup="true" aria-expanded="false" class="menu flex items-center gap-2 text-gray-700 hover:text-[#00811F] transition font-medium focus:outline-none">
-                    <span>Wat doen we?</span>
-                </button>
-
-                <div id="programma-menu" class="hidden absolute top-0 mt-8 w-56 bg-white border border-gray-200 shadow-lg py-2 z-50 focus:outline-none" role="menu" aria-labelledby="programma-toggle">
-                    <a href="kennis.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Kennis & vaardigheden</a>
-                    <a href="actie.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Actie, onderzoek & ontwerp</a>
-                    <a href="faciliteit.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Faciliteit van het Lab</a>
                 </div>
             </div>
 
@@ -207,31 +157,7 @@ try {
             </div>
 </div></main>
 
-<footer class="bg-white mt-16 shadow-inner">
-    <div class="flex justify-evenly py-6 items-center space-x-4">
-
-        <div class="w-32 h-20 flex items-center justify-center">
-            <img alt="logo techniek collage Rotterdam" src="../images/Techniek_College_Rotterdam_logoOP.png" class="max-w-full max-h-full object-contain">
-        </div>
-
-        <div class="w-32 h-20 flex items-center justify-center">
-            <img alt="logo hogeschool Rotterdam" src="../images/Hogeschool_Rotterdam.png" class="max-w-full max-h-full object-contain">
-        </div>
-
-        <div class="w-32 h-20 flex items-center justify-center">
-            <img alt="logo gemeente Rotterdam " src="../images/Gemeente_Rotterdam.png" class="max-w-full max-h-full object-contain">
-        </div>
-
-        <div class="w-32 h-20 flex items-center justify-center">
-            <img alt="erasmus universiteit" src="../images/Erasmus_uni.png" class="max-w-full max-h-full object-contain">
-        </div>
-
-        <div class="w-32 h-20 flex items-center justify-center">
-            <img alt="Erasmus Centre for Data Analytics" src="../images/Erasmus_DataOP.png" class="max-w-full max-h-full object-contain">
-        </div>
-
-    </div>
-</footer>
+<?php include __DIR__ . '/../footer.php'; ?>
 
 <script>
     (function() {
@@ -310,7 +236,9 @@ try {
         if (!mobileToggle || !mobileMenu) return;
 
         mobileToggle.addEventListener('click', function () {
-            mobileMenu.classList.toggle('hidden');
+            const isHidden = mobileMenu.classList.toggle('hidden');
+            mobileMenu.classList.toggle('open', !isHidden);
+            mobileToggle.setAttribute('aria-expanded', (!isHidden).toString());
         });
     })();
 
@@ -327,40 +255,4 @@ try {
 </body>
 </html>
 
-<style>
-.banner-wrapper {
-  display: grid;
-}
 
-.banner {
-  grid-area: 1 / 1;
-}
-
-.banner {
-  opacity: 0;
-  transition: opacity 1s ease;
-}
-
-.banner.active {
-  opacity: 1;
-}
-
-@media (max-width: 1024px) {
-    .menu{
-        margin-top: 10px;
-        margin-bottom: 10px;
-    }
-    .navigatie{
-        display: flex;
-        flex-direction: column;
-        justify-content: space-evenly;
-        align-items: flex-start;
-    }
-}
-
-@media (min-width: 760px) {
-    .hamburger{
-        display: none;
-    }
-}
-</style>

@@ -9,12 +9,10 @@ $banner2 = 'images/banner_website_02.jpg';
 
 $fallbackEvents = [
     [
-        'title' => 'Voorbeeld Evenement',
-        'date' => date('Y-m-d', strtotime('+7 days')),
-        'time' => '15:00',
-        'description' => 'Dit is een voorbeeld van een evenement.',
-        'location' => 'Rotterdam - Hillevliet 90',
-        'image' => ''
+        'title' => 'Voorbeeld Event',
+        'body' => 'Dit is een voorbeeld van een event-tekstblok.',
+        'image' => '',
+        'meta' => null
     ]
 ];
 
@@ -22,19 +20,12 @@ try {
     $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: $banner1;
     $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: $banner2;
 
-    seed_events($pdo, $fallbackEvents);
-    
-    // Haal evenementen pagina intro blok op
-    $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'evenementen' ORDER BY created_at ASC");
+    seed_page_blocks($pdo, 'event', $fallbackBlocks);
+    $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'event' ORDER BY created_at ASC");
     $stmt->execute();
     $pageBlocks = $stmt->fetchAll();
-    
-    $stmt = $pdo->prepare("SELECT * FROM events WHERE date >= CURDATE() AND date <= DATE_ADD(CURDATE(), INTERVAL 14 DAY) ORDER BY date, time");
-    $stmt->execute();
-    $events = $stmt->fetchAll();
 } catch (Exception $e) {
     $pageBlocks = [];
-    $events = [];
 }
 
 ?>
@@ -63,7 +54,7 @@ try {
 
 <nav class="bg-white shadow-md">
     <div class="navigatie max-w-6xl mx-auto px-4 py-3 flex justify-center md:justify-between items-center">
-        <button id="mobile-menu-toggle" class=" hamburger md:hidden self-end text-gray-700 focus:outline-none" aria-label="Open navigatie">
+        <button id="mobile-menu-toggle" class=" hamburger md:hidden self-end text-gray-700 focus:outline-none" aria-label="Open navigatie" aria-expanded="false">
             <i class="fa-solid fa-bars text-2xl"></i>
         </button>
 
@@ -161,31 +152,7 @@ try {
     </div>
 </div>
 
-<footer class="bg-white mt-16 shadow-inner">
-    <div class="flex justify-evenly py-6 items-center space-x-4">
-
-        <div class="w-32 h-20 flex items-center justify-center">
-            <img alt="logo techniek collage Rotterdam" src="images/Techniek_College_Rotterdam_logoOP.png" class="max-w-full max-h-full object-contain">
-        </div>
-
-        <div class="w-32 h-20 flex items-center justify-center">
-            <img alt="logo hogeschool Rotterdam" src="images/Hogeschool_Rotterdam.png" class="max-w-full max-h-full object-contain">
-        </div>
-
-        <div class="w-32 h-20 flex items-center justify-center">
-            <img alt="logo gemeente Rotterdam " src="images/Gemeente_Rotterdam.png" class="max-w-full max-h-full object-contain">
-        </div>
-
-        <div class="w-32 h-20 flex items-center justify-center">
-            <img alt="erasmus universiteit" src="images/Erasmus_uni.png" class="max-w-full max-h-full object-contain">
-        </div>
-
-        <div class="w-32 h-20 flex items-center justify-center">
-            <img alt="Erasmus Centre for Data Analytics" src="images/Erasmus_DataOP.png" class="max-w-full max-h-full object-contain">
-        </div>
-
-    </div>
-</footer>
+<?php include __DIR__ . '/footer.php'; ?>
 
 <script>
     (function() {
@@ -273,7 +240,9 @@ try {
         if (!mobileToggle || !mobileMenu) return;
 
         mobileToggle.addEventListener('click', function () {
-            mobileMenu.classList.toggle('hidden');
+            const isHidden = mobileMenu.classList.toggle('hidden');
+            mobileMenu.classList.toggle('open', !isHidden);
+            mobileToggle.setAttribute('aria-expanded', (!isHidden).toString());
         });
     })();
 
@@ -377,6 +346,6 @@ setInterval(() => {
         }
       
     }
-</style>
+</style></div>
 </body>
 </html>

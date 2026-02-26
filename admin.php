@@ -195,8 +195,14 @@ if ($pageAction === 'create_page') {
         $upload = handleUpload('page_image');
         $imageName = $upload['name'] ?? null;
 
-        $stmt = $pdo->prepare('INSERT INTO pages (page_key, title, body, image, meta, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())');
-        $stmt->execute([$pageKey, $title, $body, $imageName, json_encode($meta)]);
+        // Get the max sort_order for this page_key and increment it
+        $stmt = $pdo->prepare('SELECT MAX(sort_order) FROM pages WHERE page_key = ?');
+        $stmt->execute([$pageKey]);
+        $maxOrder = (int)$stmt->fetchColumn() ?? 0;
+        $newOrder = $maxOrder + 1;
+
+        $stmt = $pdo->prepare('INSERT INTO pages (page_key, title, body, image, meta, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())');
+        $stmt->execute([$pageKey, $title, $body, $imageName, json_encode($meta), $newOrder]);
         audit_log($pdo, 'create', 'pages', $pdo->lastInsertId(), 'page_key: ' . $pageKey, $currentUser);
         $message = 'Pagina item aangemaakt.';
     }
@@ -245,6 +251,51 @@ if ($pageAction === 'create_page') {
         $stmt->execute([$id]);
         audit_log($pdo, 'delete', 'pages', $id, null, $currentUser);
         $message = 'Pagina item verwijderd.';
+    }
+} elseif ($pageAction === 'reorder_page') {
+    $id = (int)($_POST['id'] ?? 0);
+    $direction = $_POST['direction'] ?? '';
+    $pageKey = $_POST['page_key'] ?? '';
+    
+    if ($id && $direction && $pageKey) {
+        // Get current sort_order
+        $stmt = $pdo->prepare('SELECT sort_order FROM pages WHERE id = ? AND page_key = ?');
+        $stmt->execute([$id, $pageKey]);
+        $current = $stmt->fetch();
+        
+        if ($current) {
+            $currentOrder = (int)$current['sort_order'];
+            
+            if ($direction === 'up') {
+                // Move up: find item with sort_order = currentOrder - 1 and swap
+                $stmt = $pdo->prepare('SELECT id, sort_order FROM pages WHERE page_key = ? AND sort_order < ? ORDER BY sort_order DESC LIMIT 1');
+                $stmt->execute([$pageKey, $currentOrder]);
+                $targetItem = $stmt->fetch();
+                
+                if ($targetItem) {
+                    $targetOrder = (int)$targetItem['sort_order'];
+                    // Swap the sort_order values
+                    $pdo->prepare('UPDATE pages SET sort_order = ? WHERE id = ?')->execute([$targetOrder, $id]);
+                    $pdo->prepare('UPDATE pages SET sort_order = ? WHERE id = ?')->execute([$currentOrder, $targetItem['id']]);
+                    audit_log($pdo, 'update', 'pages', $id, 'moved up', $currentUser);
+                }
+            } elseif ($direction === 'down') {
+                // Move down: find item with sort_order = currentOrder + 1 and swap
+                $stmt = $pdo->prepare('SELECT id, sort_order FROM pages WHERE page_key = ? AND sort_order > ? ORDER BY sort_order ASC LIMIT 1');
+                $stmt->execute([$pageKey, $currentOrder]);
+                $targetItem = $stmt->fetch();
+                
+                if ($targetItem) {
+                    $targetOrder = (int)$targetItem['sort_order'];
+                    // Swap the sort_order values
+                    $pdo->prepare('UPDATE pages SET sort_order = ? WHERE id = ?')->execute([$targetOrder, $id]);
+                    $pdo->prepare('UPDATE pages SET sort_order = ? WHERE id = ?')->execute([$currentOrder, $targetItem['id']]);
+                    audit_log($pdo, 'update', 'pages', $id, 'moved down', $currentUser);
+                }
+            }
+            header('Location: admin.php?page=' . urlencode($pageKey) . '&ok=reorder');
+            exit;
+        }
     }
 }
 
@@ -499,6 +550,34 @@ $page = $_GET['page'] ?? 'agenda';
         .event-image-wrap.is-open .event-image-preview {
             transform: translateY(0) scale(1);
         }
+
+        /* make action buttons larger, stacked and easy to tap on mobile */
+        .event-actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .event-actions .btn {
+            width: 100%;
+            justify-content: center; /* center icon+text */
+            padding: 1rem; /* larger tap area */
+            font-size: 1rem;
+        }
+        .event-actions .btn + .btn {
+            margin-top: 0.5rem;
+        }
+
+        /* smaller event cards and text on phones */
+        .event-item {
+            flex-direction: column;
+            align-items: stretch;
+            padding: 0.75rem;
+        }
+        .event-info h3 {
+            font-size: 1rem;
+        }
+        .event-meta {
+            font-size: 0.8rem;
+        }
     }
 </style>
 </head>
@@ -747,7 +826,7 @@ $page = $_GET['page'] ?? 'agenda';
                         $fields = ['title','body','image'];
                 }
 
-                $stmt = $pdo->prepare('SELECT * FROM pages WHERE page_key = ? ORDER BY created_at DESC');
+                $stmt = $pdo->prepare('SELECT * FROM pages WHERE page_key = ? ORDER BY sort_order ASC');
                 $stmt->execute([$pageKey]);
                 $pageItems = $stmt->fetchAll();
 
@@ -845,7 +924,10 @@ $page = $_GET['page'] ?? 'agenda';
                             </div>
                         <?php else: ?>
                             <div class="space-y-4">
-                            <?php foreach ($pageItems as $it): ?>
+                            <?php foreach ($pageItems as $index => $it): 
+                                $isFirst = ($index === 0);
+                                $isLast = ($index === count($pageItems) - 1);
+                            ?>
                                 <div class="border border-gray-200 rounded p-4 hover:shadow-md transition">
                                     <div class="flex justify-between items-start gap-4">
                                         <div class="flex-1">
@@ -857,6 +939,39 @@ $page = $_GET['page'] ?? 'agenda';
                                                 <img src="uploads/<?php echo htmlspecialchars($it['image']); ?>" class="w-20 h-20 object-cover rounded" alt="">
                                             <?php endif; ?>
                                             <div class="flex flex-col gap-1">
+                                                <div class="flex gap-1">
+                                                    <?php if (!$isFirst): ?>
+                                                        <form method="POST" style="display:inline;">
+                                                            <input type="hidden" name="page_action" value="reorder_page">
+                                                            <input type="hidden" name="id" value="<?php echo (int)$it['id']; ?>">
+                                                            <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
+                                                            <input type="hidden" name="direction" value="up">
+                                                            <button type="submit" class="btn btn-secondary btn-sm" title="Verplaats omhoog">
+                                                                <i class="fa-solid fa-arrow-up"></i>
+                                                            </button>
+                                                        </form>
+                                                    <?php else: ?>
+                                                        <div class="btn btn-secondary btn-sm opacity-50 cursor-not-allowed" title="Eerste item">
+                                                            <i class="fa-solid fa-arrow-up"></i>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                    
+                                                    <?php if (!$isLast): ?>
+                                                        <form method="POST" style="display:inline;">
+                                                            <input type="hidden" name="page_action" value="reorder_page">
+                                                            <input type="hidden" name="id" value="<?php echo (int)$it['id']; ?>">
+                                                            <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
+                                                            <input type="hidden" name="direction" value="down">
+                                                            <button type="submit" class="btn btn-secondary btn-sm" title="Verplaats omlaag">
+                                                                <i class="fa-solid fa-arrow-down"></i>
+                                                            </button>
+                                                        </form>
+                                                    <?php else: ?>
+                                                        <div class="btn btn-secondary btn-sm opacity-50 cursor-not-allowed" title="Laatste item">
+                                                            <i class="fa-solid fa-arrow-down"></i>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                </div>
                                                 <a href="admin.php?edit_page=<?php echo (int)$it['id']; ?>&page=<?php echo urlencode($pageKey); ?>" class="btn btn-secondary btn-sm">
                                                     <i class="fa-solid fa-pencil"></i> Bewerk
                                                 </a>

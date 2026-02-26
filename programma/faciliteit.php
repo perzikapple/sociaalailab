@@ -14,33 +14,8 @@ $fallbackBlocks = [
         'image' => '',
         'meta' => null
     ]
-];
+    <?php include __DIR__ . '/../footer.php'; ?>
 
-try {
-    $b1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn();
-    $b2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn();
-    if ($b1) $banner1 = str_replace(['images/', 'uploads/'], ['../images/', '../uploads/'], $b1);
-    if ($b2) $banner2 = str_replace(['images/', 'uploads/'], ['../images/', '../uploads/'], $b2);
-    seed_page_blocks($pdo, 'programma-faciliteit', $fallbackBlocks);
-    $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'programma-faciliteit' ORDER BY created_at ASC");
-    $stmt->execute();
-    $pageBlocks = $stmt->fetchAll();
-} catch (Exception $e) {
-    // fallback blijft actief
-    $pageBlocks = [];
-}
-
-?>
-<style>
-@media (max-width: 1024px) {
-  .mobile{
-    flex-direction: column;
-  }
-  .mobile-col{
-    flex-direction: column;
-  }
-}
-</style>
 <!doctype html>
 <html lang="nl">
 <head>
@@ -62,33 +37,8 @@ try {
     <div class="banner banner-2">
         <img class="" src="<?php echo htmlspecialchars($banner2); ?>">
     </div>
-</div>
+    <?php include __DIR__ . '/../footer.php'; ?>
 
-<!-- Navigatie -->
-<nav class="bg-white shadow-md">
-    <div class="navigatie max-w-6xl mx-auto px-4 py-3 flex justify-center md:justify-between items-center">
-        <!-- Hamburger knop alleen op mobiel -->
-        <button id="mobile-menu-toggle" class=" hamburger md:hidden self-end text-gray-700 focus:outline-none" aria-label="Open navigatie">
-            <i class="fa-solid fa-bars text-2xl"></i>
-        </button>
-
-        <!-- Menu links (exact dezelfde inhoud, alleen ingepakt + id + hidden-klasse) -->
-        <div id="mobile-menu" class="menu hidden md:flex pr-5 space-x-8 font-medium items-center">
-            <a href="../index.php" class="menu inline-flex items-center gap-1 text-gray-700 hover:text-[#00811F] transition"><i class="fa-solid fa-house"></i> Voorpagina</a>
-            <a href="../agenda.php" class="menu text-gray-700 hover:text-[#00811F] transition">Agenda</a>
-            <a href="../terugblikken.php" class="menu text-gray-700 hover:text-[#00811F] transition">Terugblikken</a>
-            <a href="../over.php" class="menu text-gray-700 hover:text-[#00811F] transition">Voor wie?</a>
-
-            <!-- Programma met dropdown -->
-            <div class="relative" id="programma-dropdown">
-                <!-- Toggle knop -->
-                <button id="programma-toggle" aria-haspopup="true" aria-expanded="false" class="menu flex items-center gap-2 text-gray-700 hover:text-[#00811F] transition font-medium focus:outline-none">
-                    <span>Wat doen we?</span>
-                    <!-- pijl die roteert bij open -->
-                    
-                </button>
-
-                <div id="programma-menu" class="hidden absolute top-0 mt-8 w-56 bg-white border border-gray-200 shadow-lg py-2 z-50 focus:outline-none" role="menu" aria-labelledby="programma-toggle">
                     <!-- Elke link is role=menuitem voor a11y -->
                     <a href="kennis.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Kennis & vaardigheden</a>
                     <a href="actie.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Actie, onderzoek & ontwerp</a>
@@ -168,31 +118,7 @@ try {
             </div>
 </div></main>
 
-<footer class="bg-white mt-16 shadow-inner">
-    <div class="flex justify-evenly py-6 items-center space-x-4">
-
-        <div class="w-32 h-20 flex items-center justify-center">
-            <img alt="logo techniek collage Rotterdam" src="../images/Techniek_College_Rotterdam_logoOP.png" class="max-w-full max-h-full object-contain">
-        </div>
-
-        <div class="w-32 h-20 flex items-center justify-center">
-            <img alt="logo hogeschool Rotterdam" src="../images/Hogeschool_Rotterdam.png" class="max-w-full max-h-full object-contain">
-        </div>
-
-        <div class="w-32 h-20 flex items-center justify-center">
-            <img alt="logo gemeente Rotterdam " src="../images/Gemeente_Rotterdam.png" class="max-w-full max-h-full object-contain">
-        </div>
-
-        <div class="w-32 h-20 flex items-center justify-center">
-            <img alt="erasmus universiteit" src="../images/Erasmus_uni.png" class="max-w-full max-h-full object-contain">
-        </div>
-
-        <div class="w-32 h-20 flex items-center justify-center">
-            <img alt="Erasmus Centre for Data Analytics" src="../images/Erasmus_DataOP.png" class="max-w-full max-h-full object-contain">
-        </div>
-
-    </div>
-</footer>
+<?php include __DIR__ . '/../footer.php'; ?>
 
 <script>
     (function() {
@@ -286,7 +212,9 @@ try {
         if (!mobileToggle || !mobileMenu) return;
 
         mobileToggle.addEventListener('click', function () {
-            mobileMenu.classList.toggle('hidden');
+            const isHidden = mobileMenu.classList.toggle('hidden');
+            mobileMenu.classList.toggle('open', !isHidden);
+            mobileToggle.setAttribute('aria-expanded', (!isHidden).toString());
         });
     })();
 
@@ -304,60 +232,4 @@ setInterval(() => {
 </body>
 </html>
 
-<style>
-.banner-wrapper {
-  display: grid;
-}
 
-.banner {
-  grid-area: 1 / 1; /* zelfde grid-cel */
-}
-
-.banner {
-  opacity: 0;
-  transition: opacity 1s ease;
-}
-
-.banner.active {
-  opacity: 1;
-}
-
-.slide {
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  opacity: 0;
-  transition: opacity 1s ease-in-out;
-}
-
-.slide.active {
-  opacity: 1;
-}
-
-@media (max-width: 768px) {
-}
-    @media (max-width: 1024px) {
-        .menu{
-            margin-top: 10px;
-            margin-bottom: 10px;
-        }
-        .navigatie{
-            display: flex;
-            flex-direction: column;
-            justify-content: space-evenly;
-            align-items: flex-start;
-        }
-          .slide{
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-        }
-    }
-     @media (min-width: 760px) {
-        .hamburger{
-            display: none;
-        }
-      
-    }
-</style>
