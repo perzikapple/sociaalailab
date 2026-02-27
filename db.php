@@ -90,6 +90,18 @@ try {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS inschrijven (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            event_id INT NOT NULL,
+            event_title VARCHAR(255) NOT NULL,
+            full_name VARCHAR(255) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_event_email (event_id, email)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    ");
+
     if (!function_exists('audit_log')) {
         function audit_log($pdo, $action, $table_name, $record_id = null, $details = null, $performed_by = null) {
             try {

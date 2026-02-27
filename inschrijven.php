@@ -1,65 +1,70 @@
-﻿<?php 
+<?php
 session_start();
 require 'db.php';
 require 'helpers.php';
 
-// Fallback banners
 $banner1 = 'images/banner_website_01.jpg';
 $banner2 = 'images/banner_website_02.jpg';
+$message = '';
+$messageType = '';
 
-$fallbackBlocks = [
-    [
-        'title' => 'Evenementen',
-        'body' => 'Dit is de evenementen pagina. Hier zie je alle evenementen voor de komende 2 weken.',
-        'image' => '',
-        'meta' => null
-    ]
-];
-
-$fallbackEvents = [
-    [
-        'title' => 'Voorbeeld Evenement',
-        'date' => date('Y-m-d', strtotime('+7 days')),
-        'time' => '15:00',
-        'description' => 'Dit is een voorbeeld van een evenement.',
-        'location' => 'Rotterdam - Hillevliet 90',
-        'image' => ''
-    ]
-];
+$eventId = filter_input(INPUT_GET, 'event_id', FILTER_VALIDATE_INT);
+$event = null;
 
 try {
     $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: $banner1;
     $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: $banner2;
 
-    seed_page_blocks($pdo, 'evenementen', $fallbackBlocks);
-    $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'evenementen' ORDER BY created_at ASC");
-    $stmt->execute();
-    $pageBlocks = $stmt->fetchAll();
-
-    seed_events($pdo, $fallbackEvents);
-    $stmt = $pdo->prepare("SELECT * FROM events WHERE date >= CURDATE() AND date <= DATE_ADD(CURDATE(), INTERVAL 14 DAY) ORDER BY date, time");
-    $stmt->execute();
-    $events = $stmt->fetchAll();
+    if ($eventId) {
+        $stmt = $pdo->prepare('SELECT * FROM events WHERE id = ? LIMIT 1');
+        $stmt->execute([$eventId]);
+        $event = $stmt->fetch();
+    }
 } catch (Exception $e) {
-    $pageBlocks = [];
-    $events = [];
+    $event = null;
 }
 
-?>
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $event) {
+    $fullName = trim($_POST['full_name'] ?? '');
+    $email = trim($_POST['email'] ?? '');
 
+    if ($fullName === '' || $email === '') {
+        $message = 'Vul je volledige naam en e-mailadres in.';
+        $messageType = 'error';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $message = 'Vul een geldig e-mailadres in.';
+        $messageType = 'error';
+    } else {
+        try {
+            $stmt = $pdo->prepare('INSERT INTO inschrijven (event_id, event_title, full_name, email, created_at) VALUES (?, ?, ?, ?, NOW())');
+            $stmt->execute([$event['id'], $event['title'], $fullName, $email]);
+            $message = 'Je inschrijving is ontvangen. Bedankt!';
+            $messageType = 'success';
+        } catch (PDOException $e) {
+            if ($e->getCode() === '23000') {
+                $message = 'Dit e-mailadres is al ingeschreven voor dit evenement.';
+                $messageType = 'error';
+            } else {
+                $message = 'Er ging iets mis bij het inschrijven. Probeer het later opnieuw.';
+                $messageType = 'error';
+            }
+        }
+    }
+}
+?>
 <!doctype html>
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="preload" as="style" href="build/assets/app-DozK-03z.css"><link rel="modulepreload" as="script" href="build/assets/app-CAiCLEjY.js"><link rel="stylesheet" href="build/assets/app-DozK-03z.css"><link rel="stylesheet" href="custom.css"><script type="module" src="build/assets/app-CAiCLEjY.js"></script>    <title>Event</title>
-    <meta name="description" content="SociaalAI helpt inwoners sterker te staan in een steeds digitalere wereld. We doen dit door Rotterdammers actief mee te laten denken, praten en beslissen over kunstmatige intelligentie.">
+    <link rel="preload" as="style" href="build/assets/app-DozK-03z.css"><link rel="modulepreload" as="script" href="build/assets/app-CAiCLEjY.js"><link rel="stylesheet" href="build/assets/app-DozK-03z.css"><link rel="stylesheet" href="custom.css"><script type="module" src="build/assets/app-CAiCLEjY.js"></script>
+    <title>Inschrijven</title>
+    <meta name="description" content="Inschrijven voor een evenement van SociaalAI Lab Rotterdam.">
     <link rel="icon" type="image/png" href="images/Pixels_icon.png">
     <link rel="stylesheet" href="ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 
 <body class="bg-gradient-to-br from-[#00811F] to-[#b9eb34]">
-
 <div class="banner-wrapper">
     <div class="banner banner-1 active">
         <img class="" src="<?php echo htmlspecialchars($banner1); ?>">
@@ -85,14 +90,12 @@ try {
             <div class="relative" id="programma-dropdown">
                 <button id="programma-toggle" aria-haspopup="true" aria-expanded="false" class="menu flex items-center gap-2 text-gray-700 hover:text-[#00811F] transition font-medium focus:outline-none">
                     <span>Wat doen we?</span>
-                    
                 </button>
 
                 <div id="programma-menu" class="hidden absolute top-0 mt-8 w-56 bg-white border border-gray-200 shadow-lg py-2 z-50 focus:outline-none" role="menu" aria-labelledby="programma-toggle">
                     <a href="programma/kennis.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Kennis & vaardigheden</a>
                     <a href="programma/actie.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Actie, onderzoek & ontwerp</a>
-                    <a href="programma/faciliteit.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Faciliteit van het Lab
-                    </a>
+                    <a href="programma/faciliteit.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Faciliteit van het Lab</a>
                 </div>
             </div>
 
@@ -106,56 +109,39 @@ try {
     </div>
 </nav>
 
-<main>
-    <?php foreach ($pageBlocks as $block): ?>
-        <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
-            <h1 class="text-3xl font-bold text-gray-900 mb-4"><?php echo htmlspecialchars($block['title']); ?></h1>
-            <p class="text-gray-700 text-lg"><?php echo nl2br(htmlspecialchars($block['body'])); ?></p>
-        </section>
-    <?php endforeach; ?>
-
-    <?php if (empty($events)): ?>
-        <section class="bg-white shadow-lg p-8 max-w-4xl mx-auto my-12 text-center">
-            <h2 class="text-2xl font-semibold text-gray-900 mb-2">Geen evenementen in de komende 2 weken</h2>
-            <p class="text-gray-700">Houd de agenda in de gaten voor nieuwe activiteiten.</p>
-        </section>
-    <?php else: ?>
-        <?php foreach ($events as $event): ?>
-            <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
-                <div class="flex-1">
-                    <span class="inline-block bg-[#00811F] text-white text-sm font-medium px-4 py-1 mb-4">Evenement</span>
-                    <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($event['title']); ?></h2>
-                    <div class="space-y-4">
-                        <div class="flex items-center space-x-3">
-                            <i class="fa-regular fa-calendar text-[#00811F] ml-[2px]  text-3xl"></i>
-                            <?php $dateDisplay = formatEventDateDisplay($event['date']); $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : ''; ?>
-                            <p class="text-gray-700"><strong> Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?><?php if ($timeDisplay) echo ' - ' . htmlspecialchars($timeDisplay); ?></p>
-                        </div>
-                        <div class="flex items-center space-x-3">
-                            <i class="fa-solid fa-location-dot text-[#00811F] ml-1 text-3xl"></i>
-                            <?php $loc = $event['location'] ?: 'Rotterdam - Hillevliet 90'; ?>
-                            <p class="text-gray-700 ml-1 "><strong>Waar:</strong> <a href="<?php echo googleMapsDirectionsUrl($loc); ?>" target="_blank" rel="noopener noreferrer" class="underline hover:text-[#00811F]"><?php echo htmlspecialchars($loc); ?></a></p>
-                        </div>
-                        <div class="flex mb-6 space-x-3">
-                            <i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>
-                            <p class="text-gray-700 pb-3 "><strong> Wat:</strong> <?php echo nl2br(htmlspecialchars($event['description'])); ?></p>
-                        </div>
-                    </div>
-                    <?php if (!empty($event['show_signup_button'])): ?>
-                    <a href="inschrijven.php?event_id=<?php echo (int)$event['id']; ?>" class="mt-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">
-                        Inschrijven
-                    </a>
-                    <?php endif; ?>
-                </div>
-                <?php if ($event['image']): ?>
-                <div class="flex-1">
-                    <img src="uploads/<?php echo htmlspecialchars($event['image']); ?>" alt="" class="w-full h-auto object-cover shadow-md">
-                </div>
+<main class="min-h-[60vh] flex items-start justify-center px-3 sm:px-6">
+    <section class="bg-white shadow-xl p-6 sm:p-8 max-w-md w-full mx-auto my-8 sm:my-12 rounded-lg">
+        <?php if (!$event): ?>
+            <h1 class="text-xl sm:text-2xl font-semibold text-gray-900 mb-2">Evenement niet gevonden</h1>
+            <p class="text-gray-700 text-sm sm:text-base">Het evenement bestaat niet of is niet meer beschikbaar.</p>
+        <?php else: ?>
+            <h1 class="text-xl sm:text-2xl font-semibold text-gray-900 mb-2">Inschrijven</h1>
+            <p class="text-gray-700 mb-6 text-sm sm:text-base">
+                <?php echo htmlspecialchars($event['title']); ?>
+                <?php if (!empty($event['date'])): ?>
+                    - <?php echo htmlspecialchars(formatEventDateDisplay($event['date'])); ?>
                 <?php endif; ?>
-            </section>
-        <?php endforeach; ?>
-    <?php endif; ?>
+            </p>
 
+            <?php if ($message): ?>
+                <div class="mb-6 p-4 rounded text-sm sm:text-base <?php echo $messageType === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'; ?>">
+                    <?php echo htmlspecialchars($message); ?>
+                </div>
+            <?php endif; ?>
+
+            <form method="POST" class="space-y-5">
+                <div>
+                    <label for="full_name" class="block text-gray-700 font-medium text-sm sm:text-base mb-2">Volledige naam</label>
+                    <input type="text" id="full_name" name="full_name" required class="w-full px-4 py-3 sm:py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00811F] text-base">
+                </div>
+                <div>
+                    <label for="email" class="block text-gray-700 font-medium text-sm sm:text-base mb-2">E-mailadres</label>
+                    <input type="email" id="email" name="email" required class="w-full px-4 py-3 sm:py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00811F] text-base">
+                </div>
+                <button type="submit" class="w-full bg-[#00811F] text-white px-6 py-3 rounded-md hover:bg-green-700 transition font-medium text-base sm:text-sm">Inschrijven</button>
+            </form>
+        <?php endif; ?>
+    </section>
 </main>
 
 <?php include __DIR__ . '/footer.php'; ?>
@@ -222,7 +208,7 @@ try {
 
         const items = menu.querySelectorAll('[role="menuitem"]');
         items.forEach(item => {
-            item.setAttribute('tabindex', '0'); 
+            item.setAttribute('tabindex', '0');
             item.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
                     closeMenu();
@@ -252,73 +238,14 @@ try {
         });
     })();
 
-const banners = document.querySelectorAll('.banner');
-let current = 0;
+    const banners = document.querySelectorAll('.banner');
+    let current = 0;
 
-setInterval(() => {
-  banners[current].classList.remove('active');
-  current = (current + 1) % banners.length;
-  banners[current].classList.add('active');
-}, 10000);
-
+    setInterval(() => {
+      banners[current].classList.remove('active');
+      current = (current + 1) % banners.length;
+      banners[current].classList.add('active');
+    }, 10000);
 </script>
-
-<style>
-.banner-wrapper {
-  display: grid;
-}
-
-.banner {
-  grid-area: 1 / 1; 
-}
-
-.banner {
-  opacity: 0;
-  transition: opacity 1s ease;
-}
-
-.banner.active {
-  opacity: 1;
-}
-
-.slide {
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  opacity: 0;
-  transition: opacity 1s ease-in-out;
-}
-
-.slide.active {
-  opacity: 1;
-}
-
-@media (max-width: 768px) {
-}
-    @media (max-width: 1024px) {
-        .menu{
-            margin-top: 10px;
-            margin-bottom: 10px;
-        }
-        .navigatie{
-            display: flex;
-            flex-direction: column;
-            justify-content: space-evenly;
-            align-items: flex-start;
-        }
-          .slide{
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-        }
-    }
-     @media (min-width: 760px) {
-        .hamburger{
-            display: none;
-        }
-      
-    }
-</style></div>
 </body>
 </html>
