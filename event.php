@@ -16,27 +16,14 @@ $fallbackBlocks = [
     ]
 ];
 
-$fallbackEvents = [
-    [
-        'title' => 'Voorbeeld Evenement',
-        'date' => date('Y-m-d', strtotime('+7 days')),
-        'time' => '15:00',
-        'description' => 'Dit is een voorbeeld van een evenement.',
-        'location' => 'Rotterdam - Hillevliet 90',
-        'image' => ''
-    ]
-];
-
 try {
     $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: $banner1;
     $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: $banner2;
 
-    seed_page_blocks($pdo, 'evenementen', $fallbackBlocks);
-    $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'evenementen' ORDER BY created_at ASC");
+    // seed_page_blocks removed to prevent auto-creation
+    $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'evenementen' ORDER BY (sort_order IS NULL OR sort_order = 0) ASC, sort_order ASC, created_at ASC, id ASC");
     $stmt->execute();
     $pageBlocks = $stmt->fetchAll();
-
-    seed_events($pdo, $fallbackEvents);
     $stmt = $pdo->prepare("SELECT * FROM events WHERE date >= CURDATE() AND date <= DATE_ADD(CURDATE(), INTERVAL 14 DAY) ORDER BY date, time");
     $stmt->execute();
     $events = $stmt->fetchAll();

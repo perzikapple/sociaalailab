@@ -1,27 +1,26 @@
 ﻿<?php 
 session_start();
 require '../db.php';
+require '../helpers.php';
 
 // Fallback banners
 $banner1 = '../images/banner_website_01.jpg';
 $banner2 = '../images/banner_website_02.jpg';
 
-// Fallback page blocks
-$fallbackBlocks = [
-    [
-        'title' => 'Voorbeeld Actie',
-        'body' => 'Dit is een voorbeeld van een tekstblok voor actie.',
-        'image' => '',
-        'meta' => null
-    ]
-    <?php include __DIR__ . '/../footer.php'; ?>
+try {
+    $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: $banner1;
+    $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: $banner2;
+} catch (Exception $e) {
+    // Use fallbacks
+}
+?>
 
 <!doctype html>
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="preload" as="style" href="../build/assets/app-DozK-03z.css"><link rel="modulepreload" as="script" href="../build/assets/app-CAiCLEjY.js"><link rel="stylesheet" href="../build/assets/app-DozK-03z.css"><script type="module" src="../build/assets/app-CAiCLEjY.js"></script>    <title>hoogtenpunten</title>
+    <link rel="preload" as="style" href="../build/assets/app-DozK-03z.css"><link rel="modulepreload" as="script" href="../build/assets/app-CAiCLEjY.js"><link rel="stylesheet" href="../build/assets/app-DozK-03z.css"><link rel="stylesheet" href="../custom.css"><script type="module" src="../build/assets/app-CAiCLEjY.js"></script>    <title>Actie, Onderzoek & Ontwerp</title>
     <meta name="description" content="SociaalAI helpt inwoners sterker te staan in een steeds digitalere wereld. We doen dit door Rotterdammers actief mee te laten denken, praten en beslissen over kunstmatige intelligentie.">
     <link rel="icon" type="image/png" href="../images/Pixels_icon.png">
     <link rel="stylesheet" href="../ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -29,28 +28,44 @@ $fallbackBlocks = [
 
 <body class="bg-gradient-to-br from-[#00811F] to-[#b9eb34]">
 
-
 <div class="banner-wrapper">
-    <div class="banner banner-1 active">
-        <img class="" src="<?php echo htmlspecialchars($banner1); ?>">
-    </div>
-    <div class="banner banner-2">
-        <img class="" src="<?php echo htmlspecialchars($banner2); ?>">
-    </div>
-    <?php include __DIR__ . '/../footer.php'; ?>
+    <img src="<?php echo htmlspecialchars($banner1); ?>" alt="Banner 1" class="banner active w-full object-cover h-60 md:h-96">
+    <img src="<?php echo htmlspecialchars($banner2); ?>" alt="Banner 2" class="banner w-full object-cover h-60 md:h-96">
+</div>
+
+<nav class="bg-white shadow-md sticky top-0 z-40">
+    <div class="flex justify-between items-center px-4 md:px-8 py-4">
+        <a href="../index.php" class="flex items-center gap-2 font-bold text-xl text-[#00811F] hover:text-[#00811F]/80 transition">
+            <img src="../images/Pixels_icon.png" alt="Logo" class="w-8 h-8">
+            SociaalAI Lab
+        </a>
+
+        <button id="mobile-menu-toggle" class="md:hidden hamburger focus:outline-none" aria-label="Toggle navigation">
+            <i class="fa-solid fa-bars text-2xl"></i>
+        </button>
+
+        <div id="mobile-menu" class="menu hidden md:flex pr-5 space-x-8 font-medium items-center">
+            <a href="../index.php" class="menu inline-flex items-center gap-1 text-gray-700 hover:text-[#00811F] transition"><i class="fa-solid fa-house"></i> Voorpagina</a>
+            <a href="../agenda.php" class="menu text-gray-700 hover:text-[#00811F] transition">Agenda</a>
+            <a href="../event.php" class="menu text-gray-700 hover:text-[#00811F] transition">Evenementen</a>
+            <a href="../terugblikken.php" class="menu text-gray-700 hover:text-[#00811F] transition">Terugblikken</a>
+            <a href="../over.php" class="menu text-gray-700 hover:text-[#00811F] transition">Voor wie?</a>
+
+            <div class="relative" id="programma-dropdown">
+                <button id="programma-toggle" aria-haspopup="true" aria-expanded="false" class="menu flex items-center gap-2 text-gray-700 hover:text-[#00811F] transition font-medium focus:outline-none">
+                    <span>Wat doen we?</span>
+                </button>
 
                 <div id="programma-menu" class="hidden absolute top-0 mt-8 w-56 bg-white border border-gray-200 shadow-lg py-2 z-50 focus:outline-none" role="menu" aria-labelledby="programma-toggle">
-                    <!-- Elke link is role=menuitem voor a11y -->
                     <a href="kennis.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Kennis & vaardigheden</a>
                     <a href="actie.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Actie, onderzoek & ontwerp</a>
-                    <a href="faciliteit.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Faciliteit van het Lab
-                    </a>
+                    <a href="faciliteit.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Faciliteit van het Lab</a>
                 </div>
             </div>
 
-            <a href="../verantwoord-ai.php" class="menu text-gray-700 hover:text-[#00811F] transition">Verantwoorde AI</a>
-            <a href="../wie-zijn-we.php" class="menu text-gray-700 hover:text-[#00811F] transition">Wie zijn we?</a>
-            <a href="../contact.php" class="menu text-gray-700 hover:text-[#00811F] transition">Contact</a>
+            <a href="../verantwoord-ai.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Verantwoorde AI</a>
+            <a href="../wie-zijn-we.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Wie zijn we?</a>
+            <a href="../contact.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Contact</a>
             <?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
                 <a href="../admin.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Admin</a>
             <?php endif; ?>
@@ -61,6 +76,16 @@ $fallbackBlocks = [
 <!-- Pagina content -->
 <main>
     <?php
+    // Fetch page blocks from database
+    $pageBlocks = [];
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'programma-actie' ORDER BY (sort_order IS NULL OR sort_order = 0) ASC, sort_order ASC, created_at ASC, id ASC");
+        $stmt->execute();
+        $pageBlocks = $stmt->fetchAll();
+    } catch (Exception $e) {
+        $pageBlocks = [];
+    }
+    
     // Display custom text blocks from admin
     foreach ($pageBlocks as $block):
         $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];

@@ -5,7 +5,7 @@ require 'db.php';
 $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: 'images/banner_website_01.jpg';
 $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: 'images/banner_website_02.jpg';
 
-$stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'over' ORDER BY created_at ASC");
+$stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'over' ORDER BY (sort_order IS NULL OR sort_order = 0) ASC, sort_order ASC, created_at ASC, id ASC");
 $stmt->execute();
 $pageBlocks = $stmt->fetchAll();
 ?>

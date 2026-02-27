@@ -13,8 +13,17 @@ $fallbackBlocks = [
         'image' => '',
         'meta' => null
     ]
+];
 
-    seed_events($pdo, $fallbackEvents);
+try {
+    $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: $banner1;
+    $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: $banner2;
+
+    // seed_page_blocks removed to prevent auto-creation
+    $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'terugblikken' ORDER BY (sort_order IS NULL OR sort_order = 0) ASC, sort_order ASC, created_at ASC, id ASC");
+    $stmt->execute();
+    $pageBlocks = $stmt->fetchAll();
+
     $stmt = $pdo->prepare("SELECT * FROM events WHERE date < CURDATE() ORDER BY date DESC, time DESC");
     $stmt->execute();
     $events = $stmt->fetchAll();
@@ -22,7 +31,34 @@ $fallbackBlocks = [
     $pageBlocks = [];
     $events = [];
 }
+?>
 
+<!doctype html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preload" as="style" href="build/assets/app-DozK-03z.css"><link rel="modulepreload" as="script" href="build/assets/app-CAiCLEjY.js"><link rel="stylesheet" href="build/assets/app-DozK-03z.css"><link rel="stylesheet" href="custom.css"><script type="module" src="build/assets/app-CAiCLEjY.js"></script>    <title>Terugblikken</title>
+    <meta name="description" content="SociaalAI helpt inwoners sterker te staan in een steeds digitalere wereld. We doen dit door Rotterdammers actief mee te laten denken, praten en beslissen over kunstmatige intelligentie.">
+    <link rel="icon" type="image/png" href="images/Pixels_icon.png">
+    <link rel="stylesheet" href="ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+
+<body class="bg-gradient-to-br from-[#00811F] to-[#b9eb34]">
+
+<div class="banner-wrapper">
+    <img src="<?php echo htmlspecialchars($banner1); ?>" alt="Banner 1" class="banner active w-full object-cover h-60 md:h-96">
+    <img src="<?php echo htmlspecialchars($banner2); ?>" alt="Banner 2" class="banner w-full object-cover h-60 md:h-96">
+</div>
+
+<nav class="bg-white shadow-md sticky top-0 z-40">
+    <div class="flex justify-between items-center px-4 md:px-8 py-4">
+        <a href="index.php" class="flex items-center gap-2 font-bold text-xl text-[#00811F] hover:text-[#00811F]/80 transition">
+            <img src="images/Pixels_icon.png" alt="Logo" class="w-8 h-8">
+            SociaalAI Lab
+        </a>
+
+        <button id="mobile-menu-toggle" class="md:hidden hamburger focus:outline-none" aria-label="Toggle navigation">
             <i class="fa-solid fa-bars text-2xl"></i>
         </button>
 
@@ -68,7 +104,7 @@ $fallbackBlocks = [
     </div>
 
     <?php
-    $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'terugblikken' ORDER BY created_at ASC");
+    $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'terugblikken' ORDER BY (sort_order IS NULL OR sort_order = 0) ASC, sort_order ASC, created_at ASC, id ASC");
     $stmt->execute();
     $pageBlocks = $stmt->fetchAll();
     foreach ($pageBlocks as $block):
@@ -76,7 +112,7 @@ $fallbackBlocks = [
         $hasImage = !empty($block['image']);
         $imageClass = $hasImage ? 'with-image' : '';
     ?>
-        <section class="text-block <?php echo htmlspecialchars($imageClass); ?> bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
+        <section class="text-block <?php echo htmlspecialchars($imageClass); ?> bg-white shadow-lg px-3 sm:px-8 py-6 sm:py-8 max-w-6xl mx-auto my-6 sm:my-12">
             <?php if ($hasImage): ?>
                 <div class="text-block-image-container">
                     <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" class="text-block-image">
@@ -84,18 +120,18 @@ $fallbackBlocks = [
             <?php endif; ?>
             <div class="text-block-content">
                 <?php if (!empty($block['title'])): ?>
-                    <h3 class="text-2xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($block['title']); ?></h3>
+                    <h3 class="text-xl sm:text-2xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($block['title']); ?></h3>
                 <?php endif; ?>
                 <?php if (!empty($block['body'])): ?>
-                    <div class="text-gray-700 leading-relaxed"><?php echo nl2br(htmlspecialchars($block['body'])); ?></div>
+                    <div class="text-sm sm:text-base text-gray-700 leading-relaxed"><?php echo nl2br(htmlspecialchars($block['body'])); ?></div>
                 <?php endif; ?>
                 <?php if (!empty($metaArr['date']) || !empty($metaArr['time'])): ?>
-                    <div class="text-gray-600 text-sm mt-2">
+                    <div class="text-gray-600 text-xs sm:text-sm mt-2 flex flex-col sm:flex-row gap-2 sm:gap-4">
                         <?php if (!empty($metaArr['date'])): ?>
                             <span><strong>Datum:</strong> <?php echo htmlspecialchars($metaArr['date']); ?></span>
                         <?php endif; ?>
                         <?php if (!empty($metaArr['time'])): ?>
-                            <span class="ml-4"><strong>Tijd:</strong> <?php echo htmlspecialchars($metaArr['time']); ?></span>
+                            <span><strong>Tijd:</strong> <?php echo htmlspecialchars($metaArr['time']); ?></span>
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>
@@ -111,33 +147,33 @@ $fallbackBlocks = [
     
     if (empty($events)):
     ?>
-        <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12 text-center">
-            <p class="text-gray-700 text-lg">Er zijn nog geen voorbije evenementen.</p>
+        <section class="bg-white shadow-lg px-3 sm:px-8 py-6 sm:py-8 max-w-6xl mx-auto my-6 sm:my-12 text-center">
+            <p class="text-sm sm:text-base text-gray-700">Er zijn nog geen voorbije evenementen.</p>
         </section>
     <?php else: ?>
         <?php foreach ($events as $event): ?>
-            <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
+            <section class="flex flex-col md:flex-row items-center gap-4 sm:gap-10 bg-white shadow-lg px-3 sm:px-8 py-6 sm:py-8 max-w-6xl mx-auto my-6 sm:my-12">
                 <div class="flex-1">
-                    <span class="inline-block bg-[#00811F] text-white text-sm font-medium px-4 py-1 mb-4">Evenement</span>
-                    <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($event['title']); ?></h2>
-                    <div class="space-y-4">
-                        <div class="flex items-center space-x-3">
-                            <i class="fa-regular fa-calendar text-[#00811F] ml-[2px] text-3xl"></i>
+                    <span class="inline-block bg-[#00811F] text-white text-xs sm:text-sm font-medium px-3 sm:px-4 py-1 mb-4">Evenement</span>
+                    <h2 class="text-xl sm:text-2xl md:text-3xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($event['title']); ?></h2>
+                    <div class="space-y-3 sm:space-y-4">
+                        <div class="flex items-start sm:items-center gap-2 sm:gap-3">
+                            <i class="fa-regular fa-calendar text-[#00811F] text-lg sm:text-3xl flex-shrink-0"></i>
                             <?php $dateDisplay = formatEventDateDisplay($event['date']); $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : ''; ?>
-                            <p class="text-gray-700"><strong>Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?><?php if ($timeDisplay) echo ' - ' . htmlspecialchars($timeDisplay); ?></p>
+                            <p class="text-sm sm:text-base text-gray-700"><strong>Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?><?php if ($timeDisplay) echo ' - ' . htmlspecialchars($timeDisplay); ?></p>
                         </div>
-                        <div class="flex items-center space-x-3">
-                            <i class="fa-solid fa-location-dot text-[#00811F] ml-1 text-3xl"></i>
+                        <div class="flex items-start sm:items-center gap-2 sm:gap-3">
+                            <i class="fa-solid fa-location-dot text-[#00811F] text-lg sm:text-3xl flex-shrink-0"></i>
                             <?php $loc = $event['location'] ?: 'Rotterdam - Hillevliet 90'; ?>
-                            <p class="text-gray-700 ml-1"><strong>Waar:</strong> <a href="<?php echo googleMapsDirectionsUrl($loc); ?>" target="_blank" rel="noopener noreferrer" class="underline hover:text-[#00811F]"><?php echo htmlspecialchars($loc); ?></a></p>
+                            <p class="text-sm sm:text-base text-gray-700"><strong>Waar:</strong> <a href="<?php echo googleMapsDirectionsUrl($loc); ?>" target="_blank" rel="noopener noreferrer" class="underline hover:text-[#00811F]"><?php echo htmlspecialchars($loc); ?></a></p>
                         </div>
-                        <div class="flex mb-6 space-x-3">
-                            <i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>
-                            <p class="text-gray-700 pb-3"><strong>Wat:</strong> <?php echo nl2br(htmlspecialchars($event['description'])); ?></p>
+                        <div class="flex items-start gap-2 sm:gap-3">
+                            <i class="fa-solid fa-bullseye text-[#00811F] text-lg sm:text-3xl flex-shrink-0 mt-1"></i>
+                            <p class="text-sm sm:text-base text-gray-700"><strong>Wat:</strong> <?php echo nl2br(htmlspecialchars(mb_strimwidth($event['description'],0,200,'...'))); ?></p>
                         </div>
                     </div>
                 </div>
-                <div class="flex-1">
+                <div class="flex-1 w-full">
                     <img src="<?php echo $event['image'] ? 'uploads/' . htmlspecialchars($event['image']) : 'images/event/Agenda_event_2_Studenten_en_bewoners_verkennen_de_sociale_invloed_van_AI.jpg'; ?>" alt="" class="w-full h-auto object-cover shadow-md">
                 </div>
             </section>

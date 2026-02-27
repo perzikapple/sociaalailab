@@ -5,22 +5,9 @@ require 'db.php';
 $banner1 = 'images/banner_website_01.jpg';
 $banner2 = 'images/banner_website_02.jpg';
 
-$fallbackEvents = [
-    [
-        'title' => 'Voorbeeld Evenement',
-        'date' => date('Y-m-d', strtotime('+7 days')),
-        'time' => '15:00',
-        'description' => 'Dit is een voorbeeld van een evenement.',
-        'location' => 'Rotterdam - Hillevliet 90',
-        'image' => ''
-    ]
-];
-
 try {
     $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: $banner1;
     $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: $banner2;
-
-    seed_events($pdo, $fallbackEvents);
     $stmt = $pdo->prepare("SELECT * FROM events WHERE date >= CURDATE() ORDER BY date, time");
     $stmt->execute();
     $events = $stmt->fetchAll();

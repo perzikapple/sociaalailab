@@ -18,8 +18,8 @@ try {
     $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: $banner1;
     $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: $banner2;
 
-    seed_page_blocks($pdo, 'wie-zijn-we', $fallbackBlocks);
-    $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'wie-zijn-we' ORDER BY created_at ASC");
+    // seed_page_blocks removed to prevent auto-creation
+    $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'wie-zijn-we' ORDER BY (sort_order IS NULL OR sort_order = 0) ASC, sort_order ASC, created_at ASC, id ASC");
     $stmt->execute();
     $pageBlocks = $stmt->fetchAll();
 } catch (Exception $e) {

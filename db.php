@@ -38,10 +38,15 @@ try {
             body TEXT DEFAULT NULL,
             image VARCHAR(255) DEFAULT NULL,
             meta JSON DEFAULT NULL,
+            sort_order INT DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP NULL DEFAULT NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ");
+    $pageColumns = $pdo->query("SHOW COLUMNS FROM pages")->fetchAll(PDO::FETCH_COLUMN);
+    if (!in_array('sort_order', $pageColumns)) {
+        $pdo->exec("ALTER TABLE pages ADD COLUMN sort_order INT DEFAULT 0");
+    }
     $columns = $pdo->query("SHOW COLUMNS FROM events")->fetchAll(PDO::FETCH_COLUMN);
     
     if (!in_array('location', $columns)) {
@@ -67,19 +72,6 @@ try {
     $pdo->exec("INSERT IGNORE INTO settings (setting_key, setting_value) VALUES ('banner1', 'images/banner_website_01.jpg')");
     $pdo->exec("INSERT IGNORE INTO settings (setting_key, setting_value) VALUES ('banner2', 'images/banner_website_02.jpg')");
     
-    // Seed default evenementen pagina blok
-    $pdo->exec("
-        INSERT IGNORE INTO pages (page_key, title, body, image, meta, created_at, updated_at)
-        VALUES (
-            'evenementen',
-            'Evenementen',
-            'Dit is de evenementen pagina. Hier zie je alle evenementen voor de komende 2 weken.',
-            NULL,
-            NULL,
-            NOW(),
-            NOW()
-        )
-    ");
     $pdo->exec("CREATE TABLE IF NOT EXISTS audit_logs (
             id INT AUTO_INCREMENT PRIMARY KEY,
             action VARCHAR(50) NOT NULL,
