@@ -50,17 +50,11 @@ try {
     <img src="<?php echo htmlspecialchars($banner1); ?>" alt="Banner 1" class="banner active w-full object-cover h-60 md:h-96">
     <img src="<?php echo htmlspecialchars($banner2); ?>" alt="Banner 2" class="banner w-full object-cover h-60 md:h-96">
 </div>
-<<<<<<< HEAD
 
 <nav class="bg-white shadow-md sticky top-0 z-40">
     <div class="flex justify-center items-center px-4 md:px-8 py-4">
 
         <button id="mobile-menu-toggle" class="md:hidden hamburger focus:outline-none" aria-label="Toggle navigation">
-=======
-<nav class="bg-white shadow-md">
-    <div class="navigatie max-w-6xl mx-auto px-4 py-3 flex justify-center md:justify-between items-center">
-        <button id="mobile-menu-toggle" class=" hamburger md:hidden self-end text-gray-700 focus:outline-none" aria-label="Open navigatie">
->>>>>>> origin/nathan
             <i class="fa-solid fa-bars text-2xl"></i>
         </button>
 

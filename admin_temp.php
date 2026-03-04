@@ -907,6 +907,34 @@ if ($page !== 'banner' && $page !== 'agenda') {
                             <input type="hidden" name="id" value="<?php echo (int)$editEvent['id']; ?>">
 
 <<<<<<< HEAD
+=======
+                        <div>
+                            <label>Vervang foto (optioneel)</label>
+                            <input type="file" name="page_image" accept="image/*" />
+                            <?php if ($editEvent['image']): ?>
+                                <div class="mt-2"><small>Huidige afbeelding:</small><br /> <img src="uploads/<?php echo htmlspecialchars($editEvent['image']); ?>" class="w-48 mt-2" alt=""></div>
+                            <?php endif; ?>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="bg-[#00811F] text-white px-4 py-2 rounded">Opslaan</button>
+                            <a href="admin.php?page=agenda" class="px-4 py-2 border rounded">Annuleer</a>
+                        </div>
+                    </form>
+                <?php else: ?>
+                    <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4">
+                        <h2 class="font-semibold">Nieuw evenement</h2>
+                        <input type="hidden" name="action" value="create">
+                        <div>
+                            <label>Titel</label>
+                            <input name="title" required class="w-full border px-3 py-2" />
+                        </div>
+                        <div>
+                            <label>Locatie</label>
+                            <input name="location" class="w-full border px-3 py-2" />
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+>>>>>>> origin/nathan
+                            <div>
                                 <label class="form-label">Titel</label>
                                 <input name="title" required class="form-input" value="<?php echo htmlspecialchars($editEvent['title']); ?>" />
                             </div>

@@ -73,7 +73,6 @@ try {
 
 <!-- Pagina content -->
 <main>
-<<<<<<< HEAD
     <?php
     // Fetch page blocks from database
     $pageBlocks = [];
@@ -100,13 +99,8 @@ try {
         </div>
     </section>
 
-    <div class="mobile flex  items-center justify-center">
-         <div class="bg-white p-6  shadow-lg max-w-xl mt-6 w-full border-r text-center">
-=======
-    <!-- Navigation bar ON TOP -->
     <div class="mobile flex items-center justify-center">
         <div class="bg-white p-6 shadow-lg max-w-xl mt-6 w-full border-r text-center">
->>>>>>> origin/nathan
             <a href="kennis.php"><h1 class="text-2xl text-[#00811F] font-semibold">Kennis & Vaardigheden</h1></a>
         </div>
         <div class="bg-white p-6 max-w-xl mt-6 w-full text-center border-r border-gray-500">
@@ -117,46 +111,20 @@ try {
         </div>
     </div>
 
-    <!-- Database blocks -->
-    <?php
-    $filteredBlocks = array_filter($pageBlocks, function($block) {
-        return !empty($block['image']) || strlen($block['body']) > 50;
-    });
-    ?>
-    <?php if (!empty($filteredBlocks)): ?>
+    <!-- Custom cards from database -->
+    <?php if (!empty($cardBlocks)): ?>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8 p-6">
-<<<<<<< HEAD
-        <?php if (!empty($cardBlocks)): ?>
-            <?php foreach ($cardBlocks as $block): ?>
-                <div class="flex flex-col justify-between bg-white p-6 shadow-lg">
-                    <?php if (!empty($block['title'])): ?>
-                        <h3 class="text-xl font-semibold mb-4"><?php echo htmlspecialchars($block['title']); ?></h3>
-                    <?php endif; ?>
-                    <?php if (!empty($block['body'])): ?>
-                        <p class="mb-4 text-gray-700"><?php echo nl2br(htmlspecialchars($block['body'])); ?></p>
-                    <?php endif; ?>
-                    <?php if (!empty($block['image'])): ?>
-                        <div class="mt-auto">
-                            <img src="../uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="w-full h-64 object-cover">
-                        </div>
-                    <?php endif; ?>
-                </div>
-            <?php endforeach; ?>
-        <?php endif; ?>
-=======
-        <?php foreach ($filteredBlocks as $block):
-            $hasImage = !empty($block['image']);
-        ?>
-            <div class="flex flex-col justify-between space-y-6 space-x-6 bg-white p-6">
-                <h3 class="text-xl font-semibold mb-4"><?php echo htmlspecialchars($block['title']); ?></h3>
-                <?php if (!empty($block['body'])): ?>
-                    <p><?php echo nl2br(htmlspecialchars($block['body'])); ?></p>
+        <?php foreach ($cardBlocks as $block): ?>
+            <div class="flex flex-col justify-between bg-white p-6 shadow-lg">
+                <?php if (!empty($block['title'])): ?>
+                    <h3 class="text-xl font-semibold mb-4"><?php echo htmlspecialchars($block['title']); ?></h3>
                 <?php endif; ?>
-                <?php if ($hasImage): ?>
-                    <div>
-                        <img src="../uploads/<?php echo htmlspecialchars($block['image']); ?>"
-                             alt="<?php echo htmlspecialchars($block['title']); ?>"
-                             class="w-full h-64 object-cover">
+                <?php if (!empty($block['body'])): ?>
+                    <p class="mb-4 text-gray-700"><?php echo nl2br(htmlspecialchars($block['body'])); ?></p>
+                <?php endif; ?>
+                <?php if (!empty($block['image'])): ?>
+                    <div class="mt-auto">
+                        <img src="../uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="w-full h-64 object-cover">
                     </div>
                 <?php endif; ?>
             </div>
@@ -167,7 +135,7 @@ try {
     <!-- Hardcoded blocks -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8 p-6">
         <div class="flex flex-col justify-between space-y-6 space-x-6 bg-white p-6">
-            <h3 class="text-xl font-semibold mb-4"> AI-vaardigheidstrainingen</h3>
+            <h3 class="text-xl font-semibold mb-4">AI-vaardigheidstrainingen</h3>
             <p class="">Workshops voor inwoners, jongeren en professionals over wat AI is en hoe je het verantwoord kunt gebruiken. Deze sessies zijn vergroten digitale vaardigheden. Hoe werkt het precies? Hoe kan AI jou helpen? Waar moet je aan denken als je het gebruikt?</p>
             <div class=""><img src="../images/wat_doen_we/kennis_vaardigheden/Wat_doen_we_%20AI-vaardigheidstrainingen.jpg" alt="SociaalAI Inspiratiedag" class="w-full h-64 object-cover"></div>
         </div>
@@ -201,33 +169,6 @@ try {
             <p class="">Ontdek spelenderwijs hoe generatieve AI werkt, welke vooroordelen erin kunnen zitten en hoe je technologie eerlijker kunt maken door aandacht voor macht‐ en ongelijkheid.</p>
             <div class=""><img src="../images/wat_doen_we/kennis_vaardigheden/Wat_doen_we_%20Feministische_AI.jpg" alt="SociaalAI Inspiratiedag" class="w-full h-64 object-cover"></div>
         </div>
-    </div>
-</main>
-
-<footer class="bg-white mt-16 shadow-inner">
-    <div class="flex justify-evenly py-6 items-center space-x-4">
-
-        <div class="w-32 h-20 flex items-center justify-center">
-            <img alt="logo techniek collage Rotterdam" src="../images/Techniek_College_Rotterdam_logoOP.png" class="max-w-full max-h-full object-contain">
-        </div>
-
-        <div class="w-32 h-20 flex items-center justify-center">
-            <img alt="logo hogeschool Rotterdam" src="../images/Hogeschool_Rotterdam.png" class="max-w-full max-h-full object-contain">
-        </div>
-
-        <div class="w-32 h-20 flex items-center justify-center">
-            <img alt="logo gemeente Rotterdam " src="../images/Gemeente_Rotterdam.png" class="max-w-full max-h-full object-contain">
-        </div>
-
-        <div class="w-32 h-20 flex items-center justify-center">
-            <img alt="erasmus universiteit" src="../images/Erasmus_uni.png" class="max-w-full max-h-full object-contain">
-        </div>
-
-        <div class="w-32 h-20 flex items-center justify-center">
-            <img alt="Erasmus Centre for Data Analytics" src="../images/Erasmus_DataOP.png" class="max-w-full max-h-full object-contain">
-        </div>
-
->>>>>>> origin/nathan
     </div>
 </main>
 
