@@ -50,18 +50,23 @@ try {
     <img src="<?php echo htmlspecialchars($banner1); ?>" alt="Banner 1" class="banner active w-full object-cover h-60 md:h-96">
     <img src="<?php echo htmlspecialchars($banner2); ?>" alt="Banner 2" class="banner w-full object-cover h-60 md:h-96">
 </div>
+<<<<<<< HEAD
 
 <nav class="bg-white shadow-md sticky top-0 z-40">
     <div class="flex justify-center items-center px-4 md:px-8 py-4">
 
         <button id="mobile-menu-toggle" class="md:hidden hamburger focus:outline-none" aria-label="Toggle navigation">
+=======
+<nav class="bg-white shadow-md">
+    <div class="navigatie max-w-6xl mx-auto px-4 py-3 flex justify-center md:justify-between items-center">
+        <button id="mobile-menu-toggle" class=" hamburger md:hidden self-end text-gray-700 focus:outline-none" aria-label="Open navigatie">
+>>>>>>> origin/nathan
             <i class="fa-solid fa-bars text-2xl"></i>
         </button>
 
         <div id="mobile-menu" class="menu hidden md:flex pr-5 space-x-8 font-medium items-center">
             <a href="index.php" class="menu inline-flex items-center gap-1 text-gray-700 hover:text-[#00811F] transition"><i class="fa-solid fa-house"></i> Voorpagina</a>
             <a href="agenda.php" class="menu text-gray-700 hover:text-[#00811F] transition">Agenda</a>
-            <a href="event.php" class="menu text-gray-700 hover:text-[#00811F] transition">Evenementen</a>
             <a href="terugblikken.php" class="menu text-gray-700 hover:text-[#00811F] transition">Terugblikken</a>
             <a href="over.php" class="menu text-gray-700 hover:text-[#00811F] transition">Voor wie?</a>
 
@@ -79,9 +84,9 @@ try {
                 </div>
             </div>
 
-            <a href="verantwoord-ai.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Verantwoorde AI</a>
-            <a href="wie-zijn-we.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Wie zijn we?</a>
-            <a href="contact.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Contact</a>
+            <a href="verantwoord-ai.php" class="menu text-gray-700 hover:text-[#00811F] transition">Verantwoorde AI</a>
+            <a href="wie-zijn-we.php" class="menu text-gray-700 hover:text-[#00811F] transition">Wie zijn we?</a>
+            <a href="contact.php" class="menu text-gray-700 hover:text-[#00811F] transition">Contact</a>
             <?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
                 <a href="admin.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Admin</a>
             <?php endif; ?>

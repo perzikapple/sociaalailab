@@ -65,7 +65,6 @@ try {
         <div id="mobile-menu" class="menu hidden md:flex pr-5 space-x-8 font-medium items-center">
             <a href="index.php" class="menu inline-flex items-center gap-1 text-gray-700 hover:text-[#00811F] transition"><i class="fa-solid fa-house"></i> Voorpagina</a>
             <a href="agenda.php" class="menu text-gray-700 hover:text-[#00811F] transition">Agenda</a>
-            <a href="event.php" class="menu text-gray-700 hover:text-[#00811F] transition">Evenementen</a>
             <a href="terugblikken.php" class="menu text-gray-700 hover:text-[#00811F] transition">Terugblikken</a>
             <a href="over.php" class="menu text-gray-700 hover:text-[#00811F] transition">Voor wie?</a>
 
@@ -125,21 +124,17 @@ try {
         </div>
     </section>
             
+    <!-- Database bloks NOT Hardcoded -->
     <?php
     foreach ($pageBlocks as $block):
         $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
         $hasImage = !empty($block['image']);
-        $imageClass = $hasImage ? 'with-image' : '';
     ?>
-        <section class="text-block <?php echo htmlspecialchars($imageClass); ?> bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
-            <?php if ($hasImage): ?>
-                <div class="text-block-image-container">
-                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" class="text-block-image">
-                </div>
-            <?php endif; ?>
-            <div class="text-block-content">
+        <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
+            <!-- Text Content ON TOP -->
+            <div class="mb-6">
                 <?php if (!empty($block['title'])): ?>
-                    <h3 class="text-2xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($block['title']); ?></h3>
+                    <h3 class="font-bold text-2xl mb-2"><?php echo htmlspecialchars($block['title']); ?></h3>
                 <?php endif; ?>
                 <?php if (!empty($block['body'])): ?>
                     <div class="text-gray-700 leading-relaxed"><?php echo nl2br(htmlspecialchars($block['body'])); ?></div>
@@ -149,12 +144,26 @@ try {
                     <div class="text-gray-700 mt-2"><strong>Adres:</strong> <a href="<?php echo googleMapsDirectionsUrl($addr); ?>" target="_blank" rel="noopener noreferrer" class="underline hover:text-[#00811F]"><?php echo htmlspecialchars($addr); ?></a></div>
                 <?php endif; ?>
                 <?php if (!empty($metaArr['email'])): ?>
-                    <div class="text-gray-700"><strong>Email:</strong> <?php echo htmlspecialchars($metaArr['email']); ?></div>
-                <?php endif; ?>
-                <?php if (!empty($metaArr['map_embed'])): ?>
-                    <div class="mt-2"><?php echo $metaArr['map_embed']; ?></div>
+                    <div class="text-gray-700 mt-2">
+                        <a href="mailto:<?php echo htmlspecialchars($metaArr['email']); ?>">
+                            <?php echo htmlspecialchars($metaArr['email']); ?>
+                        </a>
+                    </div>
                 <?php endif; ?>
             </div>
+            
+            <!-- Image BELOW TEXT -->
+            <?php if ($hasImage): ?>
+                <div>
+                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" 
+                         alt="<?php echo htmlspecialchars($block['title']); ?>" 
+                         class="w-auto h-64 object-cover rounded shadow-md">
+                </div>
+            <?php endif; ?>
+            
+            <?php if (!empty($metaArr['map_embed'])): ?>
+                <div class="mt-4"><?php echo $metaArr['map_embed']; ?></div>
+            <?php endif; ?>
         </section>
     <?php endforeach; ?>
 </main>

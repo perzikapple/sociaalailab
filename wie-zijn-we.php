@@ -88,25 +88,49 @@ try {
 
 <main>
     <?php
+    $index = 0;
     foreach ($pageBlocks as $block):
         $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
         $hasImage = !empty($block['image']);
-        $imageClass = $hasImage ? 'with-image' : '';
+        $isEven = ($index % 2 == 0);
+        $index++;
     ?>
-        <section class="text-block <?php echo htmlspecialchars($imageClass); ?> bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
-            <?php if ($hasImage): ?>
-                <div class="text-block-image-container">
-                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" class="text-block-image">
+        <section class="flex flex-col md:flex-row items-start gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
+            <?php if ($isEven): ?>
+                <!-- EVEN: Image LEFT, Text RIGHT -->
+                <?php if ($hasImage): ?>
+                    <div class="flex-shrink-0" style="width: 300px; min-width: 300px;">
+                        <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" 
+                             alt="<?php echo htmlspecialchars($block['title']); ?>" 
+                             style="width: 100%; height: auto; max-height: 200px; object-fit: contain;">
+                    </div>
+                <?php endif; ?>
+                <div class="flex-1">
+                    <?php if (!empty($block['title'])): ?>
+                        <h3 class="font-bold text-xl mb-3"><?php echo htmlspecialchars($block['title']); ?></h3>
+                    <?php endif; ?>
+                    <?php if (!empty($block['body'])): ?>
+                        <div class="text-gray-700 text-sm leading-relaxed"><?php echo nl2br(htmlspecialchars($block['body'])); ?></div>
+                    <?php endif; ?>
                 </div>
+            <?php else: ?>
+                <!-- ODD: Text LEFT, Image RIGHT -->
+                <div class="flex-1">
+                    <?php if (!empty($block['title'])): ?>
+                        <h3 class="font-bold text-xl mb-3"><?php echo htmlspecialchars($block['title']); ?></h3>
+                    <?php endif; ?>
+                    <?php if (!empty($block['body'])): ?>
+                        <div class="text-gray-700 text-sm leading-relaxed"><?php echo nl2br(htmlspecialchars($block['body'])); ?></div>
+                    <?php endif; ?>
+                </div>
+                <?php if ($hasImage): ?>
+                    <div class="flex-shrink-0" style="width: 300px; min-width: 300px;">
+                        <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" 
+                             alt="<?php echo htmlspecialchars($block['title']); ?>" 
+                             style="width: 100%; height: auto; max-height: 200px; object-fit: contain;">
+                    </div>
+                <?php endif; ?>
             <?php endif; ?>
-            <div class="text-block-content">
-                <?php if (!empty($block['title'])): ?>
-                    <h3 class="text-2xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($block['title']); ?></h3>
-                <?php endif; ?>
-                <?php if (!empty($block['body'])): ?>
-                    <div class="text-gray-700 leading-relaxed"><?php echo nl2br(htmlspecialchars($block['body'])); ?></div>
-                <?php endif; ?>
-            </div>
         </section>
     <?php endforeach; ?>
 </main>

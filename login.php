@@ -13,8 +13,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $message = 'Invalid email format.';
     } else {
+<<<<<<< HEAD
         // Look up user in database
         $stmt = $pdo->prepare("SELECT id, email, wachtwoord FROM accounts WHERE email = ?");
+=======
+        $stmt = $pdo->prepare("SELECT wachtwoord, admin FROM accounts WHERE email = ?");
+>>>>>>> origin/nathan
         $stmt->execute([$email]);
         $user = $stmt->fetch();
 

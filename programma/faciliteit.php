@@ -74,6 +74,7 @@ try {
 
 <!-- Pagina content -->
 <main>
+<<<<<<< HEAD
     <?php
     // Fetch page blocks from database
     $pageBlocks = [];
@@ -102,16 +103,22 @@ try {
 
       <div class="mobile flex flex-row flex-1 items-center justify-center mt-10">
          <div class="bg-white p-6 shadow-lg max-w-xl mt-6 w-full border-r text-center">
+=======
+    <!-- Navigation bar ON TOP -->
+    <div class="mobile flex flex-row flex-1 items-center justify-center mt-10">
+        <div class="bg-white p-6 shadow-lg max-w-xl mt-6 w-full border-r text-center">
+>>>>>>> origin/nathan
             <a href="kennis.php"><h1 class="text-2xl hover:text-[#00811F] font-semibold">Kennis & Vaardigheden</h1></a>
         </div>
         <div class="bg-white p-6 max-w-xl mt-6 w-full text-center border-r border-gray-500">
-            <a href="actie.php"><h1 class="text-2xl hover:text-[#00811F]  font-semibold">Actie, Onderzoek & Ontwerp</h1></a>
+            <a href="actie.php"><h1 class="text-2xl hover:text-[#00811F] font-semibold">Actie, Onderzoek & Ontwerp</h1></a>
         </div>
-         <div class="bg-white p-6  max-w-xl mt-6 w-full text-center">
+        <div class="bg-white p-6 max-w-xl mt-6 w-full text-center">
             <a href="faciliteit.php"><h1 class="text-2xl text-[#00811F] font-semibold">Faciliteiten</h1></a>
         </div>
     </div>
 
+<<<<<<< HEAD
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8 p-6">
         <?php if (!empty($cardBlocks)): ?>
             <?php foreach ($cardBlocks as $block): ?>
@@ -125,11 +132,86 @@ try {
                     <?php if (!empty($block['image'])): ?>
                         <div class="mt-auto">
                             <img src="../uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="w-full h-64 object-cover">
+=======
+    <!-- Database blocks - matching hardcoded 2 column layout -->
+    <?php
+    $chunks = array_chunk($pageBlocks, 2);
+    foreach ($chunks as $chunk):
+    ?>
+        <div class="mobile-col flex justify-evenly gap-8 p-6">
+            <?php foreach ($chunk as $block):
+                $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
+                $hasImage = !empty($block['image']);
+            ?>
+                <div class="relative space-y-6 space-x-6 bg-white p-6 flex-1">
+                    <h3 class="text-xl font-semibold mb-4"><?php echo htmlspecialchars($block['title']); ?></h3>
+                    <?php if (!empty($block['body'])): ?>
+                        <p class="h-40"><?php echo nl2br(htmlspecialchars($block['body'])); ?></p>
+                    <?php endif; ?>
+                    <?php if ($hasImage): ?>
+                        <div class="flex-1">
+                            <img src="../uploads/<?php echo htmlspecialchars($block['image']); ?>" 
+                                 alt="<?php echo htmlspecialchars($block['title']); ?>" 
+                                 class="w-full h-64 object-cover">
+>>>>>>> origin/nathan
                         </div>
                     <?php endif; ?>
                 </div>
             <?php endforeach; ?>
+<<<<<<< HEAD
         <?php endif; ?>
+=======
+        </div>
+    <?php endforeach; ?>
+
+    <!-- Hardcoded blocks -->
+    <div class="mobile-col flex justify-evenly gap-8 p-6">
+        <div class="relative space-y-6 space-x-6 bg-white p-6 flex-1">
+            <h3 class="text-xl font-semibold mb-4">Het Sociaal AI Lab is op Hillevliet en online te bezoeken.</h3>
+            <p class="h-40">
+                Het Lab biedt de plek én de technische ondersteuning voor alle activiteiten van het programma. Dat kan op locatie aan de Hillevliet, maar ook in een digitale omgeving. Het Lab is het kloppende hart van het programma.
+            </p>
+            <div class="flex-1">
+                <img src="../images/wat_doen_we/faciliteiten/Wat_doen_we_Sociaal_AI%20Lab_Rotterdam.png" alt="SociaalAI Inspiratiedag" class="w-full h-64 object-cover">
+            </div>
+        </div>
+        
+        <div class="relative space-y-6 space-x-6 bg-white p-6 flex-1">
+            <h3 class="text-xl font-semibold mb-4">De mobiele AI Labkar – een pop-uplocatie waar bewoners kunnen kennismaken met AI</h3>
+            <p class="h-40">
+                Samen met bewoners ontwerpen we AI-oplossingen voor sociale vraagstukken, bijvoorbeeld rond armoede, zorg of veiligheid. Rotterdammers zetten tijdens deze activiteiten hun behoeftes aan eerlijke technologie en praktische oplossingen om in de praktijk
+            </p>
+            <div class="flex-1">
+                <img src="../images/wat_doen_we/faciliteiten/Wat_doen_we_AI_Labkar.png" alt="SociaalAI Inspiratiedag" class="w-full h-64 object-cover">
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer class="bg-white mt-16 shadow-inner">
+    <div class="flex justify-evenly py-6 items-center space-x-4">
+
+        <div class="w-32 h-20 flex items-center justify-center">
+            <img alt="logo techniek collage Rotterdam" src="../images/Techniek_College_Rotterdam_logoOP.png" class="max-w-full max-h-full object-contain">
+        </div>
+
+        <div class="w-32 h-20 flex items-center justify-center">
+            <img alt="logo hogeschool Rotterdam" src="../images/Hogeschool_Rotterdam.png" class="max-w-full max-h-full object-contain">
+        </div>
+
+        <div class="w-32 h-20 flex items-center justify-center">
+            <img alt="logo gemeente Rotterdam " src="../images/Gemeente_Rotterdam.png" class="max-w-full max-h-full object-contain">
+        </div>
+
+        <div class="w-32 h-20 flex items-center justify-center">
+            <img alt="erasmus universiteit" src="../images/Erasmus_uni.png" class="max-w-full max-h-full object-contain">
+        </div>
+
+        <div class="w-32 h-20 flex items-center justify-center">
+            <img alt="Erasmus Centre for Data Analytics" src="../images/Erasmus_DataOP.png" class="max-w-full max-h-full object-contain">
+        </div>
+
+>>>>>>> origin/nathan
     </div>
 </main>
 

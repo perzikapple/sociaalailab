@@ -10,9 +10,9 @@ $message = '';
 // Helper voor upload
 function handleUpload($fileField) {
     if (empty($_FILES[$fileField]['name'])) return null;
-    $allowed = ['image/jpeg','image/png','image/gif'];
-    if (!in_array($_FILES[$fileField]['type'], $allowed) || $_FILES[$fileField]['size'] > 2 * 1024 * 1024) {
-        return ['error' => 'Ongeldig afbeeldingsbestand (jpg/png/gif, max 2MB).'];
+    $allowed = ['image/jpeg','image/png','image/gif','image/webp'];
+    if (!in_array($_FILES[$fileField]['type'], $allowed) || $_FILES[$fileField]['size'] > 10 * 1024 * 1024) {
+        return ['error' => 'Ongeldig afbeeldingsbestand (jpg/png/gif/webp, max 10MB).'];
     }
     if (!is_dir(__DIR__ . '/uploads')) mkdir(__DIR__ . '/uploads', 0755, true);
     $ext = pathinfo($_FILES[$fileField]['name'], PATHINFO_EXTENSION);
@@ -315,7 +315,8 @@ if ($pageAction === 'create_page') {
             if (!empty($_POST['map_embed'])) $meta['map_embed'] = $_POST['map_embed'];
         }
 
-        $upload = handleUpload('page_image');
+        // Change 'page_image' to 'image' to match the form field name
+        $upload = handleUpload('image');
         $imageName = $upload['name'] ?? null;
 
         $maxStmt = $pdo->prepare('SELECT COALESCE(MAX(sort_order), 0) FROM pages WHERE page_key = ?');
@@ -363,7 +364,8 @@ if ($pageAction === 'create_page') {
             if (!empty($_POST['map_embed'])) $meta['map_embed'] = $_POST['map_embed'];
         }
 
-        $upload = handleUpload('page_image');
+        // Change 'page_image' to 'image' to match the form field name
+        $upload = handleUpload('image');
         $imageName = $upload['name'] ?? $oldImage;
 
         $stmt = $pdo->prepare(
@@ -523,7 +525,9 @@ if ($page !== 'banner' && $page !== 'agenda') {
 <title>Admin - SociaalAI Lab</title>
 <link rel="stylesheet" href="build/assets/app-DozK-03z.css">
 <link rel="stylesheet" href="custom.css">
+<link rel="stylesheet" href="admin-styles.css">
 <link rel="stylesheet" href="ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<<<<<<< HEAD
 <style>
     body {
         background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
@@ -797,8 +801,10 @@ if ($page !== 'banner' && $page !== 'agenda') {
         background: #006618;
     }
 </style>
+=======
+>>>>>>> origin/nathan
 </head>
-<body>
+<body class="admin-page">
 <nav class="admin-header text-white p-4 sticky top-0 z-50">
     <div class="max-w-7xl mx-auto flex justify-between items-center">
         <div class="flex items-center gap-2">
@@ -900,6 +906,34 @@ if ($page !== 'banner' && $page !== 'agenda') {
                             <input type="hidden" name="action" value="update">
                             <input type="hidden" name="id" value="<?php echo (int)$editEvent['id']; ?>">
 
+<<<<<<< HEAD
+=======
+                        <div>
+                            <label>Vervang foto (optioneel)</label>
+                            <input type="file" name="page_image" accept="image/*" />
+                            <?php if ($editEvent['image']): ?>
+                                <div class="mt-2"><small>Huidige afbeelding:</small><br><img src="uploads/<?php echo htmlspecialchars($editEvent['image']); ?>" class="w-48 mt-2" alt=""></div>
+                            <?php endif; ?>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="bg-[#00811F] text-white px-4 py-2 rounded">Opslaan</button>
+                            <a href="admin.php?page=agenda" class="px-4 py-2 border rounded">Annuleer</a>
+                        </div>
+                    </form>
+                <?php else: ?>
+                    <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4">
+                        <h2 class="font-semibold">Nieuw evenement</h2>
+                        <input type="hidden" name="action" value="create">
+                        <div>
+                            <label>Titel</label>
+                            <input name="title" required class="w-full border px-3 py-2" />
+                        </div>
+                        <div>
+                            <label>Locatie</label>
+                            <input name="location" class="w-full border px-3 py-2" />
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+>>>>>>> origin/nathan
                             <div>
                                 <label class="form-label">Titel</label>
                                 <input name="title" required class="form-input" value="<?php echo htmlspecialchars($editEvent['title']); ?>" />
