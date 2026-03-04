@@ -74,55 +74,57 @@ try {
 <!-- Pagina content -->
 <main>
     <?php
+    // Fallback blocks for seeding
     $fallbackBlocks = [
         [
             'title' => 'Digiderius – de digitale Erasmus',
             'body' => 'Digiderius is een "digitaal mens" waarmee deelnemers kunnen praten over onderwerpen als onderwijs, cultuur en technologie. Ontdek zelf hoe jij deze digitale gesprekspartner ervaart.',
             'image' => 'images/wat_doen_we/actie_onderzoek_ontwerp/Wat_doen_we_%20Digiderius.jpeg',
-            'meta' => null,
+            'meta' => null
         ],
         [
             'title' => 'Samen AI-toepassingen ontwerpen',
             'body' => 'Samen met bewoners ontwerpen we AI-oplossingen voor sociale vraagstukken, bijvoorbeeld rond armoede, zorg of veiligheid.',
             'image' => 'images/wat_doen_we/actie_onderzoek_ontwerp/Wat_doen_we_Samen_AI_toepassingen_ontwerpen.jpeg',
-            'meta' => null,
+            'meta' => null
         ],
         [
             'title' => 'Inclusieve zorg en AI',
             'body' => 'Met Rotterdamse vrouwen en non-binaire personen van kleur bespreken we uitsluiting en vooroordelen in de zorg.',
             'image' => 'images/wat_doen_we/actie_onderzoek_ontwerp/Wat_doen_we_%20Inclusieve_AI_in_de_Zorg.JPG',
-            'meta' => null,
+            'meta' => null
         ],
         [
             'title' => 'Ondersteuning aan bewoners verbeteren met AI?',
             'body' => 'We onderzoeken samen hoe AI kan helpen om Rotterdammers met weinig digitale ervaring beter te ondersteunen.',
             'image' => 'images/wat_doen_we/actie_onderzoek_ontwerp/Wat_doen_we_Ondersteuning_aan_bewoners_verbeteren_%20met_AI.jpg',
-            'meta' => null,
+            'meta' => null
         ],
         [
             'title' => 'Verantwoorde AI binnen organisaties (ELSA-aanpak)',
             'body' => 'We willen begrijpen of AI goed, rechtvaardig en maatschappelijk verantwoord is, vooral als we het inzetten in publieke diensten.',
             'image' => 'images/wat_doen_we/actie_onderzoek_ontwerp/Wat_doen_we_Verantwoorde_AI_binnen%20_Organizaties_%28ELSA-aanpak%29.png',
-            'meta' => null,
+            'meta' => null
         ],
         [
             'title' => 'Studenten en bewoners verkennen de sociale invloed van AI',
             'body' => 'Samen met bewoners uit de omgeving van de Hillevliet, onderzoeken studenten wat AI betekent voor de wijk.',
             'image' => 'images/wat_doen_we/actie_onderzoek_ontwerp/Wat_doen_we_%20Studenten_en_bewoners_verkennen_de_sociale_invloed_van_AI.jpg',
-            'meta' => null,
+            'meta' => null
         ],
         [
             'title' => 'Wijkbots – in te zetten voor een betrokken stad?',
             'body' => 'We kijken hoe slimme, zelfstandige machines in de toekomst kunnen helpen in onze openbare ruimtes.',
             'image' => 'images/wat_doen_we/actie_onderzoek_ontwerp/Wat_doen_we_wijkbots.jpg',
-            'meta' => null,
-        ],
+            'meta' => null
+        ]
     ];
 
-    seed_page_blocks($pdo, 'programma-actie', $fallbackBlocks);
+    // Seed fallback blocks if they don't exist
     try {
         $checkStmt = $pdo->prepare('SELECT COUNT(*) FROM pages WHERE page_key = ? AND title = ?');
-        $insertStmt = $pdo->prepare('INSERT INTO pages (page_key, title, body, image, meta, created_at) VALUES (?, ?, ?, ?, ?, NOW())');
+        $insertStmt = $pdo->prepare('INSERT INTO pages (page_key, title, body, image, meta, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())');
+        
         foreach ($fallbackBlocks as $block) {
             $checkStmt->execute(['programma-actie', $block['title'] ?? null]);
             if ((int)$checkStmt->fetchColumn() === 0) {
@@ -131,12 +133,12 @@ try {
                     $block['title'] ?? null,
                     $block['body'] ?? null,
                     $block['image'] ?? null,
-                    $block['meta'] ?? null,
+                    $block['meta'] ?? null
                 ]);
             }
         }
     } catch (Exception $e) {
-        // Keep page rendering even if fallback sync fails
+        // Seeding failed, continue anyway
     }
 
     // Fetch page blocks from database
@@ -188,17 +190,17 @@ try {
                     <p class="mb-4 text-gray-700"><?php echo nl2br(htmlspecialchars($block['body'])); ?></p>
                 <?php endif; ?>
                 <?php if (!empty($block['image'])): ?>
+                    <?php
+                    $imagePath = trim((string)$block['image']);
+                    if (strpos($imagePath, 'images/') === 0 || strpos($imagePath, 'uploads/') === 0) {
+                        $imageSrc = '../' . $imagePath;
+                    } elseif (strpos($imagePath, '../') === 0 || preg_match('#^https?://#i', $imagePath)) {
+                        $imageSrc = $imagePath;
+                    } else {
+                        $imageSrc = '../uploads/' . $imagePath;
+                    }
+                    ?>
                     <div class="mt-auto">
-                        <?php
-                            $imagePath = trim((string)$block['image']);
-                            if (strpos($imagePath, 'images/') === 0 || strpos($imagePath, 'uploads/') === 0) {
-                                $imageSrc = '../' . $imagePath;
-                            } elseif (strpos($imagePath, '../') === 0 || preg_match('#^https?://#i', $imagePath)) {
-                                $imageSrc = $imagePath;
-                            } else {
-                                $imageSrc = '../uploads/' . $imagePath;
-                            }
-                        ?>
                         <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="w-full h-64 object-cover">
                     </div>
                 <?php endif; ?>

@@ -75,25 +75,27 @@ try {
 <!-- Pagina content -->
 <main>
     <?php
+    // Fallback blocks for seeding
     $fallbackBlocks = [
         [
             'title' => 'Het Sociaal AI Lab is op Hillevliet en online te bezoeken.',
             'body' => 'Het Lab biedt de plek én de technische ondersteuning voor alle activiteiten van het programma. Dat kan op locatie aan de Hillevliet, maar ook in een digitale omgeving. Het Lab is het kloppende hart van het programma.',
             'image' => 'images/wat_doen_we/faciliteiten/Wat_doen_we_Sociaal_AI%20Lab_Rotterdam.png',
-            'meta' => null,
+            'meta' => null
         ],
         [
             'title' => 'De mobiele AI Labkar – een pop-uplocatie waar bewoners kunnen kennismaken met AI',
             'body' => 'Samen met bewoners ontwerpen we AI-oplossingen voor sociale vraagstukken, bijvoorbeeld rond armoede, zorg of veiligheid. Rotterdammers zetten tijdens deze activiteiten hun behoeftes aan eerlijke technologie en praktische oplossingen om in de praktijk',
             'image' => 'images/wat_doen_we/faciliteiten/Wat_doen_we_AI_Labkar.png',
-            'meta' => null,
-        ],
+            'meta' => null
+        ]
     ];
 
-    seed_page_blocks($pdo, 'programma-faciliteit', $fallbackBlocks);
+    // Seed fallback blocks if they don't exist
     try {
         $checkStmt = $pdo->prepare('SELECT COUNT(*) FROM pages WHERE page_key = ? AND title = ?');
-        $insertStmt = $pdo->prepare('INSERT INTO pages (page_key, title, body, image, meta, created_at) VALUES (?, ?, ?, ?, ?, NOW())');
+        $insertStmt = $pdo->prepare('INSERT INTO pages (page_key, title, body, image, meta, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())');
+        
         foreach ($fallbackBlocks as $block) {
             $checkStmt->execute(['programma-faciliteit', $block['title'] ?? null]);
             if ((int)$checkStmt->fetchColumn() === 0) {
@@ -102,12 +104,12 @@ try {
                     $block['title'] ?? null,
                     $block['body'] ?? null,
                     $block['image'] ?? null,
-                    $block['meta'] ?? null,
+                    $block['meta'] ?? null
                 ]);
             }
         }
     } catch (Exception $e) {
-        // Keep page rendering even if fallback sync fails
+        // Seeding failed, continue anyway
     }
 
     // Fetch page blocks from database
@@ -159,17 +161,17 @@ try {
                     <p class="mb-4 text-gray-700"><?php echo nl2br(htmlspecialchars($block['body'])); ?></p>
                 <?php endif; ?>
                 <?php if (!empty($block['image'])): ?>
+                    <?php
+                    $imagePath = trim((string)$block['image']);
+                    if (strpos($imagePath, 'images/') === 0 || strpos($imagePath, 'uploads/') === 0) {
+                        $imageSrc = '../' . $imagePath;
+                    } elseif (strpos($imagePath, '../') === 0 || preg_match('#^https?://#i', $imagePath)) {
+                        $imageSrc = $imagePath;
+                    } else {
+                        $imageSrc = '../uploads/' . $imagePath;
+                    }
+                    ?>
                     <div class="mt-auto">
-                        <?php
-                            $imagePath = trim((string)$block['image']);
-                            if (strpos($imagePath, 'images/') === 0 || strpos($imagePath, 'uploads/') === 0) {
-                                $imageSrc = '../' . $imagePath;
-                            } elseif (strpos($imagePath, '../') === 0 || preg_match('#^https?://#i', $imagePath)) {
-                                $imageSrc = $imagePath;
-                            } else {
-                                $imageSrc = '../uploads/' . $imagePath;
-                            }
-                        ?>
                         <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="w-full h-64 object-cover">
                     </div>
                 <?php endif; ?>
