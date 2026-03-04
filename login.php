@@ -24,14 +24,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (!$user) {
             $message = 'Email or password incorrect.';
-        } elseif (!password_verify($pass, $user['wachtwoord'])) {
+        } elseif ($pass !== $user['wachtwoord']) {
             $message = 'Email or password incorrect.';
         } else {
             // Set session and redirect
             $_SESSION['user_id'] = $user['id'];
+            $_SESSION['user'] = $user['email'];
             $_SESSION['email'] = $user['email'];
-            $_SESSION['admin'] = 0;
-            header('Location: index.php?login=successful');
+            $_SESSION['admin'] = 1;
+            header('Location: admin.php');
             exit;
         }
     }

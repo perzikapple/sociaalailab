@@ -26,6 +26,19 @@ try {
     $stmt->execute();
     $pageBlocks = $stmt->fetchAll();
     $stmt = $pdo->prepare("SELECT * FROM events WHERE date >= CURDATE() ORDER BY date, time LIMIT 2");
+// Zorg ervoor dat show_on_homepage kolom bestaat
+    try {
+        $columns = $pdo->query("SHOW COLUMNS FROM events")->fetchAll(PDO::FETCH_COLUMN);
+        if (!in_array('show_on_homepage', $columns)) {
+            $pdo->exec("ALTER TABLE events ADD COLUMN show_on_homepage TINYINT(1) DEFAULT 1");
+        }
+        // Update alle bestaande events die NULL hebben
+        $pdo->exec("UPDATE events SET show_on_homepage = 1 WHERE show_on_homepage IS NULL");
+    } catch (Exception $e) {
+        // Kolom exists already
+    }
+    
+    $stmt = $pdo->prepare("SELECT * FROM events WHERE date >= CURDATE() AND (show_on_homepage IS NULL OR show_on_homepage = 1) ORDER BY date, time LIMIT 2");
     $stmt->execute();
     $events = $stmt->fetchAll();
 } catch (Exception $e) {

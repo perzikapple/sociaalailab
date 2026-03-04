@@ -20,11 +20,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit;
     }
 
-    $hashed_password = password_hash($pass, PASSWORD_DEFAULT);
-
     $sql = "INSERT INTO accounts (email, wachtwoord) VALUES (?, ?)";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ss", $user, $hashed_password);
+    $stmt->bind_param("ss", $user, $pass);
 
     if ($stmt->execute()) {
         echo "Registration successful!";
