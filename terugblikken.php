@@ -128,10 +128,10 @@ try {
                 <?php if (!empty($metaArr['date']) || !empty($metaArr['time'])): ?>
                     <div class="text-gray-600 text-xs sm:text-sm mt-2 flex flex-col sm:flex-row gap-2 sm:gap-4">
                         <?php if (!empty($metaArr['date'])): ?>
-                            <span><strong>Datum:</strong> <?php echo htmlspecialchars($metaArr['date']); ?></span>
+                            <span><strong>Datum:</strong> <?php echo htmlspecialchars(formatEventDateDisplay($metaArr['date'])); ?></span>
                         <?php endif; ?>
                         <?php if (!empty($metaArr['time'])): ?>
-                            <span><strong>Tijd:</strong> <?php echo htmlspecialchars($metaArr['time']); ?></span>
+                            <span><strong>Tijd:</strong> <?php echo htmlspecialchars(formatEventTimeDisplay($metaArr['time'])); ?></span>
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>
@@ -159,7 +159,8 @@ try {
             <div class="space-y-4">
                 <div class="flex items-center space-x-3">
                     <i class="fa-regular fa-calendar text-[#00811F] ml-[2px]  text-3xl"></i>
-                    <p class="text-gray-700"><strong> Wanneer:</strong> <?php echo htmlspecialchars($event['date']); ?> <?php echo $event['time'] ? '- ' . htmlspecialchars($event['time']) : ''; ?></p>
+                    <?php $dateDisplay = formatEventDateDisplay($event['date']); $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : ''; ?>
+                    <p class="text-gray-700"><strong> Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?> <?php echo $timeDisplay ? '- ' . htmlspecialchars($timeDisplay) : ''; ?></p>
                 </div>
                 <div class="flex items-center space-x-3">
                     <i class="fa-solid fa-location-dot text-[#00811F] ml-1 text-3xl"></i>
