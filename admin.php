@@ -875,9 +875,12 @@ if ($page !== 'banner' && $page !== 'agenda') {
 
                             <div>
                                 <label class="form-label">Afbeelding (optioneel)</label>
-                                <input type="file" name="page_image" accept="image/*" class="form-input" />
+                                <input type="file" name="image" accept="image/*" class="form-input" />
                                 <?php if (!empty($editPage['image'])): ?>
-                                    <p class="text-sm mt-2 text-gray-600">Huidige afbeelding: <?php echo htmlspecialchars($editPage['image']); ?></p>
+                                    <div class="mt-2 flex items-center gap-3">
+                                        <img src="uploads/<?php echo htmlspecialchars($editPage['image']); ?>" alt="Huidige afbeelding" class="w-24 h-16 object-cover rounded shadow">
+                                        <p class="text-sm text-gray-600">Huidige afbeelding: <?php echo htmlspecialchars($editPage['image']); ?></p>
+                                    </div>
                                 <?php endif; ?>
                             </div>
 
@@ -903,7 +906,7 @@ if ($page !== 'banner' && $page !== 'agenda') {
 
                             <div>
                                 <label class="form-label">Afbeelding (optioneel)</label>
-                                <input type="file" name="page_image" accept="image/*" class="form-input" />
+                                <input type="file" name="image" accept="image/*" class="form-input" />
                             </div>
 
                             <button type="submit" class="btn btn-primary">
@@ -949,7 +952,7 @@ if ($page !== 'banner' && $page !== 'agenda') {
                                         <div class="flex gap-2 flex-shrink-0">
                                             <?php if (!empty($it['image'])): ?>
                                                 <a href="#" class="btn btn-secondary btn-sm" onclick="openImageModal(event, 'uploads/<?php echo htmlspecialchars($it['image']); ?>')">
-                                                    <i class="fa-solid fa-image"></i> Foto
+                                                    <img src="uploads/<?php echo htmlspecialchars($it['image']); ?>" alt="foto" class="w-8 h-8 object-cover rounded inline-block mr-1">Foto
                                                 </a>
                                             <?php endif; ?>
                                             <div class="flex flex-col gap-1">
