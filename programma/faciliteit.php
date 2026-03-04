@@ -8,8 +8,10 @@ $banner1 = '../images/banner_website_01.jpg';
 $banner2 = '../images/banner_website_02.jpg';
 
 try {
-    $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: $banner1;
-    $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: $banner2;
+    $b1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn();
+    $b2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn();
+    if ($b1) $banner1 = (strpos($b1, 'images/') === 0) ? '../' . $b1 : $b1;
+    if ($b2) $banner2 = (strpos($b2, 'images/') === 0) ? '../' . $b2 : $b2;
 } catch (Exception $e) {
     // Use fallbacks
 }
@@ -86,30 +88,22 @@ try {
     } catch (Exception $e) {
         $pageBlocks = [];
     }
+
+    $cardBlocks = array_values(array_filter($pageBlocks, function ($block) {
+        $title = trim((string)($block['title'] ?? ''));
+        return $title !== 'Faciliteiten';
+    }));
     
-    // Display custom text blocks from admin
-    foreach ($pageBlocks as $block):
-        $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
-        $hasImage = !empty($block['image']);
-        $imageClass = $hasImage ? 'with-image' : '';
+    // Display custom cards from admin
     ?>
-        <section class="text-block <?php echo htmlspecialchars($imageClass); ?> bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
-            <?php if ($hasImage): ?>
-                <div class="text-block-image-container">
-                    <img src="../uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" class="text-block-image">
-                </div>
-            <?php endif; ?>
-            <div class="text-block-content">
-                <?php if (!empty($block['title'])): ?>
-                    <h3 class="text-2xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($block['title']); ?></h3>
-                <?php endif; ?>
-                <?php if (!empty($block['body'])): ?>
-                    <div class="text-gray-700 leading-relaxed"><?php echo nl2br(htmlspecialchars($block['body'])); ?></div>
-                <?php endif; ?>
-            </div>
-        </section>
-    <?php endforeach; ?>
-    
+
+    <section class="text-block bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
+        <div class="text-block-content">
+            <h3 class="text-2xl font-semibold mb-4 text-gray-900">Faciliteiten</h3>
+            <div class="text-gray-700 leading-relaxed">Het SociaalAI Lab biedt verschillende faciliteiten om AI toegankelijk te maken voor iedereen in Rotterdam.</div>
+        </div>
+    </section>
+
       <div class="mobile flex flex-row flex-1 items-center justify-center mt-10">
          <div class="bg-white p-6 shadow-lg max-w-xl mt-6 w-full border-r text-center">
             <a href="kennis.php"><h1 class="text-2xl hover:text-[#00811F] font-semibold">Kennis & Vaardigheden</h1></a>
@@ -122,28 +116,26 @@ try {
         </div>
     </div>
 
-    <div class="mobile-col flex justify-evenly gap-8 p-6">
-        <!-- Kolom 1 -->
-        <div class="space-y-6 space-x-6 bg-white p-6">
-                <h3 class="text-xl font-semibold mb-4">Het Sociaal AI Lab is op Hillevliet en online te bezoeken.</h3>
-                <p class="h-40">
-                Het Lab biedt de plek én de technische ondersteuning voor alle activiteiten van het programma. Dat kan op locatie aan de Hillevliet, maar ook in een digitale omgeving. Het Lab is het kloppende hart van het programma.
-                </p>
-                <div class="flex-1">
-                <img src="../images/wat_doen_we/faciliteiten/Wat_doen_we_Sociaal_AI%20Lab_Rotterdam.png" alt="SociaalAI Inspiratiedag" class="w-full h-64 object-cover">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 p-6">
+        <?php if (!empty($cardBlocks)): ?>
+            <?php foreach ($cardBlocks as $block): ?>
+                <div class="flex flex-col justify-between bg-white p-6 shadow-lg">
+                    <?php if (!empty($block['title'])): ?>
+                        <h3 class="text-xl font-semibold mb-4"><?php echo htmlspecialchars($block['title']); ?></h3>
+                    <?php endif; ?>
+                    <?php if (!empty($block['body'])): ?>
+                        <p class="mb-4 text-gray-700"><?php echo nl2br(htmlspecialchars($block['body'])); ?></p>
+                    <?php endif; ?>
+                    <?php if (!empty($block['image'])): ?>
+                        <div class="mt-auto">
+                            <img src="../uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="w-full h-64 object-cover">
+                        </div>
+                    <?php endif; ?>
                 </div>
-            </div>
-            
-            <div class="relative space-y-6 space-x-6 bg-white p-6">
-                <h3 class="text-xl font-semibold mb-4">De mobiele AI Labkar – een pop-uplocatie waar bewoners kunnen kennismaken met AI</h3>
-                <p class="h-40">
-                    Samen met bewoners ontwerpen we AI-oplossingen voor sociale vraagstukken, bijvoorbeeld rond armoede, zorg of veiligheid. Rotterdammers zetten tijdens deze activiteiten hun behoeftes aan eerlijke technologie en praktische oplossingen om in de praktijk
-                </p>
-                <div class="flex-1">
-                <img src="../images/wat_doen_we/faciliteiten/Wat_doen_we_AI_Labkar.png" alt="SociaalAI Inspiratiedag" class="w-full h-64 object-cover">
-                </div>
-            </div>
-</div></main>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </div>
+</main>
 
 <?php include __DIR__ . '/../footer.php'; ?>
 

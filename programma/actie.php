@@ -8,8 +8,10 @@ $banner1 = '../images/banner_website_01.jpg';
 $banner2 = '../images/banner_website_02.jpg';
 
 try {
-    $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: $banner1;
-    $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: $banner2;
+    $b1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn();
+    $b2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn();
+    if ($b1) $banner1 = (strpos($b1, 'images/') === 0) ? '../' . $b1 : $b1;
+    if ($b2) $banner2 = (strpos($b2, 'images/') === 0) ? '../' . $b2 : $b2;
 } catch (Exception $e) {
     // Use fallbacks
 }
@@ -85,30 +87,22 @@ try {
     } catch (Exception $e) {
         $pageBlocks = [];
     }
+
+    $cardBlocks = array_values(array_filter($pageBlocks, function ($block) {
+        $title = trim((string)($block['title'] ?? ''));
+        return $title !== 'Actie, Onderzoek & Ontwerp';
+    }));
     
-    // Display custom text blocks from admin
-    foreach ($pageBlocks as $block):
-        $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
-        $hasImage = !empty($block['image']);
-        $imageClass = $hasImage ? 'with-image' : '';
+    // Display custom cards from admin
     ?>
-        <section class="text-block <?php echo htmlspecialchars($imageClass); ?> bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
-            <?php if ($hasImage): ?>
-                <div class="text-block-image-container">
-                    <img src="../uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" class="text-block-image">
-                </div>
-            <?php endif; ?>
-            <div class="text-block-content">
-                <?php if (!empty($block['title'])): ?>
-                    <h3 class="text-2xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($block['title']); ?></h3>
-                <?php endif; ?>
-                <?php if (!empty($block['body'])): ?>
-                    <div class="text-gray-700 leading-relaxed"><?php echo nl2br(htmlspecialchars($block['body'])); ?></div>
-                <?php endif; ?>
-            </div>
-        </section>
-    <?php endforeach; ?>
-    
+
+    <section class="text-block bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
+        <div class="text-block-content">
+            <h3 class="text-2xl font-semibold mb-4 text-gray-900">Actie, Onderzoek &amp; Ontwerp</h3>
+            <div class="text-gray-700 leading-relaxed">We ontwikkelen samen met bewoners en organisaties innovatieve AI-toepassingen die bijdragen aan een betere samenleving.</div>
+        </div>
+    </section>
+
     <div class="mobile flex  items-center justify-center">
          <div class="bg-white p-6  shadow-lg max-w-xl mt-6 w-full border-r text-center">
             <a href="kennis.php"><h1 class="text-2xl hover:text-[#00811F] font-semibold">Kennis & Vaardigheden</h1></a>
@@ -122,73 +116,25 @@ try {
     </div>
              
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8 p-6">
-        <!-- Kolom 1 -->
-        <div class="flex flex-col justify-between space-y-6 space-x-6 bg-white p-6">
-                <h3 class="text-xl font-semibold mb-4">Digiderius – de digitale Erasmus</h3>
-                <p class="">
-                Digiderius is een “digitaal mens” waarmee deelnemers kunnen praten over onderwerpen als onderwijs, cultuur en technologie. Ontdek zelf hoe jij deze digitale gesprekspartner ervaart. Dit helpt ons te begrijpen wat Rotterdammers nodig hebben om met deze “chatbots” prettig om te kunnen gaan.</p>
-                <div class="flex-1">
-                <img src="../images/wat_doen_we/actie_onderzoek_ontwerp/Wat_doen_we_%20Digiderius.jpeg" alt="SociaalAI Inspiratiedag" class="w-full h-64 object-cover">
+        <?php if (!empty($cardBlocks)): ?>
+            <?php foreach ($cardBlocks as $block): ?>
+                <div class="flex flex-col justify-between bg-white p-6 shadow-lg">
+                    <?php if (!empty($block['title'])): ?>
+                        <h3 class="text-xl font-semibold mb-4"><?php echo htmlspecialchars($block['title']); ?></h3>
+                    <?php endif; ?>
+                    <?php if (!empty($block['body'])): ?>
+                        <p class="mb-4 text-gray-700"><?php echo nl2br(htmlspecialchars($block['body'])); ?></p>
+                    <?php endif; ?>
+                    <?php if (!empty($block['image'])): ?>
+                        <div class="mt-auto">
+                            <img src="../uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="w-full h-64 object-cover">
+                        </div>
+                    <?php endif; ?>
                 </div>
-            </div>
-            
-            <div class="flex flex-col justify-between relative space-y-6 space-x-6 bg-white p-6">
-                <h3 class="text-xl font-semibold mb-4">Samen AI-toepassingen ontwerpen</h3>
-                <p class="">
-                    Samen met bewoners ontwerpen we AI-oplossingen voor sociale vraagstukken, bijvoorbeeld rond armoede, zorg of veiligheid. Rotterdammers zetten tijdens deze activiteiten hun behoeftes aan eerlijke technologie en praktische oplossingen om in de praktijk
-                </p>
-                <div class="">
-                <img src="../images/wat_doen_we/actie_onderzoek_ontwerp/Wat_doen_we_Samen_AI_toepassingen_ontwerpen.jpeg" alt="SociaalAI Inspiratiedag" class="w-full h-64 object-cover">
-                </div>
-            </div>
-
-        <div class="flex flex-col justify-between relative space-y-6 space-x-6 bg-white p-6">
-                <h3 class="text-xl font-semibold mb-4">Inclusieve zorg en AI</h3>
-                <p class="">
-                    Met Rotterdamse vrouwen en non-binaire personen van kleur bespreken we uitsluiting en vooroordelen in de zorg. Samen vertalen we hun ervaringen naar principes voor eerlijke en inclusieve AI. Deze inzichten delen we met onderzoekers, beleidsmakers en organisaties om ze in praktijk te brengen.
-                </p>
-                <div class="">
-                <img src="../images/wat_doen_we/actie_onderzoek_ontwerp/Wat_doen_we_%20Inclusieve_AI_in_de_Zorg.JPG" alt="SociaalAI Inspiratiedag" class="w-full h-64 object-cover">
-                </div>
-            </div>
-
-             <!-- Kolom 2 -->
-            <div class="flex flex-col justify-between space-y-6 space-x-6 bg-white p-6">
-                <h3 class="text-xl font-semibold mb-4">Ondersteuning aan bewoners verbeteren met AI?</h3>
-                <p class="">
-                We onderzoeken samen hoe AI kan helpen om Rotterdammers met weinig digitale ervaring beter te ondersteunen. In de sessies werken we met vrijwilligers van het Trefpunt, zodat zij bewoners nog beter kunnen helpen. 
-                </p>
-                <div class="">
-                <img src="../images/wat_doen_we/actie_onderzoek_ontwerp/Wat_doen_we_Ondersteuning_aan_bewoners_verbeteren_%20met_AI.jpg" alt="SociaalAI Inspiratiedag" class="w-full h-64 object-cover">
-                </div>
-            </div>
-            
-            <div class="flex flex-col justify-between relative space-y-6 space-x-6 bg-white p-6">
-                <h3 class="text-xl font-semibold mb-4">Verantwoorde AI binnen organisaties (ELSA-aanpak)</h3>
-                <p class="">
-                  We willen begrijpen of AI goed, rechtvaardig en maatschappelijk verantwoord is, vooral als we het inzetten in publieke diensten. Daarom organiseren we workshops met mensen uit overheid, bedrijfsleven, samenleving en de natuur, zodat we vanuit gedeelde waarden kunnen bepalen welke technologie we gebruiken en hoe. 
-                <div class="">
-                <img src="../images/wat_doen_we/actie_onderzoek_ontwerp/Wat_doen_we_Verantwoorde_AI_binnen%20_Organizaties_%28ELSA-aanpak%29.png" alt="SociaalAI Inspiratiedag" class="w-full h-64 object-cover">
-                </div>
-            </div>
-
-        <div class="flex flex-col justify-between relative space-y-6 space-x-6 bg-white p-6">
-                <h3 class="text-xl font-semibold mb-4">Studenten en bewoners verkennen de sociale invloed van AI</h3>
-                <p class="">
-                    Samen met bewoners uit de omgeving van de Hillevliet, onderzoeken studenten wat AI betekent voor de wijk. Dit vertalen ze gezamenlijk (co-creatie) naar een creatief eindresultaat, zoals een muurschildering, publicatie of interviewreeks.</p>
-                <div class="">
-                <img src="../images/wat_doen_we/actie_onderzoek_ontwerp/Wat_doen_we_%20Studenten_en_bewoners_verkennen_de_sociale_invloed_van_AI.jpg" alt="SociaalAI Inspiratiedag" class="w-auto h-64 object-cover">
-                </div>
-            </div>
-            
-            <div class="flex flex-col justify-between relative space-y-6 space-x-6 bg-white p-6">
-                <h3 class="text-xl font-semibold mb-4">Wijkbots – in te zetten voor een betrokken stad? </h3>
-                <p class="">
-                  We kijken hoe slimme, zelfstandige machines in de toekomst kunnen helpen in onze openbare ruimtes. Denk aan bots die buurtinformatie verzamelen, bewoners ondersteunen of lokale diensten ondersteunen. We onderzoeken hoe deze technologie kan bijdragen aan een stad die beter luistert naar haar inwoners.<div class="flex-1">
-                <img src="../images/wat_doen_we/actie_onderzoek_ontwerp/Wat_doen_we_wijkbots.jpg" alt="SociaalAI Inspiratiedag" class="w-full h-64 object-cover">
-                </div>
-            </div>
-</div></main>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </div>
+</main>
 
 <?php include __DIR__ . '/../footer.php'; ?>
 

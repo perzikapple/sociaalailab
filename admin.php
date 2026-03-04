@@ -176,6 +176,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
 
+    } elseif ($action === 'reorder_event') {
+        $id = (int)($_POST['id'] ?? 0);
+        $direction = $_POST['direction'] ?? '';
+
+        if ($id && ($direction === 'up' || $direction === 'down')) {
+            $currentUser = $_SESSION['user'] ?? null;
+            $pdo->beginTransaction();
+            try {
+                // Normaliseer sort_order als nodig
+                $stmt = $pdo->prepare('SELECT id, sort_order, created_at FROM events ORDER BY created_at ASC, id ASC');
+                $stmt->execute();
+                $items = $stmt->fetchAll();
+
+                $needsNormalize = false;
+                foreach ($items as $item) {
+                    if (empty($item['sort_order'])) {
+                        $needsNormalize = true;
+                        break;
+                    }
+                }
+
+                if ($needsNormalize) {
+                    $update = $pdo->prepare('UPDATE events SET sort_order = ? WHERE id = ?');
+                    $pos = 1;
+                    foreach ($items as $item) {
+                        $update->execute([$pos, $item['id']]);
+                        $pos++;
+                    }
+                }
+
+                // Haal gesorteerde events op
+                $stmt = $pdo->prepare('SELECT id, sort_order FROM events ORDER BY sort_order ASC, id ASC');
+                $stmt->execute();
+                $ordered = $stmt->fetchAll();
+
+                // Zoek index van huidige event
+                $index = null;
+                foreach ($ordered as $i => $item) {
+                    if ((int)$item['id'] === $id) {
+                        $index = $i;
+                        break;
+                    }
+                }
+
+                // Wissel met vorige/volgende event
+                if ($index !== null) {
+                    $swapIndex = $direction === 'up' ? $index - 1 : $index + 1;
+                    if (isset($ordered[$swapIndex])) {
+                        $current = $ordered[$index];
+                        $swap = $ordered[$swapIndex];
+                        $update = $pdo->prepare('UPDATE events SET sort_order = ? WHERE id = ?');
+                        $update->execute([$swap['sort_order'], $current['id']]);
+                        $update->execute([$current['sort_order'], $swap['id']]);
+                    }
+                }
+
+                audit_log($pdo, 'update', 'events', $id, 'reorder ' . $direction, $currentUser);
+                $pdo->commit();
+                header('Location: admin.php?page=agenda');
+                exit;
+            } catch (Exception $e) {
+                $pdo->rollBack();
+                $message = 'Volgorde bijwerken mislukt.';
+            }
+        }
+
     } elseif ($action === 'delete_bulk_pages' && !empty($_POST['page_ids'])) {
         $ids = $_POST['page_ids'];
         if (!is_array($ids)) $ids = [$ids];
@@ -431,7 +497,7 @@ if (!empty($_GET['edit_page'])) {
 }
 
 // Haal events voor overzicht
-$stmt = $pdo->prepare('SELECT * FROM events ORDER BY date DESC, time DESC');
+$stmt = $pdo->prepare('SELECT * FROM events ORDER BY (sort_order IS NULL OR sort_order = 0) ASC, sort_order ASC, created_at ASC, id ASC');
 $stmt->execute();
 $events = $stmt->fetchAll();
 ?>
@@ -674,6 +740,62 @@ if ($page !== 'banner' && $page !== 'agenda') {
             transform: translateY(0) scale(1);
         }
     }
+    
+    /* Image Modal */
+    .image-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        padding: 20px;
+    }
+    .image-modal.active {
+        display: flex;
+    }
+    .image-modal-content {
+        position: relative;
+        max-width: 90vw;
+        max-height: 90vh;
+        background: white;
+        padding: 10px;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .image-modal-content img {
+        max-width: 100%;
+        max-height: 85vh;
+        width: auto;
+        height: auto;
+        display: block;
+        border-radius: 4px;
+    }
+    .image-modal-close {
+        position: absolute;
+        top: -15px;
+        right: -15px;
+        background: #00811F;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 35px;
+        height: 35px;
+        font-size: 20px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        transition: background 0.2s;
+    }
+    .image-modal-close:hover {
+        background: #006618;
+    }
 </style>
 </head>
 <body>
@@ -744,12 +866,12 @@ if ($page !== 'banner' && $page !== 'agenda') {
                     <i class="fa-solid fa-envelope"></i> Contact
                 </a>
 
-                <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Programma's</div>
+                <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Wat doen we</div>
                 <a href="admin.php?page=programma-actie" class="sidebar-link <?php echo $page==='programma-actie' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-bolt"></i> Actie, Onderzoek
+                    <i class="fa-solid fa-bolt"></i> Actie, onderzoek & ontwerp
                 </a>
                 <a href="admin.php?page=programma-faciliteit" class="sidebar-link <?php echo $page==='programma-faciliteit' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-building"></i> Faciliteit
+                    <i class="fa-solid fa-building"></i> Faciliteit van het Lab
                 </a>
                 <a href="admin.php?page=programma-kennis" class="sidebar-link <?php echo $page==='programma-kennis' ? 'active' : ''; ?>">
                     <i class="fa-solid fa-book"></i> Kennis & Vaardigheden
@@ -893,7 +1015,12 @@ if ($page !== 'banner' && $page !== 'agenda') {
                             <form method="POST" id="bulkDeleteEventsForm">
                                 <input type="hidden" name="action" value="delete_bulk_events">
                             <div class="space-y-4">
-                            <?php foreach ($events as $event): ?>
+                            <?php 
+                            $eventCount = count($events);
+                            foreach ($events as $idx => $event): 
+                                $isFirst = ($idx === 0);
+                                $isLast = ($idx === $eventCount - 1);
+                            ?>
                                 <div class="border border-gray-200 rounded p-4 hover:shadow-md transition">
                                     <div class="flex justify-between items-start gap-4">
                                         <input type="checkbox" class="event-checkbox w-4 h-4 mt-1 flex-shrink-0 cursor-pointer" name="event_ids[]" value="<?php echo (int)$event['id']; ?>">
@@ -907,9 +1034,29 @@ if ($page !== 'banner' && $page !== 'agenda') {
                                         </div>
                                         <div class="flex gap-2 flex-shrink-0">
                                             <?php if (!empty($event['image'])): ?>
-                                                <img src="uploads/<?php echo htmlspecialchars($event['image']); ?>" class="w-20 h-20 object-cover rounded" alt="">
+                                                <a href="#" class="btn btn-secondary btn-sm" onclick="openImageModal(event, 'uploads/<?php echo htmlspecialchars($event['image']); ?>')">
+                                                    <i class="fa-solid fa-image"></i> Foto
+                                                </a>
                                             <?php endif; ?>
                                             <div class="flex flex-col gap-1">
+                                                <div class="flex gap-1">
+                                                    <form method="POST">
+                                                        <input type="hidden" name="action" value="reorder_event">
+                                                        <input type="hidden" name="id" value="<?php echo (int)$event['id']; ?>">
+                                                        <input type="hidden" name="direction" value="up">
+                                                        <button type="submit" class="btn btn-secondary btn-sm" <?php echo $isFirst ? 'disabled' : ''; ?> title="Omhoog">
+                                                            <i class="fa-solid fa-arrow-up"></i>
+                                                        </button>
+                                                    </form>
+                                                    <form method="POST">
+                                                        <input type="hidden" name="action" value="reorder_event">
+                                                        <input type="hidden" name="id" value="<?php echo (int)$event['id']; ?>">
+                                                        <input type="hidden" name="direction" value="down">
+                                                        <button type="submit" class="btn btn-secondary btn-sm" <?php echo $isLast ? 'disabled' : ''; ?> title="Omlaag">
+                                                            <i class="fa-solid fa-arrow-down"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
                                                 <a href="admin.php?page=agenda&edit=<?php echo (int)$event['id']; ?>" class="btn btn-secondary btn-sm">
                                                     <i class="fa-solid fa-pencil"></i> Bewerk
                                                 </a>
@@ -934,6 +1081,21 @@ if ($page !== 'banner' && $page !== 'agenda') {
             <?php elseif ($page != 'banner'): ?>
                 <?php
                 $pageKey = $page;
+                $pageLabelMap = [
+                    'index' => 'Homepage',
+                    'evenementen' => 'Evenementen',
+                    'terugblikken' => 'Terugblikken',
+                    'over' => 'Voor wie?',
+                    'wie-zijn-we' => 'Wie zijn we?',
+                    'verantwoord-ai' => 'Verantwoorde AI',
+                    'contact' => 'Contact',
+                    'programma-kennis' => 'Wat doen we: Kennis & vaardigheden',
+                    'programma-actie' => 'Wat doen we: Actie, onderzoek & ontwerp',
+                    'programma-faciliteit' => 'Wat doen we: Faciliteit van het Lab',
+                ];
+                $pageLabel = $pageLabelMap[$pageKey] ?? $pageKey;
+                $isProgrammaPage = (strpos($pageKey, 'programma-') === 0);
+                $itemLabel = $isProgrammaPage ? 'Kaart' : 'Item';
                 $fields = ['title','body','image'];
                 $extraLabels = [];
                 switch ($pageKey) {
@@ -951,8 +1113,11 @@ if ($page !== 'banner' && $page !== 'agenda') {
                 <div class="card p-6">
                     <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
                         <i class="fa-solid fa-file-pen text-2xl text-[#00811F]"></i>
-                        <h2 class="text-2xl font-bold">Beheer: <?php echo htmlspecialchars($pageKey); ?></h2>
+                        <h2 class="text-2xl font-bold">Beheer: <?php echo htmlspecialchars($pageLabel); ?></h2>
                     </div>
+                    <?php if (strpos($pageKey, 'programma-') === 0): ?>
+                        <p class="text-sm text-gray-600 mb-4">Hier kun je kaarten toevoegen, wijzigen en verwijderen voor de pagina onder de tab "Wat doen we". De eerste kaart wordt als brede intro bovenaan getoond; de rest komt in de rij met kaarten.</p>
+                    <?php endif; ?>
 
                     <?php if ($editPage): ?>
                         <a href="admin.php?page=<?php echo urlencode($pageKey); ?>" class="btn btn-secondary mb-6">
@@ -962,7 +1127,7 @@ if ($page !== 'banner' && $page !== 'agenda') {
 
                     <?php if ($editPage): ?>
                         <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6">
-                            <h3 class="font-semibold text-lg">Bewerk Item</h3>
+                            <h3 class="font-semibold text-lg">Bewerk <?php echo htmlspecialchars($itemLabel); ?></h3>
                             <input type="hidden" name="page_action" value="update_page">
                             <input type="hidden" name="id" value="<?php echo (int)$editPage['id']; ?>">
                             <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
@@ -979,7 +1144,7 @@ if ($page !== 'banner' && $page !== 'agenda') {
 
                             <div>
                                 <label class="form-label">Afbeelding (optioneel)</label>
-                                <input type="file" name="image" accept="image/*" class="form-input" />
+                                <input type="file" name="page_image" accept="image/*" class="form-input" />
                                 <?php if (!empty($editPage['image'])): ?>
                                     <p class="text-sm mt-2 text-gray-600">Huidige afbeelding: <?php echo htmlspecialchars($editPage['image']); ?></p>
                                 <?php endif; ?>
@@ -991,7 +1156,7 @@ if ($page !== 'banner' && $page !== 'agenda') {
                         </form>
                     <?php else: ?>
                         <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6">
-                            <h3 class="font-semibold text-lg">Nieuw Item</h3>
+                            <h3 class="font-semibold text-lg">Nieuw <?php echo htmlspecialchars($itemLabel); ?></h3>
                             <input type="hidden" name="page_action" value="create_page">
                             <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
 
@@ -1007,11 +1172,11 @@ if ($page !== 'banner' && $page !== 'agenda') {
 
                             <div>
                                 <label class="form-label">Afbeelding (optioneel)</label>
-                                <input type="file" name="image" accept="image/*" class="form-input" />
+                                <input type="file" name="page_image" accept="image/*" class="form-input" />
                             </div>
 
                             <button type="submit" class="btn btn-primary">
-                                <i class="fa-solid fa-plus"></i> Toevoegen
+                                <i class="fa-solid fa-plus"></i> <?php echo $isProgrammaPage ? 'Kaart toevoegen' : 'Toevoegen'; ?>
                             </button>
                         </form>
                     <?php endif; ?>
@@ -1019,12 +1184,12 @@ if ($page !== 'banner' && $page !== 'agenda') {
                     <div class="card p-6">
                         <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
                             <i class="fa-solid fa-list text-2xl text-[#00811F]"></i>
-                            <h3 class="text-xl font-bold">Bestaande Items</h3>
+                            <h3 class="text-xl font-bold">Bestaande <?php echo $isProgrammaPage ? 'Kaarten' : 'Items'; ?></h3>
                         </div>
                         <?php if (empty($pageItems)): ?>
                             <div class="text-center py-8 text-gray-500">
                                 <i class="fa-solid fa-inbox text-4xl mb-2"></i>
-                                <p>Geen items toegevoegd voor deze pagina</p>
+                                <p>Geen <?php echo $isProgrammaPage ? 'kaarten' : 'items'; ?> toegevoegd voor deze pagina</p>
                             </div>
                         <?php else: ?>
                             <div class="mb-4 flex gap-2 items-center">
@@ -1052,31 +1217,31 @@ if ($page !== 'banner' && $page !== 'agenda') {
                                         </div>
                                         <div class="flex gap-2 flex-shrink-0">
                                             <?php if (!empty($it['image'])): ?>
-                                                <img src="uploads/<?php echo htmlspecialchars($it['image']); ?>" class="w-20 h-20 object-cover rounded" alt="">
+                                                <a href="#" class="btn btn-secondary btn-sm" onclick="openImageModal(event, 'uploads/<?php echo htmlspecialchars($it['image']); ?>')">
+                                                    <i class="fa-solid fa-image"></i> Foto
+                                                </a>
                                             <?php endif; ?>
                                             <div class="flex flex-col gap-1">
-                                                <?php if ($pageKey !== 'evenementen'): ?>
-                                                    <div class="flex gap-1">
-                                                        <form method="POST">
-                                                            <input type="hidden" name="page_action" value="reorder_page">
-                                                            <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
-                                                            <input type="hidden" name="id" value="<?php echo (int)$it['id']; ?>">
-                                                            <input type="hidden" name="direction" value="up">
-                                                            <button type="submit" class="btn btn-secondary btn-sm" <?php echo $isFirst ? 'disabled' : ''; ?> title="Omhoog">
-                                                                <i class="fa-solid fa-arrow-up"></i>
-                                                            </button>
-                                                        </form>
-                                                        <form method="POST">
-                                                            <input type="hidden" name="page_action" value="reorder_page">
-                                                            <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
-                                                            <input type="hidden" name="id" value="<?php echo (int)$it['id']; ?>">
-                                                            <input type="hidden" name="direction" value="down">
-                                                            <button type="submit" class="btn btn-secondary btn-sm" <?php echo $isLast ? 'disabled' : ''; ?> title="Omlaag">
-                                                                <i class="fa-solid fa-arrow-down"></i>
-                                                            </button>
-                                                        </form>
-                                                    </div>
-                                                <?php endif; ?>
+                                                <div class="flex gap-1">
+                                                    <form method="POST">
+                                                        <input type="hidden" name="page_action" value="reorder_page">
+                                                        <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
+                                                        <input type="hidden" name="id" value="<?php echo (int)$it['id']; ?>">
+                                                        <input type="hidden" name="direction" value="up">
+                                                        <button type="submit" class="btn btn-secondary btn-sm" <?php echo $isFirst ? 'disabled' : ''; ?> title="Omhoog">
+                                                            <i class="fa-solid fa-arrow-up"></i>
+                                                        </button>
+                                                    </form>
+                                                    <form method="POST">
+                                                        <input type="hidden" name="page_action" value="reorder_page">
+                                                        <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
+                                                        <input type="hidden" name="id" value="<?php echo (int)$it['id']; ?>">
+                                                        <input type="hidden" name="direction" value="down">
+                                                        <button type="submit" class="btn btn-secondary btn-sm" <?php echo $isLast ? 'disabled' : ''; ?> title="Omlaag">
+                                                            <i class="fa-solid fa-arrow-down"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
                                                 <a href="admin.php?edit_page=<?php echo (int)$it['id']; ?>&page=<?php echo urlencode($pageKey); ?>" class="btn btn-secondary btn-sm">
                                                     <i class="fa-solid fa-pencil"></i> Bewerk
                                                 </a>
@@ -1306,7 +1471,55 @@ if ($page !== 'banner' && $page !== 'agenda') {
     }
   });
 })();
+
+// Toggle image visibility in modal
+function openImageModal(event, imageSrc) {
+  event.preventDefault();
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('modalImage');
+    if (modal && modalImg) {
+        modalImg.src = imageSrc;
+        modal.classList.add('active');
+  }
+}
+
+// Close modal
+function closeImageModal() {
+  const modal = document.getElementById('imageModal');
+  if (modal) {
+    modal.classList.remove('active');
+  }
+}
+
+// Close modal on background click
+document.addEventListener('DOMContentLoaded', function() {
+  const modal = document.getElementById('imageModal');
+  if (modal) {
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) {
+        closeImageModal();
+      }
+    });
+  }
+  
+  // Close on Escape key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeImageModal();
+    }
+  });
+});
 </script>
+
+<!-- Image Modal -->
+<div id="imageModal" class="image-modal">
+  <div class="image-modal-content">
+    <button class="image-modal-close" onclick="closeImageModal()" aria-label="Sluiten">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+    <img id="modalImage" src="" alt="Preview">
+  </div>
+</div>
 
 </body>
 </html>

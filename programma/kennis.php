@@ -8,8 +8,10 @@ $banner1 = '../images/banner_website_01.jpg';
 $banner2 = '../images/banner_website_02.jpg';
 
 try {
-    $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: $banner1;
-    $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: $banner2;
+    $b1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn();
+    $b2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn();
+    if ($b1) $banner1 = (strpos($b1, 'images/') === 0) ? '../' . $b1 : $b1;
+    if ($b2) $banner2 = (strpos($b2, 'images/') === 0) ? '../' . $b2 : $b2;
 } catch (Exception $e) {
     // Use fallbacks
 }
@@ -85,30 +87,22 @@ try {
     } catch (Exception $e) {
         $pageBlocks = [];
     }
+
+    $cardBlocks = array_values(array_filter($pageBlocks, function ($block) {
+        $title = trim((string)($block['title'] ?? ''));
+        return $title !== 'Kennis & Vaardigheden';
+    }));
     
-    // Display custom text blocks from admin
-    foreach ($pageBlocks as $block):
-        $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
-        $hasImage = !empty($block['image']);
-        $imageClass = $hasImage ? 'with-image' : '';
+    // Display custom cards from admin
     ?>
-        <section class="text-block <?php echo htmlspecialchars($imageClass); ?> bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
-            <?php if ($hasImage): ?>
-                <div class="text-block-image-container">
-                    <img src="../uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" class="text-block-image">
-                </div>
-            <?php endif; ?>
-            <div class="text-block-content">
-                <?php if (!empty($block['title'])): ?>
-                    <h3 class="text-2xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($block['title']); ?></h3>
-                <?php endif; ?>
-                <?php if (!empty($block['body'])): ?>
-                    <div class="text-gray-700 leading-relaxed"><?php echo nl2br(htmlspecialchars($block['body'])); ?></div>
-                <?php endif; ?>
-            </div>
-        </section>
-    <?php endforeach; ?>
-    
+
+    <section class="text-block bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
+        <div class="text-block-content">
+            <h3 class="text-2xl font-semibold mb-4 text-gray-900">Kennis &amp; Vaardigheden</h3>
+            <div class="text-gray-700 leading-relaxed">Verken de wereld van kunstmatige intelligentie door middel van workshops, trainingen en educatieve programma's. We bieden verschillende activiteiten aan voor alle niveaus.</div>
+        </div>
+    </section>
+
     <div class="mobile flex  items-center justify-center">
          <div class="bg-white p-6  shadow-lg max-w-xl mt-6 w-full border-r text-center">
             <a href="kennis.php"><h1 class="text-2xl text-[#00811F] font-semibold">Kennis & Vaardigheden</h1></a>
@@ -122,81 +116,25 @@ try {
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8 p-6">
-
-        <!-- Kolom 1 -->
-   
-        <div class="flex flex-col justify-between space-y-6 space-x-6 bg-white p-6">
-            <h3 class="text-xl font-semibold mb-4"> AI-vaardigheidstrainingen</h3>
-            <p class="">
-            Workshops voor inwoners, jongeren en professionals over wat AI is en hoe je het verantwoord kunt gebruiken. Deze sessies zijn vergroten digitale vaardigheden. Hoe werkt het precies? Hoe kan AI jou helpen? Waar moet je aan denken als je het gebruikt?
-            </p>
-            <div class="">
-            <img src="../images/wat_doen_we/kennis_vaardigheden/Wat_doen_we_%20AI-vaardigheidstrainingen.jpg" alt="SociaalAI Inspiratiedag" class="w-full h-64 object-cover">
-            </div>
-        </div>
-    
-            
-            <div class="flex flex-col justify-between relative space-y-6 space-x-6 bg-white p-6">
-                <h3 class="text-xl font-semibold mb-4">Ontrafel de AI-Machine</h3>
-                <p class="">
-                    Een theatrale en interactieve sessie voor de jeugd, waarin deelnemers kunnen ontdekken hoe kunstmatige
-                    intelligentie werkt, leert en beslissingen neemt.
-                </p>
-                <div class="">
-                <img src="../images/wat_doen_we/kennis_vaardigheden/Wat_doen_we_%20Ontrafel_de%20_AI_Machine.jpeg" alt="SociaalAI Inspiratiedag" class="w-full h-64 object-cover">
+        <?php if (!empty($cardBlocks)): ?>
+            <?php foreach ($cardBlocks as $block): ?>
+                <div class="flex flex-col justify-between bg-white p-6 shadow-lg">
+                    <?php if (!empty($block['title'])): ?>
+                        <h3 class="text-xl font-semibold mb-4"><?php echo htmlspecialchars($block['title']); ?></h3>
+                    <?php endif; ?>
+                    <?php if (!empty($block['body'])): ?>
+                        <p class="mb-4 text-gray-700"><?php echo nl2br(htmlspecialchars($block['body'])); ?></p>
+                    <?php endif; ?>
+                    <?php if (!empty($block['image'])): ?>
+                        <div class="mt-auto">
+                            <img src="../uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="w-full h-64 object-cover">
+                        </div>
+                    <?php endif; ?>
                 </div>
-            </div>
-
-        <div class="flex flex-col justify-between relative space-y-6 space-x-6 bg-white p-6">
-                <h3 class="text-xl font-semibold mb-4">Samen toekomstbeelden creëren met AI</h3>
-                <p class="">
-                    Een interactieve sessie die mensen inzicht geeft in generatieve AI, en waarin samen creatieve scenario’s
-                    gemaakt worden voor een rechtvaardige en inclusieve AI-toekomst..
-                </p>
-                <div class="">
-                <img src="../images/wat_doen_we/kennis_vaardigheden/Wat_doen_we_%20Samen_toekomstbeelden_cre%C3%ABren_met_behulp_van_AI.jpeg" alt="SociaalAI Inspiratiedag" class="w-full h-64 object-cover">
-                </div>
-            </div>
-
-             <!-- Kolom 2 -->
-            <div class="flex flex-col justify-between space-y-6 space-x-6 bg-white p-6">
-                <h3 class="text-xl font-semibold mb-4">Test je AI-kennis</h3>
-                <p class="">
-               Ontdek hoeveel jij al weet over AI en verdien een badge als beloning voor het maken van onze AI-test. </p>
-                <div class="">
-                <img src="../images/wat_doen_we/kennis_vaardigheden/Wat_doen_we_%20Test_je_AI_kennis.jpg" alt="SociaalAI Inspiratiedag" class="w-full h-64 object-cover">
-                </div>
-            </div>
-            
-            <div class="flex flex-col justify-between relative space-y-6 space-x-6 bg-white p-6">
-                <h3 class="text-xl font-semibold mb-4">AI in het basisonderwijs </h3>
-                <p class="">
-                    Leuke lessen waarin basisschoolleerlingen op een speelse manier kennismaken met kunstmatige intelligentie. Ze worden geprikkeld om nieuwsgierig te zijn, creatief te denken en tegelijkertijd te oefenen met digitale vaardigheden.
-                </p>
-                <div class="">
-                <img src="../images/wat_doen_we/kennis_vaardigheden/Basisschool.jpg" alt="SociaalAI Inspiratiedag" class="w-full h-64 object-cover">
-                </div>
-            </div>
-
-        <div class="flex flex-col justify-between relative space-y-6 space-x-6 bg-white p-6">
-                <h3 class="text-xl font-semibold mb-4">Echt of Nep?</h3>
-                <p class="">
-                   Weet jij nog wat echt is en wat nep? Door de snelle opkomst van generatieve AI wordt het steeds moeilijker om te zien wat door AI is gemaakt en wat door mensen. In deze workshop serie gaan we aan de slag met wat dat betekent voor ons nieuws, ons onderwijs en voor de democratie.</p>
-                <div class="">
-                <img src="../images/wat_doen_we/kennis_vaardigheden/Wat_doen_we_%20Echt_of_Nep.png" alt="SociaalAI Inspiratiedag" class="w-full h-64 object-cover">
-                </div>
-            </div>
-            
-            <div class="flex flex-col justify-between relative space-y-6 space-x-6 bg-white p-6">
-                <h3 class="text-xl font-semibold mb-4">Feministische AI – vind patronen en verrassingen in AI door middel van een interactief spel </h3>
-                <p class="">
-                    Ontdek spelenderwijs hoe generatieve AI werkt, welke vooroordelen erin kunnen zitten en hoe je technologie eerlijker kunt maken door aandacht voor macht‐ en ongelijkheid.
-                </p>
-                <div class="">
-                <img src="../images/wat_doen_we/kennis_vaardigheden/Wat_doen_we_%20Feministische_AI.jpg" alt="SociaalAI Inspiratiedag" class="w-full h-64 object-cover">
-                </div>
-            </div>
-</div></main>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </div>
+</main>
 
 <?php include __DIR__ . '/../footer.php'; ?>
 

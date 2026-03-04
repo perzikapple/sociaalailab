@@ -56,34 +56,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <img src="<?php echo htmlspecialchars($banner2); ?>" alt="Banner 2" class="banner hidden h-60 md:h-96 w-full object-cover">
     </div>
 
-    <nav class="sticky top-0 z-40 bg-white shadow-md">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <a href="index.php" class="text-[#00811F] hover:text-green-700 font-bold text-lg transition">SociaalAI Lab</a>
-            </div>
-            <button id="mobile-menu-toggle" class="md:hidden text-gray-700 hover:text-[#00811F] transition">
-                <i class="fa-solid fa-bars"></i>
+    <nav class="bg-white shadow-md sticky top-0 z-40">
+        <div class="flex justify-between items-center px-4 md:px-8 py-4">
+            <a href="index.php" class="flex items-center gap-2 font-bold text-xl text-[#00811F] hover:text-[#00811F]/80 transition">
+                <img src="images/Pixels_icon.png" alt="Logo" class="w-8 h-8">
+                SociaalAI Lab
+            </a>
+
+            <button id="mobile-menu-toggle" class="md:hidden hamburger focus:outline-none" aria-label="Toggle navigation">
+                <i class="fa-solid fa-bars text-2xl"></i>
             </button>
-            <div id="mobile-menu" class="hidden md:flex items-center gap-6 absolute md:static top-full left-0 right-0 md:bg-transparent bg-white md:shadow-none shadow-md flex-col md:flex-row p-4 md:p-0 w-full md:w-auto">
-                <a href="index.php" class="menu text-gray-700 hover:text-[#00811F] transition">Voorpagina</a>
+
+            <div id="mobile-menu" class="menu hidden md:flex pr-5 space-x-8 font-medium items-center">
+                <a href="index.php" class="menu inline-flex items-center gap-1 text-gray-700 hover:text-[#00811F] transition"><i class="fa-solid fa-house"></i> Voorpagina</a>
+                <a href="agenda.php" class="menu text-gray-700 hover:text-[#00811F] transition">Agenda</a>
                 <a href="event.php" class="menu text-gray-700 hover:text-[#00811F] transition">Evenementen</a>
                 <a href="terugblikken.php" class="menu text-gray-700 hover:text-[#00811F] transition">Terugblikken</a>
                 <a href="over.php" class="menu text-gray-700 hover:text-[#00811F] transition">Voor wie?</a>
+
                 <div class="relative" id="programma-dropdown">
                     <button id="programma-toggle" aria-haspopup="true" aria-expanded="false" class="menu flex items-center gap-2 text-gray-700 hover:text-[#00811F] transition font-medium focus:outline-none">
                         <span>Wat doen we?</span>
+                        
                     </button>
+
                     <div id="programma-menu" class="hidden absolute top-0 mt-8 w-56 bg-white border border-gray-200 shadow-lg py-2 z-50 focus:outline-none" role="menu" aria-labelledby="programma-toggle">
                         <a href="programma/kennis.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Kennis & vaardigheden</a>
                         <a href="programma/actie.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Actie, onderzoek & ontwerp</a>
                         <a href="programma/faciliteit.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Faciliteit van het Lab</a>
                     </div>
                 </div>
+
                 <a href="verantwoord-ai.php" class="menu text-gray-700 hover:text-[#00811F] transition">Verantwoorde AI</a>
                 <a href="wie-zijn-we.php" class="menu text-gray-700 hover:text-[#00811F] transition">Wie zijn we?</a>
                 <a href="contact.php" class="menu text-gray-700 hover:text-[#00811F] transition">Contact</a>
                 <?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
-                    <a href="admin.php" class="menu text-gray-700 hover:text-[#00811F] transition">Admin</a>
+                    <a href="admin.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Admin</a>
                 <?php endif; ?>
             </div>
         </div>

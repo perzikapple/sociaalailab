@@ -93,7 +93,7 @@ try {
     </div>
 </nav>
 
-<main>
+<main class="pt-8 sm:pt-12">
     <div class="mobile flex items-center justify-center">
         <div class="bg-white p-6 shadow-lg max-w-xl mt-6 w-full border-r text-center">
             <a href="agenda.php"><h1 class="text-2xl hover:text-[#00811F] font-semibold">Agenda</h1></a>
@@ -112,7 +112,7 @@ try {
         $hasImage = !empty($block['image']);
         $imageClass = $hasImage ? 'with-image' : '';
     ?>
-        <section class="text-block <?php echo htmlspecialchars($imageClass); ?> bg-white shadow-lg px-3 sm:px-8 py-6 sm:py-8 max-w-6xl mx-auto my-6 sm:my-12">
+        <section class="text-block <?php echo htmlspecialchars($imageClass); ?> bg-white shadow-lg px-3 sm:px-8 py-6 sm:py-8 max-w-6xl mx-auto mt-8 sm:mt-12 mb-6 sm:mb-12">
             <?php if ($hasImage): ?>
                 <div class="text-block-image-container">
                     <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" class="text-block-image">
@@ -147,12 +147,12 @@ try {
     
     if (empty($events)):
     ?>
-        <section class="bg-white shadow-lg px-3 sm:px-8 py-6 sm:py-8 max-w-6xl mx-auto my-6 sm:my-12 text-center">
+        <section class="bg-white shadow-lg px-3 sm:px-8 py-6 sm:py-8 max-w-6xl mx-auto mt-8 sm:mt-12 mb-6 sm:mb-12 text-center">
             <p class="text-sm sm:text-base text-gray-700">Er zijn nog geen voorbije evenementen.</p>
         </section>
     <?php else: ?>
         <?php foreach ($events as $event): ?>
-            <section class="flex flex-col md:flex-row items-center gap-4 sm:gap-10 bg-white shadow-lg px-3 sm:px-8 py-6 sm:py-8 max-w-6xl mx-auto my-6 sm:my-12">
+        <section class="flex flex-col md:flex-row items-center gap-4 sm:gap-10 bg-white shadow-lg px-3 sm:px-8 py-6 sm:py-8 max-w-6xl mx-auto mt-8 sm:mt-12 mb-6 sm:mb-12">
                 <div class="flex-1">
                     <span class="inline-block bg-[#00811F] text-white text-xs sm:text-sm font-medium px-3 sm:px-4 py-1 mb-4">Evenement</span>
                     <h2 class="text-xl sm:text-2xl md:text-3xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($event['title']); ?></h2>

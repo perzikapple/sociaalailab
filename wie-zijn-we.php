@@ -1,4 +1,4 @@
-﻿<?php 
+<?php 
 session_start();
 require 'db.php';
 
@@ -49,15 +49,21 @@ try {
     </div>
 </div>
 
-<nav class="bg-white shadow-md">
-    <div class="navigatie max-w-6xl mx-auto px-4 py-3 flex justify-center md:justify-between items-center">
-        <button id="mobile-menu-toggle" class=" hamburger md:hidden self-end text-gray-700 focus:outline-none" aria-label="Open navigatie" aria-expanded="false">
+<nav class="bg-white shadow-md sticky top-0 z-40">
+    <div class="flex justify-between items-center px-4 md:px-8 py-4">
+        <a href="index.php" class="flex items-center gap-2 font-bold text-xl text-[#00811F] hover:text-[#00811F]/80 transition">
+            <img src="images/Pixels_icon.png" alt="Logo" class="w-8 h-8">
+            SociaalAI Lab
+        </a>
+
+        <button id="mobile-menu-toggle" class="md:hidden hamburger focus:outline-none" aria-label="Toggle navigation">
             <i class="fa-solid fa-bars text-2xl"></i>
         </button>
 
         <div id="mobile-menu" class="menu hidden md:flex pr-5 space-x-8 font-medium items-center">
             <a href="index.php" class="menu inline-flex items-center gap-1 text-gray-700 hover:text-[#00811F] transition"><i class="fa-solid fa-house"></i> Voorpagina</a>
             <a href="agenda.php" class="menu text-gray-700 hover:text-[#00811F] transition">Agenda</a>
+            <a href="event.php" class="menu text-gray-700 hover:text-[#00811F] transition">Evenementen</a>
             <a href="terugblikken.php" class="menu text-gray-700 hover:text-[#00811F] transition">Terugblikken</a>
             <a href="over.php" class="menu text-gray-700 hover:text-[#00811F] transition">Voor wie?</a>
 
@@ -70,8 +76,7 @@ try {
                 <div id="programma-menu" class="hidden absolute top-0 mt-8 w-56 bg-white border border-gray-200 shadow-lg py-2 z-50 focus:outline-none" role="menu" aria-labelledby="programma-toggle">
                     <a href="programma/kennis.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Kennis & vaardigheden</a>
                     <a href="programma/actie.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Actie, onderzoek & ontwerp</a>
-                    <a href="programma/faciliteit.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Faciliteit van het Lab
-                    </a>
+                    <a href="programma/faciliteit.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Faciliteit van het Lab</a>
                 </div>
             </div>
 
@@ -108,113 +113,6 @@ try {
             </div>
         </section>
     <?php endforeach; ?>
-    
-    <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl min-h-[360px] mx-auto my-12">
-        <div class="flex-1">
-            <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900">
-                Gemeente Rotterdam
-            </h2>
-            <p class="text-gray-700 leading-relaxed mb-4">
-                De gemeente Rotterdam is initiatiefnemer binnen het programma Digitale Inclusie.
-                Met het actieplan zet de gemeente zich in om alle inwoners digitaal vaardiger te maken,
-                zodat iedereen veilig en zelfstandig kan meedoen in de digitale samenleving.
-            </p>
-        </div>
-
-        <div class="flex-1">
-            <img src="images/Gemeente_Rotterdam.png" alt="Gemeente Rotterdam" class="w-full h-auto object-contain">
-        </div>
-    </section>
-
-    
-    <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl min-h-[360px] mx-auto my-12">
-
-        <div class="flex-1">
-            <img src="images/Hogeschool_Rotterdam.png" alt="Hogeschool Rotterdam" class="w-full h-auto object-contain">
-        </div>
-
-        <div class="flex-1">
-            <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900">
-                Hogeschool Rotterdam
-            </h2>
-
-            <p class="text-gray-700 leading-relaxed mb-4">
-                De Hogeschool Rotterdam doet praktijkgericht onderzoek om kennis en innovaties te ontwikkelen met die direct toe te passen is in de praktijk.'
-                Onder meer door mensen direct vanaf het begin te betrekken in het ontwerpproces van digitale toepassingen (co-design) en samen met Rotterdammers te experimenteren door prototypes te maken (civic prototyping).
-        </p></div>
-    </section>
-
-       
-    <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl min-h-[360px] mx-auto my-12">
-        <div class="flex-1">
-            <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900">
-                Techniek College Rotterdam
-            </h2>
-            <p class="text-gray-700 leading-relaxed mb-4">
-                Het Techniek College Rotterdam betrekt mbo-studenten actief bij het ontwikkelen van praktische AI-toepassingen.
-                Met projecten, workshops en praktijkgericht onderzoek draagt het college bij aan een toekomst waarin technologie
-                begrijpelijk en toegankelijk is voor iedereen.
-            </p>
-        </div>
-
-        <div class="flex-1 flex items-center justify-center">
-            <img src="images/Techniek_College_Rotterdam_logo.png" alt="Techniek College Rotterdam" class="w-auto object-cover p-8">
-        </div>
-    </section>
-
-    
-    <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl min-h-[360px] mx-auto my-12">
-
-        <div class="flex-1">
-            <img src="images/Erasmus_uni.png" alt="Erasmus Universiteit Rotterdam" class="w-full h-auto max-h-[250px] object-contain mx-auto">
-        </div>
-
-        <div class="flex-1">
-            <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900">
-                Erasmus Universiteit Rotterdam
-            </h2>
-
-            <p class="text-gray-700 leading-relaxed mb-4">
-                De Erasmus Universiteit onderzoekt hoe mensen en technologie beter kunnen samenwerken en wil via onder andere co-creatie bijdragen aan het verantwoord gebruik van AI met aandacht voor sociale en economische waarde. Het <strong>Erasmus Centre for Data Analytics (ECDA) </strong>is hierin de trekker en verbindt wetenschap, bedrijfsleven en overheid rond de gevolgen van data, kunstmatige intelligentie, en digitalisering. Het doel is om AI te stimuleren die waardevol is voor de samenleving.</p>
-        </div>
-    </section>
-    
-    <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl min-h-[360px] mx-auto my-12">
-    <ul class="list-disc pl-10 space-y-3 marker:text-gray-600 items-center">
-            <h1>Vanaf het begin werken we hierin nauw samen met diverse sociale en technologie partners, waaronder:</h1>
-                <li class="text-gray-700 leading-relaxed">
-                    <h2 class="font-bold">Wijkwijs</h2>
-                </li>
-                <li class="text-gray-700 leading-relaxed">
-                    <h2 class="font-bold">Netwerk Digitale Inclusie</h2>
-                </li>
-                <li class="text-gray-700 leading-relaxed">
-                    <h2 class="font-bold">Bibliotheek</h2>
-                </li>
-                <li class="text-gray-700 leading-relaxed">
-                    <h2 class="font-bold">Trefpunt Vreewijk</h2>
-                </li>
-                <li class="text-gray-700 leading-relaxed">
-                    <h2 class="font-bold">De Buurtouders010</h2>
-                </li>
-                <li class="text-gray-700 leading-relaxed">
-                    <h2 class="font-bold">Equals</h2>
-                </li>
-                <li class="text-gray-700 leading-relaxed">
-                    <h2 class="font-bold">Future Society Lab</h2>
-                </li>
-                <li class="text-gray-700 leading-relaxed">
-                    <h2 class="font-bold">Parai</h2>
-                </li>
-                <li class="text-gray-700 leading-relaxed">
-                    <h2 class="font-bold">Mascotte.ai</h2>
-                </li>
-                <li class="text-gray-700 leading-relaxed">
-                    <h2 class="font-bold">Civic AI Lab Amsterdam</h2>
-                </li>
-                <p>Samen met deze partners werken we aan technologische oplossingen die bijdragen aan het dagelijks leven in Rotterdam. Wij geloven dat technologie pas echt slim is als het ook sociaal is.  </p>
-                <p class="text-[#00811F]">AI voor Rotterdammers door Rotterdammers.</p>
-    </ul></section>
 </main>
 <?php include __DIR__ . '/footer.php'; ?>
 

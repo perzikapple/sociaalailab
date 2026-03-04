@@ -74,9 +74,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $event) {
     </div>
 </div>
 
-<nav class="bg-white shadow-md">
-    <div class="navigatie max-w-6xl mx-auto px-4 py-3 flex justify-center md:justify-between items-center">
-        <button id="mobile-menu-toggle" class=" hamburger md:hidden self-end text-gray-700 focus:outline-none" aria-label="Open navigatie" aria-expanded="false">
+<nav class="bg-white shadow-md sticky top-0 z-40">
+    <div class="flex justify-between items-center px-4 md:px-8 py-4">
+        <a href="index.php" class="flex items-center gap-2 font-bold text-xl text-[#00811F] hover:text-[#00811F]/80 transition">
+            <img src="images/Pixels_icon.png" alt="Logo" class="w-8 h-8">
+            SociaalAI Lab
+        </a>
+
+        <button id="mobile-menu-toggle" class="md:hidden hamburger focus:outline-none" aria-label="Toggle navigation">
             <i class="fa-solid fa-bars text-2xl"></i>
         </button>
 

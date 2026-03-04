@@ -61,6 +61,9 @@ try {
     if (!in_array('show_signup_button', $columns)) {
         $pdo->exec("ALTER TABLE events ADD COLUMN show_signup_button TINYINT(1) DEFAULT 1");
     }
+    if (!in_array('sort_order', $columns)) {
+        $pdo->exec("ALTER TABLE events ADD COLUMN sort_order INT DEFAULT 0");
+    }
 
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS settings (
