@@ -74,6 +74,73 @@ try {
 <!-- Pagina content -->
 <main>
     <?php
+    // Fallback blocks for seeding
+    $fallbackBlocks = [
+        [
+            'title' => 'AI-vaardigheidstrainingen',
+            'body' => 'Workshops voor inwoners, jongeren en professionals over wat AI is en hoe je het verantwoord kunt gebruiken. Deze sessies zijn vergroten digitale vaardigheden. Hoe werkt het precies? Hoe kan AI jou helpen? Waar moet je aan denken als je het gebruikt?',
+            'image' => 'images/wat_doen_we/kennis_vaardigheden/Wat_doen_we_%20AI-vaardigheidstrainingen.jpg',
+            'meta' => null
+        ],
+        [
+            'title' => 'Ontrafel de AI-Machine',
+            'body' => 'Een theatrale en interactieve sessie voor de jeugd, waarin deelnemers kunnen ontdekken hoe kunstmatige intelligentie werkt, leert en beslissingen neemt.',
+            'image' => 'images/wat_doen_we/kennis_vaardigheden/Wat_doen_we_%20Ontrafel_de%20_AI_Machine.jpeg',
+            'meta' => null
+        ],
+        [
+            'title' => 'Samen toekomstbeelden creëren met AI',
+            'body' => 'Een interactieve sessie die mensen inzicht geeft in generatieve AI, en waarin samen creatieve scenario\'s gemaakt worden voor een rechtvaardige en inclusieve AI-toekomst..',
+            'image' => 'images/wat_doen_we/kennis_vaardigheden/Wat_doen_we_%20Samen_toekomstbeelden_cre%C3%ABren_met_behulp_van_AI.jpeg',
+            'meta' => null
+        ],
+        [
+            'title' => 'Test je AI-kennis',
+            'body' => 'Ontdek hoeveel jij al weet over AI en verdien een badge als beloning voor het maken van onze AI-test.',
+            'image' => 'images/wat_doen_we/kennis_vaardigheden/Wat_doen_we_%20Test_je_AI_kennis.jpg',
+            'meta' => null
+        ],
+        [
+            'title' => 'AI in het basisonderwijs',
+            'body' => 'Leuke lessen waarin basisschoolleerlingen op een speelse manier kennismaken met kunstmatige intelligentie. Ze worden geprikkeld om nieuwsgierig te zijn, creatief te denken en tegelijkertijd te oefenen met digitale vaardigheden.',
+            'image' => 'images/wat_doen_we/kennis_vaardigheden/Basisschool.jpg',
+            'meta' => null
+        ],
+        [
+            'title' => 'Echt of Nep?',
+            'body' => 'Weet jij nog wat echt is en wat nep? Door de snelle opkomst van generatieve AI wordt het steeds moeilijker om te zien wat door AI is gemaakt en wat door mensen. In deze workshop serie gaan we aan de slag met wat dat betekent voor ons nieuws, ons onderwijs en voor de democratie.',
+            'image' => 'images/wat_doen_we/kennis_vaardigheden/Wat_doen_we_%20Echt_of_Nep.png',
+            'meta' => null
+        ],
+        [
+            'title' => 'Feministische AI',
+            'body' => 'Ontdek spelenderwijs hoe generatieve AI werkt, welke vooroordelen erin kunnen zitten en hoe je technologie eerlijker kunt maken door aandacht voor macht‐ en ongelijkheid.',
+            'image' => 'images/wat_doen_we/kennis_vaardigheden/Wat_doen_we_%20Feministische_AI.jpg',
+            'meta' => null
+        ]
+    ];
+
+    // Seed fallback blocks if they don't exist
+    try {
+        $checkStmt = $pdo->prepare('SELECT COUNT(*) FROM pages WHERE page_key = ? AND title = ?');
+        $insertStmt = $pdo->prepare('INSERT INTO pages (page_key, title, body, image, meta, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())');
+        
+        foreach ($fallbackBlocks as $block) {
+            $checkStmt->execute(['programma-kennis', $block['title'] ?? null]);
+            if ((int)$checkStmt->fetchColumn() === 0) {
+                $insertStmt->execute([
+                    'programma-kennis',
+                    $block['title'] ?? null,
+                    $block['body'] ?? null,
+                    $block['image'] ?? null,
+                    $block['meta'] ?? null
+                ]);
+            }
+        }
+    } catch (Exception $e) {
+        // Seeding failed, continue anyway
+    }
+
     // Fetch page blocks from database
     $pageBlocks = [];
     try {
@@ -123,53 +190,24 @@ try {
                     <p class="mb-4 text-gray-700"><?php echo nl2br(htmlspecialchars($block['body'])); ?></p>
                 <?php endif; ?>
                 <?php if (!empty($block['image'])): ?>
+                    <?php
+                    $imagePath = trim((string)$block['image']);
+                    if (strpos($imagePath, 'images/') === 0 || strpos($imagePath, 'uploads/') === 0) {
+                        $imageSrc = '../' . $imagePath;
+                    } elseif (strpos($imagePath, '../') === 0 || preg_match('#^https?://#i', $imagePath)) {
+                        $imageSrc = $imagePath;
+                    } else {
+                        $imageSrc = '../uploads/' . $imagePath;
+                    }
+                    ?>
                     <div class="mt-auto">
-                        <img src="../uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="w-full h-64 object-cover">
+                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="w-full h-64 object-cover">
                     </div>
                 <?php endif; ?>
             </div>
         <?php endforeach; ?>
     </div>
     <?php endif; ?>
-
-    <!-- Hardcoded blocks -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 p-6">
-        <div class="flex flex-col justify-between space-y-6 space-x-6 bg-white p-6">
-            <h3 class="text-xl font-semibold mb-4">AI-vaardigheidstrainingen</h3>
-            <p class="">Workshops voor inwoners, jongeren en professionals over wat AI is en hoe je het verantwoord kunt gebruiken. Deze sessies zijn vergroten digitale vaardigheden. Hoe werkt het precies? Hoe kan AI jou helpen? Waar moet je aan denken als je het gebruikt?</p>
-            <div class=""><img src="../images/wat_doen_we/kennis_vaardigheden/Wat_doen_we_%20AI-vaardigheidstrainingen.jpg" alt="SociaalAI Inspiratiedag" class="w-full h-64 object-cover"></div>
-        </div>
-        <div class="flex flex-col justify-between relative space-y-6 space-x-6 bg-white p-6">
-            <h3 class="text-xl font-semibold mb-4">Ontrafel de AI-Machine</h3>
-            <p class="">Een theatrale en interactieve sessie voor de jeugd, waarin deelnemers kunnen ontdekken hoe kunstmatige intelligentie werkt, leert en beslissingen neemt.</p>
-            <div class=""><img src="../images/wat_doen_we/kennis_vaardigheden/Wat_doen_we_%20Ontrafel_de%20_AI_Machine.jpeg" alt="SociaalAI Inspiratiedag" class="w-full h-64 object-cover"></div>
-        </div>
-        <div class="flex flex-col justify-between relative space-y-6 space-x-6 bg-white p-6">
-            <h3 class="text-xl font-semibold mb-4">Samen toekomstbeelden creëren met AI</h3>
-            <p class="">Een interactieve sessie die mensen inzicht geeft in generatieve AI, en waarin samen creatieve scenario's gemaakt worden voor een rechtvaardige en inclusieve AI-toekomst..</p>
-            <div class=""><img src="../images/wat_doen_we/kennis_vaardigheden/Wat_doen_we_%20Samen_toekomstbeelden_cre%C3%ABren_met_behulp_van_AI.jpeg" alt="SociaalAI Inspiratiedag" class="w-full h-64 object-cover"></div>
-        </div>
-        <div class="flex flex-col justify-between space-y-6 space-x-6 bg-white p-6">
-            <h3 class="text-xl font-semibold mb-4">Test je AI-kennis</h3>
-            <p class="">Ontdek hoeveel jij al weet over AI en verdien een badge als beloning voor het maken van onze AI-test.</p>
-            <div class=""><img src="../images/wat_doen_we/kennis_vaardigheden/Wat_doen_we_%20Test_je_AI_kennis.jpg" alt="SociaalAI Inspiratiedag" class="w-full h-64 object-cover"></div>
-        </div>
-        <div class="flex flex-col justify-between relative space-y-6 space-x-6 bg-white p-6">
-            <h3 class="text-xl font-semibold mb-4">AI in het basisonderwijs</h3>
-            <p class="">Leuke lessen waarin basisschoolleerlingen op een speelse manier kennismaken met kunstmatige intelligentie. Ze worden geprikkeld om nieuwsgierig te zijn, creatief te denken en tegelijkertijd te oefenen met digitale vaardigheden.</p>
-            <div class=""><img src="../images/wat_doen_we/kennis_vaardigheden/Basisschool.jpg" alt="SociaalAI Inspiratiedag" class="w-full h-64 object-cover"></div>
-        </div>
-        <div class="flex flex-col justify-between relative space-y-6 space-x-6 bg-white p-6">
-            <h3 class="text-xl font-semibold mb-4">Echt of Nep?</h3>
-            <p class="">Weet jij nog wat echt is en wat nep? Door de snelle opkomst van generatieve AI wordt het steeds moeilijker om te zien wat door AI is gemaakt en wat door mensen. In deze workshop serie gaan we aan de slag met wat dat betekent voor ons nieuws, ons onderwijs en voor de democratie.</p>
-            <div class=""><img src="../images/wat_doen_we/kennis_vaardigheden/Wat_doen_we_%20Echt_of_Nep.png" alt="SociaalAI Inspiratiedag" class="w-full h-64 object-cover"></div>
-        </div>
-        <div class="flex flex-col justify-between relative space-y-6 space-x-6 bg-white p-6">
-            <h3 class="text-xl font-semibold mb-4">Feministische AI</h3>
-            <p class="">Ontdek spelenderwijs hoe generatieve AI werkt, welke vooroordelen erin kunnen zitten en hoe je technologie eerlijker kunt maken door aandacht voor macht‐ en ongelijkheid.</p>
-            <div class=""><img src="../images/wat_doen_we/kennis_vaardigheden/Wat_doen_we_%20Feministische_AI.jpg" alt="SociaalAI Inspiratiedag" class="w-full h-64 object-cover"></div>
-        </div>
-    </div>
 </main>
 
 <?php include __DIR__ . '/../footer.php'; ?>
