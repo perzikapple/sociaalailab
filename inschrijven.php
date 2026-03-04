@@ -76,10 +76,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $event) {
 
 <nav class="bg-white shadow-md sticky top-0 z-40">
     <div class="flex justify-between items-center px-4 md:px-8 py-4">
-        <a href="index.php" class="flex items-center gap-2 font-bold text-xl text-[#00811F] hover:text-[#00811F]/80 transition">
-            <img src="images/Pixels_icon.png" alt="Logo" class="w-8 h-8">
-            SociaalAI Lab
-        </a>
 
         <button id="mobile-menu-toggle" class="md:hidden hamburger focus:outline-none" aria-label="Toggle navigation">
             <i class="fa-solid fa-bars text-2xl"></i>
@@ -114,14 +110,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $event) {
     </div>
 </nav>
 
-<main class="min-h-[60vh] flex items-start justify-center px-3 sm:px-6">
-    <section class="bg-white shadow-xl p-6 sm:p-8 max-w-md w-full mx-auto my-8 sm:my-12 rounded-lg">
+<main class="min-h-[60vh] flex items-start justify-center px-4 sm:px-6 py-12 sm:py-16">
+    <section class="bg-white shadow-xl p-6 sm:p-8 max-w-md w-full mx-auto rounded-lg">
         <?php if (!$event): ?>
             <h1 class="text-xl sm:text-2xl font-semibold text-gray-900 mb-2">Evenement niet gevonden</h1>
             <p class="text-gray-700 text-sm sm:text-base">Het evenement bestaat niet of is niet meer beschikbaar.</p>
         <?php else: ?>
-            <h1 class="text-xl sm:text-2xl font-semibold text-gray-900 mb-2">Inschrijven</h1>
-            <p class="text-gray-700 mb-6 text-sm sm:text-base">
+            <h1 class="text-2xl sm:text-3xl font-semibold text-gray-900 mb-3">Inschrijven</h1>
+            <p class="text-gray-700 mb-8 text-base">
                 <?php echo htmlspecialchars($event['title']); ?>
                 <?php if (!empty($event['date'])): ?>
                     - <?php echo htmlspecialchars(formatEventDateDisplay($event['date'])); ?>
@@ -129,21 +125,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $event) {
             </p>
 
             <?php if ($message): ?>
-                <div class="mb-6 p-4 rounded text-sm sm:text-base <?php echo $messageType === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'; ?>">
+                <div class="mb-8 p-5 rounded text-base <?php echo $messageType === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'; ?>">
                     <?php echo htmlspecialchars($message); ?>
                 </div>
             <?php endif; ?>
 
-            <form method="POST" class="space-y-5">
+            <form method="POST" class="space-y-6">
                 <div>
-                    <label for="full_name" class="block text-gray-700 font-medium text-sm sm:text-base mb-2">Volledige naam</label>
-                    <input type="text" id="full_name" name="full_name" required class="w-full px-4 py-3 sm:py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00811F] text-base">
+                    <label for="full_name" class="block text-gray-700 font-medium text-base mb-2">Volledige naam</label>
+                    <input type="text" id="full_name" name="full_name" required class="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00811F] text-base">
                 </div>
                 <div>
-                    <label for="email" class="block text-gray-700 font-medium text-sm sm:text-base mb-2">E-mailadres</label>
-                    <input type="email" id="email" name="email" required class="w-full px-4 py-3 sm:py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00811F] text-base">
+                    <label for="email" class="block text-gray-700 font-medium text-base mb-2">E-mailadres</label>
+                    <input type="email" id="email" name="email" required class="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00811F] text-base">
                 </div>
-                <button type="submit" class="w-full bg-[#00811F] text-white px-6 py-3 rounded-md hover:bg-green-700 transition font-medium text-base sm:text-sm">Inschrijven</button>
+                <button type="submit" class="bg-[#00811F] text-white px-12 py-3 rounded-md hover:bg-green-700 transition font-medium text-base">Inschrijven</button>
             </form>
         <?php endif; ?>
     </section>
