@@ -109,64 +109,69 @@ try {
 
 <!-- Pagina content -->
 <main>
-    <?php
-    // Display custom text blocks from admin
-    foreach ($pageBlocks as $block):
-        $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
-        $hasImage = !empty($block['image']);
-        $imageClass = $hasImage ? 'with-image' : '';
-    ?>
-        <section class="text-block <?php echo htmlspecialchars($imageClass); ?> bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
-            <?php if ($hasImage): ?>
-                <div class="text-block-image-container">
-                    <img src="../uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" class="text-block-image">
-                </div>
-            <?php endif; ?>
-            <div class="text-block-content">
-                <?php if (!empty($block['title'])): ?>
-                    <h3 class="text-2xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($block['title']); ?></h3>
-                <?php endif; ?>
-                <?php if (!empty($block['body'])): ?>
-                    <div class="text-gray-700 leading-relaxed"><?php echo nl2br(htmlspecialchars($block['body'])); ?></div>
-                <?php endif; ?>
-            </div>
-        </section>
-    <?php endforeach; ?>
-    
-      <div class="mobile flex flex-row flex-1 items-center justify-center mt-10">
-         <div class="bg-white p-6 shadow-lg max-w-xl mt-6 w-full border-r text-center">
+    <!-- Navigation bar ON TOP -->
+    <div class="mobile flex flex-row flex-1 items-center justify-center mt-10">
+        <div class="bg-white p-6 shadow-lg max-w-xl mt-6 w-full border-r text-center">
             <a href="kennis.php"><h1 class="text-2xl hover:text-[#00811F] font-semibold">Kennis & Vaardigheden</h1></a>
         </div>
         <div class="bg-white p-6 max-w-xl mt-6 w-full text-center border-r border-gray-500">
-            <a href="actie.php"><h1 class="text-2xl hover:text-[#00811F]  font-semibold">Actie, Onderzoek & Ontwerp</h1></a>
+            <a href="actie.php"><h1 class="text-2xl hover:text-[#00811F] font-semibold">Actie, Onderzoek & Ontwerp</h1></a>
         </div>
-         <div class="bg-white p-6  max-w-xl mt-6 w-full text-center">
+        <div class="bg-white p-6 max-w-xl mt-6 w-full text-center">
             <a href="faciliteit.php"><h1 class="text-2xl text-[#00811F] font-semibold">Faciliteiten</h1></a>
         </div>
     </div>
 
+    <!-- Database blocks - matching hardcoded 2 column layout -->
+    <?php
+    $chunks = array_chunk($pageBlocks, 2);
+    foreach ($chunks as $chunk):
+    ?>
+        <div class="mobile-col flex justify-evenly gap-8 p-6">
+            <?php foreach ($chunk as $block):
+                $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
+                $hasImage = !empty($block['image']);
+            ?>
+                <div class="relative space-y-6 space-x-6 bg-white p-6 flex-1">
+                    <h3 class="text-xl font-semibold mb-4"><?php echo htmlspecialchars($block['title']); ?></h3>
+                    <?php if (!empty($block['body'])): ?>
+                        <p class="h-40"><?php echo nl2br(htmlspecialchars($block['body'])); ?></p>
+                    <?php endif; ?>
+                    <?php if ($hasImage): ?>
+                        <div class="flex-1">
+                            <img src="../uploads/<?php echo htmlspecialchars($block['image']); ?>" 
+                                 alt="<?php echo htmlspecialchars($block['title']); ?>" 
+                                 class="w-full h-64 object-cover">
+                        </div>
+                    <?php endif; ?>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    <?php endforeach; ?>
+
+    <!-- Hardcoded blocks -->
     <div class="mobile-col flex justify-evenly gap-8 p-6">
-        <!-- Kolom 1 -->
-        <div class="space-y-6 space-x-6 bg-white p-6">
-                <h3 class="text-xl font-semibold mb-4">Het Sociaal AI Lab is op Hillevliet en online te bezoeken.</h3>
-                <p class="h-40">
+        <div class="relative space-y-6 space-x-6 bg-white p-6 flex-1">
+            <h3 class="text-xl font-semibold mb-4">Het Sociaal AI Lab is op Hillevliet en online te bezoeken.</h3>
+            <p class="h-40">
                 Het Lab biedt de plek én de technische ondersteuning voor alle activiteiten van het programma. Dat kan op locatie aan de Hillevliet, maar ook in een digitale omgeving. Het Lab is het kloppende hart van het programma.
-                </p>
-                <div class="flex-1">
+            </p>
+            <div class="flex-1">
                 <img src="../images/wat_doen_we/faciliteiten/Wat_doen_we_Sociaal_AI%20Lab_Rotterdam.png" alt="SociaalAI Inspiratiedag" class="w-full h-64 object-cover">
-                </div>
             </div>
-            
-            <div class="relative space-y-6 space-x-6 bg-white p-6">
-                <h3 class="text-xl font-semibold mb-4">De mobiele AI Labkar – een pop-uplocatie waar bewoners kunnen kennismaken met AI</h3>
-                <p class="h-40">
-                    Samen met bewoners ontwerpen we AI-oplossingen voor sociale vraagstukken, bijvoorbeeld rond armoede, zorg of veiligheid. Rotterdammers zetten tijdens deze activiteiten hun behoeftes aan eerlijke technologie en praktische oplossingen om in de praktijk
-                </p>
-                <div class="flex-1">
+        </div>
+        
+        <div class="relative space-y-6 space-x-6 bg-white p-6 flex-1">
+            <h3 class="text-xl font-semibold mb-4">De mobiele AI Labkar – een pop-uplocatie waar bewoners kunnen kennismaken met AI</h3>
+            <p class="h-40">
+                Samen met bewoners ontwerpen we AI-oplossingen voor sociale vraagstukken, bijvoorbeeld rond armoede, zorg of veiligheid. Rotterdammers zetten tijdens deze activiteiten hun behoeftes aan eerlijke technologie en praktische oplossingen om in de praktijk
+            </p>
+            <div class="flex-1">
                 <img src="../images/wat_doen_we/faciliteiten/Wat_doen_we_AI_Labkar.png" alt="SociaalAI Inspiratiedag" class="w-full h-64 object-cover">
-                </div>
             </div>
-</div></main>
+        </div>
+    </div>
+</main>
 
 <footer class="bg-white mt-16 shadow-inner">
     <div class="flex justify-evenly py-6 items-center space-x-4">

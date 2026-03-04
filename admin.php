@@ -10,9 +10,9 @@ $message = '';
 // Helper voor upload
 function handleUpload($fileField) {
     if (empty($_FILES[$fileField]['name'])) return null;
-    $allowed = ['image/jpeg','image/png','image/gif'];
-    if (!in_array($_FILES[$fileField]['type'], $allowed) || $_FILES[$fileField]['size'] > 2 * 1024 * 1024) {
-        return ['error' => 'Ongeldig afbeeldingsbestand (jpg/png/gif, max 2MB).'];
+    $allowed = ['image/jpeg','image/png','image/gif','image/webp'];
+    if (!in_array($_FILES[$fileField]['type'], $allowed) || $_FILES[$fileField]['size'] > 10 * 1024 * 1024) {
+        return ['error' => 'Ongeldig afbeeldingsbestand (jpg/png/gif/webp, max 10MB).'];
     }
     if (!is_dir(__DIR__ . '/uploads')) mkdir(__DIR__ . '/uploads', 0755, true);
     $ext = pathinfo($_FILES[$fileField]['name'], PATHINFO_EXTENSION);
@@ -192,7 +192,8 @@ if ($pageAction === 'create_page') {
         if (!empty($_POST['map_embed'])) $meta['map_embed'] = $_POST['map_embed'];
         if (!empty($_POST['partners'])) $meta['partners'] = $_POST['partners'];
 
-        $upload = handleUpload('page_image');
+        // Change 'page_image' to 'image' to match the form field name
+        $upload = handleUpload('image');
         $imageName = $upload['name'] ?? null;
 
         $stmt = $pdo->prepare('INSERT INTO pages (page_key, title, body, image, meta, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())');
@@ -220,7 +221,8 @@ if ($pageAction === 'create_page') {
         if (!empty($_POST['map_embed'])) $meta['map_embed'] = $_POST['map_embed'];
         if (!empty($_POST['partners'])) $meta['partners'] = $_POST['partners'];
 
-        $upload = handleUpload('page_image');
+        // Change 'page_image' to 'image' to match the form field name
+        $upload = handleUpload('image');
         $imageName = $upload['name'] ?? $oldImage;
 
         $stmt = $pdo->prepare('UPDATE pages SET title=?, body=?, image=?, meta=?, updated_at=NOW() WHERE id=?');
@@ -412,7 +414,7 @@ $page = $_GET['page'] ?? 'agenda';
 
                         <div>
                             <label>Vervang foto (optioneel)</label>
-                            <input type="file" name="image" accept="image/*" />
+                            <input type="file" name="page_image" accept="image/*" />
                             <?php if ($editEvent['image']): ?>
                                 <div class="mt-2"><small>Huidige afbeelding:</small><br><img src="uploads/<?php echo htmlspecialchars($editEvent['image']); ?>" class="w-48 mt-2" alt=""></div>
                             <?php endif; ?>
