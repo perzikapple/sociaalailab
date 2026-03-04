@@ -75,6 +75,43 @@ try {
 <!-- Pagina content -->
 <main>
     <?php
+    // Fallback blocks for seeding
+    $fallbackBlocks = [
+        [
+            'title' => 'Het Sociaal AI Lab is op Hillevliet en online te bezoeken.',
+            'body' => 'Het Lab biedt de plek én de technische ondersteuning voor alle activiteiten van het programma. Dat kan op locatie aan de Hillevliet, maar ook in een digitale omgeving. Het Lab is het kloppende hart van het programma.',
+            'image' => 'images/wat_doen_we/faciliteiten/Wat_doen_we_Sociaal_AI%20Lab_Rotterdam.png',
+            'meta' => null
+        ],
+        [
+            'title' => 'De mobiele AI Labkar – een pop-uplocatie waar bewoners kunnen kennismaken met AI',
+            'body' => 'Samen met bewoners ontwerpen we AI-oplossingen voor sociale vraagstukken, bijvoorbeeld rond armoede, zorg of veiligheid. Rotterdammers zetten tijdens deze activiteiten hun behoeftes aan eerlijke technologie en praktische oplossingen om in de praktijk',
+            'image' => 'images/wat_doen_we/faciliteiten/Wat_doen_we_AI_Labkar.png',
+            'meta' => null
+        ]
+    ];
+
+    // Seed fallback blocks if they don't exist
+    try {
+        $checkStmt = $pdo->prepare('SELECT COUNT(*) FROM pages WHERE page_key = ? AND title = ?');
+        $insertStmt = $pdo->prepare('INSERT INTO pages (page_key, title, body, image, meta, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())');
+        
+        foreach ($fallbackBlocks as $block) {
+            $checkStmt->execute(['programma-faciliteit', $block['title'] ?? null]);
+            if ((int)$checkStmt->fetchColumn() === 0) {
+                $insertStmt->execute([
+                    'programma-faciliteit',
+                    $block['title'] ?? null,
+                    $block['body'] ?? null,
+                    $block['image'] ?? null,
+                    $block['meta'] ?? null
+                ]);
+            }
+        }
+    } catch (Exception $e) {
+        // Seeding failed, continue anyway
+    }
+
     // Fetch page blocks from database
     $pageBlocks = [];
     try {
@@ -124,37 +161,24 @@ try {
                     <p class="mb-4 text-gray-700"><?php echo nl2br(htmlspecialchars($block['body'])); ?></p>
                 <?php endif; ?>
                 <?php if (!empty($block['image'])): ?>
+                    <?php
+                    $imagePath = trim((string)$block['image']);
+                    if (strpos($imagePath, 'images/') === 0 || strpos($imagePath, 'uploads/') === 0) {
+                        $imageSrc = '../' . $imagePath;
+                    } elseif (strpos($imagePath, '../') === 0 || preg_match('#^https?://#i', $imagePath)) {
+                        $imageSrc = $imagePath;
+                    } else {
+                        $imageSrc = '../uploads/' . $imagePath;
+                    }
+                    ?>
                     <div class="mt-auto">
-                        <img src="../uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="w-full h-64 object-cover">
+                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="w-full h-64 object-cover">
                     </div>
                 <?php endif; ?>
             </div>
         <?php endforeach; ?>
     </div>
     <?php endif; ?>
-
-    <!-- Hardcoded blocks -->
-    <div class="mobile-col flex justify-evenly gap-8 p-6">
-        <div class="relative space-y-6 space-x-6 bg-white p-6 flex-1">
-            <h3 class="text-xl font-semibold mb-4">Het Sociaal AI Lab is op Hillevliet en online te bezoeken.</h3>
-            <p class="h-40">
-                Het Lab biedt de plek én de technische ondersteuning voor alle activiteiten van het programma. Dat kan op locatie aan de Hillevliet, maar ook in een digitale omgeving. Het Lab is het kloppende hart van het programma.
-            </p>
-            <div class="flex-1">
-                <img src="../images/wat_doen_we/faciliteiten/Wat_doen_we_Sociaal_AI%20Lab_Rotterdam.png" alt="SociaalAI Inspiratiedag" class="w-full h-64 object-cover">
-            </div>
-        </div>
-        
-        <div class="relative space-y-6 space-x-6 bg-white p-6 flex-1">
-            <h3 class="text-xl font-semibold mb-4">De mobiele AI Labkar – een pop-uplocatie waar bewoners kunnen kennismaken met AI</h3>
-            <p class="h-40">
-                Samen met bewoners ontwerpen we AI-oplossingen voor sociale vraagstukken, bijvoorbeeld rond armoede, zorg of veiligheid. Rotterdammers zetten tijdens deze activiteiten hun behoeftes aan eerlijke technologie en praktische oplossingen om in de praktijk
-            </p>
-            <div class="flex-1">
-                <img src="../images/wat_doen_we/faciliteiten/Wat_doen_we_AI_Labkar.png" alt="SociaalAI Inspiratiedag" class="w-full h-64 object-cover">
-            </div>
-        </div>
-    </div>
 </main>
 
 <?php include __DIR__ . '/../footer.php'; ?>
