@@ -867,14 +867,14 @@ if ($page !== 'banner' && $page !== 'agenda') {
                 </a>
 
                 <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Wat doen we</div>
+                <a href="admin.php?page=programma-kennis" class="sidebar-link <?php echo $page==='programma-kennis' ? 'active' : ''; ?>">
+                    <i class="fa-solid fa-brain"></i> Kennis & Vaardigheden
+                </a>
                 <a href="admin.php?page=programma-actie" class="sidebar-link <?php echo $page==='programma-actie' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-bolt"></i> Actie, onderzoek & ontwerp
+                    <i class="fa-solid fa-rocket"></i> Actie, onderzoek & ontwerp
                 </a>
                 <a href="admin.php?page=programma-faciliteit" class="sidebar-link <?php echo $page==='programma-faciliteit' ? 'active' : ''; ?>">
                     <i class="fa-solid fa-building"></i> Faciliteit van het Lab
-                </a>
-                <a href="admin.php?page=programma-kennis" class="sidebar-link <?php echo $page==='programma-kennis' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-book"></i> Kennis & Vaardigheden
                 </a>
             </nav>
         </aside>
