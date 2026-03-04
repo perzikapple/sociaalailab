@@ -37,7 +37,7 @@ try {
 </div>
 
 <nav class="bg-white shadow-md sticky top-0 z-40">
-    <div class="flex justify-between items-center px-4 md:px-8 py-4">
+    <div class="flex justify-center items-center px-4 md:px-8 py-4">
 
         <button id="mobile-menu-toggle" class="md:hidden hamburger focus:outline-none" aria-label="Toggle navigation">
             <i class="fa-solid fa-bars text-2xl"></i>
