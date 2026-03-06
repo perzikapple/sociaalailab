@@ -6,12 +6,23 @@ require 'helpers.php';
 $banner1 = 'images/banner_website_01.jpg';
 $banner2 = 'images/banner_website_02.jpg';
 
+// Fallback blocks for seeding
 $fallbackBlocks = [
     [
         'title' => 'Contact',
-        'body' => 'Dit is een voorbeeld van een contactblok.',
+        'body' => 'Wil je meedoen, meedenken, meeleren of meer weten over activiteiten van het lab? Stuur ons een bericht en maak een afspraak om langs te komen, iedereen is welkom!',
+        'image' => 'Contact_foto.jpg',
+        'meta' => json_encode(['email' => 'digitaleinclusie@rotterdam.nl'])
+    ],
+    [
+        'title' => 'Sociaal AI Lab Rotterdam',
+        'body' => 'Wij zijn geopend op maandag, woensdag en vrijdag.',
         'image' => '',
-        'meta' => json_encode(['address' => 'Hillevliet 90, 3074 KD Rotterdam', 'email' => 'digitaleinclusie@rotterdam.nl'])
+        'meta' => json_encode([
+            'address' => 'Hillevliet 90, 3074 KD Rotterdam',
+            'email' => 'digitaleinclusie@rotterdam.nl',
+            'map_embed' => '<iframe class="map" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4924.161289441116!2d4.5037668125406105!3d51.89599238212385!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47c433097cf8a783%3A0x6aabf347bcd316ef!2sHillevliet%2090%2C%203074%20KD%20Rotterdam!5e0!3m2!1sen!2snl!4v1763988130581!5m2!1sen!2snl" width="auto" height="auto" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>'
+        ])
     ]
 ];
 
@@ -23,8 +34,28 @@ try {
 } catch (Exception $e) {
 }
 
+// Seed fallback blocks if they don't exist
 try {
-    // seed_page_blocks removed to prevent auto-creation
+    $checkStmt = $pdo->prepare('SELECT COUNT(*) FROM pages WHERE page_key = ? AND title = ?');
+    $insertStmt = $pdo->prepare('INSERT INTO pages (page_key, title, body, image, meta, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())');
+    
+    foreach ($fallbackBlocks as $block) {
+        $checkStmt->execute(['contact', $block['title'] ?? null]);
+        if ((int)$checkStmt->fetchColumn() === 0) {
+            $insertStmt->execute([
+                'contact',
+                $block['title'] ?? null,
+                $block['body'] ?? null,
+                $block['image'] ?? null,
+                $block['meta'] ?? null
+            ]);
+        }
+    }
+} catch (Exception $e) {
+    // Seeding failed, continue anyway
+}
+
+try {
     $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'contact' ORDER BY (sort_order IS NULL OR sort_order = 0) ASC, sort_order ASC, created_at ASC, id ASC");
     $stmt->execute();
     $pageBlocks = $stmt->fetchAll();
@@ -65,7 +96,6 @@ try {
         <div id="mobile-menu" class="menu hidden md:flex pr-5 space-x-8 font-medium items-center">
             <a href="index.php" class="menu inline-flex items-center gap-1 text-gray-700 hover:text-[#00811F] transition"><i class="fa-solid fa-house"></i> Voorpagina</a>
             <a href="agenda.php" class="menu text-gray-700 hover:text-[#00811F] transition">Agenda</a>
-            <a href="terugblikken.php" class="menu text-gray-700 hover:text-[#00811F] transition">Terugblikken</a>
             <a href="over.php" class="menu text-gray-700 hover:text-[#00811F] transition">Voor wie?</a>
 
             <div class="relative" id="programma-dropdown">
@@ -94,37 +124,6 @@ try {
 
 
 <main>
-        
-    <section class="flex flex-col md:flex-row items-center  gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
-        <div class="flex-1">
-            <h1 class="font-bold text-2xl">Contact</h1>
-            <p>Wil je meedoen, meedenken, meeleren of meer weten over activiteiten van het lab?</p>
-            <p>Stuur ons een bericht en maak een afspraak om langs te komen, iedereen is welkom!</p>
-            <p><a href="mailto:digitaleinclusie@rotterdam.nl">digitaleinclusie@rotterdam.nl</a><p><br>
-            <img src="images/Contact_foto.jpg" alt="Foto van locatie" class="w-auto h-64 pt-4">
-        </p></div>
-    </section>
-
-    <section class="flex flex-col md:flex-row items-center  gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
-        <div class="flex-1">
-            <h1 class="font-bold text-2xl">Sociaal AI Lab Rotterdam</h1>
-            <div>
-                <?php $mainAddr = 'Hillevliet 90, 3074 KD Rotterdam'; ?>
-                <p>
-                    <a href="<?php echo googleMapsDirectionsUrl($mainAddr); ?>" target="_blank" rel="noopener noreferrer" class="underline hover:text-[#00811F]">
-                        Hillevliet 90<br>
-                        3074 KD Rotterdam
-                    </a>
-                </p>
-                <p><a href="mailto:digitaleinclusie@rotterdam.nl">digitaleinclusie@rotterdam.nl</a></p>
-            </div>
-            <iframe class="map" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4924.161289441116!2d4.5037668125406105!3d51.89599238212385!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47c433097cf8a783%3A0x6aabf347bcd316ef!2sHillevliet%2090%2C%203074%20KD%20Rotterdam!5e0!3m2!1sen!2snl!4v1763988130581!5m2!1sen!2snl" width="auto" height="auto" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-            <br>
-            <p>Wij zijn geopend op maandag, woensdag en vrijdag.</p>
-        </div>
-    </section>
-            
-    <!-- Database bloks NOT Hardcoded -->
     <?php
     foreach ($pageBlocks as $block):
         $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
@@ -154,8 +153,18 @@ try {
             
             <!-- Image BELOW TEXT -->
             <?php if ($hasImage): ?>
+                <?php
+                $imagePath = trim((string)$block['image']);
+                if (strpos($imagePath, 'images/') === 0 || strpos($imagePath, 'uploads/') === 0) {
+                    $imageSrc = $imagePath;
+                } elseif (strpos($imagePath, '../') === 0 || preg_match('#^https?://#i', $imagePath)) {
+                    $imageSrc = $imagePath;
+                } else {
+                    $imageSrc = 'uploads/' . $imagePath;
+                }
+                ?>
                 <div>
-                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" 
+                    <img src="<?php echo htmlspecialchars($imageSrc); ?>" 
                          alt="<?php echo htmlspecialchars($block['title']); ?>" 
                          class="w-auto h-64 object-cover rounded shadow-md">
                 </div>

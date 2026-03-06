@@ -1,8 +1,32 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+/* Custom sidebar scrollbar styling */
+.sidebar {
+    scrollbar-width: thin;
+    scrollbar-color: #2e7d32 #e5e5e5;
 }
+
+.sidebar::-webkit-scrollbar {
+    width: 8px;
+    background: #e5e5e5;
+    border-radius: 8px;
+}
+.sidebar::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #2e7d32 0%, #43a047 100%);
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(46, 125, 50, 0.15);
+}
+.sidebar::-webkit-scrollbar-thumb:hover {
+    background: #388e3c;
+}
+/* Make admin header buttons white and green for visibility */
+.admin-header .btn,
+.admin-header .btn-secondary {
+    color: #fff !important;
+    background: #2e7d32 !important;
+    border: 1px solid #2e7d32 !important;
+    font-weight: 700;
+    transition: background 0.2s, color 0.2s;
+}
+
 
 body.admin-page {
     background: linear-gradient(120deg, #179a2e 0%, #6bbf43 100%);
@@ -82,8 +106,8 @@ main {
     border-radius: 20px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12),
                 0 2px 8px rgba(0, 0, 0, 0.08);
-    overflow: hidden;
-    height: fit-content;
+    overflow-y: auto;
+    height: 85vh;
     position: sticky;
     top: 110px;
     border: 1px solid rgba(255, 255, 255, 0.3);
@@ -224,7 +248,7 @@ main {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: visible;
     padding: 2.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.95);
     position: relative;
 }
 
@@ -246,7 +270,6 @@ main {
 
 .card > .flex.items-center {
     padding: 0 0 1.5rem 0;
-    border-bottom: 2px solid rgba(46, 125, 50, 0.1);
     margin-bottom: 2rem;
 }
 
@@ -297,13 +320,13 @@ main {
 .admin-page select {
     width: 100%;
     padding: 0.875rem 1.25rem;
-    border: 2px solid #2e7d32;
-    border-radius: 12px;
+    border: 2px solid #f5f7fa;
+    border-radius: 14px;
     font-family: inherit;
     font-size: 0.925rem;
     background: #f9fafb;
     color: #1a202c;
-    box-shadow: 0 0 0 2px #e5e7eb;
+    box-shadow: none;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
@@ -311,9 +334,9 @@ main {
 .admin-page textarea:focus,
 .admin-page select:focus {
     outline: none;
-    border-color: #1b5e20;
-    background: rgba(255, 255, 255, 0.95);
-    box-shadow: 0 0 0 3px #c8e6c9;
+    border-color: #2e7d32;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.18);
     transform: translateY(-2px);
 }
 
@@ -326,14 +349,14 @@ main {
     padding: 0.875rem 1rem;
     cursor: pointer;
     border-style: dashed;
-    border-color: rgba(203, 213, 224, 0.8);
+    border-color: #f5f7fa;
     color: #4a5568;
-    background: rgba(247, 250, 252, 0.5);
+    background: #ffffff;
 }
 
 .admin-page input[type="file"]:hover {
     border-color: #2e7d32;
-    background: rgba(232, 245, 233, 0.5);
+    background: #ffffff;
 }
 
 .admin-page textarea {
@@ -623,6 +646,24 @@ button:has(i.fas.fa-image) {
     justify-content: flex-end;
     width: 100%;
     margin-bottom: 0.5rem;
+}
+
+.event-image-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.7rem 1.15rem;
+    letter-spacing: 0.01em;
+}
+
+.event-meta a {
+    color: #2e7d32;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.event-meta a:hover {
+    color: #1b5e20;
 }
 
 .event-image-preview {
