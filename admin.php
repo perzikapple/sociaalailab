@@ -39,7 +39,7 @@ function formatEventDateDisplay($dateValue) {
         8 => 'augustus',
         9 => 'september',
         10 => 'oktober',
-        11 => 'november',
+        11 => 'november', 
         12 => 'december',
     ];
     $day = (int)date('j', $ts);
@@ -648,7 +648,7 @@ if ($page !== 'banner' && $page !== 'agenda') {
 
                             <div>
                                 <label class="form-label">Plaats</label>
-                                <input name="location" class="form-input" value="<?php echo htmlspecialchars($editEvent['location'] ?? ''); ?>" />
+                                <input type="text" name="location" class="form-input" value="<?php echo htmlspecialchars($editEvent['location'] ?? ''); ?>" placeholder="bijv. Stadstheater Rotterdam" />
                             </div>
 
                             <div>
@@ -682,7 +682,7 @@ if ($page !== 'banner' && $page !== 'agenda') {
 
                             <div>
                                 <label class="form-label">Titel</label>
-                                <input name="title" required class="form-input" />
+                                <input type="text" name="title" required class="form-input" placeholder="Voer een titel in..." />
                             </div>
 
                             <div class="grid grid-cols-2 gap-4">
@@ -696,9 +696,9 @@ if ($page !== 'banner' && $page !== 'agenda') {
                                 </div>
                             </div>
 
-                            <div>
+                            <div></div>
                                 <label class="form-label">Plaats</label>
-                                <input name="location" class="form-input" />
+                                <input type="text" name="location" class="form-input" placeholder="bijv. Stadstheater Rotterdam" />
                             </div>
 
                             <div>
@@ -896,7 +896,7 @@ if ($page !== 'banner' && $page !== 'agenda') {
 
                             <div>
                                 <label class="form-label">Titel</label>
-                                <input name="title" required class="form-input" />
+                                <input type="text" name="title" required class="form-input" placeholder="Voer een titel in..." />
                             </div>
 
                             <div>
@@ -1242,6 +1242,46 @@ document.addEventListener('DOMContentLoaded', function() {
       closeImageModal();
     }
   });
+
+  // Sidebar Toggle Functionality
+  const sidebar = document.querySelector('.sidebar');
+  const sidebarHeader = document.querySelector('.sidebar-header');
+  const gridContainer = document.querySelector('.lg\\:grid-cols-4');
+  
+  // Create floating toggle button
+  const toggleBtn = document.createElement('button');
+  toggleBtn.className = 'sidebar-toggle-btn';
+  toggleBtn.innerHTML = '<i class="fas fa-bars"></i>';
+  toggleBtn.setAttribute('aria-label', 'Open Sidebar');
+  document.body.appendChild(toggleBtn);
+  
+  if (sidebar && sidebarHeader) {
+    // Check localStorage for saved state
+    const sidebarState = localStorage.getItem('sidebarHidden');
+    if (sidebarState === 'true') {
+      sidebar.classList.add('hidden');
+      if (gridContainer) gridContainer.classList.add('sidebar-hidden');
+      toggleBtn.classList.remove('hidden');
+    } else {
+      toggleBtn.classList.add('hidden');
+    }
+    
+    // Toggle with floating button
+    toggleBtn.addEventListener('click', function() {
+      sidebar.classList.remove('hidden');
+      if (gridContainer) gridContainer.classList.remove('sidebar-hidden');
+      toggleBtn.classList.add('hidden');
+      localStorage.setItem('sidebarHidden', 'false');
+    });
+    
+    // Close with sidebar header click
+    sidebarHeader.addEventListener('click', function() {
+      sidebar.classList.add('hidden');
+      if (gridContainer) gridContainer.classList.add('sidebar-hidden');
+      toggleBtn.classList.remove('hidden');
+      localStorage.setItem('sidebarHidden', 'true');
+    });
+  }
 });
 </script>
 
