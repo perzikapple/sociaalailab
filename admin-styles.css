@@ -1,20 +1,27 @@
 /* Custom sidebar scrollbar styling */
-.sidebar {
+.sidebar nav {
     scrollbar-width: thin;
     scrollbar-color: #2e7d32 #e5e5e5;
 }
 
-.sidebar::-webkit-scrollbar {
+.sidebar nav::-webkit-scrollbar {
     width: 8px;
     background: #e5e5e5;
     border-radius: 8px;
 }
-.sidebar::-webkit-scrollbar-thumb {
+
+.sidebar nav::-webkit-scrollbar-track {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+}
+
+.sidebar nav::-webkit-scrollbar-thumb {
     background: linear-gradient(135deg, #2e7d32 0%, #43a047 100%);
     border-radius: 8px;
     box-shadow: 0 2px 6px rgba(46, 125, 50, 0.15);
 }
-.sidebar::-webkit-scrollbar-thumb:hover {
+.sidebar nav::-webkit-scrollbar-thumb:hover {
     background: #388e3c;
 }
 /* Make admin header buttons white and green for visibility */
@@ -106,11 +113,16 @@ main {
     border-radius: 20px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12),
                 0 2px 8px rgba(0, 0, 0, 0.08);
-    overflow-y: auto;
+    overflow: hidden;
+    direction: rtl;
     height: 85vh;
     position: sticky;
     top: 110px;
     border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.sidebar > * {
+    direction: ltr;
 }
 
 .sidebar-header {
@@ -164,6 +176,13 @@ main {
 
 .sidebar nav {
     padding: 0.75rem 0;
+    max-height: calc(85vh - 88px);
+    overflow-y: auto;
+    direction: rtl;
+}
+
+.sidebar nav > * {
+    direction: ltr;
 }
 
 .sidebar .divide-y > div {
