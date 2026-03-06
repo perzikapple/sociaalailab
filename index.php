@@ -179,7 +179,7 @@ try {
     <?php endif; ?>
     
     <?php if (!empty($cardBlocks)): ?>
-    <div class="flex flex-col flexrow justify-evenly w-full max-w-6xl mx-auto ">
+    <div class="flex flex-col flexrow justify-evenly w-full max-w-6xl mx-auto gap-8">
         <?php foreach ($cardBlocks as $block): ?>
         <div class="space-y-6">
             <div class="bg-white shadow-lg pt-0 pb-6 mb-4 min-h-[220px] max-w-sm mx-auto">
