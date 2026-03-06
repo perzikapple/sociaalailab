@@ -64,7 +64,6 @@ try {
         <div id="mobile-menu" class="menu hidden md:flex pr-5 space-x-8 font-medium items-center">
             <a href="index.php" class="menu inline-flex items-center gap-1 text-gray-700 hover:text-[#00811F] transition"><i class="fa-solid fa-house"></i> Voorpagina</a>
             <a href="agenda.php" class="menu text-gray-700 hover:text-[#00811F] transition">Agenda</a>
-            <a href="event.php" class="menu text-gray-700 hover:text-[#00811F] transition">Evenementen</a>
             <a href="over.php" class="menu text-gray-700 hover:text-[#00811F] transition">Voor wie?</a>
 
             <div class="relative" id="programma-dropdown">
@@ -84,7 +83,7 @@ try {
             <a href="wie-zijn-we.php" class="menu text-gray-700 hover:text-[#00811F] transition">Wie zijn we?</a>
             <a href="contact.php" class="menu text-gray-700 hover:text-[#00811F] transition">Contact</a>
             <?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
-                <a href="admin.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Admin</a>
+                <a href="admin.php" class="menu text-gray-700 hover:text-[#00811F] transition">Admin</a>
             <?php endif; ?>
         </div>
     </div>
