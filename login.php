@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = 'Invalid email format.';
     } else {
         // Look up user in database
-        $stmt = $pdo->prepare("SELECT id, email, wachtwoord FROM accounts WHERE email = ?");
+        $stmt = $pdo->prepare("SELECT email, wachtwoord, admin FROM accounts WHERE email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
 
@@ -24,10 +24,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = 'Email or password incorrect.';
         } else {
             // Set session and redirect
-            $_SESSION['user_id'] = $user['id'];
             $_SESSION['user'] = $user['email'];
             $_SESSION['email'] = $user['email'];
-            $_SESSION['admin'] = 1;
+            $_SESSION['admin'] = $user['admin'];
             header('Location: admin.php');
             exit;
         }

@@ -70,6 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $time = $_POST['time'] ?? null;
         $description = trim($_POST['description'] ?? '');
         $location = trim($_POST['location'] ?? '');
+        $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
 
         if ($title === '' || $date === '') {
             $message = 'Titel en datum zijn verplicht.';
@@ -80,12 +81,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $imageName = $upload['name'] ?? null;
                 // voeg updated_at en updated_by toe bij insert
-                $stmt = $pdo->prepare('INSERT INTO events (title, date, time, description, image, location, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, NOW(), ?)');
-                $stmt->execute([$title, $date, $time ?: null, $description, $imageName, $location ?: null, $currentUser]);
+                $stmt = $pdo->prepare('INSERT INTO events (title, date, time, description, image, location, show_signup_button, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?)');
+                $stmt->execute([$title, $date, $time ?: null, $description, $imageName, $location ?: null, $showSignupButton, $currentUser]);
                 $eventId = $pdo->lastInsertId();
                 // Audit log: event created
                 audit_log($pdo, 'create', 'events', $eventId, 'title: ' . $title, $currentUser);
-                header('Location: admin.php?ok=create');
+                header('Location: admin.php?page=agenda&ok=create');
                 exit;
             }
         }
@@ -97,6 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $time = $_POST['time'] ?? null;
         $description = trim($_POST['description'] ?? '');
         $location = trim($_POST['location'] ?? '');
+        $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
 
         if ($title === '' || $date === '') {
             $message = 'Titel en datum zijn verplicht.';
@@ -113,8 +115,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $imageName = $upload['name'] ?? $oldImage;
                 // update nu ook updated_at en updated_by
-                $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, time=?, description=?, image=?, location=?, updated_at=NOW(), updated_by=? WHERE id=?');
-                $stmt->execute([$title, $date, $time ?: null, $description, $imageName, $location ?: null, $currentUser, $id]);
+                $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, time=?, description=?, image=?, location=?, show_signup_button=?, updated_at=NOW(), updated_by=? WHERE id=?');
+                $stmt->execute([$title, $date, $time ?: null, $description, $imageName, $location ?: null, $showSignupButton, $currentUser, $id]);
                 // Audit log: event updated
                 audit_log($pdo, 'update', 'events', $id, 'title: ' . $title, $currentUser);
 
@@ -122,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (!empty($upload['name']) && $oldImage && file_exists(__DIR__ . '/uploads/' . $oldImage)) {
                     @unlink(__DIR__ . '/uploads/' . $oldImage);
                 }
-                header('Location: admin.php?ok=update');
+                header('Location: admin.php?page=agenda&ok=update');
                 exit;
             }
         }
@@ -141,11 +143,131 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$id]);
             // Audit log: event deleted
             audit_log($pdo, 'delete', 'events', $id, null, $currentUser);
-            header('Location: admin.php?ok=delete');
+            header('Location: admin.php?page=agenda&ok=delete');
             exit;
         } else {
             $message = 'Evenement niet gevonden.';
         }
+
+    } elseif ($action === 'delete_bulk_events' && !empty($_POST['event_ids'])) {
+        $ids = $_POST['event_ids'];
+        if (!is_array($ids)) $ids = [$ids];
+        $ids = array_map('intval', $ids);
+        
+        $deletedCount = 0;
+        foreach ($ids as $id) {
+            $stmt = $pdo->prepare('SELECT image FROM events WHERE id = ?');
+            $stmt->execute([$id]);
+            $row = $stmt->fetch();
+            if ($row && $row['image'] && file_exists(__DIR__ . '/uploads/' . $row['image'])) {
+                @unlink(__DIR__ . '/uploads/' . $row['image']);
+            }
+            $stmt = $pdo->prepare('DELETE FROM events WHERE id = ?');
+            $result = $stmt->execute([$id]);
+            if ($result) {
+                $deletedCount++;
+                audit_log($pdo, 'delete', 'events', $id, null, $currentUser);
+            }
+        }
+        if ($deletedCount > 0) {
+            header('Location: admin.php?page=agenda&ok=delete');
+        } else {
+            $message = 'Geen items verwijderd.';
+        }
+        exit;
+
+    } elseif ($action === 'reorder_event') {
+        $id = (int)($_POST['id'] ?? 0);
+        $direction = $_POST['direction'] ?? '';
+
+        if ($id && ($direction === 'up' || $direction === 'down')) {
+            $currentUser = $_SESSION['user'] ?? null;
+            $pdo->beginTransaction();
+            try {
+                // Normaliseer sort_order als nodig
+                $stmt = $pdo->prepare('SELECT id, sort_order, created_at FROM events ORDER BY created_at ASC, id ASC');
+                $stmt->execute();
+                $items = $stmt->fetchAll();
+
+                $needsNormalize = false;
+                foreach ($items as $item) {
+                    if (empty($item['sort_order'])) {
+                        $needsNormalize = true;
+                        break;
+                    }
+                }
+
+                if ($needsNormalize) {
+                    $update = $pdo->prepare('UPDATE events SET sort_order = ? WHERE id = ?');
+                    $pos = 1;
+                    foreach ($items as $item) {
+                        $update->execute([$pos, $item['id']]);
+                        $pos++;
+                    }
+                }
+
+                // Haal gesorteerde events op
+                $stmt = $pdo->prepare('SELECT id, sort_order FROM events ORDER BY sort_order ASC, id ASC');
+                $stmt->execute();
+                $ordered = $stmt->fetchAll();
+
+                // Zoek index van huidige event
+                $index = null;
+                foreach ($ordered as $i => $item) {
+                    if ((int)$item['id'] === $id) {
+                        $index = $i;
+                        break;
+                    }
+                }
+
+                // Wissel met vorige/volgende event
+                if ($index !== null) {
+                    $swapIndex = $direction === 'up' ? $index - 1 : $index + 1;
+                    if (isset($ordered[$swapIndex])) {
+                        $current = $ordered[$index];
+                        $swap = $ordered[$swapIndex];
+                        $update = $pdo->prepare('UPDATE events SET sort_order = ? WHERE id = ?');
+                        $update->execute([$swap['sort_order'], $current['id']]);
+                        $update->execute([$current['sort_order'], $swap['id']]);
+                    }
+                }
+
+                audit_log($pdo, 'update', 'events', $id, 'reorder ' . $direction, $currentUser);
+                $pdo->commit();
+                header('Location: admin.php?page=agenda');
+                exit;
+            } catch (Exception $e) {
+                $pdo->rollBack();
+                $message = 'Volgorde bijwerken mislukt.';
+            }
+        }
+
+    } elseif ($action === 'delete_bulk_pages' && !empty($_POST['page_ids'])) {
+        $ids = $_POST['page_ids'];
+        if (!is_array($ids)) $ids = [$ids];
+        $ids = array_map('intval', $ids);
+        
+        $deletedCount = 0;
+        foreach ($ids as $id) {
+            $stmt = $pdo->prepare('SELECT image FROM pages WHERE id = ?');
+            $stmt->execute([$id]);
+            $row = $stmt->fetch();
+            if ($row && $row['image'] && file_exists(__DIR__ . '/uploads/' . $row['image'])) {
+                @unlink(__DIR__ . '/uploads/' . $row['image']);
+            }
+            $stmt = $pdo->prepare('DELETE FROM pages WHERE id = ?');
+            $result = $stmt->execute([$id]);
+            if ($result) {
+                $deletedCount++;
+                audit_log($pdo, 'delete', 'pages', $id, null, $currentUser);
+            }
+        }
+        if ($deletedCount > 0) {
+            header('Location: admin.php?page=' . urlencode($_POST['page_key'] ?? 'agenda') . '&ok=delete');
+        } else {
+            $message = 'Geen items verwijderd.';
+        }
+        exit;
 
     } elseif ($action === 'update_banner') {
         $banner1_file = handleUpload('banner1');
@@ -180,73 +302,188 @@ if ($pageAction === 'create_page') {
     $pageKey = $_POST['page_key'] ?? '';
     $title = trim($_POST['title'] ?? '');
     $body = trim($_POST['body'] ?? '');
+    $insertPosition = $_POST['insert_position'] ?? 'bottom';
 
     if (empty($pageKey) || empty($title)) {
         $message = 'Page key en titel zijn verplicht.';
     } else {
         $meta = [];
-        if (!empty($_POST['date'])) $meta['date'] = $_POST['date'];
-        if (!empty($_POST['time'])) $meta['time'] = $_POST['time'];
-        if (!empty($_POST['address'])) $meta['address'] = $_POST['address'];
-        if (!empty($_POST['email'])) $meta['email'] = $_POST['email'];
-        if (!empty($_POST['map_embed'])) $meta['map_embed'] = $_POST['map_embed'];
-        if (!empty($_POST['partners'])) $meta['partners'] = $_POST['partners'];
+
+        // Extra velden voor contact pagina
+        if ($pageKey === 'contact') {
+            if (!empty($_POST['address'])) $meta['address'] = $_POST['address'];
+            if (!empty($_POST['email'])) $meta['email'] = $_POST['email'];
+            if (!empty($_POST['map_embed'])) $meta['map_embed'] = $_POST['map_embed'];
+        }
 
         // Change 'page_image' to 'image' to match the form field name
         $upload = handleUpload('image');
         $imageName = $upload['name'] ?? null;
 
-        $stmt = $pdo->prepare('INSERT INTO pages (page_key, title, body, image, meta, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())');
-        $stmt->execute([$pageKey, $title, $body, $imageName, json_encode($meta)]);
+        if ($insertPosition === 'top') {
+            $shiftStmt = $pdo->prepare('UPDATE pages SET sort_order = COALESCE(sort_order, 0) + 1 WHERE page_key = ?');
+            $shiftStmt->execute([$pageKey]);
+            $nextOrder = 1;
+        } else {
+            $maxStmt = $pdo->prepare('SELECT COALESCE(MAX(sort_order), 0) FROM pages WHERE page_key = ?');
+            $maxStmt->execute([$pageKey]);
+            $nextOrder = (int)$maxStmt->fetchColumn() + 1;
+        }
+
+        $stmt = $pdo->prepare(
+            'INSERT INTO pages (page_key, title, body, image, meta, sort_order, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())'
+        );
+
+        $stmt->execute([
+            $pageKey,
+            $title,
+            $body,
+            $imageName,
+            json_encode($meta),
+            $nextOrder
+        ]);
+
         audit_log($pdo, 'create', 'pages', $pdo->lastInsertId(), 'page_key: ' . $pageKey, $currentUser);
-        $message = 'Pagina item aangemaakt.';
+
+        header('Location: admin.php?page=' . urlencode($pageKey) . '&ok=create');
+        exit;
     }
 } elseif ($pageAction === 'update_page') {
+
     $id = (int)($_POST['id'] ?? 0);
     $pageKey = $_POST['page_key'] ?? '';
     $title = trim($_POST['title'] ?? '');
     $body = trim($_POST['body'] ?? '');
 
     if ($id && $title) {
+
         $stmt = $pdo->prepare('SELECT image FROM pages WHERE id = ?');
         $stmt->execute([$id]);
         $row = $stmt->fetch();
         $oldImage = $row ? $row['image'] : null;
 
         $meta = [];
-        if (!empty($_POST['date'])) $meta['date'] = $_POST['date'];
-        if (!empty($_POST['time'])) $meta['time'] = $_POST['time'];
-        if (!empty($_POST['address'])) $meta['address'] = $_POST['address'];
-        if (!empty($_POST['email'])) $meta['email'] = $_POST['email'];
-        if (!empty($_POST['map_embed'])) $meta['map_embed'] = $_POST['map_embed'];
-        if (!empty($_POST['partners'])) $meta['partners'] = $_POST['partners'];
+
+        if ($pageKey === 'contact') {
+            if (!empty($_POST['address'])) $meta['address'] = $_POST['address'];
+            if (!empty($_POST['email'])) $meta['email'] = $_POST['email'];
+            if (!empty($_POST['map_embed'])) $meta['map_embed'] = $_POST['map_embed'];
+        }
 
         // Change 'page_image' to 'image' to match the form field name
         $upload = handleUpload('image');
         $imageName = $upload['name'] ?? $oldImage;
 
-        $stmt = $pdo->prepare('UPDATE pages SET title=?, body=?, image=?, meta=?, updated_at=NOW() WHERE id=?');
-        $stmt->execute([$title, $body, $imageName, json_encode($meta), $id]);
+        $stmt = $pdo->prepare(
+            'UPDATE pages
+             SET title=?, body=?, image=?, meta=?, updated_at=NOW()
+             WHERE id=?'
+        );
+
+        $stmt->execute([
+            $title,
+            $body,
+            $imageName,
+            json_encode($meta),
+            $id
+        ]);
 
         if (!empty($upload['name']) && $oldImage && file_exists(__DIR__ . '/uploads/' . $oldImage)) {
             @unlink(__DIR__ . '/uploads/' . $oldImage);
         }
+
         audit_log($pdo, 'update', 'pages', $id, 'page_key: ' . $pageKey, $currentUser);
-        $message = 'Pagina item bijgewerkt.';
+
+        header('Location: admin.php?page=' . urlencode($pageKey) . '&ok=update');
+        exit;
     }
-} elseif ($pageAction === 'delete_page') {
+} elseif ($pageAction === 'reorder_page') {
+
     $id = (int)($_POST['id'] ?? 0);
+    $pageKey = $_POST['page_key'] ?? '';
+    $direction = $_POST['direction'] ?? '';
+
+    if ($id && $pageKey && ($direction === 'up' || $direction === 'down')) {
+        $currentUser = $_SESSION['user'] ?? null;
+        $pdo->beginTransaction();
+        try {
+            $stmt = $pdo->prepare('SELECT id, sort_order, created_at FROM pages WHERE page_key = ? ORDER BY created_at ASC, id ASC');
+            $stmt->execute([$pageKey]);
+            $items = $stmt->fetchAll();
+
+            $needsNormalize = false;
+            foreach ($items as $item) {
+                if (empty($item['sort_order'])) {
+                    $needsNormalize = true;
+                    break;
+                }
+            }
+
+            if ($needsNormalize) {
+                $update = $pdo->prepare('UPDATE pages SET sort_order = ? WHERE id = ?');
+                $pos = 1;
+                foreach ($items as $item) {
+                    $update->execute([$pos, $item['id']]);
+                    $pos++;
+                }
+            }
+
+            $stmt = $pdo->prepare('SELECT id, sort_order FROM pages WHERE page_key = ? ORDER BY sort_order ASC, id ASC');
+            $stmt->execute([$pageKey]);
+            $ordered = $stmt->fetchAll();
+
+            $index = null;
+            foreach ($ordered as $i => $item) {
+                if ((int)$item['id'] === $id) {
+                    $index = $i;
+                    break;
+                }
+            }
+
+            if ($index !== null) {
+                $swapIndex = $direction === 'up' ? $index - 1 : $index + 1;
+                if (isset($ordered[$swapIndex])) {
+                    $current = $ordered[$index];
+                    $swap = $ordered[$swapIndex];
+                    $update = $pdo->prepare('UPDATE pages SET sort_order = ? WHERE id = ?');
+                    $update->execute([$swap['sort_order'], $current['id']]);
+                    $update->execute([$current['sort_order'], $swap['id']]);
+                }
+            }
+
+            audit_log($pdo, 'update', 'pages', $id, 'reorder ' . $pageKey . ' ' . $direction, $currentUser);
+            $pdo->commit();
+            header('Location: admin.php?page=' . urlencode($pageKey));
+            exit;
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            $message = 'Volgorde bijwerken mislukt.';
+        }
+    }
+
+} elseif ($pageAction === 'delete_page') {
+
+    $id = (int)($_POST['id'] ?? 0);
+
     if ($id) {
+
         $stmt = $pdo->prepare('SELECT image FROM pages WHERE id = ?');
         $stmt->execute([$id]);
         $row = $stmt->fetch();
+
         if ($row && $row['image'] && file_exists(__DIR__ . '/uploads/' . $row['image'])) {
             @unlink(__DIR__ . '/uploads/' . $row['image']);
         }
+
         $stmt = $pdo->prepare('DELETE FROM pages WHERE id = ?');
         $stmt->execute([$id]);
+
         audit_log($pdo, 'delete', 'pages', $id, null, $currentUser);
-        $message = 'Pagina item verwijderd.';
+
+        $pageKey = $_POST['page_key'] ?? 'index';
+        header('Location: admin.php?page=' . urlencode($pageKey) . '&ok=delete');
+        exit;
     }
 }
 
@@ -268,14 +505,24 @@ if (!empty($_GET['edit_page'])) {
     $editPage = $stmt->fetch();
 }
 
-// Haal events voor overzicht
-$stmt = $pdo->prepare('SELECT * FROM events ORDER BY date DESC, time DESC');
+// Haal events voor overzicht (datum-gestuurd)
+$stmt = $pdo->prepare('SELECT * FROM events ORDER BY date ASC, time ASC, created_at ASC, id ASC');
 $stmt->execute();
 $events = $stmt->fetchAll();
 ?>
 <?php
-// Welke admin pagina tonen (standaard agenda)
-$page = $_GET['page'] ?? 'agenda';
+// Welke admin pagina tonen (standaard index)
+$page = $_GET['page'] ?? 'index';
+
+$pageItems = [];
+if ($page !== 'banner' && $page !== 'agenda') {
+    $stmt = $pdo->prepare(
+        'SELECT * FROM pages WHERE page_key = ?
+         ORDER BY (sort_order IS NULL OR sort_order = 0) ASC, sort_order ASC, created_at ASC, id ASC'
+    );
+    $stmt->execute([$page]);
+    $pageItems = $stmt->fetchAll();
+}
 ?>
 <!doctype html>
 <html lang="nl">
@@ -326,18 +573,18 @@ $page = $_GET['page'] ?? 'agenda';
             </div>
             <nav class="divide-y">
                 <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Beheer</div>
-                <a href="admin.php?page=agenda" class="sidebar-link <?php echo $page==='agenda' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-calendar"></i> Agenda
-                </a>
                 <a href="admin.php?page=banner" class="sidebar-link <?php echo $page==='banner' ? 'active' : ''; ?>">
                     <i class="fa-solid fa-image"></i> Banners
+                </a>
+                <a href="admin.php?page=agenda" class="sidebar-link <?php echo $page==='agenda' ? 'active' : ''; ?>">
+                    <i class="fa-solid fa-calendar"></i> Agenda
                 </a>
 
                 <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Pagina's</div>
                 <a href="admin.php?page=index" class="sidebar-link <?php echo $page==='index' ? 'active' : ''; ?>">
                     <i class="fa-solid fa-house"></i> Homepage
                 </a>
-                <a href="admin.php?page=event" class="sidebar-link <?php echo $page==='event' ? 'active' : ''; ?>">
+                <a href="admin.php?page=evenementen" class="sidebar-link <?php echo $page==='evenementen' ? 'active' : ''; ?>">
                     <i class="fa-solid fa-calendar-check"></i> Evenementen
                 </a>
                 <a href="admin.php?page=terugblikken" class="sidebar-link <?php echo $page==='terugblikken' ? 'active' : ''; ?>">
@@ -356,15 +603,15 @@ $page = $_GET['page'] ?? 'agenda';
                     <i class="fa-solid fa-envelope"></i> Contact
                 </a>
 
-                <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Programma's</div>
+                <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Wat doen we</div>
+                <a href="admin.php?page=programma-kennis" class="sidebar-link <?php echo $page==='programma-kennis' ? 'active' : ''; ?>">
+                    <i class="fa-solid fa-brain"></i> Kennis & Vaardigheden
+                </a>
                 <a href="admin.php?page=programma-actie" class="sidebar-link <?php echo $page==='programma-actie' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-bolt"></i> Actie, Onderzoek
+                    <i class="fa-solid fa-rocket"></i> Actie, onderzoek & ontwerp
                 </a>
                 <a href="admin.php?page=programma-faciliteit" class="sidebar-link <?php echo $page==='programma-faciliteit' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-building"></i> Faciliteit
-                </a>
-                <a href="admin.php?page=programma-kennis" class="sidebar-link <?php echo $page==='programma-kennis' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-book"></i> Kennis & Vaardigheden
+                    <i class="fa-solid fa-building"></i> Faciliteit van het Lab
                 </a>
             </nav>
         </aside>
@@ -373,154 +620,197 @@ $page = $_GET['page'] ?? 'agenda';
 
             <?php if ($page === 'agenda'): ?>
                 <div class="card p-6">
-                    <div class="flex items-center gap-2 mb-4 pb-4">
+                    <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
                         <i class="fa-solid fa-calendar text-2xl text-[#00811F]"></i>
-                        <h2 class="text-2xl font-bold">Beheer: Agenda</h2>
+                        <h2 class="text-2xl font-bold">Agenda Beheer</h2>
                     </div>
 
-                <?php if ($editEvent): ?>
-                    <form method="POST" enctype="multipart/form-data" class="space-y-4">
-                        <h2 class="font-semibold">Bewerk evenement</h2>
-                        <input type="hidden" name="action" value="update">
-                        <input type="hidden" name="id" value="<?php echo (int)$editEvent['id']; ?>">
-                        <div>
-                            <label>Titel</label>
-                            <input type="text" name="title" value="<?php echo htmlspecialchars($editEvent['title']); ?>" required class="w-full border px-3 py-2" />
-                        </div>
-                        <div>
-                            <label>Locatie</label>
-                            <input type="text" name="location" value="<?php echo htmlspecialchars($editEvent['location']); ?>" class="w-full border px-3 py-2" />
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label>Datum</label>
-                                <input type="date" name="date" value="<?php echo htmlspecialchars($editEvent['date']); ?>" required class="w-full border px-3 py-2" />
-                            </div>
-                            <div>
-                                <label>Tijd</label>
-                                <input type="time" name="time" value="<?php echo htmlspecialchars($editEvent['time']); ?>" class="w-full border px-3 py-2" />
-                            </div>
-                        </div>
-                        <div>
-                            <label>Beschrijving</label>
-                            <textarea name="description" rows="4" class="w-full border px-3 py-2"><?php echo htmlspecialchars($editEvent['description']); ?></textarea>
-                        </div>
+                    <?php if ($editEvent): ?>
+                        <a href="admin.php?page=agenda" class="btn btn-secondary mb-6">
+                            <i class="fa-solid fa-arrow-left"></i> Terug
+                        </a>
+                    <?php endif; ?>
 
-                        <?php if (!empty($editEvent['updated_at']) || !empty($editEvent['updated_by'])): ?>
-                            <div class="text-sm text-gray-600">
-                                Laatst aangepast door: <?php echo htmlspecialchars($editEvent['updated_by'] ?? 'onbekend'); ?> op <?php echo htmlspecialchars($editEvent['updated_at'] ?? 'onbekend'); ?>
-                            </div>
-                        <?php endif; ?>
+                    <?php if ($editEvent): ?>
+                        <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6">
+                            <h3 class="font-semibold text-lg">Bewerk Evenement</h3>
+                            <input type="hidden" name="action" value="update">
+                            <input type="hidden" name="id" value="<?php echo (int)$editEvent['id']; ?>">
 
-                        <div>
-                            <label>Vervang foto (optioneel)</label>
-                            <input type="file" name="page_image" accept="image/*" />
-                            <?php if ($editEvent['image']): ?>
-                                <div class="mt-2"><small>Huidige afbeelding:</small><br><img src="uploads/<?php echo htmlspecialchars($editEvent['image']); ?>" class="w-48 mt-2" alt=""></div>
-                            <?php endif; ?>
-                        </div>
-                        <div class="flex gap-2">
-                            <button class="bg-[#00811F] text-white px-4 py-2 rounded">Opslaan</button>
-                            <a href="admin.php?page=agenda" class="px-4 py-2 border rounded">Annuleer</a>
-                        </div>
-                    </form>
-                <?php else: ?>
-                    <form method="POST" enctype="multipart/form-data" class="space-y-4">
-                        <h2 class="font-semibold">Nieuw evenement</h2>
-                        <input type="hidden" name="action" value="create">
-                        <div>
-                            <label>Titel</label>
-                            <input type="text" name="title" required class="w-full border px-3 py-2" />
-                        </div>
-                        <div>
-                            <label>Locatie</label>
-                            <input type="text" name="location" class="w-full border px-3 py-2" />
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label>Datum</label>
-                                <input type="date" name="date" required class="w-full border px-3 py-2" />
+<<<<<<< HEAD
+                                <label class="form-label">Titel</label>
+                                <input name="title" required class="form-input" value="<?php echo htmlspecialchars($editEvent['title']); ?>" />
                             </div>
-                            <div>
-                                <label>Tijd</label>
-                                <input type="time" name="time" class="w-full border px-3 py-2" />
-                            </div>
-                        </div>
-                        <div>
-                            <label>Beschrijving</label>
-                            <textarea name="description" rows="4" class="w-full border px-3 py-2"></textarea>
-                        </div>
-                        <div>
-                            <label>Foto (optioneel)</label>
-                            <input type="file" name="image" accept="image/*" />
-                        </div>
-                        <button class="bg-[#00811F] text-white px-7 py-4 rounded text-base font-semibold inline-flex items-center justify-center gap-2 whitespace-nowrap" style="min-width:220px;"><i class="fa-solid fa-plus"></i> Maak evenement</button>
-                    </form>
-                <?php endif; ?>
 
-                <div class="event-list mt-6">
-                    <?php if (empty($events)): ?>
-                        <div class="card p-6 text-center text-gray-500">
-                            <i class="fa-solid fa-calendar-xmark text-4xl mb-2"></i>
-                            <p>Geen evenementen gevonden</p>
-                        </div>
-                    <?php else: ?>
-                        <?php foreach ($events as $e): ?>
-                            <div class="card event-item">
-                                <div class="event-info flex-1">
-                                    <h3><?php echo htmlspecialchars($e['title']); ?></h3>
-                                    <div class="event-meta">
-                                        <i class="fa-solid fa-calendar"></i> <?php echo htmlspecialchars(formatEventDateDisplay($e['date'])); ?>
-                                        <?php if (!empty($e['time'])): ?>
-                                            <i class="fa-solid fa-clock ml-2"></i> <?php echo htmlspecialchars(formatEventTimeDisplay($e['time'])); ?>
-                                        <?php endif; ?>
-                                        <?php if (!empty($e['location'])): ?>
-                                            <?php $mapsLocationUrl = 'https://www.google.com/maps/dir/?api=1&destination=' . rawurlencode((string)$e['location']); ?>
-                                            <i class="fa-solid fa-location-dot ml-2"></i> <a href="<?php echo htmlspecialchars($mapsLocationUrl); ?>" target="_blank" rel="noopener noreferrer"><?php echo htmlspecialchars($e['location']); ?></a>
-                                        <?php endif; ?>
-                                    </div>
-                                    <?php if (!empty($e['description'])): ?>
-                                        <p class="text-sm mt-2 line-clamp-2"><?php echo htmlspecialchars(mb_strimwidth($e['description'], 0, 150, '...')); ?></p>
-                                    <?php endif; ?>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="form-label">Wanneer (datum)</label>
+                                    <input type="date" name="date" required class="form-input" value="<?php echo htmlspecialchars($editEvent['date']); ?>" />
                                 </div>
+                                <div>
+                                    <label class="form-label">Tijd</label>
+                                    <input type="time" name="time" class="form-input" value="<?php echo htmlspecialchars($editEvent['time'] ?? ''); ?>" />
+                                </div>
+                            </div>
 
-                                <div class="event-actions flex-shrink-0">
-                                    <?php if (!empty($e['image'])): ?>
-                                        <div class="event-image-wrap">
-                                            <button
-                                                type="button"
-                                                class="event-image-toggle bg-[#00811F] hover:bg-[#006817] text-white px-3 py-2 rounded text-sm transition"
-                                                aria-expanded="false"
-                                            >
-                                                <i class="fa-solid fa-image cursor-p"></i> Bekijk afbeelding
-                                            </button>
-                                            <div class="event-image-preview" aria-hidden="true">
-                                                <img src="uploads/<?php echo htmlspecialchars($e['image'], ENT_QUOTES); ?>" alt="Event afbeelding">
+                            <div>
+                                <label class="form-label">Plaats</label>
+                                <input name="location" class="form-input" value="<?php echo htmlspecialchars($editEvent['location'] ?? ''); ?>" />
+                            </div>
+
+                            <div>
+                                <label class="form-label">Omschrijving</label>
+                                <textarea name="description" rows="5" class="form-textarea"><?php echo htmlspecialchars($editEvent['description'] ?? ''); ?></textarea>
+                            </div>
+
+                            <div>
+                                <label class="form-label">Afbeelding (optioneel)</label>
+                                <input type="file" name="image" accept="image/*" class="form-input" />
+                                <?php if (!empty($editEvent['image'])): ?>
+                                    <p class="text-sm mt-2 text-gray-600">Huidige: <?php echo htmlspecialchars($editEvent['image']); ?></p>
+                                <?php endif; ?>
+                            </div>
+
+                            <div>
+                                <label class="form-checkbox">
+                                    <input type="checkbox" name="show_signup_button" <?php echo $editEvent['show_signup_button'] ? 'checked' : ''; ?> />
+                                    Toon inschrijf knop
+                                </label>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa-solid fa-save"></i> Opslaan
+                            </button>
+                        </form>
+                    <?php else: ?>
+                        <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6">
+                            <h3 class="font-semibold text-lg">Nieuw Evenement</h3>
+                            <input type="hidden" name="action" value="create">
+
+                            <div>
+                                <label class="form-label">Titel</label>
+                                <input name="title" required class="form-input" />
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="form-label">Wanneer (datum)</label>
+                                    <input type="date" name="date" required class="form-input" />
+                                </div>
+                                <div>
+                                    <label class="form-label">Tijd</label>
+                                    <input type="time" name="time" class="form-input" />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="form-label">Plaats</label>
+                                <input name="location" class="form-input" />
+                            </div>
+
+                            <div>
+                                <label class="form-label">Omschrijving</label>
+                                <textarea name="description" rows="5" class="form-textarea"></textarea>
+                            </div>
+
+                            <div>
+                                <label class="form-label">Afbeelding (optioneel)</label>
+                                <input type="file" name="image" accept="image/*" class="form-input" />
+                            </div>
+
+                            <div>
+                                <label class="form-checkbox">
+                                    <input type="checkbox" name="show_signup_button" />
+                                    Toon inschrijf knop
+                                </label>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa-solid fa-plus"></i> Toevoegen
+                            </button>
+                        </form>
+                    <?php endif; ?>
+
+                    <div class="card p-6">
+                        <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
+                            <i class="fa-solid fa-list text-2xl text-[#00811F]"></i>
+                            <h3 class="text-xl font-bold">Alle Evenementen</h3>
+                        </div>
+                        <?php if (empty($events)): ?>
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fa-solid fa-inbox text-4xl mb-2"></i>
+                                <p>Geen evenementen aangemaakt</p>
+                            </div>
+                        <?php else: ?>
+                            <div class="mb-4 flex gap-2 items-center">
+                                <input type="checkbox" id="selectAllEvents" class="w-4 h-4 cursor-pointer" title="Selecteer alles">
+                                <label for="selectAllEvents" class="cursor-pointer text-sm font-medium">Selecteer alles</label>
+                                <button type="button" class="btn btn-danger btn-sm" id="bulkDeleteEventsBtn" style="display:none;">
+                                    <i class="fa-solid fa-trash"></i> Verwijder geselecteerde (<span id="eventCount">0</span>)
+                                </button>
+                            </div>
+                            <form method="POST" id="bulkDeleteEventsForm">
+                                <input type="hidden" name="action" value="delete_bulk_events">
+                            <div class="space-y-4">
+                            <?php foreach ($events as $event): ?>
+                                <div class="border border-gray-200 rounded p-4 hover:shadow-md transition">
+                                    <div class="flex justify-between items-start gap-4">
+                                        <input type="checkbox" class="event-checkbox w-4 h-4 mt-1 flex-shrink-0 cursor-pointer" name="event_ids[]" value="<?php echo (int)$event['id']; ?>">
+                                        <div class="flex-1">
+                                            <h4 class="font-bold text-lg text-gray-800"><?php echo htmlspecialchars($event['title']); ?></h4>
+                                            <?php $dateDisplay = formatEventDateDisplay($event['date']); $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : ''; ?>
+                                            <p class="text-sm text-gray-600 mt-1"><strong>Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?> <?php echo $timeDisplay ? htmlspecialchars($timeDisplay) : ''; ?></p>
+                                            <?php if (!empty($event['location'])): ?>
+                                                <p class="text-sm text-gray-600"><strong>Plaats:</strong> <?php echo htmlspecialchars($event['location']); ?></p>
+                                            <?php endif; ?>
+                                            <p class="text-sm text-gray-600 mt-2 line-clamp-2"><?php echo nl2br(htmlspecialchars($event['description'] ? mb_strimwidth($event['description'],0,200,'...') : '')); ?></p>
+                                        </div>
+                                        <div class="flex gap-2 flex-shrink-0">
+                                            <?php if (!empty($event['image'])): ?>
+                                                <a href="#" class="btn btn-secondary btn-sm" onclick="openImageModal(event, 'uploads/<?php echo htmlspecialchars($event['image']); ?>')">
+                                                    <i class="fa-solid fa-image"></i> Foto
+                                                </a>
+                                            <?php endif; ?>
+                                            <div class="flex flex-col gap-1">
+                                                <a href="admin.php?page=agenda&edit=<?php echo (int)$event['id']; ?>" class="btn btn-secondary btn-sm">
+                                                    <i class="fa-solid fa-pencil"></i> Bewerk
+                                                </a>
+                                                <form method="POST" onsubmit="return confirm('Verwijder dit evenement?');" style="display:inline;">
+                                                    <input type="hidden" name="action" value="delete">
+                                                    <input type="hidden" name="id" value="<?php echo (int)$event['id']; ?>">
+                                                    <button type="submit" class="btn btn-danger btn-sm w-full">
+                                                        <i class="fa-solid fa-trash"></i> Verwijder
+                                                    </button>
+                                                </form>
                                             </div>
                                         </div>
-                                    <?php endif; ?>
-
-                                    <div class="flex gap-2">
-                                        <a href="admin.php?edit=<?php echo (int)$e['id']; ?>&page=agenda" class="btn btn-secondary btn-sm" title="Bewerk">
-                                            <i class="fa-solid fa-pencil"></i> Bewerk
-                                        </a>
-                                        <form method="POST" onsubmit="return confirm('Verwijder dit evenement?');" style="display:inline;">
-                                            <input type="hidden" name="action" value="delete">
-                                            <input type="hidden" name="id" value="<?php echo (int)$e['id']; ?>">
-                                            <button class="btn btn-danger btn-sm">
-                                                <i class="fa-solid fa-trash"></i> Verwijder
-                                            </button>
-                                        </form>
                                     </div>
                                 </div>
+                            <?php endforeach; ?>
                             </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
+                            </form>
+                        <?php endif; ?>
+                    </div>
                 </div>
 
             <?php elseif ($page != 'banner'): ?>
                 <?php
                 $pageKey = $page;
+                $pageLabelMap = [
+                    'index' => 'Homepage',
+                    'evenementen' => 'Evenementen',
+                    'terugblikken' => 'Terugblikken',
+                    'over' => 'Voor wie?',
+                    'wie-zijn-we' => 'Wie zijn we?',
+                    'verantwoord-ai' => 'Verantwoorde AI',
+                    'contact' => 'Contact',
+                    'programma-kennis' => 'Wat doen we: Kennis & vaardigheden',
+                    'programma-actie' => 'Wat doen we: Actie, onderzoek & ontwerp',
+                    'programma-faciliteit' => 'Wat doen we: Faciliteit van het Lab',
+                ];
+                $pageLabel = $pageLabelMap[$pageKey] ?? $pageKey;
+                $isProgrammaPage = (strpos($pageKey, 'programma-') === 0);
+                $itemLabel = $isProgrammaPage ? 'Kaart' : 'Item';
                 $fields = ['title','body','image'];
                 $extraLabels = [];
                 switch ($pageKey) {
@@ -533,30 +823,16 @@ $page = $_GET['page'] ?? 'agenda';
                     default:
                         $fields = ['title','body','image'];
                 }
-
-                $stmt = $pdo->prepare('SELECT * FROM pages WHERE page_key = ? ORDER BY created_at DESC');
-                $stmt->execute([$pageKey]);
-                $pageItems = $stmt->fetchAll();
-
-                $pageNames = [
-                    'index' => 'Homepage',
-                    'event' => 'Evenementen',
-                    'terugblikken' => 'Terugblikken',
-                    'contact' => 'Contact',
-                    'over' => 'Voor wie?',
-                    'verantwoord-ai' => 'Verantwoord AI',
-                    'wie-zijn-we' => 'Wie zijn we?',
-                    'programma-actie' => 'Programma: Actie, Onderzoek & Ontwerp',
-                    'programma-faciliteit' => 'Programma: Faciliteit van het Lab',
-                    'programma-kennis' => 'Programma: Kennis & Vaardigheden',
-                ];
-                $pageName = $pageNames[$pageKey] ?? ucfirst(str_replace('-', ' ', $pageKey));
                 ?>
+
                 <div class="card p-6">
-                    <div class="flex items-center gap-2 mb-4 pb-4">
+                    <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
                         <i class="fa-solid fa-file-pen text-2xl text-[#00811F]"></i>
-                        <h2 class="text-2xl font-bold">Beheer: <?php echo htmlspecialchars($pageName); ?></h2>
+                        <h2 class="text-2xl font-bold">Beheer: <?php echo htmlspecialchars($pageLabel); ?></h2>
                     </div>
+                    <?php if (strpos($pageKey, 'programma-') === 0): ?>
+                        <p class="text-sm text-gray-600 mb-4">Hier kun je kaarten toevoegen, wijzigen en verwijderen voor de pagina onder de tab "Wat doen we". De eerste kaart wordt als brede intro bovenaan getoond; de rest komt in de rij met kaarten.</p>
+                    <?php endif; ?>
 
                     <?php if ($editPage): ?>
                         <a href="admin.php?page=<?php echo urlencode($pageKey); ?>" class="btn btn-secondary mb-6">
@@ -565,15 +841,15 @@ $page = $_GET['page'] ?? 'agenda';
                     <?php endif; ?>
 
                     <?php if ($editPage): ?>
-                        <form method="POST" enctype="multipart/form-data" class="space-y-4 mb-6">
-                            <h3 class="font-semibold text-lg">Bewerk Item</h3>
+                        <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6">
+                            <h3 class="font-semibold text-lg">Bewerk <?php echo htmlspecialchars($itemLabel); ?></h3>
                             <input type="hidden" name="page_action" value="update_page">
                             <input type="hidden" name="id" value="<?php echo (int)$editPage['id']; ?>">
                             <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
 
                             <div>
                                 <label class="form-label">Titel</label>
-                                <input type="text" name="title" required class="form-input" value="<?php echo htmlspecialchars($editPage['title']); ?>" />
+                                <input name="title" required class="form-input" value="<?php echo htmlspecialchars($editPage['title']); ?>" />
                             </div>
 
                             <div>
@@ -583,12 +859,9 @@ $page = $_GET['page'] ?? 'agenda';
 
                             <div>
                                 <label class="form-label">Afbeelding (optioneel)</label>
-                                <input type="file" name="image" accept="image/*" class="form-input" />
+                                <input type="file" name="page_image" accept="image/*" class="form-input" />
                                 <?php if (!empty($editPage['image'])): ?>
-                                    <div class="mt-2 flex items-center gap-3">
-                                        <img src="uploads/<?php echo htmlspecialchars($editPage['image']); ?>" alt="Huidige afbeelding" class="w-24 h-16 object-cover rounded shadow">
-                                        <p class="text-sm text-gray-600">Huidige afbeelding: <?php echo htmlspecialchars($editPage['image']); ?></p>
-                                    </div>
+                                    <p class="text-sm mt-2 text-gray-600">Huidige afbeelding: <?php echo htmlspecialchars($editPage['image']); ?></p>
                                 <?php endif; ?>
                             </div>
 
@@ -597,14 +870,14 @@ $page = $_GET['page'] ?? 'agenda';
                             </button>
                         </form>
                     <?php else: ?>
-                        <form method="POST" enctype="multipart/form-data" class="space-y-4 mb-6">
-                            <h3 class="font-semibold text-lg">Nieuw Item</h3>
+                        <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6">
+                            <h3 class="font-semibold text-lg">Nieuw <?php echo htmlspecialchars($itemLabel); ?></h3>
                             <input type="hidden" name="page_action" value="create_page">
                             <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
 
                             <div>
                                 <label class="form-label">Titel</label>
-                                <input type="text" name="title" required class="form-input" />
+                                <input name="title" required class="form-input" />
                             </div>
 
                             <div>
@@ -614,30 +887,53 @@ $page = $_GET['page'] ?? 'agenda';
 
                             <div>
                                 <label class="form-label">Afbeelding (optioneel)</label>
-                                <input type="file" name="image" accept="image/*" class="form-input" />
+                                <input type="file" name="page_image" accept="image/*" class="form-input" />
+                            </div>
+
+                            <div>
+                                <label class="form-label">Positie</label>
+                                <select name="insert_position" class="form-input">
+                                    <option value="bottom" selected>Onderaan toevoegen</option>
+                                    <option value="top">Bovenaan toevoegen</option>
+                                </select>
                             </div>
 
                             <button type="submit" class="btn btn-primary">
-                                <i class="fa-solid fa-plus"></i> Toevoegen
+                                <i class="fa-solid fa-plus"></i> <?php echo $isProgrammaPage ? 'Kaart toevoegen' : 'Toevoegen'; ?>
                             </button>
                         </form>
                     <?php endif; ?>
 
                     <div class="card p-6">
-                        <div class="flex items-center gap-2 mb-4 pb-4">
+                        <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
                             <i class="fa-solid fa-list text-2xl text-[#00811F]"></i>
-                            <h3 class="text-xl font-bold">Bestaande Items</h3>
+                            <h3 class="text-xl font-bold">Bestaande <?php echo $isProgrammaPage ? 'Kaarten' : 'Items'; ?></h3>
                         </div>
                         <?php if (empty($pageItems)): ?>
                             <div class="text-center py-8 text-gray-500">
                                 <i class="fa-solid fa-inbox text-4xl mb-2"></i>
-                                <p>Geen items toegevoegd voor deze pagina</p>
+                                <p>Geen <?php echo $isProgrammaPage ? 'kaarten' : 'items'; ?> toegevoegd voor deze pagina</p>
                             </div>
                         <?php else: ?>
+                            <div class="mb-4 flex gap-2 items-center">
+                                <input type="checkbox" id="selectAllPages_<?php echo htmlspecialchars($pageKey); ?>" class="w-4 h-4 cursor-pointer selectAllPages" data-page="<?php echo htmlspecialchars($pageKey); ?>" title="Selecteer alles">
+                                <label for="selectAllPages_<?php echo htmlspecialchars($pageKey); ?>" class="cursor-pointer text-sm font-medium">Selecteer alles</label>
+                                <button type="button" class="btn btn-danger btn-sm" id="bulkDeletePagesBtn_<?php echo htmlspecialchars($pageKey); ?>" style="display:none;">
+                                    <i class="fa-solid fa-trash"></i> Verwijder geselecteerde (<span id="pageCount_<?php echo htmlspecialchars($pageKey); ?>">0</span>)
+                                </button>
+                            </div>
+                            <form method="POST" id="bulkDeletePagesForm_<?php echo htmlspecialchars($pageKey); ?>">
+                                <input type="hidden" name="action" value="delete_bulk_pages">
+                                <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
                             <div class="space-y-4">
-                            <?php foreach ($pageItems as $it): ?>
+                            <?php foreach ($pageItems as $index => $it): ?>
+                                <?php
+                                    $isFirst = ($index === 0);
+                                    $isLast = ($index === (count($pageItems) - 1));
+                                ?>
                                 <div class="border border-gray-200 rounded p-4 hover:shadow-md transition">
                                     <div class="flex justify-between items-start gap-4">
+                                        <input type="checkbox" class="page-checkbox page-checkbox-<?php echo htmlspecialchars($pageKey); ?> w-4 h-4 mt-1 flex-shrink-0 cursor-pointer" name="page_ids[]" value="<?php echo (int)$it['id']; ?>">
                                         <div class="flex-1">
                                             <h4 class="font-bold text-lg text-gray-800"><?php echo htmlspecialchars($it['title'] ?? ''); ?></h4>
                                             <p class="text-sm text-gray-600 mt-1 line-clamp-2"><?php echo nl2br(htmlspecialchars($it['body'] ? mb_strimwidth($it['body'],0,150,'...') : '')); ?></p>
@@ -645,10 +941,30 @@ $page = $_GET['page'] ?? 'agenda';
                                         <div class="flex gap-2 flex-shrink-0">
                                             <?php if (!empty($it['image'])): ?>
                                                 <a href="#" class="btn btn-secondary btn-sm" onclick="openImageModal(event, 'uploads/<?php echo htmlspecialchars($it['image']); ?>')">
-                                                    <img src="uploads/<?php echo htmlspecialchars($it['image']); ?>" alt="foto" class="w-8 h-8 object-cover rounded inline-block mr-1">Foto
+                                                    <i class="fa-solid fa-image"></i> Foto
                                                 </a>
                                             <?php endif; ?>
                                             <div class="flex flex-col gap-1">
+                                                <div class="flex gap-1">
+                                                    <form method="POST">
+                                                        <input type="hidden" name="page_action" value="reorder_page">
+                                                        <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
+                                                        <input type="hidden" name="id" value="<?php echo (int)$it['id']; ?>">
+                                                        <input type="hidden" name="direction" value="up">
+                                                        <button type="submit" class="btn btn-secondary btn-sm" <?php echo $isFirst ? 'disabled' : ''; ?> title="Omhoog">
+                                                            <i class="fa-solid fa-arrow-up"></i>
+                                                        </button>
+                                                    </form>
+                                                    <form method="POST">
+                                                        <input type="hidden" name="page_action" value="reorder_page">
+                                                        <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
+                                                        <input type="hidden" name="id" value="<?php echo (int)$it['id']; ?>">
+                                                        <input type="hidden" name="direction" value="down">
+                                                        <button type="submit" class="btn btn-secondary btn-sm" <?php echo $isLast ? 'disabled' : ''; ?> title="Omlaag">
+                                                            <i class="fa-solid fa-arrow-down"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
                                                 <a href="admin.php?edit_page=<?php echo (int)$it['id']; ?>&page=<?php echo urlencode($pageKey); ?>" class="btn btn-secondary btn-sm">
                                                     <i class="fa-solid fa-pencil"></i> Bewerk
                                                 </a>
@@ -666,13 +982,14 @@ $page = $_GET['page'] ?? 'agenda';
                                 </div>
                             <?php endforeach; ?>
                             </div>
+                            </form>
                         <?php endif; ?>
                     </div>
                 </div>
 
-            <?php elseif ($page == 'banner'): ?>
+            <?php else: ?>
                 <div class="card p-6">
-                        <div class="flex items-center gap-2 mb-4 pb-4">
+                    <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
                         <i class="fa-solid fa-image text-2xl text-[#00811F]"></i>
                         <h2 class="text-2xl font-bold">Banner Beheer</h2>
                     </div>
@@ -704,7 +1021,7 @@ $page = $_GET['page'] ?? 'agenda';
                             </div>
                         </div>
 
-                        <div class="flex gap-2 pt-4 border-t">
+                        <div class="flex gap-2 pt-4">
                             <button type="submit" class="btn btn-primary">
                                 <i class="fa-solid fa-save"></i> Banners Bijwerken
                             </button>
@@ -778,7 +1095,154 @@ $page = $_GET['page'] ?? 'agenda';
     }
   });
 })();
+
+// Bulk selection for events
+(function() {
+  const selectAllEvents = document.getElementById('selectAllEvents');
+  const eventCheckboxes = document.querySelectorAll('.event-checkbox');
+  const bulkDeleteEventsBtn = document.getElementById('bulkDeleteEventsBtn');
+  const bulkDeleteEventsForm = document.getElementById('bulkDeleteEventsForm');
+  const eventCount = document.getElementById('eventCount');
+  
+  if (!selectAllEvents || !eventCheckboxes.length) return;
+  
+  function updateEventBulkDelete() {
+    const checked = document.querySelectorAll('.event-checkbox:checked').length;
+    if (checked > 0) {
+      bulkDeleteEventsBtn.style.display = 'inline-flex';
+      eventCount.textContent = checked;
+    } else {
+      bulkDeleteEventsBtn.style.display = 'none';
+    }
+    selectAllEvents.checked = checked === eventCheckboxes.length && eventCheckboxes.length > 0;
+  }
+  
+  selectAllEvents.addEventListener('change', function() {
+    eventCheckboxes.forEach(cb => cb.checked = this.checked);
+    updateEventBulkDelete();
+  });
+  
+  eventCheckboxes.forEach(cb => {
+    cb.addEventListener('change', updateEventBulkDelete);
+  });
+  
+  if (bulkDeleteEventsBtn && bulkDeleteEventsForm) {
+    bulkDeleteEventsBtn.addEventListener('click', function(e) {
+      const checked = document.querySelectorAll('.event-checkbox:checked').length;
+      if (checked === 0) {
+        e.preventDefault();
+        alert('Selecteer minimaal één item');
+        return false;
+      }
+      if (!confirm('Verwijder alle geselecteerde evenementen?')) {
+        e.preventDefault();
+        return false;
+      }
+      bulkDeleteEventsForm.submit();
+    });
+  }
+})();
+
+// Bulk selection for page items
+(function() {
+  const selectAllPageButtons = document.querySelectorAll('.selectAllPages');
+  if (!selectAllPageButtons.length) return;
+  
+  selectAllPageButtons.forEach(btn => {
+    const pageKey = btn.dataset.page;
+    const pageCheckboxes = document.querySelectorAll(`.page-checkbox-${pageKey}`);
+    const bulkDeletePagesBtn = document.getElementById(`bulkDeletePagesBtn_${pageKey}`);
+    const bulkDeletePagesForm = document.getElementById(`bulkDeletePagesForm_${pageKey}`);
+    const pageCount = document.getElementById(`pageCount_${pageKey}`);
+    
+    if (!pageCheckboxes.length || !bulkDeletePagesForm) return;
+    
+    function updatePageBulkDelete() {
+      const checked = document.querySelectorAll(`.page-checkbox-${pageKey}:checked`).length;
+      if (checked > 0) {
+        bulkDeletePagesBtn.style.display = 'inline-flex';
+        pageCount.textContent = checked;
+      } else {
+        bulkDeletePagesBtn.style.display = 'none';
+      }
+      btn.checked = checked === pageCheckboxes.length && pageCheckboxes.length > 0;
+    }
+    
+    btn.addEventListener('change', function() {
+      pageCheckboxes.forEach(cb => cb.checked = this.checked);
+      updatePageBulkDelete();
+    });
+    
+    pageCheckboxes.forEach(cb => {
+      cb.addEventListener('change', updatePageBulkDelete);
+    });
+    
+    if (bulkDeletePagesBtn) {
+      bulkDeletePagesBtn.addEventListener('click', function(e) {
+        const checked = document.querySelectorAll(`.page-checkbox-${pageKey}:checked`).length;
+        if (checked === 0) {
+          e.preventDefault();
+          alert('Selecteer minimaal één item');
+          return false;
+        }
+        if (!confirm('Verwijder alle geselecteerde items?')) {
+          e.preventDefault();
+          return false;
+        }
+        bulkDeletePagesForm.submit();
+      });
+    }
+  });
+})();
+
+// Toggle image visibility in modal
+function openImageModal(event, imageSrc) {
+  event.preventDefault();
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('modalImage');
+    if (modal && modalImg) {
+        modalImg.src = imageSrc;
+        modal.classList.add('active');
+  }
+}
+
+// Close modal
+function closeImageModal() {
+  const modal = document.getElementById('imageModal');
+  if (modal) {
+    modal.classList.remove('active');
+  }
+}
+
+// Close modal on background click
+document.addEventListener('DOMContentLoaded', function() {
+  const modal = document.getElementById('imageModal');
+  if (modal) {
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) {
+        closeImageModal();
+      }
+    });
+  }
+  
+  // Close on Escape key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeImageModal();
+    }
+  });
+});
 </script>
+
+<!-- Image Modal -->
+<div id="imageModal" class="image-modal">
+  <div class="image-modal-content">
+    <button class="image-modal-close" onclick="closeImageModal()" aria-label="Sluiten">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+    <img id="modalImage" src="" alt="Preview">
+  </div>
+</div>
 
 </body>
 </html>
