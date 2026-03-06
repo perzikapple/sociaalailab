@@ -151,13 +151,54 @@ try {
     <?php if (!empty($cardBlocks)): ?>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-4">
         <?php foreach ($cardBlocks as $block): ?>
-            <div class="flex flex-col justify-between bg-white p-4 shadow-lg">
+            <?php
+            $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
+            $imagePosition = $metaArr['image_position'] ?? 'normal';
+            if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) $imagePosition = 'normal';
+            $sideImageLayout = !empty($block['image']) && $imagePosition !== 'normal';
+            ?>
+            <div class="bg-white p-4 shadow-lg <?php echo $sideImageLayout ? 'flex flex-col md:flex-row gap-4 items-start' : 'flex flex-col justify-between'; ?>">
+                <?php if (!empty($block['image']) && $imagePosition === 'left'): ?>
+                    <?php
+                    $imagePath = trim((string)$block['image']);
+                    if (strpos($imagePath, 'images/') === 0 || strpos($imagePath, 'uploads/') === 0) {
+                        $imageSrc = '../' . $imagePath;
+                    } elseif (strpos($imagePath, '../') === 0 || preg_match('#^https?://#i', $imagePath)) {
+                        $imageSrc = $imagePath;
+                    } else {
+                        $imageSrc = '../uploads/' . $imagePath;
+                    }
+                    ?>
+                    <div class="md:w-32 flex-shrink-0">
+                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="w-full h-28 object-cover">
+                    </div>
+                <?php endif; ?>
+
+                <div class="<?php echo $sideImageLayout ? 'flex-1' : ''; ?>">
                 <?php if (!empty($block['title'])): ?>
                     <h3 class="text-lg font-semibold mb-2"><?php echo htmlspecialchars($block['title']); ?></h3>
                 <?php endif; ?>
                 <?php if (!empty($block['body'])): ?>
                     <p class="mb-2 text-gray-700 text-sm"><?php echo nl2br(htmlspecialchars($block['body'])); ?></p>
                 <?php endif; ?>
+                </div>
+
+                <?php if (!empty($block['image']) && $imagePosition === 'right'): ?>
+                    <?php
+                    $imagePath = trim((string)$block['image']);
+                    if (strpos($imagePath, 'images/') === 0 || strpos($imagePath, 'uploads/') === 0) {
+                        $imageSrc = '../' . $imagePath;
+                    } elseif (strpos($imagePath, '../') === 0 || preg_match('#^https?://#i', $imagePath)) {
+                        $imageSrc = $imagePath;
+                    } else {
+                        $imageSrc = '../uploads/' . $imagePath;
+                    }
+                    ?>
+                    <div class="md:w-32 flex-shrink-0">
+                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="w-full h-28 object-cover">
+                    </div>
+                <?php endif; ?>
+
                 <?php if (!empty($block['image'])): ?>
                     <?php
                     $imagePath = trim((string)$block['image']);
@@ -169,7 +210,7 @@ try {
                         $imageSrc = '../uploads/' . $imagePath;
                     }
                     ?>
-                    <div class="mt-auto">
+                    <div class="mt-auto <?php echo $imagePosition !== 'normal' ? 'hidden' : ''; ?>">
                         <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="w-full h-40 object-cover">
                     </div>
                 <?php endif; ?>

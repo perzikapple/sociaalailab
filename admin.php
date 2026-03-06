@@ -303,11 +303,15 @@ if ($pageAction === 'create_page') {
     $title = trim($_POST['title'] ?? '');
     $body = trim($_POST['body'] ?? '');
     $insertPosition = $_POST['insert_position'] ?? 'bottom';
+    $imagePosition = $_POST['image_position'] ?? 'normal';
+    if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) {
+        $imagePosition = 'normal';
+    }
 
     if (empty($pageKey) || empty($title)) {
         $message = 'Page key en titel zijn verplicht.';
     } else {
-        $meta = [];
+        $meta = ['image_position' => $imagePosition];
 
         // Extra velden voor contact pagina
         if ($pageKey === 'contact') {
@@ -358,12 +362,23 @@ if ($pageAction === 'create_page') {
 
     if ($id && $title) {
 
-        $stmt = $pdo->prepare('SELECT image FROM pages WHERE id = ?');
+        $stmt = $pdo->prepare('SELECT image, meta FROM pages WHERE id = ?');
         $stmt->execute([$id]);
         $row = $stmt->fetch();
         $oldImage = $row ? $row['image'] : null;
+        $imagePosition = $_POST['image_position'] ?? 'normal';
+        if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) {
+            $imagePosition = 'normal';
+        }
 
         $meta = [];
+        if (!empty($row['meta'])) {
+            $decodedMeta = json_decode($row['meta'], true);
+            if (is_array($decodedMeta)) {
+                $meta = $decodedMeta;
+            }
+        }
+        $meta['image_position'] = $imagePosition;
 
         if ($pageKey === 'contact') {
             if (!empty($_POST['address'])) $meta['address'] = $_POST['address'];
@@ -823,6 +838,17 @@ if ($page !== 'banner' && $page !== 'agenda') {
                     default:
                         $fields = ['title','body','image'];
                 }
+                $editMeta = [];
+                if ($editPage && !empty($editPage['meta'])) {
+                    $decodedEditMeta = json_decode($editPage['meta'], true);
+                    if (is_array($decodedEditMeta)) {
+                        $editMeta = $decodedEditMeta;
+                    }
+                }
+                $currentImagePosition = $editMeta['image_position'] ?? 'normal';
+                if (!in_array($currentImagePosition, ['normal', 'left', 'right'], true)) {
+                    $currentImagePosition = 'normal';
+                }
                 ?>
 
                 <div class="card p-6">
@@ -859,10 +885,19 @@ if ($page !== 'banner' && $page !== 'agenda') {
 
                             <div>
                                 <label class="form-label">Afbeelding (optioneel)</label>
-                                <input type="file" name="page_image" accept="image/*" class="form-input" />
+                                <input type="file" name="image" accept="image/*" class="form-input" />
                                 <?php if (!empty($editPage['image'])): ?>
                                     <p class="text-sm mt-2 text-gray-600">Huidige afbeelding: <?php echo htmlspecialchars($editPage['image']); ?></p>
                                 <?php endif; ?>
+                            </div>
+
+                            <div>
+                                <label class="form-label">Foto positie</label>
+                                <select name="image_position" class="form-input">
+                                    <option value="normal" <?php echo $currentImagePosition === 'normal' ? 'selected' : ''; ?>>Normaal (zoals nu)</option>
+                                    <option value="left" <?php echo $currentImagePosition === 'left' ? 'selected' : ''; ?>>Foto links</option>
+                                    <option value="right" <?php echo $currentImagePosition === 'right' ? 'selected' : ''; ?>>Foto rechts</option>
+                                </select>
                             </div>
 
                             <button type="submit" class="btn btn-primary">
@@ -887,7 +922,16 @@ if ($page !== 'banner' && $page !== 'agenda') {
 
                             <div>
                                 <label class="form-label">Afbeelding (optioneel)</label>
-                                <input type="file" name="page_image" accept="image/*" class="form-input" />
+                                <input type="file" name="image" accept="image/*" class="form-input" />
+                            </div>
+
+                            <div>
+                                <label class="form-label">Foto positie</label>
+                                <select name="image_position" class="form-input">
+                                    <option value="normal" selected>Normaal (zoals nu)</option>
+                                    <option value="left">Foto links</option>
+                                    <option value="right">Foto rechts</option>
+                                </select>
                             </div>
 
                             <div>

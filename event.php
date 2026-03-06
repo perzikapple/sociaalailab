@@ -93,9 +93,37 @@ try {
 
 <main>
     <?php foreach ($pageBlocks as $block): ?>
+        <?php
+        $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
+        $hasImage = !empty($block['image']);
+        $imagePosition = $metaArr['image_position'] ?? 'normal';
+        if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) $imagePosition = 'normal';
+        ?>
         <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
-            <h1 class="text-3xl font-bold text-gray-900 mb-4"><?php echo htmlspecialchars($block['title']); ?></h1>
-            <p class="text-gray-700 text-lg"><?php echo nl2br(htmlspecialchars($block['body'])); ?></p>
+            <div class="<?php echo ($hasImage && $imagePosition !== 'normal') ? 'flex flex-col md:flex-row items-start gap-8' : ''; ?>">
+                <?php if ($hasImage && $imagePosition === 'left'): ?>
+                    <div class="md:w-80 flex-shrink-0">
+                        <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="w-full h-auto object-cover shadow-md">
+                    </div>
+                <?php endif; ?>
+
+                <div class="<?php echo ($hasImage && $imagePosition !== 'normal') ? 'flex-1' : ''; ?>">
+                    <h1 class="text-3xl font-bold text-gray-900 mb-4"><?php echo htmlspecialchars($block['title']); ?></h1>
+                    <p class="text-gray-700 text-lg"><?php echo nl2br(htmlspecialchars($block['body'])); ?></p>
+                </div>
+
+                <?php if ($hasImage && $imagePosition === 'right'): ?>
+                    <div class="md:w-80 flex-shrink-0">
+                        <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="w-full h-auto object-cover shadow-md">
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <?php if ($hasImage && $imagePosition === 'normal'): ?>
+                <div class="mt-6">
+                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="w-full h-auto object-cover shadow-md">
+                </div>
+            <?php endif; ?>
         </section>
     <?php endforeach; ?>
 

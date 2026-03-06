@@ -128,41 +128,60 @@ try {
     foreach ($pageBlocks as $block):
         $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
         $hasImage = !empty($block['image']);
+        $imagePosition = $metaArr['image_position'] ?? 'normal';
+        if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) $imagePosition = 'normal';
+        $imageSrc = '';
+        if ($hasImage) {
+            $imagePath = trim((string)$block['image']);
+            if (strpos($imagePath, 'images/') === 0 || strpos($imagePath, 'uploads/') === 0) {
+                $imageSrc = $imagePath;
+            } elseif (strpos($imagePath, '../') === 0 || preg_match('#^https?://#i', $imagePath)) {
+                $imageSrc = $imagePath;
+            } else {
+                $imageSrc = 'uploads/' . $imagePath;
+            }
+        }
     ?>
         <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
-            <!-- Text Content ON TOP -->
-            <div class="mb-6">
-                <?php if (!empty($block['title'])): ?>
-                    <h3 class="font-bold text-2xl mb-2"><?php echo htmlspecialchars($block['title']); ?></h3>
+            <div class="<?php echo ($hasImage && $imagePosition !== 'normal') ? 'flex flex-col md:flex-row items-start gap-8' : ''; ?>">
+                <?php if ($hasImage && $imagePosition === 'left'): ?>
+                    <div class="md:w-80 flex-shrink-0">
+                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" 
+                             alt="<?php echo htmlspecialchars($block['title']); ?>" 
+                             class="w-full h-64 object-cover rounded shadow-md">
+                    </div>
                 <?php endif; ?>
-                <?php if (!empty($block['body'])): ?>
-                    <div class="text-gray-700 leading-relaxed"><?php echo nl2br(htmlspecialchars($block['body'])); ?></div>
-                <?php endif; ?>
-                <?php if (!empty($metaArr['address'])): ?>
-                    <?php $addr = $metaArr['address']; ?>
-                    <div class="text-gray-700 mt-2"><strong>Adres:</strong> <a href="<?php echo googleMapsDirectionsUrl($addr); ?>" target="_blank" rel="noopener noreferrer" class="underline hover:text-[#00811F]"><?php echo htmlspecialchars($addr); ?></a></div>
-                <?php endif; ?>
-                <?php if (!empty($metaArr['email'])): ?>
-                    <div class="text-gray-700 mt-2">
-                        <a href="mailto:<?php echo htmlspecialchars($metaArr['email']); ?>">
-                            <?php echo htmlspecialchars($metaArr['email']); ?>
-                        </a>
+
+                <div class="mb-6 <?php echo ($hasImage && $imagePosition !== 'normal') ? 'md:mb-0 flex-1' : ''; ?>">
+                    <?php if (!empty($block['title'])): ?>
+                        <h3 class="font-bold text-2xl mb-2"><?php echo htmlspecialchars($block['title']); ?></h3>
+                    <?php endif; ?>
+                    <?php if (!empty($block['body'])): ?>
+                        <div class="text-gray-700 leading-relaxed"><?php echo nl2br(htmlspecialchars($block['body'])); ?></div>
+                    <?php endif; ?>
+                    <?php if (!empty($metaArr['address'])): ?>
+                        <?php $addr = $metaArr['address']; ?>
+                        <div class="text-gray-700 mt-2"><strong>Adres:</strong> <a href="<?php echo googleMapsDirectionsUrl($addr); ?>" target="_blank" rel="noopener noreferrer" class="underline hover:text-[#00811F]"><?php echo htmlspecialchars($addr); ?></a></div>
+                    <?php endif; ?>
+                    <?php if (!empty($metaArr['email'])): ?>
+                        <div class="text-gray-700 mt-2">
+                            <a href="mailto:<?php echo htmlspecialchars($metaArr['email']); ?>">
+                                <?php echo htmlspecialchars($metaArr['email']); ?>
+                            </a>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
+                <?php if ($hasImage && $imagePosition === 'right'): ?>
+                    <div class="md:w-80 flex-shrink-0">
+                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" 
+                             alt="<?php echo htmlspecialchars($block['title']); ?>" 
+                             class="w-full h-64 object-cover rounded shadow-md">
                     </div>
                 <?php endif; ?>
             </div>
-            
-            <!-- Image BELOW TEXT -->
-            <?php if ($hasImage): ?>
-                <?php
-                $imagePath = trim((string)$block['image']);
-                if (strpos($imagePath, 'images/') === 0 || strpos($imagePath, 'uploads/') === 0) {
-                    $imageSrc = $imagePath;
-                } elseif (strpos($imagePath, '../') === 0 || preg_match('#^https?://#i', $imagePath)) {
-                    $imageSrc = $imagePath;
-                } else {
-                    $imageSrc = 'uploads/' . $imagePath;
-                }
-                ?>
+
+            <?php if ($hasImage && $imagePosition === 'normal'): ?>
                 <div>
                     <img src="<?php echo htmlspecialchars($imageSrc); ?>" 
                          alt="<?php echo htmlspecialchars($block['title']); ?>" 
