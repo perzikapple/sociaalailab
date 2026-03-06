@@ -47,7 +47,6 @@ try {
             <a href="../index.php" class="menu inline-flex items-center gap-1 text-gray-700 hover:text-[#00811F] transition"><i class="fa-solid fa-house"></i> Voorpagina</a>
             <a href="../agenda.php" class="menu text-gray-700 hover:text-[#00811F] transition">Agenda</a>
             <a href="../event.php" class="menu text-gray-700 hover:text-[#00811F] transition">Evenementen</a>
-            <a href="../terugblikken.php" class="menu text-gray-700 hover:text-[#00811F] transition">Terugblikken</a>
             <a href="../over.php" class="menu text-gray-700 hover:text-[#00811F] transition">Voor wie?</a>
 
             <div class="relative" id="programma-dropdown">
