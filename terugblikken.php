@@ -310,4 +310,8 @@ try {
         display: none;
     }
 }
+
+.text-block-content{
+    padding: 30px;
+}
 </style>
