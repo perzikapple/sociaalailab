@@ -90,11 +90,14 @@ try {
     foreach ($pageBlocks as $block):
         $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
         $hasImage = !empty($block['image']);
+        $imagePosition = $metaArr['image_position'] ?? 'normal';
+        if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) $imagePosition = 'normal';
         $isEven = ($index % 2 == 0);
+        $isImageLeft = $imagePosition === 'normal' ? $isEven : ($imagePosition === 'left');
         $index++;
     ?>
         <section class="flex flex-col md:flex-row items-start gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
-            <?php if ($isEven): ?>
+            <?php if ($isImageLeft): ?>
                 <!-- EVEN: Image LEFT, Text RIGHT -->
                 <?php if ($hasImage): ?>
                     <div class="flex-shrink-0" style="width: 300px; min-width: 300px;">

@@ -71,15 +71,17 @@ $pageBlocks = $stmt->fetchAll();
     foreach ($pageBlocks as $block):
         $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
         $hasImage = !empty($block['image']);
+        $imagePosition = $metaArr['image_position'] ?? 'normal';
+        if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) $imagePosition = 'normal';
         $imageClass = $hasImage ? 'with-image' : '';
     ?>
         <section class="text-block <?php echo htmlspecialchars($imageClass); ?> bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
             <?php if ($hasImage): ?>
-                <div class="text-block-image-container">
+                <div class="text-block-image-container <?php echo $imagePosition === 'right' ? 'md:order-2' : ''; ?>">
                     <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" class="text-block-image">
                 </div>
             <?php endif; ?>
-            <div class="text-block-content">
+            <div class="text-block-content <?php echo $imagePosition === 'right' ? 'md:order-1' : ''; ?>">
                 <?php if (!empty($block['title'])): ?>
                     <h3 class="text-2xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($block['title']); ?></h3>
                 <?php endif; ?>
