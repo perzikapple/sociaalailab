@@ -151,14 +151,14 @@ try {
 
     <!-- Custom cards from database -->
     <?php if (!empty($cardBlocks)): ?>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 p-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-4">
         <?php foreach ($cardBlocks as $block): ?>
-            <div class="flex flex-col justify-between bg-white p-6 shadow-lg">
+            <div class="flex flex-col justify-between bg-white p-4 shadow-lg">
                 <?php if (!empty($block['title'])): ?>
-                    <h3 class="text-xl font-semibold mb-4"><?php echo htmlspecialchars($block['title']); ?></h3>
+                    <h3 class="text-lg font-semibold mb-2"><?php echo htmlspecialchars($block['title']); ?></h3>
                 <?php endif; ?>
                 <?php if (!empty($block['body'])): ?>
-                    <p class="mb-4 text-gray-700"><?php echo nl2br(htmlspecialchars($block['body'])); ?></p>
+                    <p class="mb-2 text-gray-700 text-sm"><?php echo nl2br(htmlspecialchars($block['body'])); ?></p>
                 <?php endif; ?>
                 <?php if (!empty($block['image'])): ?>
                     <?php
@@ -172,7 +172,7 @@ try {
                     }
                     ?>
                     <div class="mt-auto">
-                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="w-full h-64 object-cover">
+                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="w-full h-40 object-cover">
                     </div>
                 <?php endif; ?>
             </div>
