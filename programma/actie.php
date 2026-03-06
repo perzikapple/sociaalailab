@@ -319,6 +319,19 @@ setInterval(() => {
 }, 10000);
 
 </script>
+<style>
+    .flex-col {
+        display: flex;
+        flex-direction: column;
+    }
 
+    .flex-col img {
+        max-width: 550px;
+        max-height: 360px;
+        object-fit: cover;
+        display: block;
+        border-radius: 4px;
+    }
+</style>
 </body>
 </html>
