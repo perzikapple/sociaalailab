@@ -10,6 +10,7 @@ echo "<!DOCTYPE html>
 <head>
     <meta charset='UTF-8'>
     <title>Admin Account Aanmaken</title>
+    <link rel='icon' type='image/png' href='images/Pixels_icon.png'>
     <style>
         body { font-family: Arial; padding: 40px; background: #f5f5f5; }
         .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; }

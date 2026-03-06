@@ -34,6 +34,7 @@ try {
 <!doctype html>
 <html lang="nl">
 <head>
+        <link rel="icon" type="image/png" href="images/Pixels_icon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preload" as="style" href="build/assets/app-DozK-03z.css"><link rel="modulepreload" as="script" href="build/assets/app-CAiCLEjY.js"><link rel="stylesheet" href="build/assets/app-DozK-03z.css"><link rel="stylesheet" href="custom.css"><script type="module" src="build/assets/app-CAiCLEjY.js"></script>    <title>Informatie SociaalAI Lab</title>
