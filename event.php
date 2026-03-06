@@ -98,22 +98,33 @@ try {
         $hasImage = !empty($block['image']);
         $imagePosition = $metaArr['image_position'] ?? 'normal';
         if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) $imagePosition = 'normal';
+        
+        $flexDir = 'column';
+        if ($imagePosition === 'left') {
+            $flexDir = 'row';
+        } elseif ($imagePosition === 'right') {
+            $flexDir = 'row-reverse';
+        }
+        $divStyle = '';
+        if ($hasImage && $imagePosition !== 'normal') {
+            $divStyle = 'display: flex; flex-direction: ' . $flexDir . '; align-items: flex-start; gap: 2rem;';
+        }
         ?>
         <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
-            <div class="<?php echo ($hasImage && $imagePosition !== 'normal') ? 'flex flex-col md:flex-row items-start gap-8' : ''; ?>">
+            <div style="<?php echo $divStyle; ?>">
                 <?php if ($hasImage && $imagePosition === 'left'): ?>
-                    <div class="md:w-80 flex-shrink-0">
+                    <div style="flex: 0 0 50%; min-width: 0;">
                         <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="w-full h-auto object-cover shadow-md">
                     </div>
                 <?php endif; ?>
 
-                <div class="<?php echo ($hasImage && $imagePosition !== 'normal') ? 'flex-1' : ''; ?>">
+                <div style="<?php echo ($hasImage && $imagePosition !== 'normal') ? 'flex: 1; padding: 0 1.5rem;' : ''; ?>">
                     <h1 class="text-3xl font-bold text-gray-900 mb-4"><?php echo htmlspecialchars($block['title']); ?></h1>
                     <p class="text-gray-700 text-lg"><?php echo nl2br(htmlspecialchars($block['body'])); ?></p>
                 </div>
 
                 <?php if ($hasImage && $imagePosition === 'right'): ?>
-                    <div class="md:w-80 flex-shrink-0">
+                    <div style="flex: 0 0 50%; min-width: 0;">
                         <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="w-full h-auto object-cover shadow-md">
                     </div>
                 <?php endif; ?>

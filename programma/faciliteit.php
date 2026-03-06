@@ -155,10 +155,24 @@ try {
             $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
             $imagePosition = $metaArr['image_position'] ?? 'normal';
             if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) $imagePosition = 'normal';
-            $sideImageLayout = !empty($block['image']) && $imagePosition !== 'normal';
+            
+            $flexDir = 'column';
+            if ($imagePosition === 'left') {
+                $flexDir = 'row';
+            } elseif ($imagePosition === 'right') {
+                $flexDir = 'row-reverse';
+            }
+            
+            $hasImage = !empty($block['image']);
+            $cardStyle = 'display: flex; flex-direction: ' . $flexDir . '; ';
+            if ($imagePosition !== 'normal') {
+                $cardStyle .= 'gap: 1rem; align-items: flex-start;';
+            } else {
+                $cardStyle .= 'gap: 0; justify-content: space-between; flex-direction: column;';
+            }
             ?>
-            <div class="bg-white p-4 shadow-lg <?php echo $sideImageLayout ? 'flex flex-col md:flex-row gap-4 items-start' : 'flex flex-col justify-between'; ?>">
-                <?php if (!empty($block['image']) && $imagePosition === 'left'): ?>
+            <div class="bg-white p-4 shadow-lg" style="<?php echo $cardStyle; ?>">
+                <?php if ($hasImage && $imagePosition === 'left'): ?>
                     <?php
                     $imagePath = trim((string)$block['image']);
                     if (strpos($imagePath, 'images/') === 0 || strpos($imagePath, 'uploads/') === 0) {
@@ -169,12 +183,12 @@ try {
                         $imageSrc = '../uploads/' . $imagePath;
                     }
                     ?>
-                    <div class="md:w-32 flex-shrink-0">
-                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="w-full h-28 object-cover">
+                    <div style="flex-shrink: 0; width: 120px; min-width: 120px;">
+                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; height: 112px; object-fit: cover;">
                     </div>
                 <?php endif; ?>
 
-                <div class="<?php echo $sideImageLayout ? 'flex-1' : ''; ?>">
+                <div style="<?php echo ($hasImage && $imagePosition !== 'normal') ? 'flex: 1; padding: 0 1.5rem;' : ''; ?>">
                 <?php if (!empty($block['title'])): ?>
                     <h3 class="text-lg font-semibold mb-2"><?php echo htmlspecialchars($block['title']); ?></h3>
                 <?php endif; ?>
@@ -183,7 +197,7 @@ try {
                 <?php endif; ?>
                 </div>
 
-                <?php if (!empty($block['image']) && $imagePosition === 'right'): ?>
+                <?php if ($hasImage && $imagePosition === 'right'): ?>
                     <?php
                     $imagePath = trim((string)$block['image']);
                     if (strpos($imagePath, 'images/') === 0 || strpos($imagePath, 'uploads/') === 0) {
@@ -194,12 +208,12 @@ try {
                         $imageSrc = '../uploads/' . $imagePath;
                     }
                     ?>
-                    <div class="md:w-32 flex-shrink-0">
-                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="w-full h-28 object-cover">
+                    <div style="flex-shrink: 0; width: 120px; min-width: 120px;">
+                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; height: 112px; object-fit: cover;">
                     </div>
                 <?php endif; ?>
 
-                <?php if (!empty($block['image'])): ?>
+                <?php if ($hasImage && $imagePosition === 'normal'): ?>
                     <?php
                     $imagePath = trim((string)$block['image']);
                     if (strpos($imagePath, 'images/') === 0 || strpos($imagePath, 'uploads/') === 0) {
@@ -210,8 +224,8 @@ try {
                         $imageSrc = '../uploads/' . $imagePath;
                     }
                     ?>
-                    <div class="mt-auto <?php echo $imagePosition !== 'normal' ? 'hidden' : ''; ?>">
-                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="w-full h-40 object-cover">
+                    <div style="margin-top: auto; width: 100%;">
+                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; height: 160px; object-fit: cover;">
                     </div>
                 <?php endif; ?>
             </div>

@@ -141,18 +141,29 @@ try {
                 $imageSrc = 'uploads/' . $imagePath;
             }
         }
+        
+        $flexDir = 'column';
+        if ($imagePosition === 'left') {
+            $flexDir = 'row';
+        } elseif ($imagePosition === 'right') {
+            $flexDir = 'row-reverse';
+        }
+        $divStyle = '';
+        if ($hasImage && $imagePosition !== 'normal') {
+            $divStyle = 'display: flex; flex-direction: ' . $flexDir . '; align-items: flex-start; gap: 2rem;';
+        }
     ?>
         <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
-            <div class="<?php echo ($hasImage && $imagePosition !== 'normal') ? 'flex flex-col md:flex-row items-start gap-8' : ''; ?>">
+            <div style="<?php echo $divStyle; ?>">
                 <?php if ($hasImage && $imagePosition === 'left'): ?>
-                    <div class="md:w-80 flex-shrink-0">
+                    <div style="flex: 0 0 50%; min-width: 0;">
                         <img src="<?php echo htmlspecialchars($imageSrc); ?>" 
                              alt="<?php echo htmlspecialchars($block['title']); ?>" 
                              class="w-full h-64 object-cover rounded shadow-md">
                     </div>
                 <?php endif; ?>
 
-                <div class="mb-6 <?php echo ($hasImage && $imagePosition !== 'normal') ? 'md:mb-0 flex-1' : ''; ?>">
+                <div class="mb-6 <?php echo ($hasImage && $imagePosition !== 'normal') ? '' : ''; ?>" style="<?php echo ($hasImage && $imagePosition !== 'normal') ? 'flex: 1; padding: 0 1.5rem;' : ''; ?>">
                     <?php if (!empty($block['title'])): ?>
                         <h3 class="font-bold text-2xl mb-2"><?php echo htmlspecialchars($block['title']); ?></h3>
                     <?php endif; ?>
@@ -173,7 +184,7 @@ try {
                 </div>
 
                 <?php if ($hasImage && $imagePosition === 'right'): ?>
-                    <div class="md:w-80 flex-shrink-0">
+                    <div style="flex: 0 0 50%; min-width: 0;">
                         <img src="<?php echo htmlspecialchars($imageSrc); ?>" 
                              alt="<?php echo htmlspecialchars($block['title']); ?>" 
                              class="w-full h-64 object-cover rounded shadow-md">

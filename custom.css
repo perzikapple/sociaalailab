@@ -109,15 +109,28 @@
 }
 
 .text-block.with-image {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    flex-direction: row;
     gap: 2rem;
     align-items: center;
 }
 
+.text-block.with-image .text-block-image-container {
+    flex: 0 0 50%;
+}
+
+.text-block.with-image .text-block-content {
+    flex: 0 0 50%;
+}
+
 @media (max-width: 768px) {
     .text-block.with-image {
-        grid-template-columns: 1fr;
+        flex-direction: column;
+    }
+    
+    .text-block.with-image .text-block-image-container,
+    .text-block.with-image .text-block-content {
+        flex: 1 1 auto;
     }
 }
 
