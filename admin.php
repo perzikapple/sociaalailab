@@ -99,6 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $description = trim($_POST['description'] ?? '');
         $location = trim($_POST['location'] ?? '');
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
+        $removeImage = isset($_POST['remove_image']) ? 1 : 0;
 
         if ($title === '' || $date === '') {
             $message = 'Titel en datum zijn verplicht.';
@@ -113,7 +114,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (isset($upload['error'])) {
                 $message = $upload['error'];
             } else {
-                $imageName = $upload['name'] ?? $oldImage;
+                if ($removeImage) {
+                    $imageName = null;
+                } else {
+                    $imageName = $upload['name'] ?? $oldImage;
+                }
                 // update nu ook updated_at en updated_by
                 $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, time=?, description=?, image=?, location=?, show_signup_button=?, updated_at=NOW(), updated_by=? WHERE id=?');
                 $stmt->execute([$title, $date, $time ?: null, $description, $imageName, $location ?: null, $showSignupButton, $currentUser, $id]);
@@ -122,6 +127,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 // indien nieuwe upload en oud bestaat: verwijderen
                 if (!empty($upload['name']) && $oldImage && file_exists(__DIR__ . '/uploads/' . $oldImage)) {
+                    @unlink(__DIR__ . '/uploads/' . $oldImage);
+                }
+                if ($removeImage && $oldImage && file_exists(__DIR__ . '/uploads/' . $oldImage)) {
                     @unlink(__DIR__ . '/uploads/' . $oldImage);
                 }
                 header('Location: admin.php?page=agenda&ok=update');
@@ -270,16 +278,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
 
     } elseif ($action === 'update_banner') {
+        $defaultBanner1 = 'images/banner_website_01.jpg';
+        $defaultBanner2 = 'images/banner_website_02.jpg';
+        $removeBanner1 = isset($_POST['remove_banner1']) ? 1 : 0;
+        $removeBanner2 = isset($_POST['remove_banner2']) ? 1 : 0;
+
+        if ($removeBanner1) {
+            if (strpos((string)$banner1, 'uploads/') === 0) {
+                $oldPath = __DIR__ . '/' . $banner1;
+                if (file_exists($oldPath)) {
+                    @unlink($oldPath);
+                }
+            }
+            $pdo->prepare("UPDATE settings SET setting_value = ? WHERE setting_key = 'banner1'")->execute([$defaultBanner1]);
+            $banner1 = $defaultBanner1;
+            audit_log($pdo, 'update', 'settings', null, 'banner1 reset to default', $currentUser);
+        }
+
         $banner1_file = handleUpload('banner1');
-        if ($banner1_file) {
+        if (!isset($banner1_file['error']) && !empty($banner1_file['name'])) {
             $path = 'uploads/' . $banner1_file['name'];
             $pdo->prepare("UPDATE settings SET setting_value = ? WHERE setting_key = 'banner1'")->execute([$path]);
+            $banner1 = $path;
             audit_log($pdo, 'update', 'settings', null, 'banner1 set to ' . $path, $currentUser);
         }
+
+        if ($removeBanner2) {
+            if (strpos((string)$banner2, 'uploads/') === 0) {
+                $oldPath = __DIR__ . '/' . $banner2;
+                if (file_exists($oldPath)) {
+                    @unlink($oldPath);
+                }
+            }
+            $pdo->prepare("UPDATE settings SET setting_value = ? WHERE setting_key = 'banner2'")->execute([$defaultBanner2]);
+            $banner2 = $defaultBanner2;
+            audit_log($pdo, 'update', 'settings', null, 'banner2 reset to default', $currentUser);
+        }
+
         $banner2_file = handleUpload('banner2');
-        if ($banner2_file) {
+        if (!isset($banner2_file['error']) && !empty($banner2_file['name'])) {
             $path = 'uploads/' . $banner2_file['name'];
             $pdo->prepare("UPDATE settings SET setting_value = ? WHERE setting_key = 'banner2'")->execute([$path]);
+            $banner2 = $path;
             audit_log($pdo, 'update', 'settings', null, 'banner2 set to ' . $path, $currentUser);
         }
         $message = 'Banners bijgewerkt.';
@@ -359,6 +399,7 @@ if ($pageAction === 'create_page') {
     $pageKey = $_POST['page_key'] ?? '';
     $title = trim($_POST['title'] ?? '');
     $body = trim($_POST['body'] ?? '');
+    $removeImage = isset($_POST['remove_image']) ? 1 : 0;
 
     if ($id && $title) {
 
@@ -388,7 +429,11 @@ if ($pageAction === 'create_page') {
 
         // Change 'page_image' to 'image' to match the form field name
         $upload = handleUpload('image');
-        $imageName = $upload['name'] ?? $oldImage;
+        if ($removeImage) {
+            $imageName = null;
+        } else {
+            $imageName = $upload['name'] ?? $oldImage;
+        }
 
         $stmt = $pdo->prepare(
             'UPDATE pages
@@ -405,6 +450,9 @@ if ($pageAction === 'create_page') {
         ]);
 
         if (!empty($upload['name']) && $oldImage && file_exists(__DIR__ . '/uploads/' . $oldImage)) {
+            @unlink(__DIR__ . '/uploads/' . $oldImage);
+        }
+        if ($removeImage && $oldImage && file_exists(__DIR__ . '/uploads/' . $oldImage)) {
             @unlink(__DIR__ . '/uploads/' . $oldImage);
         }
 
@@ -653,7 +701,7 @@ if ($page !== 'banner' && $page !== 'agenda') {
                             <input type="hidden" name="action" value="update">
                             <input type="hidden" name="id" value="<?php echo (int)$editEvent['id']; ?>">
 
-<<<<<<< HEAD
+                            <div>
                                 <label class="form-label">Titel</label>
                                 <input name="title" required class="form-input" value="<?php echo htmlspecialchars($editEvent['title']); ?>" />
                             </div>
@@ -684,6 +732,10 @@ if ($page !== 'banner' && $page !== 'agenda') {
                                 <input type="file" name="image" accept="image/*" class="form-input" />
                                 <?php if (!empty($editEvent['image'])): ?>
                                     <p class="text-sm mt-2 text-gray-600">Huidige: <?php echo htmlspecialchars($editEvent['image']); ?></p>
+                                    <label class="form-checkbox mt-2 inline-flex items-center gap-2">
+                                        <input type="checkbox" name="remove_image" value="1">
+                                        Verwijder huidige afbeelding
+                                    </label>
                                 <?php endif; ?>
                             </div>
 
@@ -889,6 +941,10 @@ if ($page !== 'banner' && $page !== 'agenda') {
                                 <input type="file" name="image" accept="image/*" class="form-input" />
                                 <?php if (!empty($editPage['image'])): ?>
                                     <p class="text-sm mt-2 text-gray-600">Huidige afbeelding: <?php echo htmlspecialchars($editPage['image']); ?></p>
+                                    <label class="form-checkbox mt-2 inline-flex items-center gap-2">
+                                        <input type="checkbox" name="remove_image" value="1">
+                                        Verwijder huidige afbeelding
+                                    </label>
                                 <?php endif; ?>
                             </div>
 
@@ -1057,11 +1113,19 @@ if ($page !== 'banner' && $page !== 'agenda') {
                             <div class="form-group">
                                 <label class="form-label">Vervang Banner 1</label>
                                 <input type="file" name="banner1" accept="image/*" class="form-input" />
+                                <label class="form-checkbox mt-2 inline-flex items-center gap-2">
+                                    <input type="checkbox" name="remove_banner1" value="1">
+                                    Verwijder huidige banner 1
+                                </label>
                                 <small class="text-gray-600">Aanbevolen formaat: 1920x600px</small>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Vervang Banner 2</label>
                                 <input type="file" name="banner2" accept="image/*" class="form-input" />
+                                <label class="form-checkbox mt-2 inline-flex items-center gap-2">
+                                    <input type="checkbox" name="remove_banner2" value="1">
+                                    Verwijder huidige banner 2
+                                </label>
                                 <small class="text-gray-600">Aanbevolen formaat: 1920x600px</small>
                             </div>
                         </div>
