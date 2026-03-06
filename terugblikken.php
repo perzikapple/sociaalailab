@@ -158,7 +158,9 @@ try {
                 </div>
                 <div class="flex items-center space-x-3">
                     <i class="fa-solid fa-location-dot text-[#00811F] ml-1 text-3xl"></i>
-                    <p class="text-gray-700 ml-1 "><strong>Waar:</strong> <?php echo htmlspecialchars($event['location'] ?: 'Rotterdam - Hillevliet 90'); ?></p>
+                    <?php $loc = $event['location'] ?: 'Rotterdam - Hillevliet 90'; ?>
+                    <?php $mapsLocationUrl = 'https://www.google.com/maps/dir/?api=1&destination=' . rawurlencode((string)$loc); ?>
+                    <p class="text-gray-700 ml-1 "><strong>Waar:</strong> <a href="<?php echo htmlspecialchars($mapsLocationUrl); ?>" target="_blank" rel="noopener noreferrer" class="underline hover:text-[#00811F]"><?php echo htmlspecialchars($loc); ?></a></p>
                 </div>
                 <div class="flex mb-6 space-x-3">
                     <i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>

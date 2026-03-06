@@ -373,23 +373,23 @@ $page = $_GET['page'] ?? 'agenda';
 
             <?php if ($page === 'agenda'): ?>
                 <div class="card p-6">
-                    <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
+                    <div class="flex items-center gap-2 mb-4 pb-4">
                         <i class="fa-solid fa-calendar text-2xl text-[#00811F]"></i>
                         <h2 class="text-2xl font-bold">Beheer: Agenda</h2>
                     </div>
 
                 <?php if ($editEvent): ?>
-                    <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4">
+                    <form method="POST" enctype="multipart/form-data" class="space-y-4">
                         <h2 class="font-semibold">Bewerk evenement</h2>
                         <input type="hidden" name="action" value="update">
                         <input type="hidden" name="id" value="<?php echo (int)$editEvent['id']; ?>">
                         <div>
                             <label>Titel</label>
-                            <input name="title" value="<?php echo htmlspecialchars($editEvent['title']); ?>" required class="w-full border px-3 py-2" />
+                            <input type="text" name="title" value="<?php echo htmlspecialchars($editEvent['title']); ?>" required class="w-full border px-3 py-2" />
                         </div>
                         <div>
                             <label>Locatie</label>
-                            <input name="location" value="<?php echo htmlspecialchars($editEvent['location']); ?>" class="w-full border px-3 py-2" />
+                            <input type="text" name="location" value="<?php echo htmlspecialchars($editEvent['location']); ?>" class="w-full border px-3 py-2" />
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
@@ -425,16 +425,16 @@ $page = $_GET['page'] ?? 'agenda';
                         </div>
                     </form>
                 <?php else: ?>
-                    <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4">
+                    <form method="POST" enctype="multipart/form-data" class="space-y-4">
                         <h2 class="font-semibold">Nieuw evenement</h2>
                         <input type="hidden" name="action" value="create">
                         <div>
                             <label>Titel</label>
-                            <input name="title" required class="w-full border px-3 py-2" />
+                            <input type="text" name="title" required class="w-full border px-3 py-2" />
                         </div>
                         <div>
                             <label>Locatie</label>
-                            <input name="location" class="w-full border px-3 py-2" />
+                            <input type="text" name="location" class="w-full border px-3 py-2" />
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
@@ -454,7 +454,7 @@ $page = $_GET['page'] ?? 'agenda';
                             <label>Foto (optioneel)</label>
                             <input type="file" name="image" accept="image/*" />
                         </div>
-                        <button class="bg-[#00811F] text-white px-4 py-2 rounded">Maak evenement</button>
+                        <button class="bg-[#00811F] text-white px-7 py-4 rounded text-base font-semibold inline-flex items-center justify-center gap-2 whitespace-nowrap" style="min-width:220px;"><i class="fa-solid fa-plus"></i> Maak evenement</button>
                     </form>
                 <?php endif; ?>
 
@@ -475,7 +475,8 @@ $page = $_GET['page'] ?? 'agenda';
                                             <i class="fa-solid fa-clock ml-2"></i> <?php echo htmlspecialchars(formatEventTimeDisplay($e['time'])); ?>
                                         <?php endif; ?>
                                         <?php if (!empty($e['location'])): ?>
-                                            <i class="fa-solid fa-location-dot ml-2"></i> <?php echo htmlspecialchars($e['location']); ?>
+                                            <?php $mapsLocationUrl = 'https://www.google.com/maps/dir/?api=1&destination=' . rawurlencode((string)$e['location']); ?>
+                                            <i class="fa-solid fa-location-dot ml-2"></i> <a href="<?php echo htmlspecialchars($mapsLocationUrl); ?>" target="_blank" rel="noopener noreferrer"><?php echo htmlspecialchars($e['location']); ?></a>
                                         <?php endif; ?>
                                     </div>
                                     <?php if (!empty($e['description'])): ?>
@@ -552,7 +553,7 @@ $page = $_GET['page'] ?? 'agenda';
                 $pageName = $pageNames[$pageKey] ?? ucfirst(str_replace('-', ' ', $pageKey));
                 ?>
                 <div class="card p-6">
-                    <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
+                    <div class="flex items-center gap-2 mb-4 pb-4">
                         <i class="fa-solid fa-file-pen text-2xl text-[#00811F]"></i>
                         <h2 class="text-2xl font-bold">Beheer: <?php echo htmlspecialchars($pageName); ?></h2>
                     </div>
@@ -564,7 +565,7 @@ $page = $_GET['page'] ?? 'agenda';
                     <?php endif; ?>
 
                     <?php if ($editPage): ?>
-                        <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6">
+                        <form method="POST" enctype="multipart/form-data" class="space-y-4 mb-6">
                             <h3 class="font-semibold text-lg">Bewerk Item</h3>
                             <input type="hidden" name="page_action" value="update_page">
                             <input type="hidden" name="id" value="<?php echo (int)$editPage['id']; ?>">
@@ -572,7 +573,7 @@ $page = $_GET['page'] ?? 'agenda';
 
                             <div>
                                 <label class="form-label">Titel</label>
-                                <input name="title" required class="form-input" value="<?php echo htmlspecialchars($editPage['title']); ?>" />
+                                <input type="text" name="title" required class="form-input" value="<?php echo htmlspecialchars($editPage['title']); ?>" />
                             </div>
 
                             <div>
@@ -596,14 +597,14 @@ $page = $_GET['page'] ?? 'agenda';
                             </button>
                         </form>
                     <?php else: ?>
-                        <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6">
+                        <form method="POST" enctype="multipart/form-data" class="space-y-4 mb-6">
                             <h3 class="font-semibold text-lg">Nieuw Item</h3>
                             <input type="hidden" name="page_action" value="create_page">
                             <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
 
                             <div>
                                 <label class="form-label">Titel</label>
-                                <input name="title" required class="form-input" />
+                                <input type="text" name="title" required class="form-input" />
                             </div>
 
                             <div>
@@ -623,7 +624,7 @@ $page = $_GET['page'] ?? 'agenda';
                     <?php endif; ?>
 
                     <div class="card p-6">
-                        <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
+                        <div class="flex items-center gap-2 mb-4 pb-4">
                             <i class="fa-solid fa-list text-2xl text-[#00811F]"></i>
                             <h3 class="text-xl font-bold">Bestaande Items</h3>
                         </div>
@@ -671,7 +672,7 @@ $page = $_GET['page'] ?? 'agenda';
 
             <?php elseif ($page == 'banner'): ?>
                 <div class="card p-6">
-                    <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
+                        <div class="flex items-center gap-2 mb-4 pb-4">
                         <i class="fa-solid fa-image text-2xl text-[#00811F]"></i>
                         <h2 class="text-2xl font-bold">Banner Beheer</h2>
                     </div>
@@ -710,7 +711,7 @@ $page = $_GET['page'] ?? 'agenda';
                         </div>
                     </form>
 
-                    <form method="POST" onsubmit="return confirm('Weet je zeker dat je de banners wilt resetten naar de standaard afbeeldingen?');" class="mt-4 pt-4 border-t">
+                    <form method="POST" onsubmit="return confirm('Weet je zeker dat je de banners wilt resetten naar de standaard afbeeldingen?');" class="mt-4 pt-4">
                         <input type="hidden" name="action" value="reset_banners">
                         <button type="submit" class="btn btn-secondary">
                             <i class="fa-solid fa-rotate-left"></i> Reset naar Standaard Banners
