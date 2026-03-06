@@ -549,6 +549,7 @@ if ($page !== 'banner' && $page !== 'agenda') {
 <link rel="stylesheet" href="custom.css">
 <link rel="stylesheet" href="admin-styles.css">
 <link rel="stylesheet" href="ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="custom.js"></script>
 </head>
 <body class="admin-page">
 <nav class="admin-header text-white p-4 sticky top-0 z-50">
