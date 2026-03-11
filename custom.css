@@ -258,6 +258,16 @@ img, video {
     }
 }
 
+/* Navbar dropdown arrow: right by default, down when expanded */
+#programma-toggle .fa-caret-right {
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+#programma-toggle[aria-expanded="true"] .fa-caret-right {
+  transform: rotate(90deg);
+}
+
 /* Footer enhancements */
 .site-footer .footer-logos {
   gap: 0.75rem;

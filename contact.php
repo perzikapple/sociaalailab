@@ -1,4 +1,4 @@
-﻿<?php 
+<?php 
 session_start();
 require 'db.php';
 require 'helpers.php';
@@ -100,6 +100,7 @@ try {
 
             <div class="relative" id="programma-dropdown">
                 <button id="programma-toggle" aria-haspopup="true" aria-expanded="false" class="menu flex items-center gap-2 text-gray-700 hover:text-[#00811F] transition font-medium focus:outline-none">
+                    <i class="fa-solid fa-caret-right text-xs" aria-hidden="true"></i>
                     <span>Wat doen we?</span>
                     
                 </button>
@@ -128,6 +129,7 @@ try {
     foreach ($pageBlocks as $block):
         $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
         $hasImage = !empty($block['image']);
+        $hasText = !empty($block['title']) || !empty($block['body']) || !empty($metaArr['address']) || !empty($metaArr['email']);
         $imagePosition = $metaArr['image_position'] ?? 'normal';
         if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) $imagePosition = 'normal';
         $imageSrc = '';
@@ -143,27 +145,34 @@ try {
         }
         
         $flexDir = 'column';
-        if ($imagePosition === 'left') {
+        if ($imagePosition === 'left' && $hasText) {
             $flexDir = 'row';
-        } elseif ($imagePosition === 'right') {
+        } elseif ($imagePosition === 'right' && $hasText) {
             $flexDir = 'row-reverse';
         }
         $divStyle = '';
-        if ($hasImage && $imagePosition !== 'normal') {
+        if ($hasImage && $imagePosition !== 'normal' && $hasText) {
             $divStyle = 'display: flex; flex-direction: ' . $flexDir . '; align-items: flex-start; gap: 2rem;';
         }
     ?>
         <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
             <div style="<?php echo $divStyle; ?>">
-                <?php if ($hasImage && $imagePosition === 'left'): ?>
-                    <div style="flex: 0 0 50%; min-width: 0;">
+                <?php if ($hasImage && $imagePosition === 'left' && $hasText): ?>
+                    <div style="flex: 0 0 50%; min-width: 0; max-width: 600px;">
                         <img src="<?php echo htmlspecialchars($imageSrc); ?>" 
                              alt="<?php echo htmlspecialchars($block['title']); ?>" 
                              class="w-full h-64 object-cover rounded shadow-md">
                     </div>
+                <?php elseif ($hasImage && !$hasText): ?>
+                    <div style="width: 100%;">
+                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" 
+                             alt="<?php echo htmlspecialchars($block['title']); ?>" 
+                             class="w-full h-auto object-cover rounded shadow-md">
+                    </div>
                 <?php endif; ?>
 
-                <div class="mb-6 <?php echo ($hasImage && $imagePosition !== 'normal') ? '' : ''; ?>" style="<?php echo ($hasImage && $imagePosition !== 'normal') ? 'flex: 1; padding: 0 1.5rem;' : ''; ?>">
+                <?php if ($hasText): ?>
+                <div class="mb-6" style="<?php echo ($hasImage && $imagePosition !== 'normal') ? 'flex: 1; padding: 0 1.5rem;' : ''; ?>">
                     <?php if (!empty($block['title'])): ?>
                         <h3 class="font-bold text-2xl mb-2"><?php echo htmlspecialchars($block['title']); ?></h3>
                     <?php endif; ?>
@@ -182,9 +191,10 @@ try {
                         </div>
                     <?php endif; ?>
                 </div>
+                <?php endif; ?>
 
-                <?php if ($hasImage && $imagePosition === 'right'): ?>
-                    <div style="flex: 0 0 50%; min-width: 0;">
+                <?php if ($hasImage && $imagePosition === 'right' && $hasText): ?>
+                    <div style="flex: 0 0 50%; min-width: 0; max-width: 600px;">
                         <img src="<?php echo htmlspecialchars($imageSrc); ?>" 
                              alt="<?php echo htmlspecialchars($block['title']); ?>" 
                              class="w-full h-64 object-cover rounded shadow-md">
@@ -192,11 +202,11 @@ try {
                 <?php endif; ?>
             </div>
 
-            <?php if ($hasImage && $imagePosition === 'normal'): ?>
-                <div>
+            <?php if ($hasImage && $imagePosition === 'normal' && $hasText): ?>
+                <div style="max-width: 600px;">
                     <img src="<?php echo htmlspecialchars($imageSrc); ?>" 
                          alt="<?php echo htmlspecialchars($block['title']); ?>" 
-                         class="w-auto h-64 object-cover rounded shadow-md">
+                         class="w-full h-auto object-cover rounded shadow-md">
                 </div>
             <?php endif; ?>
             

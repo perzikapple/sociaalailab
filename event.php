@@ -1,4 +1,4 @@
-﻿<?php 
+<?php 
 session_start();
 require 'db.php';
 require 'helpers.php';
@@ -70,6 +70,7 @@ try {
 
             <div class="relative" id="programma-dropdown">
                 <button id="programma-toggle" aria-haspopup="true" aria-expanded="false" class="menu flex items-center gap-2 text-gray-700 hover:text-[#00811F] transition font-medium focus:outline-none">
+                    <i class="fa-solid fa-caret-right text-xs" aria-hidden="true"></i>
                     <span>Wat doen we?</span>
                     
                 </button>
@@ -96,42 +97,49 @@ try {
         <?php
         $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
         $hasImage = !empty($block['image']);
+        $hasText = !empty($block['title']) || !empty($block['body']);
         $imagePosition = $metaArr['image_position'] ?? 'normal';
         if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) $imagePosition = 'normal';
         
         $flexDir = 'column';
-        if ($imagePosition === 'left') {
+        if ($imagePosition === 'left' && $hasText) {
             $flexDir = 'row';
-        } elseif ($imagePosition === 'right') {
+        } elseif ($imagePosition === 'right' && $hasText) {
             $flexDir = 'row-reverse';
         }
         $divStyle = '';
-        if ($hasImage && $imagePosition !== 'normal') {
+        if ($hasImage && $imagePosition !== 'normal' && $hasText) {
             $divStyle = 'display: flex; flex-direction: ' . $flexDir . '; align-items: flex-start; gap: 2rem;';
         }
         ?>
         <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
             <div style="<?php echo $divStyle; ?>">
-                <?php if ($hasImage && $imagePosition === 'left'): ?>
-                    <div style="flex: 0 0 50%; min-width: 0;">
+                <?php if ($hasImage && $imagePosition === 'left' && $hasText): ?>
+                    <div style="flex: 0 0 50%; min-width: 0; max-width: 600px;">
+                        <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="w-full h-auto object-cover shadow-md">
+                    </div>
+                <?php elseif ($hasImage && !$hasText): ?>
+                    <div style="width: 100%;">
                         <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="w-full h-auto object-cover shadow-md">
                     </div>
                 <?php endif; ?>
 
+                <?php if ($hasText): ?>
                 <div style="<?php echo ($hasImage && $imagePosition !== 'normal') ? 'flex: 1; padding: 0 1.5rem;' : ''; ?>">
                     <h1 class="text-3xl font-bold text-gray-900 mb-4"><?php echo htmlspecialchars($block['title']); ?></h1>
                     <p class="text-gray-700 text-lg"><?php echo nl2br(htmlspecialchars($block['body'])); ?></p>
                 </div>
+                <?php endif; ?>
 
-                <?php if ($hasImage && $imagePosition === 'right'): ?>
-                    <div style="flex: 0 0 50%; min-width: 0;">
+                <?php if ($hasImage && $imagePosition === 'right' && $hasText): ?>
+                    <div style="flex: 0 0 50%; min-width: 0; max-width: 600px;">
                         <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="w-full h-auto object-cover shadow-md">
                     </div>
                 <?php endif; ?>
             </div>
 
-            <?php if ($hasImage && $imagePosition === 'normal'): ?>
-                <div class="mt-6">
+            <?php if ($hasImage && $imagePosition === 'normal' && $hasText): ?>
+                <div class="mt-6" style="max-width: 600px;">
                     <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="w-full h-auto object-cover shadow-md">
                 </div>
             <?php endif; ?>

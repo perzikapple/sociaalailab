@@ -1,4 +1,4 @@
-ï»¿<?php 
+<?php 
 session_start();
 require 'db.php';
 
@@ -45,6 +45,7 @@ $pageBlocks = $stmt->fetchAll();
 
             <div class="relative" id="programma-dropdown">
                 <button id="programma-toggle" aria-haspopup="true" aria-expanded="false" class="menu flex items-center gap-2 text-gray-700 hover:text-[#00811F] transition font-medium focus:outline-none">
+                    <i class="fa-solid fa-caret-right text-xs" aria-hidden="true"></i>
                     <span>Wat doen we?</span>
                     
                 </button>
@@ -71,17 +72,18 @@ $pageBlocks = $stmt->fetchAll();
     foreach ($pageBlocks as $block):
         $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
         $hasImage = !empty($block['image']);
+        $hasText = !empty($block['title']) || !empty($block['body']);
         $imagePosition = $metaArr['image_position'] ?? 'normal';
         if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) $imagePosition = 'normal';
         
         $flexDir = 'column';
-        if ($imagePosition === 'left') {
+        if ($imagePosition === 'left' && $hasText) {
             $flexDir = 'row';
-        } elseif ($imagePosition === 'right') {
+        } elseif ($imagePosition === 'right' && $hasText) {
             $flexDir = 'row-reverse';
         }
         $sectionStyle = "display: flex; flex-direction: " . $flexDir . "; ";
-        if ($imagePosition !== 'normal') {
+        if ($imagePosition !== 'normal' && $hasText) {
             $sectionStyle .= "gap: 2rem; align-items: center;";
         } else {
             $sectionStyle .= "gap: 1.5rem;";
@@ -89,18 +91,30 @@ $pageBlocks = $stmt->fetchAll();
     ?>
         <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" style="<?php echo $sectionStyle; ?>">
             <?php if ($hasImage): ?>
-                <div style="<?php echo $imagePosition !== 'normal' ? 'flex: 0 0 50%;' : 'width: 100%;'; ?>">
+                <?php
+                $imageStyle = '';
+                if (!$hasText) {
+                    $imageStyle = 'width: 100%;';
+                } elseif ($imagePosition !== 'normal') {
+                    $imageStyle = 'flex: 0 0 50%; max-width: 600px;';
+                } else {
+                    $imageStyle = 'width: 100%; max-width: 600px;';
+                }
+                ?>
+                <div style="<?php echo $imageStyle; ?>">
                     <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
                 </div>
             <?php endif; ?>
-            <div style="<?php echo $imagePosition !== 'normal' ? 'flex: 0 0 50%; padding: 0 1.5rem;' : ''; ?>">
-                <?php if (!empty($block['title'])): ?>
-                    <h3 class="text-2xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($block['title']); ?></h3>
-                <?php endif; ?>
-                <?php if (!empty($block['body'])): ?>
-                    <div class="text-gray-700 leading-relaxed"><?php echo nl2br(htmlspecialchars($block['body'])); ?></div>
-                <?php endif; ?>
-            </div>
+            <?php if ($hasText): ?>
+                <div style="<?php echo ($imagePosition !== 'normal' && $hasImage) ? 'flex: 0 0 50%; padding: 0 1.5rem;' : ''; ?>">
+                    <?php if (!empty($block['title'])): ?>
+                        <h3 class="text-2xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($block['title']); ?></h3>
+                    <?php endif; ?>
+                    <?php if (!empty($block['body'])): ?>
+                        <div class="text-gray-700 leading-relaxed"><?php echo nl2br(htmlspecialchars($block['body'])); ?></div>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
         </section>
     <?php endforeach; ?>
     
@@ -113,7 +127,7 @@ $pageBlocks = $stmt->fetchAll();
                 <strong>Het Lab is er voor:</strong><br>
             <ul>
                 <li>a. Rotterdammers die geraakt worden door digitale ontwikkelingen, maar niet altijd worden betrokken bij besluitvorming.</li>
-                <li>b. Burgers die meer over AI willen weten, zoals betrokken denkers en doeners die actief zijn in het sociaal domein en die willen bijdragen aan de digitale toekomst van de stad.Â </li>
+                <li>b. Burgers die meer over AI willen weten, zoals betrokken denkers en doeners die actief zijn in het sociaal domein en die willen bijdragen aan de digitale toekomst van de stad. </li>
                 <li>c. Inwoners die veel werken met AI en hun kennis met andere Rotterdammers willen delen.</li>
                 <li>d.  Experts die samen met andere Rotterdammers willen ontdekken wat AI voor hen kan betekenen en hoe inwoners AI (willen) gebruiken.</li>
             </ul>
@@ -139,7 +153,7 @@ $pageBlocks = $stmt->fetchAll();
             Wat willen we met het Sociaal AI Lab?
         </span>
             <p class="text-gray-700 leading-relaxed mb-4">
-             Het Sociaal AI Lab Rotterdam versterkt de positie van inwoners in een steeds digitalere samenleving. We doen dat door Rotterdammers actief te betrekken bij hetÂ ontwikkelen, begrijpen en beoordelenÂ van AI-toepassingen die invloed hebben op hun leven. Het lab is eenÂ ontmoetingsplekÂ waar kennis en praktijk samenkomen. Hier leren we van elkaar, delen we ervaringen en maken we technologie die werkt vÃ³Ã³r en mÃ©t de stad.</p>
+             Het Sociaal AI Lab Rotterdam versterkt de positie van inwoners in een steeds digitalere samenleving. We doen dat door Rotterdammers actief te betrekken bij het ontwikkelen, begrijpen en beoordelen van AI-toepassingen die invloed hebben op hun leven. Het lab is een ontmoetingsplek waar kennis en praktijk samenkomen. Hier leren we van elkaar, delen we ervaringen en maken we technologie die werkt vóór en mét de stad.</p>
         </div>
     </section>
 
@@ -149,8 +163,8 @@ $pageBlocks = $stmt->fetchAll();
         Hoe willen we dat doen?
         </span>
             <p class="text-gray-700 leading-relaxed mb-4">
-            Technologie heeft pas echt waarde als die bijdraagt aan een samenleving waarin iedereen mee kan doen. In het Sociaal AI Lab werken we aan eenÂ digitale stad die recht doet aan iedereen. We willen dat Ã¡lle Rotterdammers, juist ook degenen die vaak minder gehoord worden, invloed hebben op hoe technologie wordt gebruikt.
-            Daarom organiseren we gesprekken, workshops, experimenten en ontwerpsessies waarin inwoners, ontwerpers en onderzoekersÂ samen keuzes makenÂ over hoe AI bijdraagt aan onze stad.
+            Technologie heeft pas echt waarde als die bijdraagt aan een samenleving waarin iedereen mee kan doen. In het Sociaal AI Lab werken we aan een digitale stad die recht doet aan iedereen. We willen dat álle Rotterdammers, juist ook degenen die vaak minder gehoord worden, invloed hebben op hoe technologie wordt gebruikt.
+            Daarom organiseren we gesprekken, workshops, experimenten en ontwerpsessies waarin inwoners, ontwerpers en onderzoekers samen keuzes maken over hoe AI bijdraagt aan onze stad.
             </p>
         </div>
 
@@ -172,7 +186,7 @@ $pageBlocks = $stmt->fetchAll();
         <ul class="list-decimal pl-10 space-y-3 marker:text-gray-600 items-center">
             <li class="text-gray-700 leading-relaxed">
                 <h2 class="font-bold">Participatie en inclusie versterken</h2>
-                Rotterdammers krijgen een stem bij de ontwikkeling van AI en denken mee over wat technologie wel of juist nÃ­et moet doen.
+                Rotterdammers krijgen een stem bij de ontwikkeling van AI en denken mee over wat technologie wel of juist níet moet doen.
             </li>
 
             <li class="text-gray-700 leading-relaxed">
@@ -181,7 +195,7 @@ $pageBlocks = $stmt->fetchAll();
             </li>
 
             <li class="text-gray-700 leading-relaxed">
-               <h2 class="font-bold"> Verbinding met maatschappelijke themaâ€™s</h2>
+               <h2 class="font-bold"> Verbinding met maatschappelijke thema’s</h2>
                 We koppelen AI aan echte sociale uitdagingen in zorg, onderwijs, werk, veiligheid, duurzaamheid en welzijn.
             </li>
 
@@ -191,7 +205,7 @@ $pageBlocks = $stmt->fetchAll();
             
            <li class="text-gray-700 leading-relaxed">
                 <h2 class="font-bold">Toegankelijke infrastructuur</h2>
-               Het lab biedt ruimte, fysiek op Hillevliet 90 Ã©n digitaal, waar Rotterdammers samen kunnen leren, ontdekken en experimenteren met AI. </li>
+               Het lab biedt ruimte, fysiek op Hillevliet 90 én digitaal, waar Rotterdammers samen kunnen leren, ontdekken en experimenteren met AI. </li>
         </ul>
     </section>
 

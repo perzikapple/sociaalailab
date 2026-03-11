@@ -65,6 +65,7 @@ try {
 
             <div class="relative" id="programma-dropdown">
                 <button id="programma-toggle" aria-haspopup="true" aria-expanded="false" class="menu flex items-center gap-2 text-gray-700 hover:text-[#00811F] transition font-medium focus:outline-none">
+                    <i class="fa-solid fa-caret-right text-xs" aria-hidden="true"></i>
                     <span>Wat doen we?</span>
                     
                 </button>
@@ -104,17 +105,18 @@ try {
     foreach ($pageBlocks as $block):
         $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
         $hasImage = !empty($block['image']);
+        $hasText = !empty($block['title']) || !empty($block['body']);
         $imagePosition = $metaArr['image_position'] ?? 'normal';
         if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) $imagePosition = 'normal';
         
         $flexDir = 'column';
-        if ($imagePosition === 'left') {
+        if ($imagePosition === 'left' && $hasText) {
             $flexDir = 'row';
-        } elseif ($imagePosition === 'right') {
+        } elseif ($imagePosition === 'right' && $hasText) {
             $flexDir = 'row-reverse';
         }
         $sectionStyle = "display: flex; flex-direction: " . $flexDir . "; ";
-        if ($imagePosition !== 'normal') {
+        if ($imagePosition !== 'normal' && $hasText) {
             $sectionStyle .= "gap: 2rem; align-items: center;";
         } else {
             $sectionStyle .= "gap: 1.5rem;";
@@ -122,17 +124,28 @@ try {
     ?>
         <section class="bg-white shadow-lg px-3 sm:px-8 py-6 sm:py-8 max-w-6xl mx-auto mt-8 sm:mt-12 mb-6 sm:mb-12" style="<?php echo $sectionStyle; ?>">
             <?php if ($hasImage): ?>
-                <div style="<?php echo $imagePosition !== 'normal' ? 'flex: 0 0 50%;' : 'width: 100%;'; ?>">
+                <?php
+                $imageStyle = '';
+                if (!$hasText) {
+                    $imageStyle = 'width: 100%;';
+                } elseif ($imagePosition !== 'normal') {
+                    $imageStyle = 'flex: 0 0 50%; max-width: 600px;';
+                } else {
+                    $imageStyle = 'width: 100%; max-width: 600px;';
+                }
+                ?>
+                <div style="<?php echo $imageStyle; ?>">
                     <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
                 </div>
             <?php endif; ?>
-            <div style="<?php echo $imagePosition !== 'normal' ? 'flex: 0 0 50%; padding: 0 1.5rem;' : ''; ?>">
-                <?php if (!empty($block['title'])): ?>
-                    <h3 class="text-xl sm:text-2xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($block['title']); ?></h3>
-                <?php endif; ?>
-                <?php if (!empty($block['body'])): ?>
-                    <div class="text-sm sm:text-base text-gray-700 leading-relaxed"><?php echo nl2br(htmlspecialchars($block['body'])); ?></div>
-                <?php endif; ?>
+            <?php if ($hasText): ?>
+                <div style="<?php echo ($imagePosition !== 'normal' && $hasImage) ? 'flex: 0 0 50%; padding: 0 1.5rem;' : ''; ?>">
+                    <?php if (!empty($block['title'])): ?>
+                        <h3 class="text-xl sm:text-2xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($block['title']); ?></h3>
+                    <?php endif; ?>
+                    <?php if (!empty($block['body'])): ?>
+                        <div class="text-sm sm:text-base text-gray-700 leading-relaxed"><?php echo nl2br(htmlspecialchars($block['body'])); ?></div>
+                    <?php endif; ?>
                 <?php if (!empty($metaArr['date']) || !empty($metaArr['time'])): ?>
                     <div class="text-gray-600 text-xs sm:text-sm mt-2 flex flex-col sm:flex-row gap-2 sm:gap-4">
                         <?php if (!empty($metaArr['date'])): ?>
@@ -144,6 +157,7 @@ try {
                     </div>
                 <?php endif; ?>
             </div>
+            <?php endif; ?>
         </section>
     <?php endforeach; ?>
 

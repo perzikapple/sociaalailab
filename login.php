@@ -67,7 +67,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <div class="relative" id="programma-dropdown">
                     <button id="programma-toggle" aria-haspopup="true" aria-expanded="false" class="menu flex items-center gap-2 text-gray-700 hover:text-[#00811F] transition font-medium focus:outline-none">
-                        <span>Wat doen we?</span>
+                        <i class="fa-solid fa-caret-right text-xs" aria-hidden="true"></i>
+                    <span>Wat doen we?</span>
                         
                     </button>
 

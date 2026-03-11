@@ -63,6 +63,7 @@ try {
 
             <div class="relative" id="programma-dropdown">
                 <button id="programma-toggle" aria-haspopup="true" aria-expanded="false" class="menu flex items-center gap-2 text-gray-700 hover:text-[#00811F] transition font-medium focus:outline-none">
+                    <i class="fa-solid fa-caret-right text-xs" aria-hidden="true"></i>
                     <span>Wat doen we?</span>
                     
                 </button>
@@ -90,6 +91,7 @@ try {
     foreach ($pageBlocks as $block):
         $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
         $hasImage = !empty($block['image']);
+        $hasText = !empty($block['title']) || !empty($block['body']);
         $imagePosition = $metaArr['image_position'] ?? 'normal';
         if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) $imagePosition = 'normal';
         $isEven = ($index % 2 == 0);
@@ -107,12 +109,19 @@ try {
     ?>
         <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" style="<?php echo $sectionStyle; ?>">
             <?php if ($hasImage): ?>
-                <div style="flex-shrink: 0; width: 300px; min-width: 300px;">
+                <?php
+                $imageStyle = 'flex-shrink: 0; width: 300px; min-width: 300px; max-width: 300px;';
+                if (!$hasText) {
+                    $imageStyle = 'width: 100%;';
+                }
+                ?>
+                <div style="<?php echo $imageStyle; ?>">
                     <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" 
                          alt="<?php echo htmlspecialchars($block['title']); ?>" 
-                         style="width: 100%; height: auto; max-height: 200px; object-fit: contain;">
+                         style="width: 100%; height: auto; <?php echo $hasText ? 'max-height: 200px; object-fit: contain;' : ''; ?>">
                 </div>
             <?php endif; ?>
+            <?php if ($hasText): ?>
             <div style="flex: 1; padding: 0 1.5rem;">
                 <?php if (!empty($block['title'])): ?>
                     <h3 class="font-bold text-xl mb-3"><?php echo htmlspecialchars($block['title']); ?></h3>
@@ -121,6 +130,7 @@ try {
                     <div class="text-gray-700 text-sm leading-relaxed"><?php echo nl2br(htmlspecialchars($block['body'])); ?></div>
                 <?php endif; ?>
             </div>
+            <?php endif; ?>
         </section>
     <?php endforeach; ?>
 </main>

@@ -1,4 +1,4 @@
-﻿<?php 
+<?php 
 session_start();
 require '../db.php';
 require '../helpers.php';
@@ -49,6 +49,7 @@ try {
 
             <div class="relative" id="programma-dropdown">
                 <button id="programma-toggle" aria-haspopup="true" aria-expanded="false" class="menu flex items-center gap-2 text-gray-700 hover:text-[#00811F] transition font-medium focus:outline-none">
+                    <i class="fa-solid fa-caret-right text-xs" aria-hidden="true"></i>
                     <span>Wat doen we?</span>
                 </button>
 
@@ -87,7 +88,7 @@ try {
             'meta' => null
         ],
         [
-            'title' => 'Samen toekomstbeelden creëren met AI',
+            'title' => 'Samen toekomstbeelden cre�ren met AI',
             'body' => 'Een interactieve sessie die mensen inzicht geeft in generatieve AI, en waarin samen creatieve scenario\'s gemaakt worden voor een rechtvaardige en inclusieve AI-toekomst..',
             'image' => 'images/wat_doen_we/kennis_vaardigheden/Wat_doen_we_%20Samen_toekomstbeelden_cre%C3%ABren_met_behulp_van_AI.jpeg',
             'meta' => null
@@ -112,7 +113,7 @@ try {
         ],
         [
             'title' => 'Feministische AI',
-            'body' => 'Ontdek spelenderwijs hoe generatieve AI werkt, welke vooroordelen erin kunnen zitten en hoe je technologie eerlijker kunt maken door aandacht voor macht‐ en ongelijkheid.',
+            'body' => 'Ontdek spelenderwijs hoe generatieve AI werkt, welke vooroordelen erin kunnen zitten en hoe je technologie eerlijker kunt maken door aandacht voor macht- en ongelijkheid.',
             'image' => 'images/wat_doen_we/kennis_vaardigheden/Wat_doen_we_%20Feministische_AI.jpg',
             'meta' => null
         ]
@@ -193,8 +194,9 @@ try {
             }
             
             $hasImage = !empty($block['image']);
+            $hasText = !empty($block['title']) || !empty($block['body']);
             $cardStyle = 'display: flex; flex-direction: ' . $flexDir . '; ';
-            if ($imagePosition !== 'normal') {
+            if ($imagePosition !== 'normal' && $hasText) {
                 $cardStyle .= 'gap: 1rem; align-items: flex-start;';
             } else {
                 $cardStyle .= 'gap: 0; justify-content: space-between; flex-direction: column;';
@@ -212,8 +214,8 @@ try {
                         $imageSrc = '../uploads/' . $imagePath;
                     }
                     ?>
-                    <div style="flex-shrink: 0; width: 120px; min-width: 120px;">
-                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; height: 112px; object-fit: cover;">
+                    <div style="<?php echo $hasText ? 'flex-shrink: 0; width: 120px; min-width: 120px; max-width: 120px;' : 'width: 100%;'; ?>">
+                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; <?php echo $hasText ? 'height: 112px; object-fit: cover;' : 'height: auto;'; ?>">
                     </div>
                 <?php endif; ?>
 
@@ -237,8 +239,8 @@ try {
                         $imageSrc = '../uploads/' . $imagePath;
                     }
                     ?>
-                    <div style="flex-shrink: 0; width: 120px; min-width: 120px;">
-                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; height: 112px; object-fit: cover;">
+                    <div style="<?php echo $hasText ? 'flex-shrink: 0; width: 120px; min-width: 120px; max-width: 120px;' : 'width: 100%;'; ?>">
+                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; <?php echo $hasText ? 'height: 112px; object-fit: cover;' : 'height: auto;'; ?>">
                     </div>
                 <?php endif; ?>
 
@@ -253,8 +255,8 @@ try {
                         $imageSrc = '../uploads/' . $imagePath;
                     }
                     ?>
-                    <div style="margin-top: auto; width: 100%;">
-                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; height: 160px; object-fit: cover;">
+                    <div style="<?php echo $hasText ? 'margin-top: auto; width: 100%; max-width: 400px;' : 'width: 100%;'; ?>">
+                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; <?php echo $hasText ? 'height: 160px; object-fit: cover;' : 'height: auto;'; ?>">
                     </div>
                 <?php endif; ?>
             </div>

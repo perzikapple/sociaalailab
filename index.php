@@ -1,4 +1,4 @@
-ï»¿<?php 
+<?php 
 session_start();
 require 'db.php';
 require 'helpers.php';
@@ -13,7 +13,7 @@ $fallbackBlocks = [
 
 In Rotterdam willen we dat iedereen mee kan doen in de digitale samenleving. Daarom is er nu het Sociaal AI Lab Rotterdam: een open plek in de stad waar bewoners, onderzoekers, ontwerpers en beleidsmakers samenwerken aan eerlijke, begrijpelijke en toegankelijke technologie.
 
-Rotterdammers ontdekken hier in gesprekken, bijeenkomsten, leer- en doe-activiteiten wat AI betekent voor hun dagelijks leven en denken mee over wat technologie wÃ©l of niet moet doen.',
+Rotterdammers ontdekken hier in gesprekken, bijeenkomsten, leer- en doe-activiteiten wat AI betekent voor hun dagelijks leven en denken mee over wat technologie wél of niet moet doen.',
         'image' => '',
         'meta' => json_encode(['layout' => 'welcome'])
     ],
@@ -39,7 +39,7 @@ Rotterdammers ontdekken hier in gesprekken, bijeenkomsten, leer- en doe-activite
         'title' => 'Gelijke kansen voor iedereen',
         'body' => 'We onderzoeken samen wat kunstmatige intelligentie (AI) betekent voor het dagelijks leven in Rotterdam, en hoe we AI zo kunnen gebruiken dat het bijdraagt aan gelijke kansen voor iedereen.
 Het lab hoort bij het gemeentelijke programma Digitale Inclusie, dat ervoor zorgt dat alle Rotterdammers veilig, vaardig en volwaardig kunnen meedoen in de digitale wereld.
-Kunstmatige Intelligentie? Technologie is pas echt slim als ze Ã³Ã³k sociaal is.',
+Kunstmatige Intelligentie? Technologie is pas echt slim als ze óók sociaal is.',
         'image' => '',
         'meta' => json_encode(['layout' => 'info'])
     ]
@@ -140,6 +140,7 @@ try {
 
             <div class="relative" id="programma-dropdown">
                 <button id="programma-toggle" aria-haspopup="true" aria-expanded="false" class="menu flex items-center gap-2 text-gray-700 hover:text-[#00811F] transition font-medium focus:outline-none">
+                    <i class="fa-solid fa-caret-right text-xs" aria-hidden="true"></i>
                     <span>Wat doen we?</span>
                 </button>
 
@@ -234,17 +235,18 @@ try {
     foreach ($customBlocks as $block):
         $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
         $hasImage = !empty($block['image']);
+        $hasText = !empty($block['title']) || !empty($block['body']);
         $imagePosition = $metaArr['image_position'] ?? 'normal';
         if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) $imagePosition = 'normal';
         
         $flexDir = 'column';
-        if ($imagePosition === 'left') {
+        if ($imagePosition === 'left' && $hasText) {
             $flexDir = 'row';
-        } elseif ($imagePosition === 'right') {
+        } elseif ($imagePosition === 'right' && $hasText) {
             $flexDir = 'row-reverse';
         }
         $sectionStyle = "display: flex; flex-direction: " . $flexDir . "; ";
-        if ($imagePosition !== 'normal') {
+        if ($imagePosition !== 'normal' && $hasText) {
             $sectionStyle .= "gap: 2rem; align-items: center;";
         } else {
             $sectionStyle .= "gap: 1.5rem;";
@@ -252,7 +254,17 @@ try {
     ?>
         <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" style="<?php echo $sectionStyle; ?>">
             <?php if ($hasImage): ?>
-                <div style="<?php echo $imagePosition !== 'normal' ? 'flex: 0 0 50%;' : 'width: 100%;'; ?>">
+                <?php
+                $imageStyle = '';
+                if (!$hasText) {
+                    $imageStyle = 'width: 100%;';
+                } elseif ($imagePosition !== 'normal') {
+                    $imageStyle = 'flex: 0 0 50%; max-width: 600px;';
+                } else {
+                    $imageStyle = 'width: 100%; max-width: 600px;';
+                }
+                ?>
+                <div style="<?php echo $imageStyle; ?>">
                     <?php
                     $imagePath = trim((string)$block['image']);
                     if (strpos($imagePath, 'images/') === 0 || strpos($imagePath, 'uploads/') === 0) {
@@ -264,14 +276,16 @@ try {
                     <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
                 </div>
             <?php endif; ?>
-            <div style="<?php echo $imagePosition !== 'normal' ? 'flex: 0 0 50%; padding: 0 1.5rem;' : ''; ?>">
-                <?php if (!empty($block['title'])): ?>
-                    <h3 class="text-2xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($block['title']); ?></h3>
-                <?php endif; ?>
-                <?php if (!empty($block['body'])): ?>
-                    <div class="text-gray-700 leading-relaxed"><?php echo nl2br(htmlspecialchars($block['body'])); ?></div>
-                <?php endif; ?>
-            </div>
+            <?php if ($hasText): ?>
+                <div style="<?php echo ($imagePosition !== 'normal' && $hasImage) ? 'flex: 0 0 50%; padding: 0 1.5rem;' : ''; ?>">
+                    <?php if (!empty($block['title'])): ?>
+                        <h3 class="text-2xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($block['title']); ?></h3>
+                    <?php endif; ?>
+                    <?php if (!empty($block['body'])): ?>
+                        <div class="text-gray-700 leading-relaxed"><?php echo nl2br(htmlspecialchars($block['body'])); ?></div>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
         </section>
     <?php endforeach; ?>
         

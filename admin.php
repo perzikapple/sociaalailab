@@ -966,7 +966,7 @@ if ($page !== 'banner' && $page !== 'agenda') {
                             <div>
                                 <label class="form-label">Foto positie</label>
                                 <select name="image_position" class="form-input">
-                                    <option value="normal" <?php echo $currentImagePosition === 'normal' ? 'selected' : ''; ?>>Normaal (zoals nu)</option>
+                                    <option value="normal" <?php echo $currentImagePosition === 'normal' ? 'selected' : ''; ?>>Normaal (foto onder)</option>
                                     <option value="left" <?php echo $currentImagePosition === 'left' ? 'selected' : ''; ?>>Foto links</option>
                                     <option value="right" <?php echo $currentImagePosition === 'right' ? 'selected' : ''; ?>>Foto rechts</option>
                                 </select>
@@ -1000,7 +1000,7 @@ if ($page !== 'banner' && $page !== 'agenda') {
                             <div>
                                 <label class="form-label">Foto positie</label>
                                 <select name="image_position" class="form-input">
-                                    <option value="normal" selected>Normaal (zoals nu)</option>
+                                    <option value="normal" selected>Normaal (foto onder)</option>
                                     <option value="left">Foto links</option>
                                     <option value="right">Foto rechts</option>
                                 </select>
