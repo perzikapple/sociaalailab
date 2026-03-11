@@ -21,6 +21,7 @@ try {
             title VARCHAR(255) NOT NULL,
             date DATE NOT NULL,
             time TIME DEFAULT NULL,
+            time_end TIME DEFAULT NULL,
             description TEXT,
             location VARCHAR(255) DEFAULT NULL,
             image VARCHAR(255) DEFAULT NULL,
@@ -63,6 +64,9 @@ try {
     }
     if (!in_array('sort_order', $columns)) {
         $pdo->exec("ALTER TABLE events ADD COLUMN sort_order INT DEFAULT 0");
+    }
+    if (!in_array('time_end', $columns)) {
+        $pdo->exec("ALTER TABLE events ADD COLUMN time_end TIME DEFAULT NULL");
     }
 
     $pdo->exec("

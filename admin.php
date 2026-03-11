@@ -68,6 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $title = trim($_POST['title'] ?? '');
         $date = $_POST['date'] ?? '';
         $time = $_POST['time'] ?? null;
+        $time_end = $_POST['time_end'] ?? null;
         $description = trim($_POST['description'] ?? '');
         $location = trim($_POST['location'] ?? '');
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
@@ -81,8 +82,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $imageName = $upload['name'] ?? null;
                 // voeg updated_at en updated_by toe bij insert
-                $stmt = $pdo->prepare('INSERT INTO events (title, date, time, description, image, location, show_signup_button, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?)');
-                $stmt->execute([$title, $date, $time ?: null, $description, $imageName, $location ?: null, $showSignupButton, $currentUser]);
+                $stmt = $pdo->prepare('INSERT INTO events (title, date, time, time_end, description, image, location, show_signup_button, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)');
+                $stmt->execute([$title, $date, $time ?: null, $time_end ?: null, $description, $imageName, $location ?: null, $showSignupButton, $currentUser]);
                 $eventId = $pdo->lastInsertId();
                 // Audit log: event created
                 audit_log($pdo, 'create', 'events', $eventId, 'title: ' . $title, $currentUser);
@@ -96,6 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $title = trim($_POST['title'] ?? '');
         $date = $_POST['date'] ?? '';
         $time = $_POST['time'] ?? null;
+        $time_end = $_POST['time_end'] ?? null;
         $description = trim($_POST['description'] ?? '');
         $location = trim($_POST['location'] ?? '');
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
@@ -120,8 +122,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $imageName = $upload['name'] ?? $oldImage;
                 }
                 // update nu ook updated_at en updated_by
-                $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, time=?, description=?, image=?, location=?, show_signup_button=?, updated_at=NOW(), updated_by=? WHERE id=?');
-                $stmt->execute([$title, $date, $time ?: null, $description, $imageName, $location ?: null, $showSignupButton, $currentUser, $id]);
+                $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, time=?, time_end=?, description=?, image=?, location=?, show_signup_button=?, updated_at=NOW(), updated_by=? WHERE id=?');
+                $stmt->execute([$title, $date, $time ?: null, $time_end ?: null, $description, $imageName, $location ?: null, $showSignupButton, $currentUser, $id]);
                 // Audit log: event updated
                 audit_log($pdo, 'update', 'events', $id, 'title: ' . $title, $currentUser);
 
@@ -707,14 +709,18 @@ if ($page !== 'banner' && $page !== 'agenda') {
                                 <input name="title" required class="form-input" value="<?php echo htmlspecialchars($editEvent['title']); ?>" />
                             </div>
 
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="grid grid-cols-3 gap-4">
                                 <div>
                                     <label class="form-label">Wanneer (datum)</label>
                                     <input type="date" name="date" required class="form-input" value="<?php echo htmlspecialchars($editEvent['date']); ?>" />
                                 </div>
                                 <div>
-                                    <label class="form-label">Tijd</label>
+                                    <label class="form-label">Starttijd</label>
                                     <input type="time" name="time" class="form-input" value="<?php echo htmlspecialchars($editEvent['time'] ?? ''); ?>" />
+                                </div>
+                                <div>
+                                    <label class="form-label">Eindtijd <span class="text-xs text-gray-500">(optioneel)</span></label>
+                                    <input type="time" name="time_end" class="form-input" value="<?php echo htmlspecialchars($editEvent['time_end'] ?? ''); ?>" />
                                 </div>
                             </div>
 
@@ -761,14 +767,18 @@ if ($page !== 'banner' && $page !== 'agenda') {
                                 <input name="title" required class="form-input" />
                             </div>
 
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="grid grid-cols-3 gap-4">
                                 <div>
                                     <label class="form-label">Wanneer (datum)</label>
                                     <input type="date" name="date" required class="form-input" />
                                 </div>
                                 <div>
-                                    <label class="form-label">Tijd</label>
+                                    <label class="form-label">Starttijd</label>
                                     <input type="time" name="time" class="form-input" />
+                                </div>
+                                <div>
+                                    <label class="form-label">Eindtijd <span class="text-xs text-gray-500">(optioneel)</span></label>
+                                    <input type="time" name="time_end" class="form-input" />
                                 </div>
                             </div>
 
@@ -827,8 +837,12 @@ if ($page !== 'banner' && $page !== 'agenda') {
                                         <input type="checkbox" class="event-checkbox w-4 h-4 mt-1 flex-shrink-0 cursor-pointer" name="event_ids[]" value="<?php echo (int)$event['id']; ?>">
                                         <div class="flex-1">
                                             <h4 class="font-bold text-lg text-gray-800"><?php echo htmlspecialchars($event['title']); ?></h4>
-                                            <?php $dateDisplay = formatEventDateDisplay($event['date']); $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : ''; ?>
-                                            <p class="text-sm text-gray-600 mt-1"><strong>Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?> <?php echo $timeDisplay ? htmlspecialchars($timeDisplay) : ''; ?></p>
+                                            <?php 
+                                                $dateDisplay = formatEventDateDisplay($event['date']); 
+                                                $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : ''; 
+                                                $timeEndDisplay = $event['time_end'] ? formatEventTimeDisplay($event['time_end']) : ''; 
+                                            ?>
+                                            <p class="text-sm text-gray-600 mt-1"><strong>Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?><?php if ($timeDisplay) { echo ' ' . htmlspecialchars($timeDisplay); } ?><?php if ($timeEndDisplay) { echo ' - ' . htmlspecialchars($timeEndDisplay); } ?></p>
                                             <?php if (!empty($event['location'])): ?>
                                                 <p class="text-sm text-gray-600"><strong>Plaats:</strong> <?php echo htmlspecialchars($event['location']); ?></p>
                                             <?php endif; ?>
