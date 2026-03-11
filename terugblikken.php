@@ -322,6 +322,10 @@ try {
   opacity: 1;
 }
 
+.bg-white{
+    padding: 20px;
+}
+
 @media (max-width: 1024px) {
     .menu{
         margin-top: 10px;
