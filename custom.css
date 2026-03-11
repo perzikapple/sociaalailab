@@ -269,12 +269,11 @@ img, video {
 }
 
 .green-highlight {
-  display: block;
+  display: inline-block;
   background-color: #cfe8d6;
   color: #0b5e2a;
   padding: 12px 16px;
   border-radius: 4px;
-  border: 1px solid #a8d9b8;
   font-size: 1rem;
   line-height: 1.5;
   font-weight: 400;
