@@ -99,7 +99,8 @@ foreach ($events as $event):
                 <div class="flex items-center space-x-3">
                     <i class="fa-regular fa-calendar text-[#00811F] ml-[2px] text-3xl"></i>
                     <?php $dateDisplay = formatEventDateDisplay($event['date']); ?>
-                    <p class="text-gray-700"><strong> Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?></p>
+                    <?php $endDateDisplay = !empty($event['end_date']) ? formatEventDateDisplay($event['end_date']) : null; ?>
+                    <p class="text-gray-700"><strong> Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?><?php if ($endDateDisplay) { echo ' t/m ' . htmlspecialchars($endDateDisplay); } ?></p>
                 </div>
                 <?php 
                     $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : '';

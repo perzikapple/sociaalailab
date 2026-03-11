@@ -67,8 +67,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'create') {
         $title = trim($_POST['title'] ?? '');
         $date = $_POST['date'] ?? '';
+        $end_date = isset($_POST['add_end_date']) && !empty($_POST['end_date']) ? $_POST['end_date'] : null;
         $time = $_POST['time'] ?? null;
-        $time_end = $_POST['time_end'] ?? null;
+        $time_end = isset($_POST['add_end_time']) && !empty($_POST['time_end']) ? $_POST['time_end'] : null;
         $description = trim($_POST['description'] ?? '');
         $location = trim($_POST['location'] ?? '');
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
@@ -82,8 +83,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $imageName = $upload['name'] ?? null;
                 // voeg updated_at en updated_by toe bij insert
-                $stmt = $pdo->prepare('INSERT INTO events (title, date, time, time_end, description, image, location, show_signup_button, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)');
-                $stmt->execute([$title, $date, $time ?: null, $time_end ?: null, $description, $imageName, $location ?: null, $showSignupButton, $currentUser]);
+                $stmt = $pdo->prepare('INSERT INTO events (title, date, end_date, time, time_end, description, image, location, show_signup_button, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)');
+                $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $imageName, $location ?: null, $showSignupButton, $currentUser]);
                 $eventId = $pdo->lastInsertId();
                 // Audit log: event created
                 audit_log($pdo, 'create', 'events', $eventId, 'title: ' . $title, $currentUser);
@@ -96,8 +97,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = (int)$_POST['id'];
         $title = trim($_POST['title'] ?? '');
         $date = $_POST['date'] ?? '';
+        $end_date = isset($_POST['add_end_date']) && !empty($_POST['end_date']) ? $_POST['end_date'] : null;
         $time = $_POST['time'] ?? null;
-        $time_end = $_POST['time_end'] ?? null;
+        $time_end = isset($_POST['add_end_time']) && !empty($_POST['time_end']) ? $_POST['time_end'] : null;
         $description = trim($_POST['description'] ?? '');
         $location = trim($_POST['location'] ?? '');
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
@@ -122,8 +124,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $imageName = $upload['name'] ?? $oldImage;
                 }
                 // update nu ook updated_at en updated_by
-                $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, time=?, time_end=?, description=?, image=?, location=?, show_signup_button=?, updated_at=NOW(), updated_by=? WHERE id=?');
-                $stmt->execute([$title, $date, $time ?: null, $time_end ?: null, $description, $imageName, $location ?: null, $showSignupButton, $currentUser, $id]);
+                $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, end_date=?, time=?, time_end=?, description=?, image=?, location=?, show_signup_button=?, updated_at=NOW(), updated_by=? WHERE id=?');
+                $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $imageName, $location ?: null, $showSignupButton, $currentUser, $id]);
                 // Audit log: event updated
                 audit_log($pdo, 'update', 'events', $id, 'title: ' . $title, $currentUser);
 
@@ -713,16 +715,33 @@ if ($page !== 'banner' && $page !== 'agenda') {
                                 <div>
                                     <label class="form-label">Wanneer (datum)</label>
                                     <input type="date" name="date" required class="form-input" value="<?php echo htmlspecialchars($editEvent['date']); ?>" />
+                                    <div class="mt-2">
+                                        <label class="form-checkbox">
+                                            <input type="checkbox" id="add-end-date-edit" name="add_end_date" <?php echo !empty($editEvent['end_date']) ? 'checked' : ''; ?> />
+                                            Einddatum toevoegen
+                                        </label>
+                                        <div id="end-date-container-edit" style="margin-top:8px;<?php echo empty($editEvent['end_date']) ? 'display:none;' : ''; ?>">
+                                            <label class="form-label">Einddatum <span class="text-xs text-gray-500">(optioneel)</span></label>
+                                            <input type="date" name="end_date" class="form-input" value="<?php echo htmlspecialchars($editEvent['end_date'] ?? ''); ?>" />
+                                        </div>
+                                    </div>
                                 </div>
                                 <div>
                                     <label class="form-label">Starttijd</label>
                                     <input type="time" name="time" class="form-input" value="<?php echo htmlspecialchars($editEvent['time'] ?? ''); ?>" />
-                                </div>
-                                <div>
-                                    <label class="form-label">Eindtijd <span class="text-xs text-gray-500">(optioneel)</span></label>
-                                    <input type="time" name="time_end" class="form-input" value="<?php echo htmlspecialchars($editEvent['time_end'] ?? ''); ?>" />
+                                    <div class="mt-2">
+                                        <label class="form-checkbox">
+                                            <input type="checkbox" id="add-end-time-edit" name="add_end_time" <?php echo !empty($editEvent['time_end']) ? 'checked' : ''; ?> />
+                                            Eindtijd toevoegen
+                                        </label>
+                                        <div id="end-time-container-edit" style="margin-top:8px;<?php echo empty($editEvent['time_end']) ? 'display:none;' : ''; ?>">
+                                            <label class="form-label">Eindtijd <span class="text-xs text-gray-500">(optioneel)</span></label>
+                                            <input type="time" name="time_end" class="form-input" value="<?php echo htmlspecialchars($editEvent['time_end'] ?? ''); ?>" />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+                            
 
                             <div>
                                 <label class="form-label">Plaats</label>
@@ -771,16 +790,65 @@ if ($page !== 'banner' && $page !== 'agenda') {
                                 <div>
                                     <label class="form-label">Wanneer (datum)</label>
                                     <input type="date" name="date" required class="form-input" />
+                                    <div class="mt-2">
+                                        <label class="form-checkbox">
+                                            <input type="checkbox" id="add-end-date-create" name="add_end_date" />
+                                            Einddatum toevoegen
+                                        </label>
+                                        <div id="end-date-container-create" style="margin-top:8px;display:none;">
+                                            <label class="form-label">Einddatum <span class="text-xs text-gray-500">(optioneel)</span></label>
+                                            <input type="date" name="end_date" class="form-input" />
+                                        </div>
+                                    </div>
                                 </div>
                                 <div>
                                     <label class="form-label">Starttijd</label>
                                     <input type="time" name="time" class="form-input" />
-                                </div>
-                                <div>
-                                    <label class="form-label">Eindtijd <span class="text-xs text-gray-500">(optioneel)</span></label>
-                                    <input type="time" name="time_end" class="form-input" />
+                                    <div class="mt-2">
+                                        <label class="form-checkbox">
+                                            <input type="checkbox" id="add-end-time-create" name="add_end_time" />
+                                            Eindtijd toevoegen
+                                        </label>
+                                        <div id="end-time-container-create" style="margin-top:8px;display:none;">
+                                            <label class="form-label">Eindtijd <span class="text-xs text-gray-500">(optioneel)</span></label>
+                                            <input type="time" name="time_end" class="form-input" />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+<script>
+// Toggle end date/time for create/edit
+document.addEventListener('DOMContentLoaded', function() {
+    var addEndDateCreate = document.getElementById('add-end-date-create');
+    var endDateContainerCreate = document.getElementById('end-date-container-create');
+    if (addEndDateCreate && endDateContainerCreate) {
+        addEndDateCreate.addEventListener('change', function() {
+            endDateContainerCreate.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+    var addEndDateEdit = document.getElementById('add-end-date-edit');
+    var endDateContainerEdit = document.getElementById('end-date-container-edit');
+    if (addEndDateEdit && endDateContainerEdit) {
+        addEndDateEdit.addEventListener('change', function() {
+            endDateContainerEdit.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+    var addEndTimeCreate = document.getElementById('add-end-time-create');
+    var endTimeContainerCreate = document.getElementById('end-time-container-create');
+    if (addEndTimeCreate && endTimeContainerCreate) {
+        addEndTimeCreate.addEventListener('change', function() {
+            endTimeContainerCreate.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+    var addEndTimeEdit = document.getElementById('add-end-time-edit');
+    var endTimeContainerEdit = document.getElementById('end-time-container-edit');
+    if (addEndTimeEdit && endTimeContainerEdit) {
+        addEndTimeEdit.addEventListener('change', function() {
+            endTimeContainerEdit.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+});
+</script>
 
                             <div>
                                 <label class="form-label">Plaats</label>

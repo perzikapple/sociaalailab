@@ -20,6 +20,7 @@ try {
             id INT AUTO_INCREMENT PRIMARY KEY,
             title VARCHAR(255) NOT NULL,
             date DATE NOT NULL,
+            end_date DATE DEFAULT NULL,
             time TIME DEFAULT NULL,
             time_end TIME DEFAULT NULL,
             description TEXT,
@@ -67,6 +68,9 @@ try {
     }
     if (!in_array('time_end', $columns)) {
         $pdo->exec("ALTER TABLE events ADD COLUMN time_end TIME DEFAULT NULL");
+    }
+    if (!in_array('end_date', $columns)) {
+        $pdo->exec("ALTER TABLE events ADD COLUMN end_date DATE DEFAULT NULL");
     }
 
     $pdo->exec("
