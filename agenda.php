@@ -37,41 +37,10 @@ try {
     </div>
 </div>
 
-<nav class="bg-white shadow-md sticky top-0 z-40">
-    <div class="flex justify-center items-center px-4 md:px-8 py-4">
-
-        <button id="mobile-menu-toggle" class="md:hidden hamburger focus:outline-none" aria-label="Toggle navigation">
-            <i class="fa-solid fa-bars text-2xl"></i>
-        </button>
-
-        <div id="mobile-menu" class="menu hidden md:flex pr-5 space-x-8 font-medium items-center">
-            <a href="index.php" class="menu inline-flex items-center gap-1 text-gray-700 hover:text-[#00811F] transition"><i class="fa-solid fa-house"></i> Voorpagina</a>
-            <a href="agenda.php" class="menu text-gray-700 hover:text-[#00811F] transition">Agenda</a>
-            <a href="over.php" class="menu text-gray-700 hover:text-[#00811F] transition">Voor wie?</a>
-
-            <div class="relative" id="programma-dropdown">
-                <button id="programma-toggle" aria-haspopup="true" aria-expanded="false" class="menu flex items-center gap-2 text-gray-700 hover:text-[#00811F] transition font-medium focus:outline-none">
-                    <i class="fa-solid fa-caret-right text-xs" aria-hidden="true"></i>
-                    <span>Wat doen we?</span>
-                    
-                </button>
-
-                <div id="programma-menu" class="hidden absolute top-0 mt-8 w-56 bg-white border border-gray-200 shadow-lg py-2 z-50 focus:outline-none" role="menu" aria-labelledby="programma-toggle">
-                    <a href="programma/kennis.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Kennis & vaardigheden</a>
-                    <a href="programma/actie.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Actie, onderzoek & ontwerp</a>
-                    <a href="programma/faciliteit.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Faciliteit van het Lab</a>
-                </div>
-            </div>
-
-            <a href="verantwoord-ai.php" class="menu text-gray-700 hover:text-[#00811F] transition">Verantwoorde AI</a>
-            <a href="wie-zijn-we.php" class="menu text-gray-700 hover:text-[#00811F] transition">Wie zijn we?</a>
-            <a href="contact.php" class="menu text-gray-700 hover:text-[#00811F] transition">Contact</a>
-            <?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
-                <a href="admin.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Admin</a>
-            <?php endif; ?>
-        </div>
-    </div>
-</nav>
+<?php
+$navPrefix = '';
+include __DIR__ . '/navbar.php';
+?>
 
 <main>
     
@@ -123,6 +92,11 @@ foreach ($events as $event):
                     <p class="text-gray-700 pb-3 "><strong> Wat:</strong> <?php echo nl2br(htmlspecialchars($event['description'])); ?></p>
                 </div>
             </div>
+            <?php if (!empty($event['show_signup_button'])): ?>
+            <a href="inschrijven.php?event_id=<?php echo (int)$event['id']; ?>" class="mt-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">
+                Inschrijven
+            </a>
+            <?php endif; ?>
         </div>
         <?php if ($event['image']): ?>
         <div class="flex-1">

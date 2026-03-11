@@ -35,40 +35,10 @@ try {
     <img src="<?php echo htmlspecialchars($banner2); ?>" alt="Banner 2" class="banner w-full object-cover h-60 md:h-96">
 </div>
 
-<nav class="bg-white shadow-md sticky top-0 z-40">
-    <div class="flex justify-center items-center px-4 md:px-8 py-4">
-
-        <button id="mobile-menu-toggle" class="md:hidden hamburger focus:outline-none" aria-label="Toggle navigation">
-            <i class="fa-solid fa-bars text-2xl"></i>
-        </button>
-
-        <div id="mobile-menu" class="menu hidden md:flex pr-5 space-x-8 font-medium items-center">
-            <a href="../index.php" class="menu inline-flex items-center gap-1 text-gray-700 hover:text-[#00811F] transition"><i class="fa-solid fa-house"></i> Voorpagina</a>
-            <a href="../agenda.php" class="menu text-gray-700 hover:text-[#00811F] transition">Agenda</a>
-            <a href="../over.php" class="menu text-gray-700 hover:text-[#00811F] transition">Voor wie?</a>
-
-            <div class="relative" id="programma-dropdown">
-                <button id="programma-toggle" aria-haspopup="true" aria-expanded="false" class="menu flex items-center gap-2 text-gray-700 hover:text-[#00811F] transition font-medium focus:outline-none">
-                    <i class="fa-solid fa-caret-right text-xs" aria-hidden="true"></i>
-                    <span>Wat doen we?</span>
-                </button>
-
-                <div id="programma-menu" class="hidden absolute top-0 mt-8 w-56 bg-white border border-gray-200 shadow-lg py-2 z-50 focus:outline-none" role="menu" aria-labelledby="programma-toggle">
-                    <a href="kennis.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Kennis & vaardigheden</a>
-                    <a href="actie.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Actie, onderzoek & ontwerp</a>
-                    <a href="faciliteit.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Faciliteit van het Lab</a>
-                </div>
-            </div>
-
-            <a href="../verantwoord-ai.php" class="menu text-gray-700 hover:text-[#00811F] transition">Verantwoorde AI</a>
-            <a href="../wie-zijn-we.php" class="menu text-gray-700 hover:text-[#00811F] transition">Wie zijn we?</a>
-            <a href="../contact.php" class="menu text-gray-700 hover:text-[#00811F] transition">Contact</a>
-            <?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
-                <a href="../admin.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Admin</a>
-            <?php endif; ?>
-        </div>
-    </div>
-</nav>
+<?php
+$navPrefix = '../';
+include __DIR__ . '/../navbar.php';
+?>
 
 <!-- Pagina content -->
 <main>
@@ -185,6 +155,7 @@ try {
             $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
             $imagePosition = $metaArr['image_position'] ?? 'normal';
             if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) $imagePosition = 'normal';
+            $greenText = trim((string)($metaArr['green_text'] ?? ($metaArr['green_heading'] ?? '')));
             
             $flexDir = 'column';
             if ($imagePosition === 'left') {
@@ -220,6 +191,9 @@ try {
                 <?php endif; ?>
 
                 <div style="<?php echo ($hasImage && $imagePosition !== 'normal') ? 'flex: 1; padding: 0 1.5rem;' : ''; ?>">
+                <?php if ($greenText !== ''): ?>
+                    <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($greenText)); ?></div>
+                <?php endif; ?>
                 <?php if (!empty($block['title'])): ?>
                     <h3 class="text-lg font-semibold mb-2"><?php echo htmlspecialchars($block['title']); ?></h3>
                 <?php endif; ?>

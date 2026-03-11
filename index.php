@@ -13,7 +13,7 @@ $fallbackBlocks = [
 
 In Rotterdam willen we dat iedereen mee kan doen in de digitale samenleving. Daarom is er nu het Sociaal AI Lab Rotterdam: een open plek in de stad waar bewoners, onderzoekers, ontwerpers en beleidsmakers samenwerken aan eerlijke, begrijpelijke en toegankelijke technologie.
 
-Rotterdammers ontdekken hier in gesprekken, bijeenkomsten, leer- en doe-activiteiten wat AI betekent voor hun dagelijks leven en denken mee over wat technologie wél of niet moet doen.',
+Rotterdammers ontdekken hier in gesprekken, bijeenkomsten, leer- en doe-activiteiten wat AI betekent voor hun dagelijks leven en denken mee over wat technologie wï¿½l of niet moet doen.',
         'image' => '',
         'meta' => json_encode(['layout' => 'welcome'])
     ],
@@ -39,7 +39,7 @@ Rotterdammers ontdekken hier in gesprekken, bijeenkomsten, leer- en doe-activite
         'title' => 'Gelijke kansen voor iedereen',
         'body' => 'We onderzoeken samen wat kunstmatige intelligentie (AI) betekent voor het dagelijks leven in Rotterdam, en hoe we AI zo kunnen gebruiken dat het bijdraagt aan gelijke kansen voor iedereen.
 Het lab hoort bij het gemeentelijke programma Digitale Inclusie, dat ervoor zorgt dat alle Rotterdammers veilig, vaardig en volwaardig kunnen meedoen in de digitale wereld.
-Kunstmatige Intelligentie? Technologie is pas echt slim als ze óók sociaal is.',
+Kunstmatige Intelligentie? Technologie is pas echt slim als ze ï¿½ï¿½k sociaal is.',
         'image' => '',
         'meta' => json_encode(['layout' => 'info'])
     ]
@@ -126,46 +126,23 @@ try {
     </div>
 </div>
 
-<nav class="bg-white shadow-md sticky top-0 z-40">
-    <div class="flex justify-center items-center px-4 md:px-8 py-4">
-
-        <button id="mobile-menu-toggle" class="md:hidden hamburger focus:outline-none" aria-label="Toggle navigation">
-            <i class="fa-solid fa-bars text-2xl"></i>
-        </button>
-
-        <div id="mobile-menu" class="menu hidden md:flex pr-5 space-x-8 font-medium items-center">
-            <a href="index.php" class="menu inline-flex items-center gap-1 text-gray-700 hover:text-[#00811F] transition"><i class="fa-solid fa-house"></i> Voorpagina</a>
-            <a href="agenda.php" class="menu text-gray-700 hover:text-[#00811F] transition">Agenda</a>
-            <a href="over.php" class="menu text-gray-700 hover:text-[#00811F] transition">Voor wie?</a>
-
-            <div class="relative" id="programma-dropdown">
-                <button id="programma-toggle" aria-haspopup="true" aria-expanded="false" class="menu flex items-center gap-2 text-gray-700 hover:text-[#00811F] transition font-medium focus:outline-none">
-                    <i class="fa-solid fa-caret-right text-xs" aria-hidden="true"></i>
-                    <span>Wat doen we?</span>
-                </button>
-
-                <div id="programma-menu" class="hidden absolute top-0 mt-8 w-56 bg-white border border-gray-200 shadow-lg py-2 z-50 focus:outline-none" role="menu" aria-labelledby="programma-toggle">
-                    <a href="programma/kennis.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Kennis & vaardigheden</a>
-                    <a href="programma/actie.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Actie, onderzoek & ontwerp</a>
-                    <a href="programma/faciliteit.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Faciliteit van het Lab</a>
-                </div>
-            </div>
-
-            <a href="verantwoord-ai.php" class="menu text-gray-700 hover:text-[#00811F] transition">Verantwoorde AI</a>
-            <a href="wie-zijn-we.php" class="menu text-gray-700 hover:text-[#00811F] transition">Wie zijn we?</a>
-            <a href="contact.php" class="menu text-gray-700 hover:text-[#00811F] transition">Contact</a>
-            <?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
-                <a href="admin.php" class="menu block m-4 text-gray-700 hover:text-[#00811F] transition">Admin</a>
-            <?php endif; ?>
-        </div>
-    </div>
-</nav>
+<?php
+$navPrefix = '';
+include __DIR__ . '/navbar.php';
+?>
 
 <main>
     
     <?php if ($welcomeBlock): ?>
+    <?php
+    $welcomeMeta = $welcomeBlock['meta'] ? json_decode($welcomeBlock['meta'], true) : [];
+    $welcomeGreenText = trim((string)($welcomeMeta['green_text'] ?? ($welcomeMeta['green_heading'] ?? '')));
+    ?>
     <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg mt- p-8 max-w-6xl mx-auto my-12">
         <div class="flex-1">
+            <?php if ($welcomeGreenText !== ''): ?>
+                <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($welcomeGreenText)); ?></div>
+            <?php endif; ?>
             <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900">
                 <?php echo htmlspecialchars($welcomeBlock['title']); ?></h2>
             <?php
@@ -182,6 +159,10 @@ try {
     <?php if (!empty($cardBlocks)): ?>
     <div class="flex flex-col flexrow justify-evenly w-full max-w-6xl mx-auto gap-8">
         <?php foreach ($cardBlocks as $block): ?>
+        <?php
+        $cardMeta = $block['meta'] ? json_decode($block['meta'], true) : [];
+        $cardGreenText = trim((string)($cardMeta['green_text'] ?? ($cardMeta['green_heading'] ?? '')));
+        ?>
         <div class="space-y-6">
             <div class="bg-white shadow-lg pt-0 pb-6 mb-4 min-h-[220px] max-w-sm mx-auto">
                 <div class="flex flex-1 items-center justify-center">   
@@ -197,6 +178,9 @@ try {
                         <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" class="w-auto h-32">
                     <?php endif; ?>
                 </div>
+                <?php if ($cardGreenText !== ''): ?>
+                    <div class="text-center mb-2"><div class="green-highlight"><?php echo nl2br(htmlspecialchars($cardGreenText)); ?></div></div>
+                <?php endif; ?>
                 <h3 class="text-xl text-center font-semibold"><?php echo htmlspecialchars($block['title']); ?></h3>
                 <p class="text-center p-4">
                     <?php echo htmlspecialchars($block['body']); ?>
@@ -238,6 +222,7 @@ try {
         $hasText = !empty($block['title']) || !empty($block['body']);
         $imagePosition = $metaArr['image_position'] ?? 'normal';
         if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) $imagePosition = 'normal';
+        $greenText = trim((string)($metaArr['green_text'] ?? ($metaArr['green_heading'] ?? '')));
         
         $flexDir = 'column';
         if ($imagePosition === 'left' && $hasText) {
@@ -278,6 +263,9 @@ try {
             <?php endif; ?>
             <?php if ($hasText): ?>
                 <div style="<?php echo ($imagePosition !== 'normal' && $hasImage) ? 'flex: 0 0 50%; padding: 0 1.5rem;' : ''; ?>">
+                    <?php if ($greenText !== ''): ?>
+                        <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($greenText)); ?></div>
+                    <?php endif; ?>
                     <?php if (!empty($block['title'])): ?>
                         <h3 class="text-2xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($block['title']); ?></h3>
                     <?php endif; ?>

@@ -355,7 +355,9 @@ if ($pageAction === 'create_page') {
     if (empty($pageKey) || empty($title)) {
         $message = 'Page key en titel zijn verplicht.';
     } else {
-        $meta = ['image_position' => $imagePosition];
+        $meta = [
+            'image_position' => $imagePosition,
+        ];
 
         // Extra velden voor contact pagina
         if ($pageKey === 'contact') {
@@ -1040,6 +1042,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </select>
                             </div>
 
+                            
+
                             <button type="submit" class="btn btn-primary">
                                 <i class="fa-solid fa-save"></i> Opslaan
                             </button>
@@ -1073,6 +1077,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <option value="right">Foto rechts</option>
                                 </select>
                             </div>
+
+                            
 
                             <div>
                                 <label class="form-label">Positie</label>

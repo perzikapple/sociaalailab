@@ -268,6 +268,21 @@ img, video {
   transform: rotate(90deg);
 }
 
+.green-highlight {
+  display: block;
+  background-color: #cfe8d6;
+  color: #0b5e2a;
+  padding: 12px 16px;
+  border-radius: 4px;
+  border: 1px solid #a8d9b8;
+  font-size: 1rem;
+  line-height: 1.5;
+  font-weight: 400;
+  margin-bottom: 1.5rem;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
 /* Footer enhancements */
 .site-footer .footer-logos {
   gap: 0.75rem;
