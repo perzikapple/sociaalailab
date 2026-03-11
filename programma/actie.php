@@ -1,4 +1,4 @@
-﻿<?php 
+<?php 
 session_start();
 require '../db.php';
 require '../helpers.php';
@@ -46,7 +46,7 @@ include __DIR__ . '/../navbar.php';
     // Fallback blocks for seeding
     $fallbackBlocks = [
         [
-            'title' => 'Digiderius � de digitale Erasmus',
+            'title' => 'Digiderius ? de digitale Erasmus',
             'body' => 'Digiderius is een "digitaal mens" waarmee deelnemers kunnen praten over onderwerpen als onderwijs, cultuur en technologie. Ontdek zelf hoe jij deze digitale gesprekspartner ervaart.',
             'image' => 'images/wat_doen_we/actie_onderzoek_ontwerp/Wat_doen_we_%20Digiderius.jpeg',
             'meta' => null
@@ -82,7 +82,7 @@ include __DIR__ . '/../navbar.php';
             'meta' => null
         ],
         [
-            'title' => 'Wijkbots � in te zetten voor een betrokken stad?',
+            'title' => 'Wijkbots ? in te zetten voor een betrokken stad?',
             'body' => 'We kijken hoe slimme, zelfstandige machines in de toekomst kunnen helpen in onze openbare ruimtes.',
             'image' => 'images/wat_doen_we/actie_onderzoek_ontwerp/Wat_doen_we_wijkbots.jpg',
             'meta' => null
