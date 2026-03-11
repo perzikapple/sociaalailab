@@ -344,6 +344,34 @@ img, video {
   }
 }
 
+/* Stylish content blocks */
+main > section {
+    border-left: 4px solid #00811F;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+main > section:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.13);
+}
+
+main > div.grid > div {
+    border-top: 3px solid #00811F;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+main > div.grid > div:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+}
+
+.grid img {
+    border: 1px solid #9ca3af;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
 
 
 
