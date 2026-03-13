@@ -914,6 +914,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                             ?>
                                             <p class="text-sm text-gray-600 mt-1"><strong>Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?><?php if ($timeDisplay) { echo ' ' . htmlspecialchars($timeDisplay); } ?><?php if ($timeEndDisplay) { echo ' - ' . htmlspecialchars($timeEndDisplay); } ?></p>
                                             <?php if (!empty($event['location'])): ?>
+                                                <p class="text-sm text-gray-600"><strong>Plaats:</strong> <?php echo htmlspecialchars($event['location']); ?></p>
                                             <?php endif; ?>
                                             <p class="text-sm text-gray-600 mt-2 line-clamp-2"><?php echo nl2br(htmlspecialchars($event['description'] ? mb_strimwidth($event['description'],0,200,'...') : '')); ?></p>
                                         </div>
