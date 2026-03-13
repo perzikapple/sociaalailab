@@ -7,21 +7,75 @@ if (!isset($_SESSION['admin']) || $_SESSION['admin'] != 1) {
 }
 
 $message = '';
-<script>
-function openImageModal(event, imageSrc) {
+// Helper voor upload
+function handleUpload($fileField) {
+    if (empty($_FILES[$fileField]['name'])) return null;
+    $allowed = ['image/jpeg','image/png','image/gif','image/webp'];
+    if (!in_array($_FILES[$fileField]['type'], $allowed) || $_FILES[$fileField]['size'] > 10 * 1024 * 1024) {
+        return ['error' => 'Ongeldig afbeeldingsbestand (jpg/png/gif/webp, max 10MB).'];
+    }
+    if (!is_dir(__DIR__ . '/uploads')) mkdir(__DIR__ . '/uploads', 0755, true);
+    $ext = pathinfo($_FILES[$fileField]['name'], PATHINFO_EXTENSION);
+    $imageName = time() . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+    $dest = __DIR__ . '/uploads/' . $imageName;
+    if (!move_uploaded_file($_FILES[$fileField]['tmp_name'], $dest)) {
+        return ['error' => 'Kon afbeelding niet opslaan.'];
+    }
+    return ['name' => $imageName];
+}
+
+function formatEventDateDisplay($dateValue) {
+    if (empty($dateValue)) return '';
+    $ts = strtotime((string)$dateValue);
+    if ($ts === false) return (string)$dateValue;
+    $monthsNl = [
+        1 => 'januari',
+        2 => 'februari',
+        3 => 'maart',
+        4 => 'april',
+        5 => 'mei',
+        6 => 'juni',
+        7 => 'juli',
+        8 => 'augustus',
+        9 => 'september',
+        10 => 'oktober',
+        11 => 'november',
+        12 => 'december',
+    ];
+    $day = (int)date('j', $ts);
+    $month = $monthsNl[(int)date('n', $ts)] ?? date('F', $ts);
+    $year = date('Y', $ts);
+    return $day . ' ' . $month . ' ' . $year;
+}
+
+function formatEventTimeDisplay($timeValue) {
+    if (empty($timeValue)) return '';
+    $ts = strtotime((string)$timeValue);
+    if ($ts === false) return (string)$timeValue;
+    return date('H:i', $ts);
+}
+
+// Fetch current banners
+$banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: 'images/banner_website_01.jpg';
+$banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: 'images/banner_website_02.jpg';
+
+// Verwerk POST acties
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+    $currentUser = $_SESSION['user'] ?? null; // email van ingelogde gebruiker (kan null zijn)
 
     if ($action === 'create') {
         $title = trim($_POST['title'] ?? '');
         $date = $_POST['date'] ?? '';
-        $timeRaw = $_POST['time'] ?? ($_POST['start_time'] ?? null);
-        $time = is_string($timeRaw) ? trim($timeRaw) : null;
-        $time_end = $_POST['time_end'] ?? null;
+        $end_date = isset($_POST['add_end_date']) && !empty($_POST['end_date']) ? $_POST['end_date'] : null;
+        $time = $_POST['time'] ?? null;
+        $time_end = isset($_POST['add_end_time']) && !empty($_POST['time_end']) ? $_POST['time_end'] : null;
         $description = trim($_POST['description'] ?? '');
-        $location = trim($_POST['location'] ?? ($_POST['place'] ?? ($_POST['plek'] ?? '')));
+        $location = trim($_POST['location'] ?? '');
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
 
-        if ($date === '') {
-            $message = 'Datum is verplicht.';
+        if ($title === '' || $date === '') {
+            $message = 'Titel en datum zijn verplicht.';
         } else {
             $upload = handleUpload('image');
             if (isset($upload['error'])) {
@@ -29,8 +83,8 @@ function openImageModal(event, imageSrc) {
             } else {
                 $imageName = $upload['name'] ?? null;
                 // voeg updated_at en updated_by toe bij insert
-                $stmt = $pdo->prepare('INSERT INTO events (title, date, time, time_end, description, image, location, show_signup_button, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)');
-                $stmt->execute([$title, $date, $time ?: null, $time_end ?: null, $description, $imageName, $location ?: null, $showSignupButton, $currentUser]);
+                $stmt = $pdo->prepare('INSERT INTO events (title, date, end_date, time, time_end, description, image, location, show_signup_button, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)');
+                $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $imageName, $location ?: null, $showSignupButton, $currentUser]);
                 $eventId = $pdo->lastInsertId();
                 // Audit log: event created
                 audit_log($pdo, 'create', 'events', $eventId, 'title: ' . $title, $currentUser);
@@ -43,11 +97,11 @@ function openImageModal(event, imageSrc) {
         $id = (int)$_POST['id'];
         $title = trim($_POST['title'] ?? '');
         $date = $_POST['date'] ?? '';
-        $timeRaw = $_POST['time'] ?? ($_POST['start_time'] ?? null);
-        $time = is_string($timeRaw) ? trim($timeRaw) : null;
-        $time_end = $_POST['time_end'] ?? null;
+        $end_date = isset($_POST['add_end_date']) && !empty($_POST['end_date']) ? $_POST['end_date'] : null;
+        $time = $_POST['time'] ?? null;
+        $time_end = isset($_POST['add_end_time']) && !empty($_POST['time_end']) ? $_POST['time_end'] : null;
         $description = trim($_POST['description'] ?? '');
-        $location = trim($_POST['location'] ?? ($_POST['place'] ?? ($_POST['plek'] ?? '')));
+        $location = trim($_POST['location'] ?? '');
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
         $removeImage = isset($_POST['remove_image']) ? 1 : 0;
 
@@ -56,8 +110,62 @@ function openImageModal(event, imageSrc) {
         } else {
             // check existing image
             $stmt = $pdo->prepare('SELECT image FROM events WHERE id = ?');
-            <script>
-            function openImageModal(event, imageSrc) {
+            $stmt->execute([$id]);
+            $row = $stmt->fetch();
+            $oldImage = $row ? $row['image'] : null;
+
+            $upload = handleUpload('image');
+            if (isset($upload['error'])) {
+                $message = $upload['error'];
+            } else {
+                if ($removeImage) {
+                    $imageName = null;
+                } else {
+                    $imageName = $upload['name'] ?? $oldImage;
+                }
+                // update nu ook updated_at en updated_by
+                $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, end_date=?, time=?, time_end=?, description=?, image=?, location=?, show_signup_button=?, updated_at=NOW(), updated_by=? WHERE id=?');
+                $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $imageName, $location ?: null, $showSignupButton, $currentUser, $id]);
+                // Audit log: event updated
+                audit_log($pdo, 'update', 'events', $id, 'title: ' . $title, $currentUser);
+
+                // indien nieuwe upload en oud bestaat: verwijderen
+                if (!empty($upload['name']) && $oldImage && file_exists(__DIR__ . '/uploads/' . $oldImage)) {
+                    @unlink(__DIR__ . '/uploads/' . $oldImage);
+                }
+                if ($removeImage && $oldImage && file_exists(__DIR__ . '/uploads/' . $oldImage)) {
+                    @unlink(__DIR__ . '/uploads/' . $oldImage);
+                }
+                header('Location: admin.php?page=agenda&ok=update');
+                exit;
+            }
+        }
+
+    } elseif ($action === 'delete' && !empty($_POST['id'])) {
+        $id = (int)$_POST['id'];
+        // haal image op en delete
+        $stmt = $pdo->prepare('SELECT image FROM events WHERE id = ?');
+        $stmt->execute([$id]);
+        $row = $stmt->fetch();
+        if ($row) {
+            if ($row['image'] && file_exists(__DIR__ . '/uploads/' . $row['image'])) {
+                @unlink(__DIR__ . '/uploads/' . $row['image']);
+            }
+            $stmt = $pdo->prepare('DELETE FROM events WHERE id = ?');
+            $stmt->execute([$id]);
+            // Audit log: event deleted
+            audit_log($pdo, 'delete', 'events', $id, null, $currentUser);
+            header('Location: admin.php?page=agenda&ok=delete');
+            exit;
+        } else {
+            $message = 'Evenement niet gevonden.';
+        }
+
+    } elseif ($action === 'delete_bulk_events' && !empty($_POST['event_ids'])) {
+        $ids = $_POST['event_ids'];
+        if (!is_array($ids)) $ids = [$ids];
+        $ids = array_map('intval', $ids);
+        
         $deletedCount = 0;
         foreach ($ids as $id) {
             $stmt = $pdo->prepare('SELECT image FROM events WHERE id = ?');
@@ -237,24 +345,19 @@ $pageAction = $_POST['page_action'] ?? '';
 if ($pageAction === 'create_page') {
     $pageKey = $_POST['page_key'] ?? '';
     $title = trim($_POST['title'] ?? '');
-    if ($title === '') {
-        $title = ' ';
-    }
     $body = trim($_POST['body'] ?? '');
     $insertPosition = $_POST['insert_position'] ?? 'bottom';
     $imagePosition = $_POST['image_position'] ?? 'normal';
-    $greenText = trim($_POST['green_text'] ?? '');
     if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) {
         $imagePosition = 'normal';
     }
 
-    if (empty($pageKey)) {
-        $message = 'Page key is verplicht.';
+    if (empty($pageKey) || empty($title)) {
+        $message = 'Page key en titel zijn verplicht.';
     } else {
-        $meta = ['image_position' => $imagePosition];
-        if ($greenText !== '') {
-            $meta['green_text'] = $greenText;
-        }
+        $meta = [
+            'image_position' => $imagePosition,
+        ];
 
         // Extra velden voor contact pagina
         if ($pageKey === 'contact') {
@@ -301,14 +404,10 @@ if ($pageAction === 'create_page') {
     $id = (int)($_POST['id'] ?? 0);
     $pageKey = $_POST['page_key'] ?? '';
     $title = trim($_POST['title'] ?? '');
-    if ($title === '') {
-        $title = ' ';
-    }
     $body = trim($_POST['body'] ?? '');
     $removeImage = isset($_POST['remove_image']) ? 1 : 0;
-    $greenText = trim($_POST['green_text'] ?? '');
 
-    if ($id) {
+    if ($id && $title) {
 
         $stmt = $pdo->prepare('SELECT image, meta FROM pages WHERE id = ?');
         $stmt->execute([$id]);
@@ -327,11 +426,6 @@ if ($pageAction === 'create_page') {
             }
         }
         $meta['image_position'] = $imagePosition;
-        if ($greenText !== '') {
-            $meta['green_text'] = $greenText;
-        } else {
-            unset($meta['green_text']);
-        }
 
         if ($pageKey === 'contact') {
             if (!empty($_POST['address'])) $meta['address'] = $_POST['address'];
@@ -369,39 +463,6 @@ if ($pageAction === 'create_page') {
         }
 
         audit_log($pdo, 'update', 'pages', $id, 'page_key: ' . $pageKey, $currentUser);
-
-        header('Location: admin.php?page=' . urlencode($pageKey) . '&ok=update');
-        exit;
-    }
-} elseif ($pageAction === 'update_page_green_text') {
-
-    $id = (int)($_POST['id'] ?? 0);
-    $pageKey = $_POST['page_key'] ?? '';
-    $greenText = trim($_POST['green_text'] ?? '');
-
-    if ($id > 0) {
-        $stmt = $pdo->prepare('SELECT meta FROM pages WHERE id = ?');
-        $stmt->execute([$id]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        $meta = [];
-        if (!empty($row['meta'])) {
-            $decodedMeta = json_decode($row['meta'], true);
-            if (is_array($decodedMeta)) {
-                $meta = $decodedMeta;
-            }
-        }
-
-        if ($greenText !== '') {
-            $meta['green_text'] = $greenText;
-        } else {
-            unset($meta['green_text']);
-        }
-
-        $updateMetaStmt = $pdo->prepare('UPDATE pages SET meta = ?, updated_at = NOW() WHERE id = ?');
-        $updateMetaStmt->execute([json_encode($meta), $id]);
-
-        audit_log($pdo, 'update', 'pages', $id, 'green_text aangepast', $currentUser);
 
         header('Location: admin.php?page=' . urlencode($pageKey) . '&ok=update');
         exit;
@@ -539,8 +600,8 @@ if ($page !== 'banner' && $page !== 'agenda') {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Admin - SociaalAI Lab</title>
 <link rel="stylesheet" href="build/assets/app-DozK-03z.css">
-<link rel="stylesheet" href="custom.css?v=<?php echo filemtime(__DIR__.'/custom.css'); ?>">
-<link rel="stylesheet" href="admin-styles.css?v=<?php echo filemtime(__DIR__.'/admin-styles.css'); ?>">
+<link rel="stylesheet" href="custom.css">
+<link rel="stylesheet" href="admin-styles.css">
 <link rel="stylesheet" href="ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link rel="icon" type="image/png" href="images/Pixels_icon.png">
 <script src="custom.js"></script>
@@ -575,13 +636,12 @@ if ($page !== 'banner' && $page !== 'agenda') {
     </div>
     <?php endif; ?>
 
-    <div class="grid admin-layout-grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <!-- Sidebar -->
-        <aside class="sidebar" style="align-self:start;">
-            <div class="sidebar-header" style="top:0;">
+        <aside class="sidebar">
+            <div class="sidebar-header">
                 <i class="fa-solid fa-list"></i> Navigatie
             </div>
-            <div class="sidebar-nav-scroll" style="min-height:0;">
             <nav class="divide-y">
                 <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Beheer</div>
                 <a href="admin.php?page=banner" class="sidebar-link <?php echo $page==='banner' ? 'active' : ''; ?>">
@@ -625,7 +685,6 @@ if ($page !== 'banner' && $page !== 'agenda') {
                     <i class="fa-solid fa-building"></i> Faciliteit van het Lab
                 </a>
             </nav>
-            </div>
         </aside>
 
         <div class="lg:col-span-3">
@@ -651,27 +710,44 @@ if ($page !== 'banner' && $page !== 'agenda') {
 
                             <div>
                                 <label class="form-label">Titel</label>
-                                <input name="title" required class="form-input" value="<?php echo htmlspecialchars($editEvent['title']); ?>" />
+                                <input name="title" required class="form-input" style="background-color: #f9fafb; border: 1px solid #d1d5db; color: #374151; border-radius: 0.5rem; width: 100%; height: 48px;" value="<?php echo htmlspecialchars($editEvent['title']); ?>" />
                             </div>
 
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="grid grid-cols-3 gap-4">
                                 <div>
                                     <label class="form-label">Wanneer (datum)</label>
                                     <input type="date" name="date" required class="form-input" value="<?php echo htmlspecialchars($editEvent['date']); ?>" />
+                                    <div class="mt-2">
+                                        <label class="form-checkbox">
+                                            <input type="checkbox" id="add-end-date-edit" name="add_end_date" <?php echo !empty($editEvent['end_date']) ? 'checked' : ''; ?> />
+                                            Einddatum toevoegen
+                                        </label>
+                                        <div id="end-date-container-edit" style="margin-top:8px;<?php echo empty($editEvent['end_date']) ? 'display:none;' : ''; ?>">
+                                            <label class="form-label">Einddatum <span class="text-xs text-gray-500">(optioneel)</span></label>
+                                            <input type="date" name="end_date" class="form-input" value="<?php echo htmlspecialchars($editEvent['end_date'] ?? ''); ?>" />
+                                        </div>
+                                    </div>
                                 </div>
                                 <div>
                                     <label class="form-label">Starttijd</label>
-                                    <input type="time" name="time" class="form-input" value="<?php echo htmlspecialchars($editEvent['time'] ?? ''); ?>" placeholder="bijv. 14:30" />
-                                </div>
-                                <div>
-                                    <label class="form-label">Eindtijd <span class="text-xs text-gray-500">(optioneel)</span></label>
-                                    <input type="time" name="time_end" class="form-input" value="<?php echo htmlspecialchars($editEvent['time_end'] ?? ''); ?>" placeholder="bijv. 16:00" />
+                                    <input type="time" name="time" class="form-input" value="<?php echo htmlspecialchars($editEvent['time'] ?? ''); ?>" />
+                                    <div class="mt-2">
+                                        <label class="form-checkbox">
+                                            <input type="checkbox" id="add-end-time-edit" name="add_end_time" <?php echo !empty($editEvent['time_end']) ? 'checked' : ''; ?> />
+                                            Eindtijd toevoegen
+                                        </label>
+                                        <div id="end-time-container-edit" style="margin-top:8px;<?php echo empty($editEvent['time_end']) ? 'display:none;' : ''; ?>">
+                                            <label class="form-label">Eindtijd <span class="text-xs text-gray-500">(optioneel)</span></label>
+                                            <input type="time" name="time_end" class="form-input" value="<?php echo htmlspecialchars($editEvent['time_end'] ?? ''); ?>" />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+                            
 
                             <div>
                                 <label class="form-label">Plaats</label>
-                                <input name="location" class="form-input" value="<?php echo htmlspecialchars($editEvent['location'] ?? ''); ?>" placeholder="bijv. Rotterdam - Hillevliet 90" />
+                                <input name="location" class="form-input" style="background-color: #f9fafb; border: 1px solid #d1d5db; color: #374151; border-radius: 0.5rem; width: 100%; height: 48px;" value="<?php echo htmlspecialchars($editEvent['location'] ?? ''); ?>" />
                             </div>
 
                             <div>
@@ -709,27 +785,76 @@ if ($page !== 'banner' && $page !== 'agenda') {
 
                             <div>
                                 <label class="form-label">Titel</label>
-                                <input name="title" class="form-input" />
+                                <input name="title" required class="form-input" style="background-color: #f9fafb; border: 1px solid #d1d5db; color: #374151; border-radius: 0.5rem; width: 100%;" />
                             </div>
 
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="grid grid-cols-3 gap-4">
                                 <div>
                                     <label class="form-label">Wanneer (datum)</label>
                                     <input type="date" name="date" required class="form-input" />
+                                    <div class="mt-2">
+                                        <label class="form-checkbox">
+                                            <input type="checkbox" id="add-end-date-create" name="add_end_date" />
+                                            Einddatum toevoegen
+                                        </label>
+                                        <div id="end-date-container-create" style="margin-top:8px;display:none;">
+                                            <label class="form-label">Einddatum <span class="text-xs text-gray-500">(optioneel)</span></label>
+                                            <input type="date" name="end_date" class="form-input" />
+                                        </div>
+                                    </div>
                                 </div>
                                 <div>
                                     <label class="form-label">Starttijd</label>
-                                    <input type="time" name="time" class="form-input" placeholder="bijv. 14:30" />
-                                </div>
-                                <div>
-                                    <label class="form-label">Eindtijd <span class="text-xs text-gray-500">(optioneel)</span></label>
-                                    <input type="time" name="time_end" class="form-input" placeholder="bijv. 16:00" />
+                                    <input type="time" name="time" class="form-input" value="<?php echo htmlspecialchars($editEvent['time'] ?? ''); ?>" />
+                                    <div class="mt-2">
+                                        <label class="form-checkbox">
+                                            <input type="checkbox" id="add-end-time-create" name="add_end_time" />
+                                            Eindtijd toevoegen
+                                        </label>
+                                        <div id="end-time-container-create" style="margin-top:8px;display:none;">
+                                            <label class="form-label">Eindtijd <span class="text-xs text-gray-500">(optioneel)</span></label>
+                                            <input type="time" name="time_end" class="form-input" value="<?php echo htmlspecialchars($editEvent['time_end'] ?? ''); ?>" />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+<script>
+// Toggle end date/time for create/edit
+document.addEventListener('DOMContentLoaded', function() {
+    var addEndDateCreate = document.getElementById('add-end-date-create');
+    var endDateContainerCreate = document.getElementById('end-date-container-create');
+    if (addEndDateCreate && endDateContainerCreate) {
+        addEndDateCreate.addEventListener('change', function() {
+            endDateContainerCreate.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+    var addEndDateEdit = document.getElementById('add-end-date-edit');
+    var endDateContainerEdit = document.getElementById('end-date-container-edit');
+    if (addEndDateEdit && endDateContainerEdit) {
+        addEndDateEdit.addEventListener('change', function() {
+            endDateContainerEdit.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+    var addEndTimeCreate = document.getElementById('add-end-time-create');
+    var endTimeContainerCreate = document.getElementById('end-time-container-create');
+    if (addEndTimeCreate && endTimeContainerCreate) {
+        addEndTimeCreate.addEventListener('change', function() {
+            endTimeContainerCreate.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+    var addEndTimeEdit = document.getElementById('add-end-time-edit');
+    var endTimeContainerEdit = document.getElementById('end-time-container-edit');
+    if (addEndTimeEdit && endTimeContainerEdit) {
+        addEndTimeEdit.addEventListener('change', function() {
+            endTimeContainerEdit.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+});
+</script>
 
                             <div>
                                 <label class="form-label">Plaats</label>
-                                <input name="location" class="form-input" placeholder="bijv. Rotterdam - Hillevliet 90" />
+                                <input name="location" class="form-input" style="background-color: #f9fafb; border: 1px solid #d1d5db; color: #374151; border-radius: 0.5rem; width: 100%;" />
                             </div>
 
                             <div>
@@ -859,7 +984,6 @@ if ($page !== 'banner' && $page !== 'agenda') {
                     }
                 }
                 $currentImagePosition = $editMeta['image_position'] ?? 'normal';
-                $currentGreenText = trim((string)($editMeta['green_text'] ?? ($editMeta['green_heading'] ?? '')));
                 if (!in_array($currentImagePosition, ['normal', 'left', 'right'], true)) {
                     $currentImagePosition = 'normal';
                 }
@@ -887,17 +1011,9 @@ if ($page !== 'banner' && $page !== 'agenda') {
                             <input type="hidden" name="id" value="<?php echo (int)$editPage['id']; ?>">
                             <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
 
-                            <div class="border-t-2 border-green-300 pt-4 mt-4">
-                                <h4 class="font-semibold text-base text-green-700 mb-3">Groen tekst</h4>
-                                <div>
-                                    <label class="form-label">Groene tekst (optioneel)</label>
-                                    <textarea name="green_text" rows="3" class="form-textarea" placeholder="Alles wat je hier invult wordt als groen blok boven de titel getoond."><?php echo htmlspecialchars($currentGreenText); ?></textarea>
-                                </div>
-                            </div>
-
                             <div>
                                 <label class="form-label">Titel</label>
-                                <input name="title" class="form-input" value="<?php echo htmlspecialchars($editPage['title']); ?>" />
+                                <input name="title" required class="form-input" style="background-color: #f9fafb; border: 1px solid #d1d5db; color: #374151; border-radius: 0.5rem; width: 100%; height: 48px;" value="<?php echo htmlspecialchars($editPage['title']); ?>" />
                             </div>
 
                             <div>
@@ -926,6 +1042,8 @@ if ($page !== 'banner' && $page !== 'agenda') {
                                 </select>
                             </div>
 
+                            
+
                             <button type="submit" class="btn btn-primary">
                                 <i class="fa-solid fa-save"></i> Opslaan
                             </button>
@@ -936,17 +1054,9 @@ if ($page !== 'banner' && $page !== 'agenda') {
                             <input type="hidden" name="page_action" value="create_page">
                             <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
 
-                            <div class="border-t-2 border-green-300 pt-4 mt-4">
-                                <h4 class="font-semibold text-base text-green-700 mb-3">Groen tekst</h4>
-                                <div>
-                                    <label class="form-label">Groene tekst (optioneel)</label>
-                                    <textarea name="green_text" rows="3" class="form-textarea" placeholder="Alles wat je hier invult wordt als groen blok boven de titel getoond."></textarea>
-                                </div>
-                            </div>
-
                             <div>
                                 <label class="form-label">Titel</label>
-                                <input name="title" class="form-input" />
+                                <input name="title" required class="form-input" style="background-color: #f9fafb; border: 1px solid #d1d5db; color: #374151; border-radius: 0.5rem; width: 100%; height: 48px;" />
                             </div>
 
                             <div>
@@ -968,6 +1078,8 @@ if ($page !== 'banner' && $page !== 'agenda') {
                                 </select>
                             </div>
 
+                            
+
                             <div>
                                 <label class="form-label">Positie</label>
                                 <select name="insert_position" class="form-input">
@@ -987,7 +1099,6 @@ if ($page !== 'banner' && $page !== 'agenda') {
                             <i class="fa-solid fa-list text-2xl text-[#00811F]"></i>
                             <h3 class="text-xl font-bold">Bestaande <?php echo $isProgrammaPage ? 'Kaarten' : 'Items'; ?></h3>
                         </div>
-                        <p class="text-sm text-gray-600 mb-4">Bij elk item staat een vak <strong>Groene tekst boven titel</strong>. Vul daar je tekst in en klik op <strong>Opslaan</strong>.</p>
                         <?php if (empty($pageItems)): ?>
                             <div class="text-center py-8 text-gray-500">
                                 <i class="fa-solid fa-inbox text-4xl mb-2"></i>
@@ -1009,37 +1120,11 @@ if ($page !== 'banner' && $page !== 'agenda') {
                                 <?php
                                     $isFirst = ($index === 0);
                                     $isLast = ($index === (count($pageItems) - 1));
-                                    $itemMeta = [];
-                                    if (!empty($it['meta'])) {
-                                        $decodedItemMeta = json_decode($it['meta'], true);
-                                        if (is_array($decodedItemMeta)) {
-                                            $itemMeta = $decodedItemMeta;
-                                        }
-                                    }
-                                    $itemGreenText = trim((string)($itemMeta['green_text'] ?? ($itemMeta['green_heading'] ?? '')));
                                 ?>
                                 <div class="border border-gray-200 rounded p-4 hover:shadow-md transition">
                                     <div class="flex justify-between items-start gap-4">
                                         <input type="checkbox" class="page-checkbox page-checkbox-<?php echo htmlspecialchars($pageKey); ?> w-4 h-4 mt-1 flex-shrink-0 cursor-pointer" name="page_ids[]" value="<?php echo (int)$it['id']; ?>">
                                         <div class="flex-1">
-                                            <form method="POST" class="mb-4 p-3 bg-gray-50 rounded border border-gray-300">
-                                                <label class="text-sm font-semibold text-gray-700 block mb-2">Groene tekst boven titel:</label>
-                                                <input type="hidden" name="page_action" value="update_page_green_text">
-                                                <input type="hidden" name="id" value="<?php echo (int)$it['id']; ?>">
-                                                <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
-                                                
-                                                <?php if ($itemGreenText !== ''): ?>
-                                                    <div class="mb-3">
-                                                        <span class="text-xs text-gray-600 font-semibold">VOORBEELD:</span>
-                                                        <div class="green-highlight"><?php echo nl2br(htmlspecialchars($itemGreenText)); ?></div>
-                                                    </div>
-                                                <?php endif; ?>
-                                                
-                                                <textarea name="green_text" rows="2" class="form-textarea text-sm w-full" placeholder="Groene tekst boven de titel"><?php echo htmlspecialchars($itemGreenText); ?></textarea>
-                                                <button type="submit" class="btn btn-secondary btn-sm mt-2">
-                                                    <i class="fa-solid fa-pen"></i> Opslaan
-                                                </button>
-                                            </form>
                                             <h4 class="font-bold text-lg text-gray-800"><?php echo htmlspecialchars($it['title'] ?? ''); ?></h4>
                                             <p class="text-sm text-gray-600 mt-1 line-clamp-2"><?php echo nl2br(htmlspecialchars($it['body'] ? mb_strimwidth($it['body'],0,150,'...') : '')); ?></p>
                                         </div>
@@ -1155,6 +1240,60 @@ if ($page !== 'banner' && $page !== 'agenda') {
 </main>
 
 <script>
+(function () {
+  const wraps = document.querySelectorAll('.event-image-wrap');
+  if (!wraps.length) return;
+
+  let openWrap = null;
+
+  function closePreview(wrap) {
+    if (!wrap) return;
+    wrap.classList.remove('is-open');
+    const button = wrap.querySelector('.event-image-toggle');
+    const preview = wrap.querySelector('.event-image-preview');
+    if (button) button.setAttribute('aria-expanded', 'false');
+    if (preview) preview.setAttribute('aria-hidden', 'true');
+    if (openWrap === wrap) openWrap = null;
+  }
+
+  function openPreview(wrap) {
+    if (!wrap) return;
+    if (openWrap && openWrap !== wrap) {
+      closePreview(openWrap);
+    }
+    wrap.classList.add('is-open');
+    const button = wrap.querySelector('.event-image-toggle');
+    const preview = wrap.querySelector('.event-image-preview');
+    if (button) button.setAttribute('aria-expanded', 'true');
+    if (preview) preview.setAttribute('aria-hidden', 'false');
+    openWrap = wrap;
+  }
+
+  wraps.forEach(function (wrap) {
+    const button = wrap.querySelector('.event-image-toggle');
+    button?.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (wrap.classList.contains('is-open')) {
+        closePreview(wrap);
+      } else {
+        openPreview(wrap);
+      }
+    });
+  });
+
+  document.addEventListener('click', function (e) {
+    if (openWrap && !openWrap.contains(e.target)) {
+      closePreview(openWrap);
+    }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && openWrap) {
+      closePreview(openWrap);
+    }
+  });
+})();
+
 // Bulk selection for events
 (function() {
   const selectAllEvents = document.getElementById('selectAllEvents');
@@ -1275,66 +1414,7 @@ function closeImageModal() {
 
 // Close modal on background click
 document.addEventListener('DOMContentLoaded', function() {
-    const sidebar = document.querySelector('.sidebar');
-    const sidebarHeader = document.querySelector('.sidebar-header');
-    const sidebarScroll = document.querySelector('.sidebar-nav-scroll');
   const modal = document.getElementById('imageModal');
-
-    function syncAdminSidebarScroll() {
-        if (!sidebar || !sidebarHeader || !sidebarScroll) {
-            return;
-        }
-
-        if (window.innerWidth < 1024) {
-            sidebar.style.height = '';
-            sidebar.style.maxHeight = '';
-            sidebar.style.overflowY = '';
-            sidebarHeader.style.position = '';
-            sidebarHeader.style.top = '';
-            sidebarScroll.style.maxHeight = '';
-            sidebarScroll.style.overflowY = '';
-            return;
-        }
-
-        const topOffset = 110;
-        const bottomSpacing = 30;
-        const sidebarHeight = Math.max(320, window.innerHeight - topOffset - bottomSpacing);
-        const headerHeight = sidebarHeader.offsetHeight;
-        const scrollHeight = Math.max(180, sidebarHeight - headerHeight);
-
-        sidebar.style.height = `${sidebarHeight}px`;
-        sidebar.style.maxHeight = `${sidebarHeight}px`;
-        sidebar.style.overflowY = 'auto';
-        sidebarHeader.style.position = 'sticky';
-        sidebarHeader.style.top = '0';
-        sidebarScroll.style.maxHeight = `${scrollHeight}px`;
-        sidebarScroll.style.overflowY = 'auto';
-    }
-
-    syncAdminSidebarScroll();
-    window.addEventListener('resize', syncAdminSidebarScroll);
-
-    if (sidebar && sidebarScroll) {
-        sidebar.addEventListener('wheel', function(e) {
-            if (window.innerWidth < 1024) {
-                return;
-            }
-
-            const canScroll = sidebarScroll.scrollHeight > sidebarScroll.clientHeight;
-            if (!canScroll) {
-                return;
-            }
-
-            const isInsideSidebar = sidebar.contains(e.target);
-            if (!isInsideSidebar) {
-                return;
-            }
-
-            e.preventDefault();
-            sidebarScroll.scrollTop += e.deltaY;
-        }, { passive: false });
-    }
-
   if (modal) {
     modal.addEventListener('click', function(e) {
       if (e.target === modal) {
