@@ -41,9 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="description" content="Log in bij het SociaalAI Lab">
     <title>Log in - SociaalAI Lab</title>
     <link rel="preload" href="build/assets/app-CAiCLEjY.js" as="script">
-    <link rel="preload" href="build/assets/app-DozK-03z.css" as="style">
-    <link rel="stylesheet" href="build/assets/app-DozK-03z.css">
-    <link rel="stylesheet" href="custom.css?v=<?php echo filemtime(__DIR__.'/custom.css'); ?>">
+    <link rel="stylesheet" href="style.css?v=<?php echo filemtime(__DIR__.'/style.css'); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-QWW4UvCRwT1iu11i/LCSVyitVqqkBIQviyLblhMlLKL6+0JSVDtB+cdcIUMyZVQd2+bwTKgCCAPEnjRBeWV2vQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body class="bg-gradient-to-br from-[#00811F] to-[#b9eb34]">

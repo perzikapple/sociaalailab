@@ -69,7 +69,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="preload" as="style" href="build/assets/app-DozK-03z.css"><link rel="modulepreload" as="script" href="build/assets/app-CAiCLEjY.js"><link rel="stylesheet" href="build/assets/app-DozK-03z.css"><link rel="stylesheet" href="custom.css?v=<?php echo filemtime(__DIR__.'/custom.css'); ?>"><script type="module" src="build/assets/app-CAiCLEjY.js"></script>    <title>contact</title>
+    <link rel="modulepreload" as="script" href="build/assets/app-CAiCLEjY.js"><link rel="stylesheet" href="style.css?v=<?php echo filemtime(__DIR__.'/style.css'); ?>"><script type="module" src="build/assets/app-CAiCLEjY.js"></script>    <title>contact</title>
     <meta name="description" content="SociaalAI helpt inwoners sterker te staan in een steeds digitalere wereld. We doen dit door Rotterdammers actief mee te laten denken, praten en beslissen over kunstmatige intelligentie.">
     <link rel="icon" type="image/png" href="images/Pixels_icon.png">
     <link rel="stylesheet" href="ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -101,7 +101,6 @@ include __DIR__ . '/navbar.php';
         $hasText = !empty($block['title']) || !empty($block['body']) || !empty($metaArr['address']) || !empty($metaArr['email']);
         $imagePosition = $metaArr['image_position'] ?? 'normal';
         if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) $imagePosition = 'normal';
-        $greenText = trim((string)($metaArr['green_text'] ?? ($metaArr['green_heading'] ?? '')));
         $imageSrc = '';
         if ($hasImage) {
             $imagePath = trim((string)$block['image']);
@@ -143,9 +142,6 @@ include __DIR__ . '/navbar.php';
 
                 <?php if ($hasText): ?>
                 <div class="mb-6" style="<?php echo ($hasImage && $imagePosition !== 'normal') ? 'flex: 1; padding: 0 1.5rem;' : ''; ?>">
-                    <?php if ($greenText !== ''): ?>
-                        <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($greenText)); ?></div>
-                    <?php endif; ?>
                     <?php if (!empty($block['title'])): ?>
                         <h3 class="font-bold text-2xl mb-2"><?php echo htmlspecialchars($block['title']); ?></h3>
                     <?php endif; ?>

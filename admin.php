@@ -74,9 +74,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $location = trim($_POST['location'] ?? '');
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
 
-        if ($title === '' || $date === '') {
-            $message = 'Titel en datum zijn verplicht.';
+        if ($date === '') {
+            $message = 'Datum is verplicht.';
         } else {
+            if ($title === '') {
+                $title = ' ';
+            }
             $upload = handleUpload('image');
             if (isset($upload['error'])) {
                 $message = $upload['error'];
@@ -105,9 +108,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
         $removeImage = isset($_POST['remove_image']) ? 1 : 0;
 
-        if ($title === '' || $date === '') {
-            $message = 'Titel en datum zijn verplicht.';
+        if ($date === '') {
+            $message = 'Datum is verplicht.';
         } else {
+            if ($title === '') {
+                $title = ' ';
+            }
             // check existing image
             $stmt = $pdo->prepare('SELECT image FROM events WHERE id = ?');
             $stmt->execute([$id]);
@@ -352,8 +358,12 @@ if ($pageAction === 'create_page') {
         $imagePosition = 'normal';
     }
 
-    if (empty($pageKey) || empty($title)) {
-        $message = 'Page key en titel zijn verplicht.';
+    if ($title === '') {
+        $title = ' ';
+    }
+
+    if (empty($pageKey)) {
+        $message = 'Page key is verplicht.';
     } else {
         $meta = [
             'image_position' => $imagePosition,
@@ -407,7 +417,11 @@ if ($pageAction === 'create_page') {
     $body = trim($_POST['body'] ?? '');
     $removeImage = isset($_POST['remove_image']) ? 1 : 0;
 
-    if ($id && $title) {
+    if ($title === '') {
+        $title = ' ';
+    }
+
+    if ($id) {
 
         $stmt = $pdo->prepare('SELECT image, meta FROM pages WHERE id = ?');
         $stmt->execute([$id]);
@@ -599,8 +613,7 @@ if ($page !== 'banner' && $page !== 'agenda') {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Admin - SociaalAI Lab</title>
-<link rel="stylesheet" href="build/assets/app-DozK-03z.css">
-<link rel="stylesheet" href="custom.css">
+<link rel="stylesheet" href="style.css?v=<?php echo filemtime(__DIR__.'/style.css'); ?>">
 <link rel="stylesheet" href="admin-styles.css">
 <link rel="stylesheet" href="ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link rel="icon" type="image/png" href="images/Pixels_icon.png">
@@ -710,7 +723,7 @@ if ($page !== 'banner' && $page !== 'agenda') {
 
                             <div>
                                 <label class="form-label">Titel</label>
-                                <input name="title" required class="form-input" style="background-color: #f9fafb; border: 1px solid #d1d5db; color: #374151; border-radius: 0.5rem; width: 100%; height: 48px;" value="<?php echo htmlspecialchars($editEvent['title']); ?>" />
+                                <input name="title" class="form-input admin-input-surface admin-input-h-48" value="<?php echo htmlspecialchars($editEvent['title']); ?>" />
                             </div>
 
                             <div class="grid grid-cols-3 gap-4">
@@ -722,7 +735,7 @@ if ($page !== 'banner' && $page !== 'agenda') {
                                             <input type="checkbox" id="add-end-date-edit" name="add_end_date" <?php echo !empty($editEvent['end_date']) ? 'checked' : ''; ?> />
                                             Einddatum toevoegen
                                         </label>
-                                        <div id="end-date-container-edit" style="margin-top:8px;<?php echo empty($editEvent['end_date']) ? 'display:none;' : ''; ?>">
+                                        <div id="end-date-container-edit" class="admin-mt-8 <?php echo empty($editEvent['end_date']) ? 'admin-hidden' : ''; ?>">
                                             <label class="form-label">Einddatum <span class="text-xs text-gray-500">(optioneel)</span></label>
                                             <input type="date" name="end_date" class="form-input" value="<?php echo htmlspecialchars($editEvent['end_date'] ?? ''); ?>" />
                                         </div>
@@ -736,7 +749,7 @@ if ($page !== 'banner' && $page !== 'agenda') {
                                             <input type="checkbox" id="add-end-time-edit" name="add_end_time" <?php echo !empty($editEvent['time_end']) ? 'checked' : ''; ?> />
                                             Eindtijd toevoegen
                                         </label>
-                                        <div id="end-time-container-edit" style="margin-top:8px;<?php echo empty($editEvent['time_end']) ? 'display:none;' : ''; ?>">
+                                        <div id="end-time-container-edit" class="admin-mt-8 <?php echo empty($editEvent['time_end']) ? 'admin-hidden' : ''; ?>">
                                             <label class="form-label">Eindtijd <span class="text-xs text-gray-500">(optioneel)</span></label>
                                             <input type="time" name="time_end" class="form-input" value="<?php echo htmlspecialchars($editEvent['time_end'] ?? ''); ?>" />
                                         </div>
@@ -747,7 +760,7 @@ if ($page !== 'banner' && $page !== 'agenda') {
 
                             <div>
                                 <label class="form-label">Plaats</label>
-                                <input name="location" class="form-input" style="background-color: #f9fafb; border: 1px solid #d1d5db; color: #374151; border-radius: 0.5rem; width: 100%; height: 48px;" value="<?php echo htmlspecialchars($editEvent['location'] ?? ''); ?>" />
+                                <input name="location" class="form-input admin-input-surface admin-input-h-48" value="<?php echo htmlspecialchars($editEvent['location'] ?? ''); ?>" />
                             </div>
 
                             <div>
@@ -785,7 +798,7 @@ if ($page !== 'banner' && $page !== 'agenda') {
 
                             <div>
                                 <label class="form-label">Titel</label>
-                                <input name="title" required class="form-input" style="background-color: #f9fafb; border: 1px solid #d1d5db; color: #374151; border-radius: 0.5rem; width: 100%;" />
+                                <input name="title" class="form-input admin-input-surface" />
                             </div>
 
                             <div class="grid grid-cols-3 gap-4">
@@ -797,7 +810,7 @@ if ($page !== 'banner' && $page !== 'agenda') {
                                             <input type="checkbox" id="add-end-date-create" name="add_end_date" />
                                             Einddatum toevoegen
                                         </label>
-                                        <div id="end-date-container-create" style="margin-top:8px;display:none;">
+                                        <div id="end-date-container-create" class="admin-mt-8 admin-hidden">
                                             <label class="form-label">Einddatum <span class="text-xs text-gray-500">(optioneel)</span></label>
                                             <input type="date" name="end_date" class="form-input" />
                                         </div>
@@ -811,7 +824,7 @@ if ($page !== 'banner' && $page !== 'agenda') {
                                             <input type="checkbox" id="add-end-time-create" name="add_end_time" />
                                             Eindtijd toevoegen
                                         </label>
-                                        <div id="end-time-container-create" style="margin-top:8px;display:none;">
+                                        <div id="end-time-container-create" class="admin-mt-8 admin-hidden">
                                             <label class="form-label">Eindtijd <span class="text-xs text-gray-500">(optioneel)</span></label>
                                             <input type="time" name="time_end" class="form-input" value="<?php echo htmlspecialchars($editEvent['time_end'] ?? ''); ?>" />
                                         </div>
@@ -854,7 +867,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                             <div>
                                 <label class="form-label">Plaats</label>
-                                <input name="location" class="form-input" style="background-color: #f9fafb; border: 1px solid #d1d5db; color: #374151; border-radius: 0.5rem; width: 100%;" />
+                                <input name="location" class="form-input admin-input-surface" />
                             </div>
 
                             <div>
@@ -894,7 +907,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="mb-4 flex gap-2 items-center">
                                 <input type="checkbox" id="selectAllEvents" class="w-4 h-4 cursor-pointer" title="Selecteer alles">
                                 <label for="selectAllEvents" class="cursor-pointer text-sm font-medium">Selecteer alles</label>
-                                <button type="button" class="btn btn-danger btn-sm" id="bulkDeleteEventsBtn" style="display:none;">
+                                <button type="button" class="btn btn-danger btn-sm admin-hidden" id="bulkDeleteEventsBtn">
                                     <i class="fa-solid fa-trash"></i> Verwijder geselecteerde (<span id="eventCount">0</span>)
                                 </button>
                             </div>
@@ -928,7 +941,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 <a href="admin.php?page=agenda&edit=<?php echo (int)$event['id']; ?>" class="btn btn-secondary btn-sm">
                                                     <i class="fa-solid fa-pencil"></i> Bewerk
                                                 </a>
-                                                <form method="POST" onsubmit="return confirm('Verwijder dit evenement?');" style="display:inline;">
+                                                <form method="POST" onsubmit="return confirm('Verwijder dit evenement?');" class="admin-inline-form">
                                                     <input type="hidden" name="action" value="delete">
                                                     <input type="hidden" name="id" value="<?php echo (int)$event['id']; ?>">
                                                     <button type="submit" class="btn btn-danger btn-sm w-full">
@@ -1013,7 +1026,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                             <div>
                                 <label class="form-label">Titel</label>
-                                <input name="title" required class="form-input" style="background-color: #f9fafb; border: 1px solid #d1d5db; color: #374151; border-radius: 0.5rem; width: 100%; height: 48px;" value="<?php echo htmlspecialchars($editPage['title']); ?>" />
+                                <input name="title" class="form-input admin-input-surface admin-input-h-48" value="<?php echo htmlspecialchars($editPage['title']); ?>" />
                             </div>
 
                             <div>
@@ -1056,7 +1069,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                             <div>
                                 <label class="form-label">Titel</label>
-                                <input name="title" required class="form-input" style="background-color: #f9fafb; border: 1px solid #d1d5db; color: #374151; border-radius: 0.5rem; width: 100%; height: 48px;" />
+                                <input name="title" class="form-input admin-input-surface admin-input-h-48" />
                             </div>
 
                             <div>
@@ -1108,7 +1121,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="mb-4 flex gap-2 items-center">
                                 <input type="checkbox" id="selectAllPages_<?php echo htmlspecialchars($pageKey); ?>" class="w-4 h-4 cursor-pointer selectAllPages" data-page="<?php echo htmlspecialchars($pageKey); ?>" title="Selecteer alles">
                                 <label for="selectAllPages_<?php echo htmlspecialchars($pageKey); ?>" class="cursor-pointer text-sm font-medium">Selecteer alles</label>
-                                <button type="button" class="btn btn-danger btn-sm" id="bulkDeletePagesBtn_<?php echo htmlspecialchars($pageKey); ?>" style="display:none;">
+                                <button type="button" class="btn btn-danger btn-sm admin-hidden" id="bulkDeletePagesBtn_<?php echo htmlspecialchars($pageKey); ?>">
                                     <i class="fa-solid fa-trash"></i> Verwijder geselecteerde (<span id="pageCount_<?php echo htmlspecialchars($pageKey); ?>">0</span>)
                                 </button>
                             </div>
@@ -1158,7 +1171,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 <a href="admin.php?edit_page=<?php echo (int)$it['id']; ?>&page=<?php echo urlencode($pageKey); ?>" class="btn btn-secondary btn-sm">
                                                     <i class="fa-solid fa-pencil"></i> Bewerk
                                                 </a>
-                                                <form method="POST" onsubmit="return confirm('Verwijder dit item?');" style="display:inline;">
+                                                <form method="POST" onsubmit="return confirm('Verwijder dit item?');" class="admin-inline-form">
                                                     <input type="hidden" name="page_action" value="delete_page">
                                                     <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
                                                     <input type="hidden" name="id" value="<?php echo (int)$it['id']; ?>">

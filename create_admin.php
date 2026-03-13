@@ -11,21 +11,14 @@ echo "<!DOCTYPE html>
     <meta charset='UTF-8'>
     <title>Admin Account Aanmaken</title>
     <link rel='icon' type='image/png' href='images/Pixels_icon.png'>
-    <style>
-        body { font-family: Arial; padding: 40px; background: #f5f5f5; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; }
-        .success { color: green; background: #d4edda; padding: 20px; border-radius: 8px; margin: 20px 0; }
-        .warning { color: #856404; background: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; }
-        .error { color: red; background: #f8d7da; padding: 20px; border-radius: 8px; margin: 20px 0; }
-        .btn { padding: 12px 24px; background: #00811F; color: white; text-decoration: none; border-radius: 4px; display: inline-block; }
-    </style>
+    <link rel='stylesheet' href='style.css?v=" . filemtime(__DIR__.'/style.css') . "'>
 </head>
-<body>
-    <div class='container'>";
+<body class='create-admin-body'>
+    <div class='create-admin-container'>";
 
 echo "<h1>Admin Account Aanmaken</h1>";
 
-echo "<div class='warning'>";
+echo "<div class='create-admin-warning'>";
 echo "<strong>⚠️ VEILIGHEIDSRISICO:</strong><br>";
 echo "Dit systeem slaat wachtwoorden op als plain text (zonder beveiliging).<br>";
 echo "Dit is NIET veilig voor productie!";
@@ -41,7 +34,7 @@ try {
         $stmt = $pdo->prepare("UPDATE accounts SET wachtwoord = ? WHERE email = ?");
         $stmt->execute([$adminPassword, $adminEmail]);
         
-        echo "<div class='success'>";
+        echo "<div class='create-admin-success'>";
         echo "<h2>✓ Account Bijgewerkt!</h2>";
         echo "<p><strong>Email:</strong> " . htmlspecialchars($adminEmail) . "</p>";
         echo "<p><strong>Wachtwoord:</strong> " . htmlspecialchars($adminPassword) . "</p>";
@@ -52,7 +45,7 @@ try {
         $stmt = $pdo->prepare("INSERT INTO accounts (email, wachtwoord) VALUES (?, ?)");
         $stmt->execute([$adminEmail, $adminPassword]);
         
-        echo "<div class='success'>";
+        echo "<div class='create-admin-success'>";
         echo "<h2>✓ Account Aangemaakt!</h2>";
         echo "<p><strong>Email:</strong> " . htmlspecialchars($adminEmail) . "</p>";
         echo "<p><strong>Wachtwoord:</strong> " . htmlspecialchars($adminPassword) . "</p>";
@@ -60,13 +53,13 @@ try {
         echo "</div>";
     }
     
-    echo "<p><a href='login.php' class='btn'>Ga naar Login</a></p>";
+    echo "<p><a href='login.php' class='create-admin-btn'>Ga naar Login</a></p>";
     
-    echo "<hr style='margin: 30px 0;'>";
-    echo "<p style='color: #666;'><small>Verwijder dit bestand na gebruik.</small></p>";
+    echo "<hr class='create-admin-separator'>";
+    echo "<p class='create-admin-muted'><small>Verwijder dit bestand na gebruik.</small></p>";
     
 } catch (PDOException $e) {
-    echo "<div class='error'>";
+    echo "<div class='create-admin-error'>";
     echo "<h2>✗ Fout</h2>";
     echo "<p>" . htmlspecialchars($e->getMessage()) . "</p>";
     echo "</div>";

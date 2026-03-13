@@ -1,3 +1,66 @@
+@import url("build/assets/app-DozK-03z.css");
+
+/* Centralized styles moved from page-level <style> blocks */
+.text-block-content {
+  padding: 30px;
+}
+
+/* create_admin.php styles */
+.create-admin-body {
+  font-family: Arial, sans-serif;
+  padding: 40px;
+  background: #f5f5f5;
+}
+
+.create-admin-container {
+  max-width: 600px;
+  margin: 0 auto;
+  background: #ffffff;
+  padding: 30px;
+  border-radius: 8px;
+}
+
+.create-admin-success {
+  color: green;
+  background: #d4edda;
+  padding: 20px;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+
+.create-admin-warning {
+  color: #856404;
+  background: #fff3cd;
+  padding: 20px;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+
+.create-admin-error {
+  color: red;
+  background: #f8d7da;
+  padding: 20px;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+
+.create-admin-btn {
+  padding: 12px 24px;
+  background: #00811F;
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.create-admin-separator {
+  margin: 30px 0;
+}
+
+.create-admin-muted {
+  color: #666;
+}
+
 .banner-wrapper {
   display: grid;
 }
@@ -140,15 +203,12 @@
     border-radius: 0.5rem;
 }
 
-/* --- responsive enhancements --- */
-/* ensure all images and media scale within their containers */
 img, video {
     max-width: 100%;
     height: auto;
     display: block;
 }
 
-/* container utility for consistent padding */
 .container {
     width: 100%;
     padding: 0 1rem;
@@ -157,7 +217,6 @@ img, video {
     max-width: 1200px;
 }
 
-/* mobile-first layout adjustments */
 .flexrow {
     display: flex;
     flex-direction: column;
@@ -169,10 +228,8 @@ img, video {
     }
 }
 
-/* make hamburger visible on small screens and hide on larger ones */
 .hamburger {
     display: block;
-    /* small upward offset on mobile so there’s a 10px gap above */
 }
 
 @media (min-width: 768px) {
@@ -181,7 +238,6 @@ img, video {
     }
 }
 
-/* stack nav items vertically on narrow viewports (only the top-level wrapper) */
 #mobile-menu {
     display: none;
     flex-direction: column;
@@ -190,7 +246,6 @@ img, video {
     align-items: flex-start;
 }
 
-/* visible variant overrides for the wrapper */
 #mobile-menu.open,
 #mobile-menu:not(.hidden) {
     display: flex;
@@ -198,7 +253,6 @@ img, video {
     align-items: flex-start !important;
 }
 
-/* make each direct child of the wrapper stack neatly and occupy full width */
 #mobile-menu.open > *,
 #mobile-menu:not(.hidden) > * {
     display: block;
@@ -206,17 +260,13 @@ img, video {
     text-align: left;
 }
 
-/* mobile-only overlay behavior: transform the drop‑down into a scrollable panel */
 @media (max-width: 767px) {
-    /* keep parent positioned so top:100% refers to its bottom */
     .navigatie {
         position: relative;
-        z-index: 49; /* ensure menu appears above other content but below header if needed */
+        z-index: 49;
     }
-    /* wrapper slides down by expanding height */
     #mobile-menu {
         position: absolute;
-        /* start just below the hamburger button; subtract a bit to pull the panel up */
         top: calc(100% - 10px);
         left: 0;
         right: 0;
@@ -232,7 +282,6 @@ img, video {
         overflow-y: auto;
         padding: 1rem 0;
     }
-    /* reinforce full-width links inside the panel */
     #mobile-menu.open > * {
         width: 100%;
     }
@@ -251,14 +300,12 @@ img, video {
     }
 }
 
-/* small font-size tweak for tiny screens */
 @media (max-width: 480px) {
     body {
         font-size: 0.9rem;
     }
 }
 
-/* Navbar dropdown arrow: right by default, down when expanded */
 #programma-toggle .fa-caret-right {
   display: inline-block;
   transition: transform 0.2s ease;
@@ -282,7 +329,6 @@ img, video {
   overflow-wrap: break-word;
 }
 
-/* Footer enhancements */
 .site-footer .footer-logos {
   gap: 0.75rem;
 }
@@ -314,7 +360,6 @@ img, video {
 }
 
 
-/* Footer improvements: responsive logo grid and sizing */
 .site-footer {
   background-color: #ffffff;
   padding: 2rem 1rem;
@@ -325,7 +370,6 @@ img, video {
   justify-content: center;
   align-items: center;
   gap: 1rem;
-  /* logos already sized via other rules */
 }
 .site-footer .footer-logo {
   flex: 0 0 auto;
@@ -358,7 +402,6 @@ img, video {
   }
 }
 
-/* Stylish content blocks */
 main > section {
     border-left: 4px solid #00811F;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
@@ -385,4 +428,3 @@ main > div.grid > div:hover {
     border-radius: 0.5rem;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
-
