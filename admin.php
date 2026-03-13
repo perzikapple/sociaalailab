@@ -1013,7 +1013,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                             <div>
                                 <label class="form-label">Titel</label>
-                                <input name="title" required class="form-input" style="background-color: #f9fafb; border: 1px solid #d1d5db; color: #374151;" value="<?php echo htmlspecialchars($editPage['title']); ?>" />
+                                <input name="title" required class="form-input" style="background-color: #f9fafb; border: 1px solid #d1d5db; color: #374151; border-radius: 0.5rem; width: 100%; height: 48px;" value="<?php echo htmlspecialchars($editPage['title']); ?>" />
                             </div>
 
                             <div>
@@ -1056,7 +1056,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                             <div>
                                 <label class="form-label">Titel</label>
-                                <input name="title" required class="form-input" />
+                                <input name="title" required class="form-input" style="background-color: #f9fafb; border: 1px solid #d1d5db; color: #374151; border-radius: 0.5rem; width: 100%; height: 48px;" />
                             </div>
 
                             <div>
