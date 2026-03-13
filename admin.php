@@ -710,7 +710,7 @@ if ($page !== 'banner' && $page !== 'agenda') {
 
                             <div>
                                 <label class="form-label">Titel</label>
-                                <input name="title" required class="form-input" value="<?php echo htmlspecialchars($editEvent['title']); ?>" />
+                                <input name="title" required class="form-input" style="background-color: #f9fafb; border: 1px solid #d1d5db; color: #374151; border-radius: 0.5rem; width: 100%; height: 48px;" value="<?php echo htmlspecialchars($editEvent['title']); ?>" />
                             </div>
 
                             <div class="grid grid-cols-3 gap-4">
@@ -747,7 +747,7 @@ if ($page !== 'banner' && $page !== 'agenda') {
 
                             <div>
                                 <label class="form-label">Plaats</label>
-                                <input name="location" class="form-input" value="<?php echo htmlspecialchars($editEvent['location'] ?? ''); ?>" />
+                                <input name="location" class="form-input" style="background-color: #f9fafb; border: 1px solid #d1d5db; color: #374151; border-radius: 0.5rem; width: 100%; height: 48px;" value="<?php echo htmlspecialchars($editEvent['location'] ?? ''); ?>" />
                             </div>
 
                             <div>
@@ -785,7 +785,7 @@ if ($page !== 'banner' && $page !== 'agenda') {
 
                             <div>
                                 <label class="form-label">Titel</label>
-                                <input name="title" required class="form-input" />
+                                <input name="title" required class="form-input" style="background-color: #f9fafb; border: 1px solid #d1d5db; color: #374151; border-radius: 0.5rem; width: 100%;" />
                             </div>
 
                             <div class="grid grid-cols-3 gap-4">
@@ -805,7 +805,7 @@ if ($page !== 'banner' && $page !== 'agenda') {
                                 </div>
                                 <div>
                                     <label class="form-label">Starttijd</label>
-                                    <input type="time" name="time" class="form-input" />
+                                    <input type="time" name="time" class="form-input" value="<?php echo htmlspecialchars($editEvent['time'] ?? ''); ?>" />
                                     <div class="mt-2">
                                         <label class="form-checkbox">
                                             <input type="checkbox" id="add-end-time-create" name="add_end_time" />
@@ -813,7 +813,7 @@ if ($page !== 'banner' && $page !== 'agenda') {
                                         </label>
                                         <div id="end-time-container-create" style="margin-top:8px;display:none;">
                                             <label class="form-label">Eindtijd <span class="text-xs text-gray-500">(optioneel)</span></label>
-                                            <input type="time" name="time_end" class="form-input" />
+                                            <input type="time" name="time_end" class="form-input" value="<?php echo htmlspecialchars($editEvent['time_end'] ?? ''); ?>" />
                                         </div>
                                     </div>
                                 </div>
@@ -854,7 +854,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                             <div>
                                 <label class="form-label">Plaats</label>
-                                <input name="location" class="form-input" />
+                                <input name="location" class="form-input" style="background-color: #f9fafb; border: 1px solid #d1d5db; color: #374151; border-radius: 0.5rem; width: 100%;" />
                             </div>
 
                             <div>
@@ -914,7 +914,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                             ?>
                                             <p class="text-sm text-gray-600 mt-1"><strong>Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?><?php if ($timeDisplay) { echo ' ' . htmlspecialchars($timeDisplay); } ?><?php if ($timeEndDisplay) { echo ' - ' . htmlspecialchars($timeEndDisplay); } ?></p>
                                             <?php if (!empty($event['location'])): ?>
-                                                <p class="text-sm text-gray-600"><strong>Plaats:</strong> <?php echo htmlspecialchars($event['location']); ?></p>
+                                                                            <input name="title" required class="form-input" style="background-color: #f9fafb; border: 1px solid #d1d5db; color: #374151; border-radius: 0.5rem; width: 100%; height: 48px;" />
                                             <?php endif; ?>
                                             <p class="text-sm text-gray-600 mt-2 line-clamp-2"><?php echo nl2br(htmlspecialchars($event['description'] ? mb_strimwidth($event['description'],0,200,'...') : '')); ?></p>
                                         </div>
@@ -1013,7 +1013,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                             <div>
                                 <label class="form-label">Titel</label>
-                                <input name="title" required class="form-input" value="<?php echo htmlspecialchars($editPage['title']); ?>" />
+                                <input name="title" required class="form-input" style="background-color: #f9fafb; border: 1px solid #d1d5db; color: #374151;" value="<?php echo htmlspecialchars($editPage['title']); ?>" />
                             </div>
 
                             <div>
