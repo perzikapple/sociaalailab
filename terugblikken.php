@@ -38,7 +38,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="preload" as="style" href="build/assets/app-DozK-03z.css"><link rel="modulepreload" as="script" href="build/assets/app-CAiCLEjY.js"><link rel="stylesheet" href="build/assets/app-DozK-03z.css"><link rel="stylesheet" href="custom.css?v=<?php echo filemtime(__DIR__.'/custom.css'); ?>"><script type="module" src="build/assets/app-CAiCLEjY.js"></script>    <title>Terugblikken</title>
+    <link rel="preload" as="style" href="build/assets/app-DozK-03z.css"><link rel="modulepreload" as="script" href="build/assets/app-CAiCLEjY.js"><link rel="stylesheet" href="build/assets/app-DozK-03z.css"><link rel="stylesheet" href="custom.css"><script type="module" src="build/assets/app-CAiCLEjY.js"></script>    <title>Terugblikken</title>
     <meta name="description" content="SociaalAI helpt inwoners sterker te staan in een steeds digitalere wereld. We doen dit door Rotterdammers actief mee te laten denken, praten en beslissen over kunstmatige intelligentie.">
     <link rel="icon" type="image/png" href="images/Pixels_icon.png">
     <link rel="stylesheet" href="ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -76,6 +76,7 @@ include __DIR__ . '/navbar.php';
         $hasText = !empty($block['title']) || !empty($block['body']);
         $imagePosition = $metaArr['image_position'] ?? 'normal';
         if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) $imagePosition = 'normal';
+        $greenText = trim((string)($metaArr['green_text'] ?? ($metaArr['green_heading'] ?? '')));
         
         $flexDir = 'column';
         if ($imagePosition === 'left' && $hasText) {
@@ -97,7 +98,9 @@ include __DIR__ . '/navbar.php';
                 if (!$hasText) {
                     $imageStyle = 'width: 100%;';
                 } elseif ($imagePosition !== 'normal') {
+                    $imageStyle = 'flex: 0 0 50%; max-width: 600px;';
                 } else {
+                    $imageStyle = 'width: 100%; max-width: 600px;';
                 }
                 ?>
                 <div style="<?php echo $imageStyle; ?>">
@@ -106,6 +109,9 @@ include __DIR__ . '/navbar.php';
             <?php endif; ?>
             <?php if ($hasText): ?>
                 <div style="<?php echo ($imagePosition !== 'normal' && $hasImage) ? 'flex: 0 0 50%; padding: 0 1.5rem;' : ''; ?>">
+                    <?php if ($greenText !== ''): ?>
+                        <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($greenText)); ?></div>
+                    <?php endif; ?>
                     <?php if (!empty($block['title'])): ?>
                         <h3 class="text-xl sm:text-2xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($block['title']); ?></h3>
                     <?php endif; ?>
