@@ -21,7 +21,7 @@ if (!isset($navPrefix)) {
                     <span>Wat doen we?</span>
                 </button>
 
-                <div id="programma-menu" class="hidden absolute top-0 mt-8 w-56 bg-white border border-gray-200 shadow-lg py-2 z-50 focus:outline-none" role="menu" aria-labelledby="programma-toggle">
+                <div id="programma-menu" class="hidden absolute top-0 mt-8 bg-white border border-gray-200 shadow-lg py-2 z-50 focus:outline-none" role="menu" aria-labelledby="programma-toggle">
                     <a href="<?php echo htmlspecialchars($navPrefix); ?>programma/kennis.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Kennis & vaardigheden</a>
                     <a href="<?php echo htmlspecialchars($navPrefix); ?>programma/actie.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Actie, onderzoek & ontwerp</a>
                     <a href="<?php echo htmlspecialchars($navPrefix); ?>programma/faciliteit.php" class="menu block px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">Faciliteit van het Lab</a>
