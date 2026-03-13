@@ -100,7 +100,7 @@ include __DIR__ . '/navbar.php';
                 </div>
             <?php endif; ?>
             <?php if ($hasText): ?>
-                <div style="<?php echo ($imagePosition !== 'normal' && $hasImage) ? 'flex: 0 0 50%; padding: 0 1.5rem;' : ''; ?>">
+                <div style="<?php echo ($imagePosition !== 'normal' && $hasImage) ? 'flex: 1 1 auto; min-width: 0; padding: 0 1.5rem;' : 'width: 100%;'; ?>">
                     <?php if ($greenText !== ''): ?>
                         <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($greenText)); ?></div>
                     <?php endif; ?>
