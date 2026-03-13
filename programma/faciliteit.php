@@ -1,4 +1,4 @@
-<?php 
+<?php
 session_start();
 require '../db.php';
 require '../helpers.php';
@@ -64,7 +64,7 @@ include __DIR__ . '/../navbar.php';
     try {
         $checkStmt = $pdo->prepare('SELECT COUNT(*) FROM pages WHERE page_key = ? AND title = ?');
         $insertStmt = $pdo->prepare('INSERT INTO pages (page_key, title, body, image, meta, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())');
-        
+
         foreach ($fallbackBlocks as $block) {
             $checkStmt->execute(['programma-faciliteit', $block['title'] ?? null]);
             if ((int)$checkStmt->fetchColumn() === 0) {
@@ -95,7 +95,7 @@ include __DIR__ . '/../navbar.php';
         $title = trim((string)($block['title'] ?? ''));
         return $title !== 'Faciliteiten';
     }));
-    
+
     // Display custom cards from admin
     ?>
 
@@ -127,14 +127,14 @@ include __DIR__ . '/../navbar.php';
             $imagePosition = $metaArr['image_position'] ?? 'normal';
             if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) $imagePosition = 'normal';
             $greenText = trim((string)($metaArr['green_text'] ?? ($metaArr['green_heading'] ?? '')));
-            
+
             $flexDir = 'column';
             if ($imagePosition === 'left') {
                 $flexDir = 'row';
             } elseif ($imagePosition === 'right') {
                 $flexDir = 'row-reverse';
             }
-            
+
             $hasImage = !empty($block['image']);
             $hasText = !empty($block['title']) || !empty($block['body']);
             $cardStyle = 'display: flex; flex-direction: ' . $flexDir . '; ';
@@ -156,9 +156,6 @@ include __DIR__ . '/../navbar.php';
                         $imageSrc = '../uploads/' . $imagePath;
                     }
                     ?>
-                    <div style="<?php echo $hasText ? 'flex-shrink: 0; width: 120px; min-width: 120px; max-width: 120px;' : 'width: 100%;'; ?>">
-                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; <?php echo $hasText ? 'height: 112px; object-fit: cover;' : 'height: auto;'; ?>">
-                    </div>
                 <?php endif; ?>
 
                 <div style="<?php echo ($hasImage && $imagePosition !== 'normal') ? 'flex: 1; padding: 0 1.5rem;' : ''; ?>">
@@ -173,22 +170,6 @@ include __DIR__ . '/../navbar.php';
                 <?php endif; ?>
                 </div>
 
-                <?php if ($hasImage && $imagePosition === 'right'): ?>
-                    <?php
-                    $imagePath = trim((string)$block['image']);
-                    if (strpos($imagePath, 'images/') === 0 || strpos($imagePath, 'uploads/') === 0) {
-                        $imageSrc = '../' . $imagePath;
-                    } elseif (strpos($imagePath, '../') === 0 || preg_match('#^https?://#i', $imagePath)) {
-                        $imageSrc = $imagePath;
-                    } else {
-                        $imageSrc = '../uploads/' . $imagePath;
-                    }
-                    ?>
-                    <div style="<?php echo $hasText ? 'flex-shrink: 0; width: 120px; min-width: 120px; max-width: 120px;' : 'width: 100%;'; ?>">
-                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; <?php echo $hasText ? 'height: 112px; object-fit: cover;' : 'height: auto;'; ?>">
-                    </div>
-                <?php endif; ?>
-
                 <?php if ($hasImage && $imagePosition === 'normal'): ?>
                     <?php
                     $imagePath = trim((string)$block['image']);
@@ -200,8 +181,9 @@ include __DIR__ . '/../navbar.php';
                         $imageSrc = '../uploads/' . $imagePath;
                     }
                     ?>
-                    <div style="<?php echo $hasText ? 'margin-top: auto; width: 100%; max-width: 400px;' : 'width: 100%;'; ?>">
-                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; <?php echo $hasText ? 'height: 160px; object-fit: cover;' : 'height: auto;'; ?>">
+                <!-- Styling images -->
+                    <div style="<?php echo $hasText ? 'margin-top: auto; width: 100%; max-width: 560px;' : 'width: 100%;'; ?>">
+                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; <?php echo $hasText ? 'height: 360px; object-fit: cover; object-position:cover;' : 'height: auto;'; ?>">
                     </div>
                 <?php endif; ?>
             </div>
