@@ -229,8 +229,8 @@ include __DIR__ . '/../navbar.php';
                         $imageSrc = '../uploads/' . $imagePath;
                     }
                     ?>
-                    <div style="<?php echo $hasText ? 'margin-top: auto; width: 100%; max-width: 400px;' : 'width: 100%;'; ?>">
-                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; <?php echo $hasText ? 'height: 160px; object-fit: cover;' : 'height: auto;'; ?>">
+                    <div style="<?php echo $hasText ? 'margin-top: auto; width: 100%; max-width: 560px;' : 'width: 100%;' ; ?>">
+                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; <?php echo $hasText ? 'height: 360px; object-fit: cover; object-position:cover;' : 'height: auto;'; ?>">
                     </div>
                 <?php endif; ?>
             </div>
@@ -333,20 +333,7 @@ include __DIR__ . '/../navbar.php';
       banners[current].classList.add('active');
     }, 10000);
 </script>
-<style>
-    .flex-col {
-        display: flex;
-        flex-direction: column;
-    }
 
-    .flex-col img {
-        max-width: 550px;
-        max-height: 360px;
-        object-fit: cover;
-        display: block;
-        border-radius: 4px;
-    }
-</style>
 </body>
 </html>
 
