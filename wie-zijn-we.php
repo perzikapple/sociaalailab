@@ -63,7 +63,6 @@ include __DIR__ . '/navbar.php';
         $hasText = !empty($block['title']) || !empty($block['body']);
         $imagePosition = $metaArr['image_position'] ?? 'normal';
         if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) $imagePosition = 'normal';
-        $greenText = trim((string)($metaArr['green_text'] ?? ($metaArr['green_heading'] ?? '')));
         $isEven = ($index % 2 == 0);
         $isImageLeft = $imagePosition === 'normal' ? $isEven : ($imagePosition === 'left');
         
@@ -80,7 +79,7 @@ include __DIR__ . '/navbar.php';
         <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" style="<?php echo $sectionStyle; ?>">
             <?php if ($hasImage): ?>
                 <?php
-                $imageStyle = 'flex-shrink: 0; width: 300px; min-width: 300px; max-width: 300px;';
+                $imageStyle = 'flex-shrink: 0; width: 340px; min-width: 340px; max-width: 340px;';
                 if (!$hasText) {
                     $imageStyle = 'width: 100%;';
                 }
@@ -88,19 +87,16 @@ include __DIR__ . '/navbar.php';
                 <div style="<?php echo $imageStyle; ?>">
                     <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" 
                          alt="<?php echo htmlspecialchars($block['title']); ?>" 
-                         style="width: 100%; height: auto; <?php echo $hasText ? 'max-height: 200px; object-fit: contain;' : ''; ?>">
+                         style="width: 100%; height: auto; <?php echo $hasText ? 'max-height: 240px; object-fit: contain;' : ''; ?>">
                 </div>
             <?php endif; ?>
             <?php if ($hasText): ?>
             <div style="flex: 1; padding: 0 1.5rem;">
-                <?php if ($greenText !== ''): ?>
-                    <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($greenText)); ?></div>
-                <?php endif; ?>
                 <?php if (!empty($block['title'])): ?>
-                    <h3 class="font-bold text-xl mb-3"><?php echo htmlspecialchars($block['title']); ?></h3>
+                    <h3 class="font-bold text-2xl mb-3"><?php echo htmlspecialchars($block['title']); ?></h3>
                 <?php endif; ?>
                 <?php if (!empty($block['body'])): ?>
-                    <div class="text-gray-700 text-sm leading-relaxed"><?php echo nl2br(htmlspecialchars($block['body'])); ?></div>
+                    <div class="text-gray-700 text-base leading-relaxed"><?php echo nl2br(htmlspecialchars($block['body'])); ?></div>
                 <?php endif; ?>
             </div>
             <?php endif; ?>
