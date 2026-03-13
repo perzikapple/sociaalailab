@@ -41,7 +41,7 @@ include __DIR__ . '/../navbar.php';
 ?>
 
 <!-- Pagina content -->
-<main>
+<main class="watdoenwe-page">
     <?php
     // Fallback blocks for seeding
     $fallbackBlocks = [

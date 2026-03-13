@@ -428,6 +428,24 @@ main > div.grid > div:hover {
     border-radius: 0.5rem;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
+
+.watdoenwe-page .grid > .bg-white {
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.watdoenwe-page .grid > .bg-white > div {
+  min-width: 0;
+}
+
+.watdoenwe-page h3,
+.watdoenwe-page p,
+.watdoenwe-page .green-highlight,
+.watdoenwe-page .text-gray-700,
+.watdoenwe-page .leading-relaxed {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
 .bg-white{
     padding: 15px;
 }
