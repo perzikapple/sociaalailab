@@ -619,6 +619,19 @@ if ($page !== 'banner' && $page !== 'agenda') {
 <link rel="icon" type="image/png" href="images/Pixels_icon.png">
 <script src="custom.js"></script>
 </head>
+<!-- TinyMCE toevoegen met API key -->
+<script src="https://cdn.tiny.cloud/1/1ui5rgslm5rlya4exbujnv26e5j6xyq87233fv56zmvcq39e/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        tinymce.init({
+            selector: 'textarea',
+            plugins: 'lists link image table',
+            toolbar: 'undo redo | bold italic underline | bullist numlist | link image | table',
+            menubar: false
+        });
+    });
+</script>
+</head>
 <body class="admin-page">
 <nav class="admin-header text-white p-4 sticky top-0 z-50">
     <div class="max-w-7xl mx-auto flex justify-between items-center">
