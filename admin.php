@@ -614,7 +614,7 @@ if ($page !== 'banner' && $page !== 'agenda') {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Admin - SociaalAI Lab</title>
 <link rel="stylesheet" href="style.css?v=<?php echo filemtime(__DIR__.'/style.css'); ?>">
-<link rel="stylesheet" href="admin-styles.css">
+<link rel="stylesheet" href="admin-styles.css?v=<?php echo filemtime(__DIR__.'/admin-styles.css'); ?>">
 <link rel="stylesheet" href="ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link rel="icon" type="image/png" href="images/Pixels_icon.png">
 <script src="custom.js"></script>
@@ -623,28 +623,40 @@ if ($page !== 'banner' && $page !== 'agenda') {
 <script src="https://cdn.tiny.cloud/1/1ui5rgslm5rlya4exbujnv26e5j6xyq87233fv56zmvcq39e/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // TinyMCE for title fields - compact
         tinymce.init({
-            selector: 'textarea',
+            selector: 'textarea[name="title"]',
             plugins: 'lists link image table',
             toolbar: 'undo redo | bold italic underline | bullist numlist | link image | table',
-            menubar: false
+            menubar: false,
+            height: 50,
+            resize: true
+        });
+        
+        // TinyMCE for content fields - larger
+        tinymce.init({
+            selector: 'textarea:not([name="title"])',
+            plugins: 'lists link image table',
+            toolbar: 'undo redo | bold italic underline | bullist numlist | link image | table',
+            menubar: false,
+            height: 300,
+            resize: true
         });
     });
 </script>
 </head>
 <body class="admin-page">
+<!-- Sidebar Toggle Button -->
+<button class="sidebar-toggle-btn" id="sidebarToggle">
+    <i class="fa-solid fa-bars"></i>
+</button>
 <nav class="admin-header text-white p-4 sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto flex justify-between items-center">
-        <div class="flex items-center gap-2">
+    <div class="flex justify-end items-center px-8">
+        <div class="admin-header-brand">
             <i class="fa-solid fa-gears text-2xl"></i>
             <h1 class="text-2xl font-bold">Admin Panel</h1>
-            <?php if (!empty($_SESSION['voornaam']) || !empty($_SESSION['user'])): ?>
-                <span class="text-sm md:text-base font-medium bg-white/20 px-3 py-1 rounded-full">
-                    Welkom <?php echo htmlspecialchars($_SESSION['voornaam'] ?? $_SESSION['user']); ?>
-                </span>
-            <?php endif; ?>
         </div>
-        <div class="flex gap-3">
+        <div class="flex items-center gap-3 flex-nowrap">
             <a href="index.php" class="btn btn-secondary text-sm">
                 <i class="fa-solid fa-arrow-left"></i> Terug naar site
             </a>
@@ -666,7 +678,7 @@ if ($page !== 'banner' && $page !== 'agenda') {
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
-                <i class="fa-solid fa-list"></i> Navigatie
+                <i class="fa-solid fa-bars"></i> Navigatie
             </div>
             <nav class="divide-y">
                 <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Beheer</div>
@@ -736,7 +748,7 @@ if ($page !== 'banner' && $page !== 'agenda') {
 
                             <div>
                                 <label class="form-label">Titel</label>
-                                <input name="title" class="form-input admin-input-surface admin-input-h-48" value="<?php echo htmlspecialchars($editEvent['title']); ?>" />
+                                <textarea name="title" rows="1" class="form-textarea"><?php echo htmlspecialchars($editEvent['title']); ?></textarea>
                             </div>
 
                             <div class="grid grid-cols-3 gap-4">
@@ -811,7 +823,7 @@ if ($page !== 'banner' && $page !== 'agenda') {
 
                             <div>
                                 <label class="form-label">Titel</label>
-                                <input name="title" class="form-input admin-input-surface" />
+                                <textarea name="title" rows="1" class="form-textarea"></textarea>
                             </div>
 
                             <div class="grid grid-cols-3 gap-4">
@@ -1039,7 +1051,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                             <div>
                                 <label class="form-label">Titel</label>
-                                <input name="title" class="form-input admin-input-surface admin-input-h-48" value="<?php echo htmlspecialchars($editPage['title']); ?>" />
+                                <textarea name="title" rows="1" class="form-textarea"><?php echo htmlspecialchars($editPage['title']); ?></textarea>
                             </div>
 
                             <div>
@@ -1082,7 +1094,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                             <div>
                                 <label class="form-label">Titel</label>
-                                <input name="title" class="form-input admin-input-surface admin-input-h-48" />
+                                <textarea name="title" rows="1" class="form-textarea"></textarea>
                             </div>
 
                             <div>
@@ -1455,6 +1467,52 @@ document.addEventListener('DOMContentLoaded', function() {
       closeImageModal();
     }
   });
+});
+
+// Sidebar toggle functionality
+document.addEventListener('DOMContentLoaded', function() {
+  const sidebar = document.querySelector('.sidebar');
+  const toggleBtn = document.getElementById('sidebarToggle');
+  const grid = document.querySelector('.grid');
+
+  if (!sidebar || !toggleBtn || !grid) return;
+
+  // Check if sidebar should be hidden on load (e.g., on mobile)
+  function updateSidebarVisibility() {
+    const isMobile = window.innerWidth < 1024;
+    if (isMobile) {
+      sidebar.classList.add('hidden');
+      grid.classList.add('sidebar-hidden');
+      toggleBtn.classList.remove('hidden');
+    } else {
+      sidebar.classList.remove('hidden');
+      grid.classList.remove('sidebar-hidden');
+      toggleBtn.classList.add('hidden');
+    }
+  }
+
+  // Toggle sidebar
+  toggleBtn.addEventListener('click', function() {
+    sidebar.classList.toggle('hidden');
+    grid.classList.toggle('sidebar-hidden');
+  });
+
+  // Also allow header click to toggle on mobile
+  const sidebarHeader = document.querySelector('.sidebar-header');
+  if (sidebarHeader) {
+    sidebarHeader.addEventListener('click', function() {
+      if (window.innerWidth < 1024) {
+        sidebar.classList.toggle('hidden');
+        grid.classList.toggle('sidebar-hidden');
+      }
+    });
+  }
+
+  // Update on resize
+  window.addEventListener('resize', updateSidebarVisibility);
+
+  // Initial check
+  updateSidebarVisibility();
 });
 </script>
 

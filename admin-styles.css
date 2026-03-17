@@ -57,14 +57,33 @@ body.admin-page::before {
 
 /* --- Header --- */
 .admin-header {
-    background: rgba(255, 255, 255, 0.98);
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1),
-                0 1px 3px rgba(0, 0, 0, 0.05);
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    padding: 1.25rem 0;
-    border-bottom: 1px solid rgba(46, 125, 50, 0.1);
+    background: #ffffff;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12),
+                0 2px 8px rgba(0, 0, 0, 0.08);
+    position: relative;
+    padding: 1.5rem 0;
+    border-bottom: 1px solid rgba(46, 125, 50, 0.15);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.admin-page main {
+    margin-top: 10px; /* minimal gap between header and page content */
+}
+
+.admin-header > div {
+    padding: 0 2rem;
+}
+
+.admin-header > div > * {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.75rem;
+}
+
+
+.admin-header:hover {
+    background: #ffffff;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15),
+                0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .admin-header .max-w-7xl {
@@ -74,21 +93,71 @@ body.admin-page::before {
 }
 
 .admin-header h1 {
-    font-size: 1.625rem;
-    font-weight: 700;
-    letter-spacing: -0.025em;
+    font-size: 1.75rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
     background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 50%, #43a047 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    text-shadow: 0 2px 4px rgba(46, 125, 50, 0.1);
+    transition: transform 0.2s ease;
 }
 
-/* Welcome text color fix */
+.admin-header h1:hover {
+    transform: none;
+    color: #1a202c;
+}
+
+/* Brand (logo + title) */
+.admin-header-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: nowrap;
+}
+
+.admin-header-brand h1 {
+    white-space: nowrap;
+}
+
+/* Logo styling */
+.admin-header-logo {
+    height: 40px;
+    width: auto;
+    object-fit: contain;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.admin-header-logo:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+/* Welcome text modern badge styling */
 .admin-header span,
 .admin-header p,
 .admin-header .welcome-text {
     color: #1a202c !important;
     -webkit-text-fill-color: #1a202c !important;
+    background: linear-gradient(135deg, rgba(46, 125, 50, 0.1) 0%, rgba(67, 160, 71, 0.1) 100%);
+    border: 1px solid rgba(46, 125, 50, 0.2);
+    border-radius: 20px;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    letter-spacing: 0.025em;
+    box-shadow: 0 2px 8px rgba(46, 125, 50, 0.1);
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.admin-header .welcome-text:hover {
+    background: linear-gradient(135deg, rgba(46, 125, 50, 0.15) 0%, rgba(67, 160, 71, 0.15) 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(46, 125, 50, 0.15);
 }
 
 /* --- Main Container --- */
