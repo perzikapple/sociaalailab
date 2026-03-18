@@ -587,6 +587,8 @@ main > div.grid > div:hover {
 .site-footer {
     background-color: #ffffff;
     color: #fff;
+    /* space between terugblik and agent text-block*/
+    margin-top: 40px;
     padding: 20px 10px;
     text-align: center;
     font-family: sans-serif;
@@ -628,3 +630,4 @@ main > div.grid > div:hover {
         max-height: 40px;
     }
 }
+
