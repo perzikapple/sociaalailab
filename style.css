@@ -584,6 +584,7 @@ main > div.grid > div:hover {
     }
 }
 
+<<<<<<< HEAD
 
 
 @media (min-width: 1024px) {
@@ -713,3 +714,52 @@ main > section.bg-white img{
 
 
 
+=======
+.site-footer {
+    background-color: #ffffff;
+    color: #fff;
+    /* space between terugblik and agent text-block*/
+    margin-top: 40px;
+    padding: 20px 10px;
+    text-align: center;
+    font-family: sans-serif;
+}
+
+.footer-container h3 {
+    margin-bottom: 15px;
+    color: #000000;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.partners {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;  /* belangrijke regel voor mobiel */
+    gap: 20px;
+    margin-bottom: 15px;
+}
+
+.partners img {
+    max-height: 50px;   /* past alle logo's mooi */
+    width: auto;
+    object-fit: contain;
+    transition: transform 0.3s;
+}
+
+.partners img:hover {
+    transform: scale(1.1);
+}
+
+.site-footer p {
+    font-size: 0.8rem;
+    color: #000000;
+}
+
+@media (max-width: 480px) {
+    .partners img {
+        max-height: 40px;
+    }
+}
+
+>>>>>>> 463151733ea3acd3c12eb17a9bd907421fdef98c

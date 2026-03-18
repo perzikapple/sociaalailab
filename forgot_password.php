@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // $mail->SMTPDebug  = 2; // Verwijder debug in productie
 
                 // Recipients
-                $mail->setFrom('noreply@sociaalailab.nl', 'SociaalAI Lab');
+                $mail->setFrom('indybrinkman2006@gmail.com', 'SociaalAI Lab');
                 $mail->addAddress($email);
 
                 // Content
