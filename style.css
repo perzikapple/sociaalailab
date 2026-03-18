@@ -583,3 +583,133 @@ main > div.grid > div:hover {
         min-width: 100%;
     }
 }
+
+
+
+@media (min-width: 1024px) {
+    .flexrow.justify-evenly > .space-y-6 {
+        flex: 1 1 0%;
+        min-width: 0;
+    }
+
+    .flexrow.justify-evenly > .space-y-6 > div {
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        margin-bottom: 0 !important;
+    }
+}
+
+
+.flexrow.justify-evenly {
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.flexrow.justify-evenly img {
+    height: 5rem !important;
+    width: auto;
+}
+
+.flexrow.justify-evenly > .space-y-6 > div {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.flexrow.justify-evenly > .space-y-6 > div:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.13);
+}
+
+main > section.bg-white{
+  margin-top: 1.25rem;
+  margin-bottom: 1.25rem;
+  padding: 2rem 2.5rem;
+  border-radius: 0;
+  border-left: 4px solid #00811F;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  max-width: 1152px;
+}
+
+main > section.bg-white:first-child{
+  margin-top:2rem;
+}
+
+main > section.bg-white:last-child{
+  margin-bottom: 2rem;
+}
+
+main > section.bg-white:hover{
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28 px rgba(0, 0, 0, 0.15);
+}
+
+@main (min-width: 768px) {
+section.bg-white:has (> div.mt-4){
+  display: grid;
+  grid-template-columns: 1fr 45%;
+  gap: 2rem;
+  align-items: start;
+}
+
+main > section.bg-white:has(> div.mt-4) {
+  grid-row: 1;
+  grid-column: 2;
+  margin-top: 0;
+}
+
+main > section.bgwhite > div:first-child{
+  grid-column: 1;
+  grid-row: 1;
+}
+
+}
+
+main > section.bg-white > div.mt-4 iframe{
+  width:100%;
+  height: 360px;
+  display: block;
+  border:0;
+}
+
+main > section.bg-white img{
+  border-radius: 1rem;
+}
+
+.site-footer {
+    padding: 0.5rem 1rem !important;
+    margin-top: 1rem !important;
+}
+
+.site-footer .footer-heading {
+    padding-top: 0.25rem !important;
+    padding-bottom: 0 !important;
+    font-size: 0.8rem;
+}
+
+.site-footer .footer-logos {
+    padding-top: 0.25rem !important;
+    padding-bottom: 0.25rem !important;
+    gap: 0.5rem !important;
+}
+
+.site-footer .footer-logo img {
+    max-height: 45px !important;
+    max-width: 100px !important;
+}
+
+.site-footer .text-center.text-sm {
+    padding-top: 0.1rem !important;
+    padding-bottom: 0.1rem !important;
+    font-size: 0.75rem;
+}
+
+/*test*/
+
+
+
+
+
+
