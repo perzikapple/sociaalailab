@@ -263,7 +263,7 @@ img, video {
 
 #mobile-menu.open,
 #mobile-menu:not(.hidden) {
-    display: flex;
+    display: block;
     flex-direction: column !important;
     align-items: flex-start !important;
 }
@@ -474,4 +474,112 @@ main > div.grid > div:hover {
 
 .text-padding{
     padding: 32px;
+}
+
+/* ---- Navbar basis ---- */
+.navbar {
+    background-color: white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* ---- Menu ---- */
+.nav-menu {
+    list-style: none;
+    display: flex;
+    margin: 0;
+    padding: 0;
+}
+
+.nav-menu li {
+    position: relative;
+}
+
+.nav-menu a,
+.dropbtn {
+    display: block;
+    padding: 15px 20px;
+    text-decoration: none;
+    color: #333;
+    font-weight: 500;
+}
+
+.nav-menu a:hover,
+.dropbtn:hover {
+    color: #00811F;
+}
+
+/* ---- Dropdown ---- */
+.dropdown-content {
+    display: none;
+    position: absolute;
+    top: 100%; /* direct onder parent */
+    left: 0;
+    background-color: white;
+    min-width: 200px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    z-index: 1000;
+}
+
+.dropdown-content li a {
+    padding: 10px 15px;
+    color: #333;
+}
+
+.dropdown-content li a:hover {
+    background-color: #f0f0f0;
+}
+
+/* Show dropdown on hover */
+.dropdown:hover .dropdown-content {
+    display: block;
+}
+
+/* ---- Hamburger mobiel ---- */
+.hamburger {
+    display: none;
+    font-size: 24px;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+/* ---- Responsive ---- */
+@media screen and (max-width: 768px) {
+    .hamburger {
+        display: block;
+    }
+
+    .nav-menu {
+        display: none;
+        flex-direction: column;
+        width: 100%;
+        background-color: white;
+    }
+
+    .nav-menu li {
+        text-align: left;
+        border-top: 1px solid #eee;
+    }
+
+    .nav-menu.show {
+        display: flex;
+    }
+
+    .dropdown-content {
+        position: static;
+        box-shadow: none;
+        min-width: 100%;
+    }
 }
