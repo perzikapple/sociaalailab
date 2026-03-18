@@ -944,7 +944,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <div class="flex justify-between items-start gap-4">
                                         <input type="checkbox" class="event-checkbox w-4 h-4 mt-1 flex-shrink-0 cursor-pointer" name="event_ids[]" value="<?php echo (int)$event['id']; ?>">
                                         <div class="flex-1">
-                                            <h4 class="font-bold text-lg text-gray-800"><?php echo htmlspecialchars($event['title']); ?></h4>
+                                            <h4 class="font-bold text-lg text-gray-800"><?php echo strip_tags($event['title'], '<b><i><strong><em><a>'); ?></h4>
                                             <?php 
                                                 $dateDisplay = formatEventDateDisplay($event['date']); 
                                                 $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : ''; 
@@ -1163,7 +1163,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <div class="flex justify-between items-start gap-4">
                                         <input type="checkbox" class="page-checkbox page-checkbox-<?php echo htmlspecialchars($pageKey); ?> w-4 h-4 mt-1 flex-shrink-0 cursor-pointer" name="page_ids[]" value="<?php echo (int)$it['id']; ?>">
                                         <div class="flex-1">
-                                            <h4 class="font-bold text-lg text-gray-800"><?php echo htmlspecialchars($it['title'] ?? ''); ?></h4>
+                                            <h4 class="font-bold text-lg text-gray-800"><?php echo strip_tags($it['title'] ?? '', '<b><i><strong><em><a>'); ?></h4>
                                             <p class="text-sm text-gray-600 mt-1 line-clamp-2"><?php echo nl2br(htmlspecialchars($it['body'] ? mb_strimwidth($it['body'],0,150,'...') : '')); ?></p>
                                         </div>
                                         <div class="flex gap-2 flex-shrink-0">
