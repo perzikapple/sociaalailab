@@ -9,7 +9,7 @@ if (!isset($navPrefix)) {
             &#9776;
         </button>
 
-        <ul id="nav-menu" class="nav-menu">
+        <ul id="nav-menu" class="nav-menu ">
             <li><a href="<?php echo htmlspecialchars($navPrefix); ?>index.php">Voorpagina</a></li>
             <li><a href="<?php echo htmlspecialchars($navPrefix); ?>agenda.php">Agenda</a></li>
             <li><a href="<?php echo htmlspecialchars($navPrefix); ?>over.php">Voor wie?</a></li>
@@ -39,4 +39,6 @@ if (!isset($navPrefix)) {
     toggle.addEventListener('click', () => {
         menu.classList.toggle('show');
     });
+
+
 </script>

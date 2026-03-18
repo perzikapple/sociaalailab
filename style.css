@@ -632,3 +632,118 @@ main > div.grid > div:hover {
     }
 }
 
+/* Basis navbar */
+.navbar {
+    background-color: #fff;
+    border-bottom: 1px solid #ddd;
+    font-family: sans-serif;
+}
+
+.nav-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+}
+
+/* Hamburger menu */
+.hamburger {
+    display: none;
+    font-size: 2rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+/* Nav menu desktop */
+.nav-menu {
+    display: flex;
+    list-style: none;
+    gap: 1rem;
+}
+
+/* Dropdown menu */
+.dropdown {
+    position: relative;
+}
+
+.dropbtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 1rem;
+}
+
+.dropdown-content {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: #fff;
+    min-width: 180px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    border-radius: 5px;
+    display: none;
+    flex-direction: column;
+    z-index: 10;
+}
+
+.dropdown-content li a {
+    padding: 0.5rem 1rem;
+    display: block;
+    text-decoration: none;
+    color: #333;
+}
+
+.dropdown-content li a:hover {
+    background-color: #f0f0f0;
+}
+
+/* Dropdown active */
+.dropdown-content.show {
+    display: flex;
+}
+
+/* Arrow */
+.arrow {
+    transition: transform 0.3s;
+}
+
+.arrow.rotate {
+    transform: rotate(180deg);
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+    .hamburger {
+        display: block;
+    }
+
+    .nav-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background-color: #fff;
+        flex-direction: column;
+        display: none;
+        gap: 0;
+        border-top: 1px solid #ddd;
+    }
+
+    .nav-menu.show {
+        display: flex;
+    }
+
+    .nav-menu li {
+        border-bottom: 1px solid #eee;
+    }
+
+    .dropdown-content {
+        position: relative;
+        box-shadow: none;
+        border-radius: 0;
+    }
+}
