@@ -47,7 +47,6 @@ try {
     <div class="banner banner-2">
         <img class="" src="<?php echo htmlspecialchars($banner2); ?>">
     </div>
-</div>
 
 <?php
 $navPrefix = '';
@@ -65,15 +64,18 @@ include __DIR__ . '/navbar.php';
         if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) $imagePosition = 'normal';
         $isEven = ($index % 2 == 0);
         $isImageLeft = $imagePosition === 'normal' ? $isEven : ($imagePosition === 'left');
-        
         $flexDir = 'row';
         if ($isImageLeft) {
             $flexDir = 'row';
         } else {
             $flexDir = 'row-reverse';
         }
-        $sectionStyle = "display: flex; flex-direction: " . $flexDir . "; align-items: flex-start; gap: 2.5rem;";
-        
+        $sectionStyle = "display: flex; flex-direction: " . $flexDir . "; align-items: center; gap: 2.5rem;";
+        // Set image size class for bottom 2 blocks
+        $imgClass = 'consistent-img';
+        if ($index >= count($pageBlocks) - 2) {
+            $imgClass .= ' bigger-img';
+        }
         $index++;
     ?>
         <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12 text-padding" style="<?php echo $sectionStyle; ?>">
@@ -85,9 +87,8 @@ include __DIR__ . '/navbar.php';
                 }
                 ?>
                 <div style="<?php echo $imageStyle; ?>">
-                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" 
-                         alt="<?php echo htmlspecialchars($block['title']); ?>" 
-                         style="width: 100%; height: auto; <?php echo $hasText ? 'max-height: 240px; object-fit: contain;' : ''; ?>">
+                    <img class="<?php echo $imgClass; ?>" src="uploads/<?php echo htmlspecialchars($block['image']); ?>" 
+                        alt="<?php echo htmlspecialchars($block['title']); ?>">
                 </div>
             <?php endif; ?>
             <?php if ($hasText): ?>
