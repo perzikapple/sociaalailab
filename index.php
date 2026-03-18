@@ -175,8 +175,9 @@ include __DIR__ . '/navbar.php';
                             $imageSrc = 'images/' . $imagePath;
                         }
                         ?>
-                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" class="w-auto h-32">
-                    <?php endif; ?>
+                        <img src="<?php echo htmlspecialchars($imageSrc); ?>"
+                             alt="<?php echo htmlspecialchars($block['title']); ?>"
+                             class="card-icon">                    <?php endif; ?>
                 </div>
                 <?php if ($cardGreenText !== ''): ?>
                     <div class="text-center mb-2"><div class="green-highlight"><?php echo nl2br(htmlspecialchars($cardGreenText)); ?></div></div>

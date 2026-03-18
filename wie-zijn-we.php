@@ -76,7 +76,7 @@ include __DIR__ . '/navbar.php';
         
         $index++;
     ?>
-        <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" style="<?php echo $sectionStyle; ?>">
+        <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12 text-padding" style="<?php echo $sectionStyle; ?>">
             <?php if ($hasImage): ?>
                 <?php
                 $imageStyle = 'flex-shrink: 0; width: 340px; min-width: 340px; max-width: 340px;';

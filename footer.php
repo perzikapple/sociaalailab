@@ -7,9 +7,9 @@ $imgPrefix = ($scriptDir === $rootDir) ? 'images/' : '../images/';
 <footer class="site-footer mt-16 shadow-inner">
     <div class="container">
         <div class="footer-heading text-center text-lg font-semibold text-gray-800 py-2">
-            Een samenwerking met:
+            In samenwerking met:
         </div>
-        <div class="footer-logos flex flex-wrap justify-center items-center gap-4 py-6">
+        <div class="footer-logo w-32 h-20 flex items-center justify-center m-8 gap-10">
 
             <div class="footer-logo w-32 h-20 flex items-center justify-center">
                 <img alt="logo techniek collage Rotterdam" src="<?php echo $imgPrefix; ?>Techniek_College_Rotterdam_logoOP.png" class="max-w-full max-h-full object-contain">
