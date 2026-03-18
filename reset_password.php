@@ -2,34 +2,41 @@
 session_start();
 require 'db.php';
 
-$banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: 'images/banner_website_01.jpg';
-$banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: 'images/banner_website_02.jpg';
-
 $message = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = trim($_POST['email']);
-    $pass = $_POST['password'];
+$validToken = false;
+$email = '';
 
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $message = 'Invalid email format.';
+if (isset($_GET['token'])) {
+    $token = $_GET['token'];
+
+    // Check if token matches session
+    if (isset($_SESSION['reset_token']) && $_SESSION['reset_token'] === $token) {
+        $validToken = true;
+        $email = $_SESSION['reset_email'];
     } else {
-        // Look up user in database
-        $stmt = $pdo->prepare("SELECT email, wachtwoord, admin FROM accounts WHERE email = ?");
-        $stmt->execute([$email]);
-        $user = $stmt->fetch();
+        $message = 'Ongeldige of verlopen reset link.';
+    }
+}
 
-        if (!$user) {
-            $message = 'Email or password incorrect.';
-        } elseif ($pass !== $user['wachtwoord']) {
-            $message = 'Email or password incorrect.';
-        } else {
-            // Set session and redirect
-            $_SESSION['user'] = $user['email'];
-            $_SESSION['email'] = $user['email'];
-            $_SESSION['admin'] = $user['admin'];
-            header('Location: admin.php');
-            exit;
-        }
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $validToken) {
+    $newPassword = $_POST['password'];
+    $confirmPassword = $_POST['confirm_password'];
+
+    if (strlen($newPassword) < 6) {
+        $message = 'Wachtwoord moet minimaal 6 karakters zijn.';
+    } elseif ($newPassword !== $confirmPassword) {
+        $message = 'Wachtwoorden komen niet overeen.';
+    } else {
+        // Update password in database
+        $stmt = $pdo->prepare("UPDATE accounts SET wachtwoord = ? WHERE email = ?");
+        $stmt->execute([$newPassword, $email]);
+
+        // Clear session
+        unset($_SESSION['reset_token']);
+        unset($_SESSION['reset_email']);
+
+        $message = 'Wachtwoord succesvol gewijzigd. <a href="login.php" class="text-[#00811F] hover:underline">Log in</a>';
+        $validToken = false; // Hide form
     }
 }
 ?>
@@ -38,16 +45,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Log in bij het SociaalAI Lab">
-    <title>Log in - SociaalAI Lab</title>
+    <meta name="description" content="Wachtwoord resetten - SociaalAI Lab">
+    <title>Wachtwoord resetten - SociaalAI Lab</title>
     <link rel="preload" href="build/assets/app-CAiCLEjY.js" as="script">
     <link rel="stylesheet" href="style.css?v=<?php echo filemtime(__DIR__.'/style.css'); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-QWW4UvCRwT1iu11i/LCSVyitVqqkBIQviyLblhMlLKL6+0JSVDtB+cdcIUMyZVQd2+bwTKgCCAPEnjRBeWV2vQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body class="bg-gradient-to-br from-[#00811F] to-[#b9eb34]">
     <div class="banner-wrapper relative">
-        <img src="<?php echo htmlspecialchars($banner1); ?>" alt="Banner 1" class="banner active h-60 md:h-96 w-full object-cover">
-        <img src="<?php echo htmlspecialchars($banner2); ?>" alt="Banner 2" class="banner h-60 md:h-96 w-full object-cover">
+        <img src="images/banner_website_01.jpg" alt="Banner 1" class="banner active h-60 md:h-96 w-full object-cover">
+        <img src="images/banner_website_02.jpg" alt="Banner 2" class="banner h-60 md:h-96 w-full object-cover">
     </div>
 
     <?php
@@ -57,23 +64,25 @@ include __DIR__ . '/navbar.php';
 
 <main>
     <section class="bg-white shadow-lg rounded-2xl p-8 sm:p-10 w-[92%] max-w-md mx-auto my-12">
-        <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900">Log in bij het SociaalAI Lab</h2>
+        <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900">Wachtwoord resetten</h2>
         <?php if ($message): ?>
-            <p class="text-center text-lg <?php echo strpos($message, 'successful') !== false ? 'text-green-600' : 'text-red-600'; ?>"><?php echo htmlspecialchars($message); ?></p>
+            <p class="text-center text-lg <?php echo strpos($message, 'succesvol') !== false ? 'text-green-600' : 'text-red-600'; ?>"><?php echo $message; ?></p>
         <?php endif; ?>
+        <?php if ($validToken): ?>
         <form method="POST" class="space-y-4">
             <div>
-                <label for="email" class="block text-gray-700">E-mail:</label>
-                <input type="email" id="email" name="email" required class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00811F]">
-            </div>
-            <div>
-                <label for="password" class="block text-gray-700">Wachtwoord:</label>
+                <label for="password" class="block text-gray-700">Nieuw wachtwoord:</label>
                 <input type="password" id="password" name="password" required class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00811F]">
             </div>
-            <button type="submit" class="bg-[#00811F] text-white px-6 py-2 rounded-md hover:bg-green-700 transition">Log in</button>
+            <div>
+                <label for="confirm_password" class="block text-gray-700">Bevestig wachtwoord:</label>
+                <input type="password" id="confirm_password" name="confirm_password" required class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00811F]">
+            </div>
+            <button type="submit" class="bg-[#00811F] text-white px-6 py-2 rounded-md hover:bg-green-700 transition">Wachtwoord wijzigen</button>
         </form>
+        <?php endif; ?>
         <p class="text-center mt-4">
-            <a href="forgot_password.php" class="text-[#00811F] hover:underline">Wachtwoord vergeten? Resetten</a>
+            <a href="login.php" class="text-[#00811F] hover:underline">Terug naar inloggen</a>
         </p>
     </section>
 </main>
@@ -81,6 +90,7 @@ include __DIR__ . '/navbar.php';
 <?php include __DIR__ . '/footer.php'; ?>
 
 <script>
+    // Same navbar script as login.php
     (function() {
         const toggle = document.getElementById('programma-toggle');
         const menu = document.getElementById('programma-menu');
@@ -153,17 +163,6 @@ include __DIR__ . '/navbar.php';
             mobileToggle.setAttribute('aria-expanded', (!isHidden).toString());
         });
     })();
-
-const banners = document.querySelectorAll('.banner');
-let current = 0;
-
-setInterval(() => {
-  banners[current].classList.remove('active');
-  current = (current + 1) % banners.length;
-  banners[current].classList.add('active');
-}, 10000);
-
 </script>
-
 </body>
 </html>

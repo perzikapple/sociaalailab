@@ -2,33 +2,67 @@
 session_start();
 require 'db.php';
 
-$banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: 'images/banner_website_01.jpg';
-$banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: 'images/banner_website_02.jpg';
+// Include PHPMailer
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+require 'vendor/phpmailer/src/Exception.php';
+require 'vendor/phpmailer/src/PHPMailer.php';
+require 'vendor/phpmailer/src/SMTP.php';
 
 $message = '';
+$success = false;
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email']);
-    $pass = $_POST['password'];
 
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $message = 'Invalid email format.';
+        $message = 'Ongeldig email formaat.';
     } else {
-        // Look up user in database
-        $stmt = $pdo->prepare("SELECT email, wachtwoord, admin FROM accounts WHERE email = ?");
+        // Check if email exists
+        $stmt = $pdo->prepare("SELECT email FROM accounts WHERE email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
 
         if (!$user) {
-            $message = 'Email or password incorrect.';
-        } elseif ($pass !== $user['wachtwoord']) {
-            $message = 'Email or password incorrect.';
+            $message = 'Deze email is niet geregistreerd.';
         } else {
-            // Set session and redirect
-            $_SESSION['user'] = $user['email'];
-            $_SESSION['email'] = $user['email'];
-            $_SESSION['admin'] = $user['admin'];
-            header('Location: admin.php');
-            exit;
+            // Generate a reset token (simple random string)
+            $token = bin2hex(random_bytes(32));
+
+            // For simplicity, store token in session with email (in production, use database)
+            $_SESSION['reset_token'] = $token;
+            $_SESSION['reset_email'] = $email;
+
+            // Send email using PHPMailer
+            $mail = new PHPMailer(true);
+
+            try {
+                // Server settings - Elastic Email
+                $mail->isSMTP();
+                $mail->Host       = 'smtp.elasticemail.com'; // Elastic Email SMTP server
+                $mail->SMTPAuth   = true;
+                $mail->Username   = 'indybrinkman2006@gmail.com'; // Vervang met je Elastic Email username (meestal je email)
+                $mail->Password   = 'A9D9DCEB7DA750C8DDC4D599720EC836E1A9'; // Vervang met je Elastic Email SMTP password
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                $mail->Port       = 587; // Of 587 als 2525 niet werkt
+                // $mail->SMTPDebug  = 2; // Verwijder debug in productie
+
+                // Recipients
+                $mail->setFrom('noreply@sociaalailab.nl', 'SociaalAI Lab');
+                $mail->addAddress($email);
+
+                // Content
+                $resetLink = "http://localhost:8000/reset_password.php?token=" . $token; // Vervang localhost met je domein in productie
+                $mail->isHTML(false);
+                $mail->Subject = 'Wachtwoord reset - SociaalAI Lab';
+                $mail->Body    = "Klik op deze link om je wachtwoord te resetten: " . $resetLink . "\n\nAls je dit niet hebt aangevraagd, negeer deze email.";
+
+                $mail->send();
+                $success = true;
+                $message = 'Er is een reset link naar je email gestuurd.';
+            } catch (Exception $e) {
+                $message = 'Er is een fout opgetreden bij het verzenden van de email: ' . $mail->ErrorInfo;
+            }
         }
     }
 }
@@ -38,16 +72,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Log in bij het SociaalAI Lab">
-    <title>Log in - SociaalAI Lab</title>
+    <meta name="description" content="Wachtwoord vergeten - SociaalAI Lab">
+    <title>Wachtwoord vergeten - SociaalAI Lab</title>
     <link rel="preload" href="build/assets/app-CAiCLEjY.js" as="script">
     <link rel="stylesheet" href="style.css?v=<?php echo filemtime(__DIR__.'/style.css'); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-QWW4UvCRwT1iu11i/LCSVyitVqqkBIQviyLblhMlLKL6+0JSVDtB+cdcIUMyZVQd2+bwTKgCCAPEnjRBeWV2vQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body class="bg-gradient-to-br from-[#00811F] to-[#b9eb34]">
     <div class="banner-wrapper relative">
-        <img src="<?php echo htmlspecialchars($banner1); ?>" alt="Banner 1" class="banner active h-60 md:h-96 w-full object-cover">
-        <img src="<?php echo htmlspecialchars($banner2); ?>" alt="Banner 2" class="banner h-60 md:h-96 w-full object-cover">
+        <img src="images/banner_website_01.jpg" alt="Banner 1" class="banner active h-60 md:h-96 w-full object-cover">
+        <img src="images/banner_website_02.jpg" alt="Banner 2" class="banner h-60 md:h-96 w-full object-cover">
     </div>
 
     <?php
@@ -57,23 +91,21 @@ include __DIR__ . '/navbar.php';
 
 <main>
     <section class="bg-white shadow-lg rounded-2xl p-8 sm:p-10 w-[92%] max-w-md mx-auto my-12">
-        <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900">Log in bij het SociaalAI Lab</h2>
+        <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900">Wachtwoord vergeten</h2>
         <?php if ($message): ?>
-            <p class="text-center text-lg <?php echo strpos($message, 'successful') !== false ? 'text-green-600' : 'text-red-600'; ?>"><?php echo htmlspecialchars($message); ?></p>
+            <p class="text-center text-lg <?php echo $success ? 'text-green-600' : 'text-red-600'; ?>"><?php echo htmlspecialchars($message); ?></p>
         <?php endif; ?>
+        <?php if (!$success): ?>
         <form method="POST" class="space-y-4">
             <div>
                 <label for="email" class="block text-gray-700">E-mail:</label>
                 <input type="email" id="email" name="email" required class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00811F]">
             </div>
-            <div>
-                <label for="password" class="block text-gray-700">Wachtwoord:</label>
-                <input type="password" id="password" name="password" required class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00811F]">
-            </div>
-            <button type="submit" class="bg-[#00811F] text-white px-6 py-2 rounded-md hover:bg-green-700 transition">Log in</button>
+            <button type="submit" class="bg-[#00811F] text-white px-6 py-2 rounded-md hover:bg-green-700 transition">Verstuur reset link</button>
         </form>
+        <?php endif; ?>
         <p class="text-center mt-4">
-            <a href="forgot_password.php" class="text-[#00811F] hover:underline">Wachtwoord vergeten? Resetten</a>
+            <a href="login.php" class="text-[#00811F] hover:underline">Terug naar inloggen</a>
         </p>
     </section>
 </main>
@@ -81,6 +113,7 @@ include __DIR__ . '/navbar.php';
 <?php include __DIR__ . '/footer.php'; ?>
 
 <script>
+    // Same navbar script as login.php
     (function() {
         const toggle = document.getElementById('programma-toggle');
         const menu = document.getElementById('programma-menu');
@@ -153,17 +186,6 @@ include __DIR__ . '/navbar.php';
             mobileToggle.setAttribute('aria-expanded', (!isHidden).toString());
         });
     })();
-
-const banners = document.querySelectorAll('.banner');
-let current = 0;
-
-setInterval(() => {
-  banners[current].classList.remove('active');
-  current = (current + 1) % banners.length;
-  banners[current].classList.add('active');
-}, 10000);
-
 </script>
-
 </body>
 </html>
