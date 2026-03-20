@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Onest:wght@500&display=swap');
+
 /* Consistent image size and spacing for wie-zijn-we page */
 .consistent-img {
   display: block;
@@ -747,3 +749,139 @@ main > div.grid > div:hover {
         border-radius: 0;
     }
 }
+
+
+/* Shared anchor offset for sticky navigation */
+.anchor-target {
+  scroll-margin-top: 6rem;
+}
+
+.page-switch {
+  gap: 1rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.page-switch-card {
+  max-width: 24rem;
+}
+
+@media (min-width: 1025px) {
+  .page-switch {
+    gap: 1.5rem;
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .anchor-target {
+    scroll-margin-top: 5rem;
+  }
+
+  .page-switch {
+    gap: 0.75rem;
+  }
+
+  .page-switch-card {
+    margin-top: 0 !important;
+  }
+}
+
+/* Footer as centered card so page background stays visible around it */
+.site-footer {
+  background: transparent !important;
+  margin-top: 2.25rem;
+  padding: 1.1rem 0.75rem 2rem;
+}
+
+.site-footer .footer-container {
+  max-width: 72rem;
+  margin: 0 auto;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: var(--radius-xl);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.12);
+  padding: 1.5rem 1.25rem;
+}
+
+.site-footer .footer-container h3 {
+  color: #111827;
+  margin-bottom: 1rem;
+}
+
+.site-footer .partners {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.site-footer .partners img {
+  max-height: 54px;
+  width: auto;
+  object-fit: contain;
+}
+
+.site-footer .copyright {
+  color: #4b5563;
+  font-size: 0.82rem;
+}
+
+@media (max-width: 768px) {
+  .site-footer {
+    padding: 0.9rem 0.5rem 1.25rem;
+  }
+
+  .site-footer .footer-container {
+    border-radius: var(--radius-lg);
+    padding: 1rem 0.85rem;
+  }
+
+  .site-footer .partners {
+    gap: 0.75rem;
+  }
+
+  .site-footer .partners img {
+    max-height: 42px;
+  }
+}
+
+:root {
+  --font-sans: "Onest", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+html,
+body,
+button,
+input,
+select,
+textarea {
+  font-family: var(--font-sans) !important;
+}
+
+/* Global rounded boxes */
+.bg-white,
+.nav-container,
+.nav-menu,
+.dropdown-content,
+.site-footer .footer-container,
+.page-switch-card,
+.text-block {
+  border-radius: var(--radius-xl) !important;
+}
+
+@media (max-width: 768px) {
+  .bg-white,
+  .nav-container,
+  .nav-menu,
+  .dropdown-content,
+  .site-footer .footer-container,
+  .page-switch-card,
+  .text-block {
+    border-radius: var(--radius-lg) !important;
+  }
+}
+

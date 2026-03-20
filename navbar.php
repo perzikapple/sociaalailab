@@ -3,7 +3,7 @@ if (!isset($navPrefix)) {
     $navPrefix = '';
 }
 ?>
-<nav class="navbar">
+<nav class="navbar onest-font">
     <div class="nav-container">
         <button id="mobile-menu-toggle" class="hamburger" aria-label="Toggle navigation">
             &#9776;
