@@ -719,6 +719,7 @@ main > div.grid > div:hover {
 @media (max-width: 768px) {
     .hamburger {
         display: block;
+        font-size: 28px;
     }
 
     .nav-menu {
@@ -739,6 +740,11 @@ main > div.grid > div:hover {
 
     .nav-menu li {
         border-bottom: 1px solid #eee;
+    }
+
+    .fa-solid{
+        padding: 2px;
+        font-size: 14px;
     }
 
     .nav-menu li a{
