@@ -876,3 +876,13 @@ button,
 section{
     width: 95%;
 }
+
+/* Tablets (portrait & landscape) */
+@media (min-width: 768px) and (max-width: 1024px) {
+
+}
+
+/* Desktops and laptops */
+@media (min-width: 1025px) {
+
+}
