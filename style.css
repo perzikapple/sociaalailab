@@ -746,4 +746,8 @@ main > div.grid > div:hover {
         box-shadow: none;
         border-radius: 0;
     }
+
+    body.no-scroll {
+        overflow: hidden;
+    }
 }
