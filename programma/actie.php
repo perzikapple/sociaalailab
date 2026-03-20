@@ -135,15 +135,15 @@ include __DIR__ . '/../navbar.php';
         </div>
     </section>
 
-    <div class="mobile flex items-center justify-center">
+    <div id="watdoenwe-switch" class="mobile flex items-center justify-center gap-1" style="scroll-margin-top: 110px;">
         <div class="bg-white p-6 shadow-lg max-w-xl mt-6 w-full border-r text-center">
-            <a href="kennis.php"><h1 class="text-2xl hover:text-[#00811F] font-semibold">Kennis & Vaardigheden</h1></a>
+            <a href="kennis.php#watdoenwe-switch"><h1 class="text-2xl hover:text-[#00811F] font-semibold">Kennis & Vaardigheden</h1></a>
         </div>
         <div class="bg-white p-6 max-w-xl mt-6 w-full text-center border-r border-gray-500">
-            <a href="actie.php"><h1 class="text-2xl text-[#00811F] font-semibold">Actie, Onderzoek & Ontwerp</h1></a>
+            <a href="actie.php#watdoenwe-switch"><h1 class="text-2xl text-[#00811F] font-semibold">Actie, Onderzoek & Ontwerp</h1></a>
         </div>
         <div class="bg-white p-6 max-w-xl mt-6 w-full text-center">
-            <a href="faciliteit.php"><h1 class="text-2xl hover:text-[#00811F] font-semibold">Faciliteiten</h1></a>
+            <a href="faciliteit.php#watdoenwe-switch"><h1 class="text-2xl hover:text-[#00811F] font-semibold">Faciliteiten</h1></a>
         </div>
     </div>
 

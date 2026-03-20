@@ -11,15 +11,15 @@ if (!isset($navPrefix)) {
 
         <ul id="nav-menu" class="nav-menu ">
             <li><a href="<?php echo htmlspecialchars($navPrefix); ?>index.php">Voorpagina</a></li>
-            <li><a href="<?php echo htmlspecialchars($navPrefix); ?>agenda.php">Agenda</a></li>
+            <li><a href="<?php echo htmlspecialchars($navPrefix); ?>agenda.php#agenda-terugblik-switch">Agenda</a></li>
             <li><a href="<?php echo htmlspecialchars($navPrefix); ?>over.php">Voor wie?</a></li>
 
             <li class="dropdown">
                 <button class="dropbtn">Wat doen we?<span class="dropdown-caret" aria-hidden="true"></span></button>
                 <ul class="dropdown-content">
-                    <li><a href="<?php echo htmlspecialchars($navPrefix); ?>programma/kennis.php">Kennis & vaardigheden</a></li>
-                    <li><a href="<?php echo htmlspecialchars($navPrefix); ?>programma/actie.php">Actie, onderzoek & ontwerp</a></li>
-                    <li><a href="<?php echo htmlspecialchars($navPrefix); ?>programma/faciliteit.php">Faciliteit van het Lab</a></li>
+                    <li><a href="<?php echo htmlspecialchars($navPrefix); ?>programma/kennis.php#watdoenwe-switch">Kennis & vaardigheden</a></li>
+                    <li><a href="<?php echo htmlspecialchars($navPrefix); ?>programma/actie.php#watdoenwe-switch">Actie, onderzoek & ontwerp</a></li>
+                    <li><a href="<?php echo htmlspecialchars($navPrefix); ?>programma/faciliteit.php#watdoenwe-switch">Faciliteit van het Lab</a></li>
                 </ul>
             </li>
 
