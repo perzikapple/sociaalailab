@@ -819,12 +819,30 @@ main > div.grid > div:hover {
 }
 
 .bg-white.shadow-lg,
+.bg-white.shadow-md,
+.bg-white.shadow-sm,
+section.bg-white,
 .text-block,
 .card,
 .create-admin-container,
 .site-footer .footer-container,
 .dropdown-content {
   border-radius: var(--edge-radius-lg) !important;
+}
+
+.bg-white.shadow-lg,
+.bg-white.shadow-md,
+.bg-white.shadow-sm,
+section.bg-white,
+.card {
+  overflow: hidden;
+}
+
+img.object-cover,
+img.shadow-md,
+.text-block-image,
+.card-icon {
+  border-radius: var(--edge-radius-md);
 }
 
 .form-input,
@@ -835,4 +853,10 @@ textarea,
 button,
 .btn {
   border-radius: var(--edge-radius-md);
+}
+
+/* Tab/switch cards on Terugblik + Wat doen we */
+.mobile > div.bg-white {
+  border-radius: var(--edge-radius-lg) !important;
+  overflow: hidden;
 }
