@@ -49,5 +49,25 @@ if (!isset($navPrefix)) {
         }
     });
 
-
+    // Mobile dropdown toggle
+    document.querySelectorAll('.dropdown .dropbtn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const dropdown = btn.closest('.dropdown');
+            const content = dropdown.querySelector('.dropdown-content');
+            const isOpen = content.style.display === 'block';
+            // Close all dropdowns first
+            document.querySelectorAll('.dropdown-content').forEach(function(d) {
+                d.style.display = 'none';
+            });
+            document.querySelectorAll('.dropbtn').forEach(function(b) {
+                b.classList.remove('open');
+            });
+            // Toggle current
+            if (!isOpen) {
+                content.style.display = 'block';
+                btn.classList.add('open');
+            }
+        });
+    });
 </script>

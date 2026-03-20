@@ -766,3 +766,13 @@ main > div.grid > div:hover {
         overflow: hidden;
     }
 }
+
+
+.dropbtn i {
+    transition: transform 0.2s ease;
+    margin-left: 4px;
+}
+
+.dropbtn.open i {
+    transform: rotate(180deg);
+}
