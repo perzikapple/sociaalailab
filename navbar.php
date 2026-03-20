@@ -39,13 +39,11 @@ if (!isset($navPrefix)) {
 
     toggle.addEventListener('click', () => {
         menu.classList.toggle('show');
-        document.body.classList.toggle('no-scroll');
     });
 
     document.addEventListener('click', (e) => {
         if (!menu.contains(e.target) && !toggle.contains(e.target)) {
             menu.classList.remove('show');
-            document.body.classList.remove('no-scroll');
         }
     });
 

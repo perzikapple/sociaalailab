@@ -716,7 +716,7 @@ main > div.grid > div:hover {
 }
 
 /* Mobile styles */
-@media (max-width: 768px) {
+@media (max-width: 770px) {
     .hamburger {
         display: block;
         font-size: 28px;
@@ -860,7 +860,6 @@ button,
 }
 
 /* Fix wie-zijn-we image overflow on mobile */
-@media (max-width: 768px) {
     .wie-zijn-we-page section.bg-white,
     section.bg-white.max-w-6xl[style*="flex-direction"] {
         flex-direction: column !important;
@@ -871,15 +870,66 @@ button,
         min-width: 0 !important;
         max-width: 100% !important;
     }
-}  
+
 
 section{
     width: 95%;
 }
 
 /* Tablets (portrait & landscape) */
-@media (min-width: 768px) and (max-width: 1024px) {
+@media (min-width: 768px) and (max-width: 1036px) {
 
+    .hamburger {
+        display: block;
+        font-size: 28px;
+        cursor: pointer;
+    }
+
+    /* Nav menu verborgen standaard */
+    .nav-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background-color: #fff;
+        flex-direction: column;
+        display: none;
+        gap: 0;
+        border-top: 1px solid #ddd;
+        z-index: 10;
+    }
+
+    .nav-menu.show {
+        display: flex;
+    }
+
+    .nav-menu li {
+        border-bottom: 1px solid #eee;
+    }
+
+    .nav-menu li a,
+    .dropbtn {
+        font-size: 14px;
+        padding: 0.75rem 1rem;
+        white-space: nowrap; /* voorkomt dat multi-word links breken */
+    }
+
+    /* Dropdown content in hamburger */
+    .dropdown-content {
+        position: relative;
+        box-shadow: none;
+        border-radius: 0;
+        display: none; /* opent bij klikken via JS */
+    }
+
+    .dropbtn.open + .dropdown-content {
+        display: flex;
+        flex-direction: column;
+    }
+
+    section{
+    width: 95%;
+}
 }
 
 /* Desktop */
