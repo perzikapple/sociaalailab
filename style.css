@@ -741,10 +741,19 @@ main > div.grid > div:hover {
         border-bottom: 1px solid #eee;
     }
 
+    .nav-menu li a{
+        font-size: 14px;
+    }
+
+    .dropbtn{
+        font-size: 14px;
+    }
+
     .dropdown-content {
         position: relative;
         box-shadow: none;
         border-radius: 0;
+        font-size: 14px;
     }
 
     body.no-scroll {
