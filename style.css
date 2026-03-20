@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap');
+
 /* Consistent image size and spacing for wie-zijn-we page */
 .consistent-img {
   display: block;
@@ -771,3 +773,26 @@ main > div.grid > div:hover {
         overflow: hidden;
     }
 }
+
+  /* Global font restore */
+  :root {
+    --site-font-family: 'Onest', 'Public Sans', sans-serif;
+  }
+
+  body,
+  button,
+  input,
+  select,
+  textarea {
+    font-family: var(--site-font-family);
+  }
+
+  /* Keep navbar/footer on the same font even when older rules set sans-serif */
+  .navbar.onest-font,
+  .navbar.onest-font .nav-menu,
+  .navbar.onest-font .nav-menu a,
+  .navbar.onest-font .dropbtn,
+  .site-footer.onest-font,
+  .site-footer.onest-font * {
+    font-family: var(--site-font-family) !important;
+  }
