@@ -87,7 +87,7 @@ include __DIR__ . '/navbar.php';
         <?php else: ?>
             <h1 class="text-2xl sm:text-3xl font-semibold text-gray-900 mb-3">Inschrijven</h1>
             <p class="text-gray-700 mb-8 text-base">
-                <?php echo htmlspecialchars($event['title']); ?>
+                <?php echo renderEditorInline($event['title']); ?>
                 <?php if (!empty($event['date'])): ?>
                     - <?php echo htmlspecialchars(formatEventDateDisplay($event['date'])); ?>
                 <?php endif; ?>

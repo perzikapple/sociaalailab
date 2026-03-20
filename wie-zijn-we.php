@@ -1,6 +1,7 @@
 <?php 
 session_start();
 require 'db.php';
+require 'helpers.php';
 
 $banner1 = 'images/banner_website_01.jpg';
 $banner2 = 'images/banner_website_02.jpg';
@@ -94,10 +95,10 @@ include __DIR__ . '/navbar.php';
             <?php if ($hasText): ?>
             <div style="flex: 1; padding: 0 1.5rem;">
                 <?php if (!empty($block['title'])): ?>
-                    <h3 class="font-bold text-2xl mb-3"><?php echo strip_tags($block['title'], '<b><i><strong><em><a>'); ?></h3>
+                    <h3 class="font-bold text-2xl mb-3"><?php echo renderEditorInline($block['title']); ?></h3>
                 <?php endif; ?>
                 <?php if (!empty($block['body'])): ?>
-                    <div class="text-gray-700 text-base leading-relaxed"><?php echo nl2br(htmlspecialchars($block['body'])); ?></div>
+                    <div class="text-gray-700 text-base leading-relaxed"><?php echo renderEditorBlock($block['body']); ?></div>
                 <?php endif; ?>
             </div>
             <?php endif; ?>

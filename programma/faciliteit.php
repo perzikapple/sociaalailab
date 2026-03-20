@@ -164,10 +164,10 @@ include __DIR__ . '/../navbar.php';
                     <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($greenText)); ?></div>
                 <?php endif; ?>
                 <?php if (!empty($block['title'])): ?>
-                    <h3 class="text-lg font-semibold mb-2"><?php echo htmlspecialchars($block['title']); ?></h3>
+                    <h3 class="text-lg font-semibold mb-2"><?php echo renderEditorInline($block['title']); ?></h3>
                 <?php endif; ?>
                 <?php if (!empty($block['body'])): ?>
-                    <p class="mb-2 text-gray-700 text-sm"><?php echo nl2br(htmlspecialchars($block['body'])); ?></p>
+                    <div class="mb-2 text-gray-700 text-sm"><?php echo renderEditorBlock($block['body']); ?></div>
                 <?php endif; ?>
                 </div>
 
