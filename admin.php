@@ -724,7 +724,8 @@ if ($page === 'audit') {
                 <a href="admin.php?page=agenda" class="sidebar-link <?php echo $page==='agenda' ? 'active' : ''; ?>">
                     <i class="fa-solid fa-calendar"></i> Agenda
                 </a>
-                <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Pagina's</div>
+                
+<div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Pagina's</div>
                 <a href="admin.php?page=index" class="sidebar-link <?php echo $page==='index' ? 'active' : ''; ?>">
                     <i class="fa-solid fa-house"></i> Homepage
                 </a>
@@ -1049,10 +1050,10 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </select>
                             </div>
                             <div class="flex gap-2">
-                                <button type="submit" class="btn btn-primary">
+                                <button type="submit" class="btn btn-audit-accent">
                                     <i class="fa-solid fa-filter"></i> Filter
                                 </button>
-                                <a href="admin.php?page=audit" class="btn btn-secondary">
+                                <a href="admin.php?page=audit" class="btn btn-audit-accent">
                                     <i class="fa-solid fa-rotate-left"></i> Reset
                                 </a>
                             </div>
