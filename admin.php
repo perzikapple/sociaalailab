@@ -580,13 +580,64 @@ $events = $stmt->fetchAll();
 $page = $_GET['page'] ?? 'index';
 
 $pageItems = [];
-if ($page !== 'banner' && $page !== 'agenda') {
+if ($page !== 'banner' && $page !== 'agenda' && $page !== 'audit') {
     $stmt = $pdo->prepare(
         'SELECT * FROM pages WHERE page_key = ?
          ORDER BY (sort_order IS NULL OR sort_order = 0) ASC, sort_order ASC, created_at ASC, id ASC'
     );
     $stmt->execute([$page]);
     $pageItems = $stmt->fetchAll();
+}
+
+$auditLogs = [];
+$auditActions = [];
+$auditTables = [];
+$auditTotal = 0;
+$auditPage = max(1, (int)($_GET['audit_page'] ?? 1));
+$auditPerPage = 50;
+$auditTotalPages = 1;
+$auditActionFilter = trim((string)($_GET['audit_action'] ?? ''));
+$auditTableFilter = trim((string)($_GET['audit_table'] ?? ''));
+
+if ($page === 'audit') {
+    try {
+        $auditActions = $pdo->query("SELECT DISTINCT action FROM audit_logs WHERE action IS NOT NULL AND action <> '' ORDER BY action ASC")->fetchAll(PDO::FETCH_COLUMN);
+        $auditTables = $pdo->query("SELECT DISTINCT table_name FROM audit_logs WHERE table_name IS NOT NULL AND table_name <> '' ORDER BY table_name ASC")->fetchAll(PDO::FETCH_COLUMN);
+
+        $whereParts = [];
+        $params = [];
+
+        if ($auditActionFilter !== '') {
+            $whereParts[] = 'action = ?';
+            $params[] = $auditActionFilter;
+        }
+        if ($auditTableFilter !== '') {
+            $whereParts[] = 'table_name = ?';
+            $params[] = $auditTableFilter;
+        }
+
+        $whereSql = $whereParts ? (' WHERE ' . implode(' AND ', $whereParts)) : '';
+
+        $countStmt = $pdo->prepare('SELECT COUNT(*) FROM audit_logs' . $whereSql);
+        $countStmt->execute($params);
+        $auditTotal = (int)$countStmt->fetchColumn();
+        $auditTotalPages = max(1, (int)ceil($auditTotal / $auditPerPage));
+        if ($auditPage > $auditTotalPages) {
+            $auditPage = $auditTotalPages;
+        }
+        $offset = ($auditPage - 1) * $auditPerPage;
+
+        $listSql = 'SELECT id, action, table_name, record_id, details, performed_by, created_at FROM audit_logs'
+            . $whereSql
+            . ' ORDER BY created_at DESC, id DESC'
+            . ' LIMIT ' . (int)$auditPerPage . ' OFFSET ' . (int)$offset;
+
+        $listStmt = $pdo->prepare($listSql);
+        $listStmt->execute($params);
+        $auditLogs = $listStmt->fetchAll();
+    } catch (Exception $e) {
+        $message = 'Auditlogboek kon niet worden geladen.';
+    }
 }
 ?>
 <!doctype html>
@@ -639,6 +690,9 @@ if ($page !== 'banner' && $page !== 'agenda') {
             <h1 class="text-2xl font-bold">Admin Panel</h1>
         </div>
         <div class="flex items-center gap-3 flex-nowrap">
+            <a href="admin.php?page=audit" class="btn <?php echo $page==='audit' ? 'btn-primary' : 'btn-secondary'; ?> text-sm">
+                <i class="fa-solid fa-clipboard-list"></i> Auditlogboek
+            </a>
             <a href="index.php" class="btn btn-secondary text-sm">
                 <i class="fa-solid fa-arrow-left"></i> Terug naar site
             </a>
@@ -670,7 +724,6 @@ if ($page !== 'banner' && $page !== 'agenda') {
                 <a href="admin.php?page=agenda" class="sidebar-link <?php echo $page==='agenda' ? 'active' : ''; ?>">
                     <i class="fa-solid fa-calendar"></i> Agenda
                 </a>
-
                 <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Pagina's</div>
                 <a href="admin.php?page=index" class="sidebar-link <?php echo $page==='index' ? 'active' : ''; ?>">
                     <i class="fa-solid fa-house"></i> Homepage
@@ -965,6 +1018,112 @@ document.addEventListener('DOMContentLoaded', function() {
                             </form>
                         <?php endif; ?>
                     </div>
+                </div>
+
+            <?php elseif ($page === 'audit'): ?>
+                <div class="card p-6">
+                    <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
+                        <i class="fa-solid fa-clipboard-list text-2xl text-[#00811F]"></i>
+                        <h2 class="text-2xl font-bold">Auditlogboek</h2>
+                    </div>
+
+                    <form method="GET" class="bg-white p-4 rounded border border-gray-200 mb-6">
+                        <input type="hidden" name="page" value="audit">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                            <div>
+                                <label class="form-label">Actie</label>
+                                <select name="audit_action" class="form-input">
+                                    <option value="">Alle acties</option>
+                                    <?php foreach ($auditActions as $action): ?>
+                                        <option value="<?php echo htmlspecialchars($action); ?>" <?php echo $auditActionFilter === $action ? 'selected' : ''; ?>><?php echo htmlspecialchars($action); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="form-label">Tabel</label>
+                                <select name="audit_table" class="form-input">
+                                    <option value="">Alle tabellen</option>
+                                    <?php foreach ($auditTables as $tableName): ?>
+                                        <option value="<?php echo htmlspecialchars($tableName); ?>" <?php echo $auditTableFilter === $tableName ? 'selected' : ''; ?>><?php echo htmlspecialchars($tableName); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa-solid fa-filter"></i> Filter
+                                </button>
+                                <a href="admin.php?page=audit" class="btn btn-secondary">
+                                    <i class="fa-solid fa-rotate-left"></i> Reset
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div class="mb-4 text-sm text-gray-600">
+                        Totaal logregels: <strong><?php echo (int)$auditTotal; ?></strong>
+                    </div>
+
+                    <?php if (empty($auditLogs)): ?>
+                        <div class="text-center py-8 text-gray-500">
+                            <i class="fa-solid fa-inbox text-4xl mb-2"></i>
+                            <p>Geen auditregels gevonden voor deze filter.</p>
+                        </div>
+                    <?php else: ?>
+                        <div class="overflow-x-auto border border-gray-200 rounded-lg">
+                            <table class="w-full text-sm">
+                                <thead class="bg-gray-100 text-left">
+                                    <tr>
+                                        <th class="p-3">Datum</th>
+                                        <th class="p-3">Actie</th>
+                                        <th class="p-3">Tabel</th>
+                                        <th class="p-3">Record ID</th>
+                                        <th class="p-3">Details</th>
+                                        <th class="p-3">Gebruiker</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($auditLogs as $log): ?>
+                                        <?php $createdAt = !empty($log['created_at']) ? date('d-m-Y H:i:s', strtotime($log['created_at'])) : '-'; ?>
+                                        <tr class="border-t border-gray-200 align-top">
+                                            <td class="p-3 whitespace-nowrap"><?php echo htmlspecialchars($createdAt); ?></td>
+                                            <td class="p-3"><?php echo htmlspecialchars((string)$log['action']); ?></td>
+                                            <td class="p-3"><?php echo htmlspecialchars((string)$log['table_name']); ?></td>
+                                            <td class="p-3"><?php echo htmlspecialchars((string)($log['record_id'] ?? '-')); ?></td>
+                                            <td class="p-3 text-gray-700"><?php echo nl2br(htmlspecialchars((string)($log['details'] ?? ''))); ?></td>
+                                            <td class="p-3"><?php echo htmlspecialchars((string)($log['performed_by'] ?? '-')); ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <?php
+                        $queryBase = 'page=audit';
+                        if ($auditActionFilter !== '') {
+                            $queryBase .= '&audit_action=' . urlencode($auditActionFilter);
+                        }
+                        if ($auditTableFilter !== '') {
+                            $queryBase .= '&audit_table=' . urlencode($auditTableFilter);
+                        }
+                        ?>
+                        <div class="flex items-center justify-between mt-4">
+                            <div class="text-sm text-gray-600">
+                                Pagina <?php echo (int)$auditPage; ?> van <?php echo (int)$auditTotalPages; ?>
+                            </div>
+                            <div class="flex gap-2">
+                                <?php if ($auditPage > 1): ?>
+                                    <a href="admin.php?<?php echo $queryBase; ?>&audit_page=<?php echo (int)($auditPage - 1); ?>" class="btn btn-secondary btn-sm">
+                                        <i class="fa-solid fa-chevron-left"></i> Vorige
+                                    </a>
+                                <?php endif; ?>
+                                <?php if ($auditPage < $auditTotalPages): ?>
+                                    <a href="admin.php?<?php echo $queryBase; ?>&audit_page=<?php echo (int)($auditPage + 1); ?>" class="btn btn-secondary btn-sm">
+                                        Volgende <i class="fa-solid fa-chevron-right"></i>
+                                    </a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
             <?php elseif ($page != 'banner'): ?>

@@ -420,7 +420,6 @@ img, video {
 }
 
 main > section {
-    border-left: 4px solid #00811F;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -431,7 +430,6 @@ main > section:hover {
 }
 
 main > div.grid > div {
-    border-top: 3px solid #00811F;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
