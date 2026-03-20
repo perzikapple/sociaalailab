@@ -594,7 +594,11 @@ $auditActions = [];
 $auditTables = [];
 $auditTotal = 0;
 $auditPage = max(1, (int)($_GET['audit_page'] ?? 1));
-$auditPerPage = 50;
+$auditPerPageOptions = [25, 50, 100, 200];
+$auditPerPage = (int)($_GET['audit_per_page'] ?? 50);
+if (!in_array($auditPerPage, $auditPerPageOptions, true)) {
+    $auditPerPage = 50;
+}
 $auditTotalPages = 1;
 $auditActionFilter = trim((string)($_GET['audit_action'] ?? ''));
 $auditTableFilter = trim((string)($_GET['audit_table'] ?? ''));
@@ -656,23 +660,35 @@ if ($page === 'audit') {
 <script src="https://cdn.tiny.cloud/1/1ui5rgslm5rlya4exbujnv26e5j6xyq87233fv56zmvcq39e/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        const isCompactEditor = window.matchMedia('(max-width: 1023.98px)').matches;
+        const compactToolbar = 'undo redo | bold italic | bullist numlist | link';
+        const fullToolbar = 'undo redo | bold italic underline | bullist numlist | link image | table';
+        const compactPlugins = 'lists link';
+        const fullPlugins = 'lists link image table';
+
         // TinyMCE for title fields - compact
         tinymce.init({
             selector: 'textarea[name="title"]',
-            plugins: 'lists link image table',
-            toolbar: 'undo redo | bold italic underline | bullist numlist | link image | table',
+            plugins: isCompactEditor ? compactPlugins : fullPlugins,
+            toolbar: isCompactEditor ? compactToolbar : fullToolbar,
             menubar: false,
-            height: 50,
+            statusbar: !isCompactEditor,
+            toolbar_mode: isCompactEditor ? 'scrolling' : 'wrap',
+            branding: false,
+            height: isCompactEditor ? 42 : 50,
             resize: true
         });
         
         // TinyMCE for content fields - larger
         tinymce.init({
             selector: 'textarea:not([name="title"])',
-            plugins: 'lists link image table',
-            toolbar: 'undo redo | bold italic underline | bullist numlist | link image | table',
+            plugins: isCompactEditor ? compactPlugins : fullPlugins,
+            toolbar: isCompactEditor ? compactToolbar : fullToolbar,
             menubar: false,
-            height: 300,
+            statusbar: !isCompactEditor,
+            toolbar_mode: isCompactEditor ? 'scrolling' : 'wrap',
+            branding: false,
+            height: isCompactEditor ? 220 : 300,
             resize: true
         });
     });
@@ -684,12 +700,12 @@ if ($page === 'audit') {
     <i class="fa-solid fa-bars"></i>
 </button>
 <nav class="admin-header text-white p-4 sticky top-0 z-50">
-    <div class="flex justify-end items-center px-8">
+    <div class="admin-header-inner flex justify-end items-center px-8">
         <div class="admin-header-brand">
             <i class="fa-solid fa-gears text-2xl"></i>
             <h1 class="text-2xl font-bold">Admin Panel</h1>
         </div>
-        <div class="flex items-center gap-3 flex-nowrap">
+        <div class="admin-header-actions flex items-center gap-3 flex-nowrap">
             <a href="admin.php?page=audit" class="btn <?php echo $page==='audit' ? 'btn-primary' : 'btn-secondary'; ?> text-sm">
                 <i class="fa-solid fa-clipboard-list"></i> Auditlogboek
             </a>
@@ -710,7 +726,7 @@ if ($page === 'audit') {
     </div>
     <?php endif; ?>
 
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <div class="admin-layout-grid grid grid-cols-1 lg:grid-cols-4 gap-6">
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
@@ -977,7 +993,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="space-y-4">
                             <?php foreach ($events as $event): ?>
                                 <div class="border border-gray-200 rounded p-4 hover:shadow-md transition">
-                                    <div class="flex justify-between items-start gap-4">
+                                    <div class="admin-row flex justify-between items-start gap-4">
                                         <input type="checkbox" class="event-checkbox w-4 h-4 mt-1 flex-shrink-0 cursor-pointer" name="event_ids[]" value="<?php echo (int)$event['id']; ?>">
                                         <div class="flex-1">
                                             <h4 class="font-bold text-lg text-gray-800"><?php echo htmlspecialchars(sanitizeEditorText($event['title'])); ?></h4>
@@ -993,13 +1009,13 @@ document.addEventListener('DOMContentLoaded', function() {
                                             <?php endif; ?>
                                             <p class="text-sm text-gray-600 mt-2 line-clamp-2"><?php echo nl2br(htmlspecialchars($eventDescriptionPreview)); ?></p>
                                         </div>
-                                        <div class="flex gap-2 flex-shrink-0">
+                                        <div class="admin-row-actions flex gap-2 flex-shrink-0">
                                             <?php if (!empty($event['image'])): ?>
                                                 <a href="#" class="btn btn-secondary btn-sm" onclick="openImageModal(event, 'uploads/<?php echo htmlspecialchars($event['image']); ?>')">
                                                     <i class="fa-solid fa-image"></i> Foto
                                                 </a>
                                             <?php endif; ?>
-                                            <div class="flex flex-col gap-1">
+                                            <div class="admin-row-actions-stack flex flex-col gap-1">
                                                 <a href="admin.php?page=agenda&edit=<?php echo (int)$event['id']; ?>" class="btn btn-secondary btn-sm">
                                                     <i class="fa-solid fa-pencil"></i> Bewerk
                                                 </a>
@@ -1030,7 +1046,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     <form method="GET" class="bg-white p-4 rounded border border-gray-200 mb-6">
                         <input type="hidden" name="page" value="audit">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                             <div>
                                 <label class="form-label">Actie</label>
                                 <select name="audit_action" class="form-input">
@@ -1049,7 +1065,17 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                            <div class="flex gap-2">
+                            <div>
+                                <label class="form-label">Per pagina</label>
+                                <select name="audit_per_page" class="form-input">
+                                    <?php foreach ($auditPerPageOptions as $perPageOption): ?>
+                                        <option value="<?php echo (int)$perPageOption; ?>" <?php echo $auditPerPage === (int)$perPageOption ? 'selected' : ''; ?>>
+                                            <?php echo (int)$perPageOption; ?> regels
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="audit-filter-actions flex gap-2">
                                 <button type="submit" class="btn btn-audit-accent">
                                     <i class="fa-solid fa-filter"></i> Filter
                                 </button>
@@ -1061,7 +1087,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </form>
 
                     <div class="mb-4 text-sm text-gray-600">
-                        Totaal logregels: <strong><?php echo (int)$auditTotal; ?></strong>
+                        Totaal logregels: <strong><?php echo (int)$auditTotal; ?></strong> - Per pagina: <strong><?php echo (int)$auditPerPage; ?></strong>
                     </div>
 
                     <?php if (empty($auditLogs)): ?>
@@ -1070,8 +1096,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             <p>Geen auditregels gevonden voor deze filter.</p>
                         </div>
                     <?php else: ?>
-                        <div class="overflow-x-auto border border-gray-200 rounded-lg">
-                            <table class="w-full text-sm">
+                        <div class="audit-table-wrap overflow-x-auto border border-gray-200 rounded-lg">
+                            <table class="audit-table w-full text-sm">
                                 <thead class="bg-gray-100 text-left">
                                     <tr>
                                         <th class="p-3">Datum</th>
@@ -1084,14 +1110,29 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </thead>
                                 <tbody>
                                     <?php foreach ($auditLogs as $log): ?>
-                                        <?php $createdAt = !empty($log['created_at']) ? date('d-m-Y H:i:s', strtotime($log['created_at'])) : '-'; ?>
+                                        <?php
+                                            $createdAt = !empty($log['created_at']) ? date('d-m-Y H:i:s', strtotime($log['created_at'])) : '-';
+                                            $detailsRaw = trim((string)($log['details'] ?? ''));
+                                            $detailsPreview = $detailsRaw;
+                                            if (strlen($detailsPreview) > 200) {
+                                                $detailsPreview = substr($detailsPreview, 0, 197) . '...';
+                                            }
+                                        ?>
                                         <tr class="border-t border-gray-200 align-top">
-                                            <td class="p-3 whitespace-nowrap"><?php echo htmlspecialchars($createdAt); ?></td>
-                                            <td class="p-3"><?php echo htmlspecialchars((string)$log['action']); ?></td>
-                                            <td class="p-3"><?php echo htmlspecialchars((string)$log['table_name']); ?></td>
-                                            <td class="p-3"><?php echo htmlspecialchars((string)($log['record_id'] ?? '-')); ?></td>
-                                            <td class="p-3 text-gray-700"><?php echo nl2br(htmlspecialchars((string)($log['details'] ?? ''))); ?></td>
-                                            <td class="p-3"><?php echo htmlspecialchars((string)($log['performed_by'] ?? '-')); ?></td>
+                                            <td class="p-3 whitespace-nowrap" data-label="Datum"><?php echo htmlspecialchars($createdAt); ?></td>
+                                            <td class="p-3" data-label="Actie"><?php echo htmlspecialchars((string)$log['action']); ?></td>
+                                            <td class="p-3" data-label="Tabel"><?php echo htmlspecialchars((string)$log['table_name']); ?></td>
+                                            <td class="p-3" data-label="Record ID"><?php echo htmlspecialchars((string)($log['record_id'] ?? '-')); ?></td>
+                                            <td class="p-3 text-gray-700 audit-details" data-label="Details">
+                                                <div class="audit-details-content"><?php echo nl2br(htmlspecialchars($detailsPreview !== '' ? $detailsPreview : '-')); ?></div>
+                                                <?php if ($detailsRaw !== '' && $detailsRaw !== $detailsPreview): ?>
+                                                    <details class="audit-details-more">
+                                                        <summary>Meer details</summary>
+                                                        <div class="audit-details-content"><?php echo nl2br(htmlspecialchars($detailsRaw)); ?></div>
+                                                    </details>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td class="p-3" data-label="Gebruiker"><?php echo htmlspecialchars((string)($log['performed_by'] ?? '-')); ?></td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
@@ -1106,8 +1147,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         if ($auditTableFilter !== '') {
                             $queryBase .= '&audit_table=' . urlencode($auditTableFilter);
                         }
+                        if ($auditPerPage !== 50) {
+                            $queryBase .= '&audit_per_page=' . (int)$auditPerPage;
+                        }
                         ?>
-                        <div class="flex items-center justify-between mt-4">
+                        <div class="audit-pagination flex items-center justify-between mt-4">
                             <div class="text-sm text-gray-600">
                                 Pagina <?php echo (int)$auditPage; ?> van <?php echo (int)$auditTotalPages; ?>
                             </div>
@@ -1303,20 +1347,20 @@ document.addEventListener('DOMContentLoaded', function() {
                                     $isLast = ($index === (count($pageItems) - 1));
                                 ?>
                                 <div class="border border-gray-200 rounded p-4 hover:shadow-md transition">
-                                    <div class="flex justify-between items-start gap-4">
+                                    <div class="admin-row flex justify-between items-start gap-4">
                                         <input type="checkbox" class="page-checkbox page-checkbox-<?php echo htmlspecialchars($pageKey); ?> w-4 h-4 mt-1 flex-shrink-0 cursor-pointer" name="page_ids[]" value="<?php echo (int)$it['id']; ?>">
                                         <div class="flex-1">
                                             <?php $pageBodyPreview = editorPreviewText($it['body'] ?? '', 150); ?>
                                             <h4 class="font-bold text-lg text-gray-800"><?php echo htmlspecialchars(sanitizeEditorText($it['title'] ?? '')); ?></h4>
                                             <p class="text-sm text-gray-600 mt-1 line-clamp-2"><?php echo nl2br(htmlspecialchars($pageBodyPreview)); ?></p>
                                         </div>
-                                        <div class="flex gap-2 flex-shrink-0">
+                                        <div class="admin-row-actions flex gap-2 flex-shrink-0">
                                             <?php if (!empty($it['image'])): ?>
                                                 <a href="#" class="btn btn-secondary btn-sm" onclick="openImageModal(event, 'uploads/<?php echo htmlspecialchars($it['image']); ?>')">
                                                     <i class="fa-solid fa-image"></i> Foto
                                                 </a>
                                             <?php endif; ?>
-                                            <div class="flex flex-col gap-1">
+                                            <div class="admin-row-actions-stack flex flex-col gap-1">
                                                 <div class="flex gap-1">
                                                     <form method="POST">
                                                         <input type="hidden" name="page_action" value="reorder_page">
@@ -1617,9 +1661,14 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('DOMContentLoaded', function() {
   const sidebar = document.querySelector('.sidebar');
   const toggleBtn = document.getElementById('sidebarToggle');
-  const grid = document.querySelector('.grid');
+    const grid = document.querySelector('.admin-layout-grid');
+    const sidebarLinks = document.querySelectorAll('.sidebar .sidebar-link');
 
   if (!sidebar || !toggleBtn || !grid) return;
+
+    function setToggleExpanded(isExpanded) {
+        toggleBtn.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+    }
 
   // Check if sidebar should be hidden on load (e.g., on mobile)
   function updateSidebarVisibility() {
@@ -1628,10 +1677,12 @@ document.addEventListener('DOMContentLoaded', function() {
       sidebar.classList.add('hidden');
       grid.classList.add('sidebar-hidden');
       toggleBtn.classList.remove('hidden');
+            setToggleExpanded(false);
     } else {
       sidebar.classList.remove('hidden');
       grid.classList.remove('sidebar-hidden');
       toggleBtn.classList.add('hidden');
+            setToggleExpanded(false);
     }
   }
 
@@ -1639,6 +1690,7 @@ document.addEventListener('DOMContentLoaded', function() {
   toggleBtn.addEventListener('click', function() {
     sidebar.classList.toggle('hidden');
     grid.classList.toggle('sidebar-hidden');
+        setToggleExpanded(!sidebar.classList.contains('hidden'));
   });
 
   // Also allow header click to toggle on mobile
@@ -1648,9 +1700,21 @@ document.addEventListener('DOMContentLoaded', function() {
       if (window.innerWidth < 1024) {
         sidebar.classList.toggle('hidden');
         grid.classList.toggle('sidebar-hidden');
+                setToggleExpanded(!sidebar.classList.contains('hidden'));
       }
     });
   }
+
+    // Close sidebar after choosing a destination on mobile.
+    sidebarLinks.forEach(function(link) {
+        link.addEventListener('click', function() {
+            if (window.innerWidth < 1024) {
+                sidebar.classList.add('hidden');
+                grid.classList.add('sidebar-hidden');
+                setToggleExpanded(false);
+            }
+    });
+    });
 
   // Update on resize
   window.addEventListener('resize', updateSidebarVisibility);
