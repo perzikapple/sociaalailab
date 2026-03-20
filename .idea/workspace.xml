@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="303eae4d-7ca5-4634-9557-4de1cdbec390" name="Changes" comment="styling navbar">
+      <change beforePath="$PROJECT_DIR$/index.php" beforeDir="false" afterPath="$PROJECT_DIR$/index.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/navbar.php" beforeDir="false" afterPath="$PROJECT_DIR$/navbar.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/style.css" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ComposerSettings">
+    <execution />
+  </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="211" />
+    <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="main" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="RESET_MODE" value="HARD" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {}
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/perzikapple/sociaalailab&quot;,
+    &quot;accountId&quot;: &quot;6b77e8f5-a1df-4b03-b755-a3f4faa7f2b0&quot;
+  }
+}</component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 2
+}</component>
+  <component name="ProjectId" id="3ATlr19zWRxsFvUrutfsKJPqnAR" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Applications/XAMPP/xamppfiles/htdocs/sociaalailab&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.general&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="RunManager">
+    <configuration name="index.php" type="PhpLocalRunConfigurationType" factoryName="PHP Console" path="$PROJECT_DIR$/index.php">
+      <method v="2" />
+    </configuration>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-PS-253.31033.138" />
+        <option value="bundled-php-predefined-a98d8de5180a-0e0d91225499-com.jetbrains.php.sharedIndexes-PS-253.31033.138" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="303eae4d-7ca5-4634-9557-4de1cdbec390" name="Changes" comment="" />
+      <created>1759407061151</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1759407061151</updated>
+      <workItem from="1759407062208" duration="158000" />
+      <workItem from="1772624636844" duration="224000" />
+      <workItem from="1772626051946" duration="1232000" />
+      <workItem from="1772782714482" duration="11739000" />
+      <workItem from="1773217791334" duration="4003000" />
+      <workItem from="1773224388880" duration="2239000" />
+      <workItem from="1773232685956" duration="3641000" />
+      <workItem from="1773388037683" duration="12471000" />
+      <workItem from="1773753840947" duration="2641000" />
+      <workItem from="1773827822828" duration="5953000" />
+      <workItem from="1773994269245" duration="3266000" />
+    </task>
+    <task id="LOCAL-00001" summary="Padding toegevoegd aan terugblik text-blok">
+      <option name="closed" value="true" />
+      <created>1772787184543</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1772787184543</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Actie page column foto's max-width en height gegeven.">
+      <option name="closed" value="true" />
+      <created>1772792730162</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1772792730162</updated>
+    </task>
+    <task id="LOCAL-00003" summary="kennis page column foto's max-width en height gegeven.">
+      <option name="closed" value="true" />
+      <created>1772796185275</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1772796185275</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Padding terugblik blok toegevoegd">
+      <option name="closed" value="true" />
+      <created>1773217952056</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1773217952056</updated>
+    </task>
+    <task id="LOCAL-00005" summary="update branch">
+      <option name="closed" value="true" />
+      <created>1773220195091</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1773220195091</updated>
+    </task>
+    <task id="LOCAL-00006" summary="Foto breedte en hoogte veranderd kennis en actie page.">
+      <option name="closed" value="true" />
+      <created>1773390619547</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1773390619547</updated>
+    </task>
+    <task id="LOCAL-00007" summary="Foto's breedte faciliteit page geupdate">
+      <option name="closed" value="true" />
+      <created>1773393975008</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1773393975008</updated>
+    </task>
+    <task id="LOCAL-00008" summary="padding toegevoegd">
+      <option name="closed" value="true" />
+      <created>1773396291995</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1773396291995</updated>
+    </task>
+    <task id="LOCAL-00009" summary="Images homepage verkleind. Footer gap tussen samenwerkingen vergroot. Padding toegevoegd &quot;wie zijn we&quot; Page.">
+      <option name="closed" value="true" />
+      <created>1773756347029</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1773756347029</updated>
+    </task>
+    <task id="LOCAL-00010" summary="Navbar mobile UI verbeterd.">
+      <option name="closed" value="true" />
+      <created>1773830645384</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1773830645384</updated>
+    </task>
+    <task id="LOCAL-00011" summary="Footer navbar Desktop en Mobile ui verbeterd">
+      <option name="closed" value="true" />
+      <created>1773831342248</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1773831342248</updated>
+    </task>
+    <task id="LOCAL-00012" summary="ruimte tussen terugblik en footer verbeterd">
+      <option name="closed" value="true" />
+      <created>1773831501311</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1773831501311</updated>
+    </task>
+    <task id="LOCAL-00013" summary="styling navbar">
+      <option name="closed" value="true" />
+      <created>1773838504665</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1773838504665</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State>
+              <option name="CUSTOM_BOOLEAN_PROPERTIES">
+                <map>
+                  <entry key="Show.Git.Branches" value="true" />
+                </map>
+              </option>
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="main" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </State>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Padding toegevoegd aan terugblik text-blok" />
+    <MESSAGE value="Actie page column foto's max-width en height gegeven." />
+    <MESSAGE value="kennis page column foto's max-width en height gegeven." />
+    <MESSAGE value="Padding terugblik blok toegevoegd" />
+    <MESSAGE value="update branch" />
+    <MESSAGE value="Foto breedte en hoogte veranderd kennis en actie page." />
+    <MESSAGE value="Foto's breedte faciliteit page geupdate" />
+    <MESSAGE value="padding toegevoegd" />
+    <MESSAGE value="Images homepage verkleind. Footer gap tussen samenwerkingen vergroot. Padding toegevoegd &quot;wie zijn we&quot; Page." />
+    <MESSAGE value="Navbar mobile UI verbeterd." />
+    <MESSAGE value="Footer navbar Desktop en Mobile ui verbeterd" />
+    <MESSAGE value="ruimte tussen terugblik en footer verbeterd" />
+    <MESSAGE value="styling navbar" />
+    <option name="LAST_COMMIT_MESSAGE" value="styling navbar" />
+  </component>
+</project>
