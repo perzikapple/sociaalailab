@@ -58,7 +58,7 @@ include __DIR__ . '/../navbar.php';
             'meta' => null
         ],
         [
-            'title' => 'Samen toekomstbeelden cre�ren met AI',
+            'title' => 'Samen toekomstbeelden creeren met AI',
             'body' => 'Een interactieve sessie die mensen inzicht geeft in generatieve AI, en waarin samen creatieve scenario\'s gemaakt worden voor een rechtvaardige en inclusieve AI-toekomst..',
             'image' => 'images/wat_doen_we/kennis_vaardigheden/Wat_doen_we_%20Samen_toekomstbeelden_cre%C3%ABren_met_behulp_van_AI.jpeg',
             'meta' => null
