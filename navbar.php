@@ -15,7 +15,7 @@ if (!isset($navPrefix)) {
             <li><a href="<?php echo htmlspecialchars($navPrefix); ?>over.php">Voor wie?</a></li>
 
             <li class="dropdown">
-                <button class="dropbtn">Wat doen we?<i class="fa-solid fa-arrow-down"></i>    </button>
+                <button class="dropbtn">Wat doen we?<span class="dropdown-caret" aria-hidden="true"></span></button>
                 <ul class="dropdown-content">
                     <li><a href="<?php echo htmlspecialchars($navPrefix); ?>programma/kennis.php">Kennis & vaardigheden</a></li>
                     <li><a href="<?php echo htmlspecialchars($navPrefix); ?>programma/actie.php">Actie, onderzoek & ontwerp</a></li>

@@ -543,11 +543,6 @@ main > div.grid > div:hover {
     background-color: #f0f0f0;
 }
 
-/* Show dropdown on hover */
-.dropdown:hover .dropdown-content {
-    display: block;
-}
-
 /* ---- Hamburger mobiel ---- */
 .hamburger {
     display: none;
@@ -798,11 +793,18 @@ main > div.grid > div:hover {
   }
 
 
-.dropbtn i {
-    transition: transform 0.2s ease;
-    margin-left: 4px;
+.dropbtn .dropdown-caret {
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-left: 0.35rem;
+  display: inline-block;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(135deg) translateY(-1px);
+  transform-origin: center;
+  transition: transform 0.2s ease;
 }
 
-.dropbtn.open i {
-    transform: rotate(180deg);
+.dropbtn.open .dropdown-caret {
+  transform: rotate(45deg) translateY(-1px);
 }
