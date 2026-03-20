@@ -655,6 +655,11 @@ main > div.grid > div:hover {
     cursor: pointer;
 }
 
+.fa-solid{
+    padding: 2px;
+    font-size: 16px;
+}
+
 /* Nav menu desktop */
 .nav-menu {
     display: flex;
