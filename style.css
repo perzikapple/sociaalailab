@@ -800,11 +800,36 @@ main > div.grid > div:hover {
   display: inline-block;
   border-right: 1.5px solid currentColor;
   border-bottom: 1.5px solid currentColor;
-  transform: rotate(135deg) translateY(-1px);
+  transform: rotate(45deg) translateY(-1px);
   transform-origin: center;
   transition: transform 0.2s ease;
 }
 
 .dropbtn.open .dropdown-caret {
-  transform: rotate(45deg) translateY(-1px);
+  transform: rotate(-135deg) translateY(-1px);
+}
+
+/* Rounded edges across UI */
+:root {
+  --edge-radius-lg: 16px;
+  --edge-radius-md: 12px;
+}
+
+.bg-white.shadow-lg,
+.text-block,
+.card,
+.create-admin-container,
+.site-footer .footer-container,
+.dropdown-content {
+  border-radius: var(--edge-radius-lg) !important;
+}
+
+.form-input,
+.form-textarea,
+input,
+select,
+textarea,
+button,
+.btn {
+  border-radius: var(--edge-radius-md);
 }
