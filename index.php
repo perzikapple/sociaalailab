@@ -161,7 +161,7 @@ include __DIR__ . '/navbar.php';
         $cardGreenText = trim((string)($cardMeta['green_text'] ?? ($cardMeta['green_heading'] ?? '')));
         ?>
         <div class="space-y-6">
-            <div class="bg-white shadow-lg pt-0 pb-6 mb-4 min-h-[220px] max-w-sm mx-auto">
+            <div class="card-container bg-white shadow-lg pt-0 pb-6 mb-4 min-h-[220px] max-w-sm mx-auto">
                 <div class="flex flex-1 items-center justify-center">
                     <?php if (!empty($block['image'])): ?>
                         <?php
