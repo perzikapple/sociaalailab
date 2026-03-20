@@ -112,6 +112,7 @@ try {
     <link rel="modulepreload" as="script" href="build/assets/app-CAiCLEjY.js"><link rel="stylesheet" href="style.css?v=<?php echo filemtime(__DIR__.'/style.css'); ?>"><script type="module" src="build/assets/app-CAiCLEjY.js"></script>    <title>SociaalAI Lab</title>
     <meta name="description" content="SociaalAI helpt inwoners sterker te staan in een steeds digitalere wereld. We doen dit door Rotterdammers actief mee te laten denken, praten en beslissen over kunstmatige intelligentie.">
     <link rel="icon" type="image/png" href="images/Pixels_icon.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-pV1ZjF0c5T7p9JQ+z6Q1lX4eH/Gp1r6VZ8/8Fm5VzEyNx8K8YXo+2fqf4JoN2UEZy2X+4C+VZ7XohRkCQe4fA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 

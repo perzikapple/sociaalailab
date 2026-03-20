@@ -15,7 +15,7 @@ if (!isset($navPrefix)) {
             <li><a href="<?php echo htmlspecialchars($navPrefix); ?>over.php">Voor wie?</a></li>
 
             <li class="dropdown">
-                <button class="dropbtn">Wat doen we?</button>
+                <button class="dropbtn">Wat doen we?<i class="fa-solid fa-arrow-down"></i>    </button>
                 <ul class="dropdown-content">
                     <li><a href="<?php echo htmlspecialchars($navPrefix); ?>programma/kennis.php">Kennis & vaardigheden</a></li>
                     <li><a href="<?php echo htmlspecialchars($navPrefix); ?>programma/actie.php">Actie, onderzoek & ontwerp</a></li>
@@ -32,12 +32,21 @@ if (!isset($navPrefix)) {
         </ul>
     </div>
 </nav>
+
 <script>
     const toggle = document.getElementById('mobile-menu-toggle');
     const menu = document.getElementById('nav-menu');
 
     toggle.addEventListener('click', () => {
         menu.classList.toggle('show');
+        document.body.classList.toggle('no-scroll');
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!menu.contains(e.target) && !toggle.contains(e.target)) {
+            menu.classList.remove('show');
+            document.body.classList.remove('no-scroll');
+        }
     });
 
 
