@@ -808,6 +808,9 @@ main > div.grid > div:hover {
 .dropbtn.open .dropdown-caret {
   transform: rotate(-135deg) translateY(-1px);
 }
+.no-scroll {
+    overflow: hidden;
+}
 
 /* Rounded edges across UI */
 :root {
