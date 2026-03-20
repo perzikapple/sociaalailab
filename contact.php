@@ -143,10 +143,10 @@ include __DIR__ . '/navbar.php';
                 <?php if ($hasText): ?>
                 <div class="mb-6" style="<?php echo ($hasImage && $imagePosition !== 'normal') ? 'flex: 1; padding: 0 1.5rem;' : ''; ?>">
                     <?php if (!empty($block['title'])): ?>
-                        <h3 class="font-bold text-2xl mb-2"><?php echo strip_tags($block['title'], '<b><i><strong><em><a>'); ?></h3>
+                        <h3 class="font-bold text-2xl mb-2"><?php echo renderEditorInline($block['title']); ?></h3>
                     <?php endif; ?>
                     <?php if (!empty($block['body'])): ?>
-                        <div class="text-gray-700 leading-relaxed"><?php echo $block['body']; ?></div>
+                        <div class="text-gray-700 leading-relaxed"><?php echo renderEditorBlock($block['body']); ?></div>
                     <?php endif; ?>
                     <?php if (!empty($metaArr['address'])): ?>
                         <?php $addr = $metaArr['address']; ?>

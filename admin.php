@@ -1,6 +1,7 @@
 <?php
 session_start();
 require 'db.php';
+require 'helpers.php';
 if (!isset($_SESSION['admin']) || $_SESSION['admin'] != 1) {
     header('Location: login.php');
     exit;
@@ -24,55 +25,16 @@ function handleUpload($fileField) {
     return ['name' => $imageName];
 }
 
-function formatEventDateDisplay($dateValue) {
-    if (empty($dateValue)) return '';
-    $ts = strtotime((string)$dateValue);
-    if ($ts === false) return (string)$dateValue;
-    $monthsNl = [
-        1 => 'januari',
-        2 => 'februari',
-        3 => 'maart',
-        4 => 'april',
-        5 => 'mei',
-        6 => 'juni',
-        7 => 'juli',
-        8 => 'augustus',
-        9 => 'september',
-        10 => 'oktober',
-        11 => 'november',
-        12 => 'december',
-    ];
-    $day = (int)date('j', $ts);
-    $month = $monthsNl[(int)date('n', $ts)] ?? date('F', $ts);
-    $year = date('Y', $ts);
-    return $day . ' ' . $month . ' ' . $year;
-}
-
-function formatEventTimeDisplay($timeValue) {
-    if (empty($timeValue)) return '';
-    $ts = strtotime((string)$timeValue);
-    if ($ts === false) return (string)$timeValue;
-    return date('H:i', $ts);
-}
-
 function sanitizeEditorText($value) {
-    $value = (string)$value;
-    if ($value === '') {
-        return '';
-    }
+    return sanitizeEditorPlainText($value);
+}
 
-    // TinyMCE usually wraps lines in <p> and inserts <br>; map them back to plain newlines.
-    $value = preg_replace('~<\s*br\s*/?\s*>~i', "\n", $value);
-    $value = preg_replace('~<\s*/\s*p\s*>~i', "\n", $value);
-    $value = preg_replace('~<\s*p(?:\s+[^>]*)?>~i', '', $value);
+function sanitizeEditorInlineInput($value) {
+    return sanitizeEditorHtml($value, 'inline');
+}
 
-    $value = strip_tags($value);
-    $value = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-    $value = preg_replace("/\r\n?/", "\n", $value);
-    $value = preg_replace("/[ \t]+\n/", "\n", $value);
-    $value = preg_replace("/\n{3,}/", "\n\n", $value);
-
-    return trim($value);
+function sanitizeEditorBlockInput($value) {
+    return sanitizeEditorHtml($value, 'block');
 }
 
 // Fetch current banners
@@ -85,13 +47,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $currentUser = $_SESSION['user'] ?? null; // email van ingelogde gebruiker (kan null zijn)
 
     if ($action === 'create') {
-        $title = sanitizeEditorText($_POST['title'] ?? '');
+        $title = sanitizeEditorInlineInput($_POST['title'] ?? '');
         $date = $_POST['date'] ?? '';
         $end_date = isset($_POST['add_end_date']) && !empty($_POST['end_date']) ? $_POST['end_date'] : null;
         $time = $_POST['time'] ?? null;
         $time_end = isset($_POST['add_end_time']) && !empty($_POST['time_end']) ? $_POST['time_end'] : null;
-        $description = sanitizeEditorText($_POST['description'] ?? '');
-        $location = sanitizeEditorText($_POST['location'] ?? '');
+        $description = sanitizeEditorBlockInput($_POST['description'] ?? '');
+        $location = sanitizeEditorPlainText($_POST['location'] ?? '');
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
 
         if ($date === '') {
@@ -118,13 +80,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     } elseif ($action === 'update' && !empty($_POST['id'])) {
         $id = (int)$_POST['id'];
-        $title = sanitizeEditorText($_POST['title'] ?? '');
+        $title = sanitizeEditorInlineInput($_POST['title'] ?? '');
         $date = $_POST['date'] ?? '';
         $end_date = isset($_POST['add_end_date']) && !empty($_POST['end_date']) ? $_POST['end_date'] : null;
         $time = $_POST['time'] ?? null;
         $time_end = isset($_POST['add_end_time']) && !empty($_POST['time_end']) ? $_POST['time_end'] : null;
-        $description = sanitizeEditorText($_POST['description'] ?? '');
-        $location = sanitizeEditorText($_POST['location'] ?? '');
+        $description = sanitizeEditorBlockInput($_POST['description'] ?? '');
+        $location = sanitizeEditorPlainText($_POST['location'] ?? '');
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
         $removeImage = isset($_POST['remove_image']) ? 1 : 0;
 
@@ -370,8 +332,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $pageAction = $_POST['page_action'] ?? '';
 if ($pageAction === 'create_page') {
     $pageKey = $_POST['page_key'] ?? '';
-    $title = sanitizeEditorText($_POST['title'] ?? '');
-    $body = sanitizeEditorText($_POST['body'] ?? '');
+    $title = sanitizeEditorInlineInput($_POST['title'] ?? '');
+    $body = sanitizeEditorBlockInput($_POST['body'] ?? '');
     $insertPosition = $_POST['insert_position'] ?? 'bottom';
     $imagePosition = $_POST['image_position'] ?? 'normal';
     if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) {
@@ -433,8 +395,8 @@ if ($pageAction === 'create_page') {
 
     $id = (int)($_POST['id'] ?? 0);
     $pageKey = $_POST['page_key'] ?? '';
-    $title = sanitizeEditorText($_POST['title'] ?? '');
-    $body = sanitizeEditorText($_POST['body'] ?? '');
+    $title = sanitizeEditorInlineInput($_POST['title'] ?? '');
+    $body = sanitizeEditorBlockInput($_POST['body'] ?? '');
     $removeImage = isset($_POST['remove_image']) ? 1 : 0;
 
     if ($title === '') {
@@ -768,7 +730,7 @@ if ($page !== 'banner' && $page !== 'agenda') {
 
                             <div>
                                 <label class="form-label">Titel</label>
-                                <textarea name="title" rows="1" class="form-textarea"><?php echo htmlspecialchars(sanitizeEditorText($editEvent['title'])); ?></textarea>
+                                <textarea name="title" rows="1" class="form-textarea"><?php echo htmlspecialchars($editEvent['title'] ?? ''); ?></textarea>
                             </div>
 
                             <div class="grid grid-cols-3 gap-4">
@@ -805,12 +767,12 @@ if ($page !== 'banner' && $page !== 'agenda') {
 
                             <div>
                                 <label class="form-label">Plaats</label>
-                                <input name="location" class="form-input admin-input-surface admin-input-h-48" value="<?php echo htmlspecialchars(sanitizeEditorText($editEvent['location'] ?? '')); ?>" />
+                                <input name="location" class="form-input admin-input-surface admin-input-h-48" value="<?php echo htmlspecialchars($editEvent['location'] ?? ''); ?>" />
                             </div>
 
                             <div>
                                 <label class="form-label">Omschrijving</label>
-                                <textarea name="description" rows="5" class="form-textarea"><?php echo htmlspecialchars(sanitizeEditorText($editEvent['description'] ?? '')); ?></textarea>
+                                <textarea name="description" rows="5" class="form-textarea"><?php echo htmlspecialchars($editEvent['description'] ?? ''); ?></textarea>
                             </div>
 
                             <div>
@@ -969,7 +931,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 $dateDisplay = formatEventDateDisplay($event['date']); 
                                                 $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : ''; 
                                                 $timeEndDisplay = $event['time_end'] ? formatEventTimeDisplay($event['time_end']) : ''; 
-                                                $eventDescriptionPreview = mb_strimwidth(sanitizeEditorText($event['description'] ?? ''), 0, 200, '...');
+                                                $eventDescriptionPreview = editorPreviewText($event['description'] ?? '', 200);
                                             ?>
                                             <p class="text-sm text-gray-600 mt-1"><strong>Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?><?php if ($timeDisplay) { echo ' ' . htmlspecialchars($timeDisplay); } ?><?php if ($timeEndDisplay) { echo ' - ' . htmlspecialchars($timeEndDisplay); } ?></p>
                                             <?php if (!empty($event['location'])): ?>
@@ -1072,12 +1034,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
                             <div>
                                 <label class="form-label">Titel</label>
-                                <textarea name="title" rows="1" class="form-textarea"><?php echo htmlspecialchars(sanitizeEditorText($editPage['title'])); ?></textarea>
+                                <textarea name="title" rows="1" class="form-textarea"><?php echo htmlspecialchars($editPage['title'] ?? ''); ?></textarea>
                             </div>
 
                             <div>
                                 <label class="form-label">Inhoud</label>
-                                <textarea name="body" rows="6" class="form-textarea"><?php echo htmlspecialchars(sanitizeEditorText($editPage['body'])); ?></textarea>
+                                <textarea name="body" rows="6" class="form-textarea"><?php echo htmlspecialchars($editPage['body'] ?? ''); ?></textarea>
                             </div>
 
                             <div>
@@ -1184,7 +1146,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <div class="flex justify-between items-start gap-4">
                                         <input type="checkbox" class="page-checkbox page-checkbox-<?php echo htmlspecialchars($pageKey); ?> w-4 h-4 mt-1 flex-shrink-0 cursor-pointer" name="page_ids[]" value="<?php echo (int)$it['id']; ?>">
                                         <div class="flex-1">
-                                            <?php $pageBodyPreview = mb_strimwidth(sanitizeEditorText($it['body'] ?? ''), 0, 150, '...'); ?>
+                                            <?php $pageBodyPreview = editorPreviewText($it['body'] ?? '', 150); ?>
                                             <h4 class="font-bold text-lg text-gray-800"><?php echo htmlspecialchars(sanitizeEditorText($it['title'] ?? '')); ?></h4>
                                             <p class="text-sm text-gray-600 mt-1 line-clamp-2"><?php echo nl2br(htmlspecialchars($pageBodyPreview)); ?></p>
                                         </div>
