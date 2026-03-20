@@ -858,3 +858,21 @@ button,
   border-radius: var(--edge-radius-lg) !important;
   overflow: hidden;
 }
+
+/* Fix wie-zijn-we image overflow on mobile */
+@media (max-width: 768px) {
+    .wie-zijn-we-page section.bg-white,
+    section.bg-white.max-w-6xl[style*="flex-direction"] {
+        flex-direction: column !important;
+    }
+    section.bg-white.max-w-6xl [style*="min-width: 340px"],
+    section.bg-white.max-w-6xl [style*="min-width:340px"] {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+    }
+}  
+
+section{
+    width: 95%;
+}
