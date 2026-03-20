@@ -162,7 +162,7 @@ include __DIR__ . '/navbar.php';
         ?>
         <div class="space-y-6">
             <div class="bg-white shadow-lg pt-0 pb-6 mb-4 min-h-[220px] max-w-sm mx-auto">
-                <div class="flex flex-1 items-center justify-center">   
+                <div class="flex flex-1 items-center justify-center">
                     <?php if (!empty($block['image'])): ?>
                         <?php
                         $imagePath = trim((string)$block['image']);

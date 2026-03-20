@@ -45,10 +45,10 @@ include __DIR__ . '/navbar.php';
 <main>
     
         <div id="agenda-terugblik-switch" class="mobile flex items-center justify-center gap-1" style="scroll-margin-top: 110px;">
-        <div class="bg-white p-6 shadow-lg max-w-xl mt-6 w-full border-r text-center">
+        <div class="agenda bg-white p-6 shadow-lg max-w-xl mt-6 w-full border-r text-center">
             <a href="agenda.php#agenda-terugblik-switch"><h1 class="text-2xl text-[#00811F] font-semibold">Agenda</h1></a>
         </div>
-        <div class="bg-white p-6 max-w-xl mt-6 w-full text-center border-r border-gray-500">
+        <div class="terugblik bg-white p-6 max-w-xl mt-6 w-full text-center border-r border-gray-500">
             <a href="terugblikken.php#agenda-terugblik-switch"><h1 class="text-2xl text-[#00000] font-semibold">Terugblik</h1></a>
         </div>
     </div>

@@ -1,6 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap');
 
 /* Consistent image size and spacing for wie-zijn-we page */
+#homepage-cards-container{
+    width: 95%;
+}
+
 .consistent-img {
   display: block;
   width: 366px;
@@ -201,6 +205,14 @@
 
 .text-block.with-image .text-block-content {
     flex: 0 0 50%;
+}
+
+.agenda{
+    width: 95%;
+}
+
+.terugblik{
+    width: 95%;
 }
 
 @media (max-width: 768px) {
@@ -717,6 +729,8 @@ main > div.grid > div:hover {
 
 /* Mobile styles */
 @media (max-width: 770px) {
+
+
     .hamburger {
         display: block;
         font-size: 28px;
@@ -885,7 +899,7 @@ section{
         cursor: pointer;
     }
 
-    /* Nav menu verborgen standaard */
+    /* Nav menu */
     .nav-menu {
         position: absolute;
         top: 100%;

@@ -4,9 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="303eae4d-7ca5-4634-9557-4de1cdbec390" name="Changes" comment="Tablet ui verbeterd">
+    <list default="true" id="303eae4d-7ca5-4634-9557-4de1cdbec390" name="Changes" comment="Tablet ui Foto's op wat doen we page verbeterd">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/index.php" beforeDir="false" afterPath="$PROJECT_DIR$/index.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/style.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/terugblikken.php" beforeDir="false" afterPath="$PROJECT_DIR$/terugblikken.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -106,7 +108,7 @@
       <workItem from="1773753840947" duration="2641000" />
       <workItem from="1773827822828" duration="5953000" />
       <workItem from="1773994269245" duration="4254000" />
-      <workItem from="1774007201631" duration="2425000" />
+      <workItem from="1774007201631" duration="4117000" />
     </task>
     <task id="LOCAL-00001" summary="Padding toegevoegd aan terugblik text-blok">
       <option name="closed" value="true" />
@@ -268,7 +270,15 @@
       <option name="project" value="LOCAL" />
       <updated>1774009085170</updated>
     </task>
-    <option name="localTasksCounter" value="21" />
+    <task id="LOCAL-00021" summary="Tablet ui Foto's op wat doen we page verbeterd">
+      <option name="closed" value="true" />
+      <created>1774009898288</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1774009898288</updated>
+    </task>
+    <option name="localTasksCounter" value="22" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -322,6 +332,7 @@
     <MESSAGE value="Navbar mobile ui font-size gelijk gemaakt" />
     <MESSAGE value="tablet en desktop mobile query" />
     <MESSAGE value="Tablet ui verbeterd" />
-    <option name="LAST_COMMIT_MESSAGE" value="Tablet ui verbeterd" />
+    <MESSAGE value="Tablet ui Foto's op wat doen we page verbeterd" />
+    <option name="LAST_COMMIT_MESSAGE" value="Tablet ui Foto's op wat doen we page verbeterd" />
   </component>
 </project>
