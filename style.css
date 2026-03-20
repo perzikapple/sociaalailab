@@ -494,6 +494,13 @@ main > div.grid > div:hover {
     justify-content: space-between;
 }
 
+/* ---- Menu ---- */
+.nav-menu {
+    list-style: none;
+    display: flex;
+    margin: 0;
+    padding: 0;
+}
 
 .nav-menu li {
     position: relative;
@@ -555,7 +562,12 @@ main > div.grid > div:hover {
         align-self: flex-start;
     }
 
-
+    .nav-menu {
+        display: none;
+        flex-direction: column;
+        width: 100%;
+        background-color: white;
+    }
 
     .nav-menu li {
         text-align: left;
@@ -719,8 +731,6 @@ main > div.grid > div:hover {
         display: none;
         gap: 0;
         border-top: 1px solid #ddd;
-        overflow: hidden;
-        transition: max-height 0.3s ease;
     }
 
     .nav-menu.show {
@@ -736,9 +746,4 @@ main > div.grid > div:hover {
         box-shadow: none;
         border-radius: 0;
     }
-
-    body.no-scroll {
-        overflow: hidden;
-    }
 }
-
