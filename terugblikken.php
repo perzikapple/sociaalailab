@@ -6,20 +6,10 @@ require 'helpers.php';
 $banner1 = 'images/banner_website_01.jpg';
 $banner2 = 'images/banner_website_02.jpg';
 
-$fallbackBlocks = [
-    [
-        'title' => 'Voorbeeld Terugblik',
-        'body' => 'Dit is een voorbeeld van een terugblik.',
-        'image' => '',
-        'meta' => null
-    ]
-];
-
 try {
     $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: $banner1;
     $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: $banner2;
 
-    // seed_page_blocks removed to prevent auto-creation
     $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'terugblikken' ORDER BY (sort_order IS NULL OR sort_order = 0) ASC, sort_order ASC, created_at ASC, id ASC");
     $stmt->execute();
     $pageBlocks = $stmt->fetchAll();

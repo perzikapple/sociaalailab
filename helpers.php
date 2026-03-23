@@ -138,4 +138,43 @@ if (!function_exists('editorPreviewText')) {
     }
 }
 
+if (!function_exists('normalizeDisplayText')) {
+    function normalizeDisplayText($value) {
+        $value = (string)$value;
+        if ($value === '') {
+            return '';
+        }
+
+        if (preg_match('//u', $value) !== 1 && function_exists('iconv')) {
+            $converted = @iconv('Windows-1252', 'UTF-8//IGNORE', $value);
+            if ($converted !== false && $converted !== '') {
+                $value = $converted;
+            }
+        }
+
+        $value = strtr($value, [
+            'Ã¶' => 'ö',
+            'Ã«' => 'ë',
+            'Ã¼' => 'ü',
+            'Ã¯' => 'ï',
+            'Ã©' => 'é',
+            'Ã¨' => 'è',
+            'Ãª' => 'ê',
+            'Ã¡' => 'á',
+            'Ã³' => 'ó',
+            'Ã–' => 'Ö',
+            'Ã‹' => 'Ë',
+            'Ã‰' => 'É',
+            'â€™' => '’',
+            'â€œ' => '“',
+            'â€\x9d' => '”',
+            'â€“' => '–',
+            'â€”' => '—',
+            'Â ' => ' ',
+        ]);
+
+        return $value;
+    }
+}
+
 ?>

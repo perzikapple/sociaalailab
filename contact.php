@@ -6,53 +6,12 @@ require 'helpers.php';
 $banner1 = 'images/banner_website_01.jpg';
 $banner2 = 'images/banner_website_02.jpg';
 
-// Fallback blocks for seeding
-$fallbackBlocks = [
-    [
-        'title' => 'Contact',
-        'body' => 'Wil je meedoen, meedenken, meeleren of meer weten over activiteiten van het lab? Stuur ons een bericht en maak een afspraak om langs te komen, iedereen is welkom!',
-        'image' => 'Contact_foto.jpg',
-        'meta' => json_encode(['email' => 'digitaleinclusie@rotterdam.nl'])
-    ],
-    [
-        'title' => 'Sociaal AI Lab Rotterdam',
-        'body' => 'Wij zijn geopend op maandag, woensdag en vrijdag.',
-        'image' => '',
-        'meta' => json_encode([
-            'address' => 'Hillevliet 90, 3074 KD Rotterdam',
-            'email' => 'digitaleinclusie@rotterdam.nl',
-            'map_embed' => '<iframe class="map" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4924.161289441116!2d4.5037668125406105!3d51.89599238212385!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47c433097cf8a783%3A0x6aabf347bcd316ef!2sHillevliet%2090%2C%203074%20KD%20Rotterdam!5e0!3m2!1sen!2snl!4v1763988130581!5m2!1sen!2snl" width="auto" height="auto" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>'
-        ])
-    ]
-];
-
 try {
     $b1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn();
     $b2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn();
     if ($b1) $banner1 = $b1;
     if ($b2) $banner2 = $b2;
 } catch (Exception $e) {
-}
-
-// Seed fallback blocks if they don't exist
-try {
-    $checkStmt = $pdo->prepare('SELECT COUNT(*) FROM pages WHERE page_key = ? AND title = ?');
-    $insertStmt = $pdo->prepare('INSERT INTO pages (page_key, title, body, image, meta, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())');
-    
-    foreach ($fallbackBlocks as $block) {
-        $checkStmt->execute(['contact', $block['title'] ?? null]);
-        if ((int)$checkStmt->fetchColumn() === 0) {
-            $insertStmt->execute([
-                'contact',
-                $block['title'] ?? null,
-                $block['body'] ?? null,
-                $block['image'] ?? null,
-                $block['meta'] ?? null
-            ]);
-        }
-    }
-} catch (Exception $e) {
-    // Seeding failed, continue anyway
 }
 
 try {

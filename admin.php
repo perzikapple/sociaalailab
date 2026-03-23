@@ -55,6 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $description = sanitizeEditorBlockInput($_POST['description'] ?? '');
         $location = sanitizeEditorPlainText($_POST['location'] ?? '');
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
+        $showOnHomepage = isset($_POST['show_on_homepage']) ? 1 : 0;
 
         if ($date === '') {
             $message = 'Datum is verplicht.';
@@ -68,8 +69,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $imageName = $upload['name'] ?? null;
                 // voeg updated_at en updated_by toe bij insert
-                $stmt = $pdo->prepare('INSERT INTO events (title, date, end_date, time, time_end, description, image, location, show_signup_button, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)');
-                $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $imageName, $location ?: null, $showSignupButton, $currentUser]);
+                $stmt = $pdo->prepare('INSERT INTO events (title, date, end_date, time, time_end, description, image, location, show_signup_button, show_on_homepage, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)');
+                $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $imageName, $location ?: null, $showSignupButton, $showOnHomepage, $currentUser]);
                 $eventId = $pdo->lastInsertId();
                 // Audit log: event created
                 audit_log($pdo, 'create', 'events', $eventId, 'title: ' . $title, $currentUser);
@@ -88,6 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $description = sanitizeEditorBlockInput($_POST['description'] ?? '');
         $location = sanitizeEditorPlainText($_POST['location'] ?? '');
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
+        $showOnHomepage = isset($_POST['show_on_homepage']) ? 1 : 0;
         $removeImage = isset($_POST['remove_image']) ? 1 : 0;
 
         if ($date === '') {
@@ -112,8 +114,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $imageName = $upload['name'] ?? $oldImage;
                 }
                 // update nu ook updated_at en updated_by
-                $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, end_date=?, time=?, time_end=?, description=?, image=?, location=?, show_signup_button=?, updated_at=NOW(), updated_by=? WHERE id=?');
-                $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $imageName, $location ?: null, $showSignupButton, $currentUser, $id]);
+                $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, end_date=?, time=?, time_end=?, description=?, image=?, location=?, show_signup_button=?, show_on_homepage=?, updated_at=NOW(), updated_by=? WHERE id=?');
+                $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $imageName, $location ?: null, $showSignupButton, $showOnHomepage, $currentUser, $id]);
                 // Audit log: event updated
                 audit_log($pdo, 'update', 'events', $id, 'title: ' . $title, $currentUser);
 
@@ -864,6 +866,13 @@ if ($page === 'audit') {
                                 </label>
                             </div>
 
+                            <div>
+                                <label class="form-checkbox">
+                                    <input type="checkbox" name="show_on_homepage" <?php echo ($editEvent['show_on_homepage'] ?? 0) ? 'checked' : ''; ?> />
+                                    Toon op homepage
+                                </label>
+                            </div>
+
                             <button type="submit" class="btn btn-primary">
                                 <i class="fa-solid fa-save"></i> Opslaan
                             </button>
@@ -961,6 +970,13 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <label class="form-checkbox">
                                     <input type="checkbox" name="show_signup_button" />
                                     Toon inschrijf knop
+                                </label>
+                            </div>
+
+                            <div>
+                                <label class="form-checkbox">
+                                    <input type="checkbox" name="show_on_homepage" checked />
+                                    Toon op homepage
                                 </label>
                             </div>
 

@@ -45,43 +45,6 @@ include __DIR__ . '/../navbar.php';
 <!-- Pagina content -->
 <main class="watdoenwe-page">
     <?php
-    // Fallback blocks for seeding
-    $fallbackBlocks = [
-        [
-            'title' => 'Het Sociaal AI Lab is op Hillevliet en online te bezoeken.',
-            'body' => 'Het Lab biedt de plek én de technische ondersteuning voor alle activiteiten van het programma. Dat kan op locatie aan de Hillevliet, maar ook in een digitale omgeving. Het Lab is het kloppende hart van het programma.',
-            'image' => 'images/wat_doen_we/faciliteiten/Wat_doen_we_Sociaal_AI%20Lab_Rotterdam.png',
-            'meta' => null
-        ],
-        [
-            'title' => 'De mobiele AI Labkar – een pop-uplocatie waar bewoners kunnen kennismaken met AI',
-            'body' => 'Samen met bewoners ontwerpen we AI-oplossingen voor sociale vraagstukken, bijvoorbeeld rond armoede, zorg of veiligheid. Rotterdammers zetten tijdens deze activiteiten hun behoeftes aan eerlijke technologie en praktische oplossingen om in de praktijk',
-            'image' => 'images/wat_doen_we/faciliteiten/Wat_doen_we_AI_Labkar.png',
-            'meta' => null
-        ]
-    ];
-
-    // Seed fallback blocks if they don't exist
-    try {
-        $checkStmt = $pdo->prepare('SELECT COUNT(*) FROM pages WHERE page_key = ? AND title = ?');
-        $insertStmt = $pdo->prepare('INSERT INTO pages (page_key, title, body, image, meta, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())');
-
-        foreach ($fallbackBlocks as $block) {
-            $checkStmt->execute(['programma-faciliteit', $block['title'] ?? null]);
-            if ((int)$checkStmt->fetchColumn() === 0) {
-                $insertStmt->execute([
-                    'programma-faciliteit',
-                    $block['title'] ?? null,
-                    $block['body'] ?? null,
-                    $block['image'] ?? null,
-                    $block['meta'] ?? null
-                ]);
-            }
-        }
-    } catch (Exception $e) {
-        // Seeding failed, continue anyway
-    }
-
     // Fetch page blocks from database
     $pageBlocks = [];
     try {
