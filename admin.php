@@ -336,6 +336,11 @@ if ($pageAction === 'create_page') {
     $pageKey = $_POST['page_key'] ?? '';
     $title = sanitizeEditorInlineInput($_POST['title'] ?? '');
     $body = sanitizeEditorBlockInput($_POST['body'] ?? '');
+    $greenText = sanitizeEditorPlainText($_POST['green_text'] ?? '');
+    $greenTextPosition = $_POST['green_text_position'] ?? 'above';
+    if (!in_array($greenTextPosition, ['above', 'below'], true)) {
+        $greenTextPosition = 'above';
+    }
     $insertPosition = $_POST['insert_position'] ?? 'bottom';
     $imagePosition = $_POST['image_position'] ?? 'normal';
     if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) {
@@ -352,6 +357,10 @@ if ($pageAction === 'create_page') {
         $meta = [
             'image_position' => $imagePosition,
         ];
+        if ($greenText !== '') {
+            $meta['green_text'] = $greenText;
+            $meta['green_text_position'] = $greenTextPosition;
+        }
 
         // Extra velden voor contact pagina
         if ($pageKey === 'contact') {
@@ -399,6 +408,11 @@ if ($pageAction === 'create_page') {
     $pageKey = $_POST['page_key'] ?? '';
     $title = sanitizeEditorInlineInput($_POST['title'] ?? '');
     $body = sanitizeEditorBlockInput($_POST['body'] ?? '');
+    $greenText = sanitizeEditorPlainText($_POST['green_text'] ?? '');
+    $greenTextPosition = $_POST['green_text_position'] ?? 'above';
+    if (!in_array($greenTextPosition, ['above', 'below'], true)) {
+        $greenTextPosition = 'above';
+    }
     $removeImage = isset($_POST['remove_image']) ? 1 : 0;
 
     if ($title === '') {
@@ -424,6 +438,13 @@ if ($pageAction === 'create_page') {
             }
         }
         $meta['image_position'] = $imagePosition;
+        if ($greenText !== '') {
+            $meta['green_text'] = $greenText;
+            $meta['green_text_position'] = $greenTextPosition;
+        } else {
+            unset($meta['green_text']);
+            unset($meta['green_text_position']);
+        }
 
         if ($pageKey === 'contact') {
             if (!empty($_POST['address'])) $meta['address'] = $_POST['address'];
@@ -1228,6 +1249,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!in_array($currentImagePosition, ['normal', 'left', 'right'], true)) {
                     $currentImagePosition = 'normal';
                 }
+                $currentGreenText = $editMeta['green_text'] ?? ($editMeta['green_heading'] ?? '');
+                $currentGreenTextPosition = $editMeta['green_text_position'] ?? 'above';
+                if (!in_array($currentGreenTextPosition, ['above', 'below'], true)) {
+                    $currentGreenTextPosition = 'above';
+                }
                 ?>
 
                 <div class="card p-6">
@@ -1260,6 +1286,19 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div>
                                 <label class="form-label">Inhoud</label>
                                 <textarea name="body" rows="6" class="form-textarea"><?php echo htmlspecialchars($editPage['body'] ?? ''); ?></textarea>
+                            </div>
+
+                            <div>
+                                <label class="form-label">Groene tekst (optioneel)</label>
+                                <textarea name="green_text" rows="2" class="form-textarea"><?php echo htmlspecialchars($currentGreenText); ?></textarea>
+                            </div>
+
+                            <div>
+                                <label class="form-label">Positie groene tekst</label>
+                                <select name="green_text_position" class="form-input">
+                                    <option value="above" <?php echo $currentGreenTextPosition === 'above' ? 'selected' : ''; ?>>Boven het kopje</option>
+                                    <option value="below" <?php echo $currentGreenTextPosition === 'below' ? 'selected' : ''; ?>>Onderaan</option>
+                                </select>
                             </div>
 
                             <div>
@@ -1303,6 +1342,19 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div>
                                 <label class="form-label">Inhoud</label>
                                 <textarea name="body" rows="6" class="form-textarea"></textarea>
+                            </div>
+
+                            <div>
+                                <label class="form-label">Groene tekst (optioneel)</label>
+                                <textarea name="green_text" rows="2" class="form-textarea"></textarea>
+                            </div>
+
+                            <div>
+                                <label class="form-label">Positie groene tekst</label>
+                                <select name="green_text_position" class="form-input">
+                                    <option value="above" selected>Boven het kopje</option>
+                                    <option value="below">Onderaan</option>
+                                </select>
                             </div>
 
                             <div>

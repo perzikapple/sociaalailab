@@ -60,6 +60,8 @@ include __DIR__ . '/navbar.php';
         $imagePosition = $metaArr['image_position'] ?? 'normal';
         if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) $imagePosition = 'normal';
         $greenText = trim((string)($metaArr['green_text'] ?? ($metaArr['green_heading'] ?? '')));
+        $greenTextPosition = $metaArr['green_text_position'] ?? 'above';
+        if (!in_array($greenTextPosition, ['above', 'below'], true)) $greenTextPosition = 'above';
         
         $flexDir = 'column';
         if ($imagePosition === 'left' && $hasText) {
@@ -92,7 +94,7 @@ include __DIR__ . '/navbar.php';
             <?php endif; ?>
             <?php if ($hasText): ?>
                 <div style="<?php echo ($imagePosition !== 'normal' && $hasImage) ? 'flex: 1 1 auto; min-width: 0; padding: 0 1.5rem;' : 'width: 100%;'; ?>">
-                    <?php if ($greenText !== ''): ?>
+                    <?php if ($greenText !== '' && $greenTextPosition === 'above'): ?>
                         <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($greenText)); ?></div>
                     <?php endif; ?>
                     <?php if (!empty($block['title'])): ?>
@@ -100,6 +102,9 @@ include __DIR__ . '/navbar.php';
                     <?php endif; ?>
                     <?php if (!empty($block['body'])): ?>
                         <div class="text-gray-700 leading-relaxed"><?php echo renderEditorBlock($block['body']); ?></div>
+                    <?php endif; ?>
+                    <?php if ($greenText !== '' && $greenTextPosition === 'below'): ?>
+                        <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($greenText)); ?></div>
                     <?php endif; ?>
                 </div>
             <?php endif; ?>

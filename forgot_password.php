@@ -37,6 +37,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $mail = new PHPMailer(true);
 
             try {
+                $mail->SMTPDebug = 2; // debug op niveau 2
+$mail->Debugoutput = 'html';
                 // Server settings - Elastic Email
                 $mail->isSMTP();
                 $mail->Host       = 'smtp.elasticemail.com'; // Elastic Email SMTP server
@@ -44,12 +46,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $mail->Username   = 'indybrinkman2006@gmail.com'; // Vervang met je Elastic Email username (meestal je email)
                 $mail->Password   = 'A9D9DCEB7DA750C8DDC4D599720EC836E1A9'; // Vervang met je Elastic Email SMTP password
                 $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-                $mail->Port       = 587; // Of 587 als 2525 niet werkt
+                $mail->Port       = 2525; // Of 587 als 2525 niet werkt
                 // $mail->SMTPDebug  = 2; // Verwijder debug in productie
 
                 // Recipients
                 $mail->setFrom('indybrinkman2006@gmail.com', 'SociaalAI Lab');
                 $mail->addAddress($email);
+
 
                 // Content
                 $resetLink = "http://localhost:8000/reset_password.php?token=" . $token; // Vervang localhost met je domein in productie
@@ -87,6 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php
 $navPrefix = '';
 include __DIR__ . '/navbar.php';
+
 ?>
 
 <main>

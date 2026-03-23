@@ -6,66 +6,11 @@ require 'helpers.php';
 $banner1 = 'images/banner_website_01.jpg';
 $banner2 = 'images/banner_website_02.jpg';
 
-$fallbackBlocks = [
-    [
-        'title' => 'Welkom bij het Sociaal AI Lab Rotterdam! Denk, doe en leer mee',
-        'body' => 'Samen maken we technologie sociaal.
-
-In Rotterdam willen we dat iedereen mee kan doen in de digitale samenleving. Daarom is er nu het Sociaal AI Lab Rotterdam: een open plek in de stad waar bewoners, onderzoekers, ontwerpers en beleidsmakers samenwerken aan eerlijke, begrijpelijke en toegankelijke technologie.
-
-Rotterdammers ontdekken hier in gesprekken, bijeenkomsten, leer- en doe-activiteiten wat AI betekent voor hun dagelijks leven en denken mee over wat technologie w�l of niet moet doen.',
-        'image' => '',
-        'meta' => json_encode(['layout' => 'welcome'])
-    ],
-    [
-        'title' => 'Meedenken',
-        'body' => 'Rotterdammers krijgen een stem bij het ontwikkelen en beoordelen van AI.',
-        'image' => 'Meedenken.png',
-        'meta' => json_encode(['layout' => 'card'])
-    ],
-    [
-        'title' => 'Samen leren',
-        'body' => 'We vergroten de kennis over kansen en risico\'s van AI',
-        'image' => 'Samen_leren.png',
-        'meta' => json_encode(['layout' => 'card'])
-    ],
-    [
-        'title' => 'Meedoen',
-        'body' => 'We ontwikkelen samen oplossingen die passen bij de waarden van de stad',
-        'image' => 'Meedoen.png',
-        'meta' => json_encode(['layout' => 'card'])
-    ],
-    [
-        'title' => 'Gelijke kansen voor iedereen',
-        'body' => 'We onderzoeken samen wat kunstmatige intelligentie (AI) betekent voor het dagelijks leven in Rotterdam, en hoe we AI zo kunnen gebruiken dat het bijdraagt aan gelijke kansen voor iedereen.
-Het lab hoort bij het gemeentelijke programma Digitale Inclusie, dat ervoor zorgt dat alle Rotterdammers veilig, vaardig en volwaardig kunnen meedoen in de digitale wereld.
-Kunstmatige Intelligentie? Technologie is pas echt slim als ze ��k sociaal is.',
-        'image' => '',
-        'meta' => json_encode(['layout' => 'info'])
-    ]
-];
-
 try {
     $b1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn();
     $b2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn();
     if ($b1) $banner1 = $b1;
     if ($b2) $banner2 = $b2;
-
-    $checkStmt = $pdo->prepare('SELECT COUNT(*) FROM pages WHERE page_key = ? AND title = ?');
-    $insertStmt = $pdo->prepare('INSERT INTO pages (page_key, title, body, image, meta, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())');
-    
-    foreach ($fallbackBlocks as $block) {
-        $checkStmt->execute(['index', $block['title'] ?? null]);
-        if ((int)$checkStmt->fetchColumn() === 0) {
-            $insertStmt->execute([
-                'index',
-                $block['title'] ?? null,
-                $block['body'] ?? null,
-                $block['image'] ?? null,
-                $block['meta'] ?? null
-            ]);
-        }
-    }
 
     $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'index' ORDER BY (sort_order IS NULL OR sort_order = 0) ASC, sort_order ASC, created_at ASC, id ASC");
     $stmt->execute();
@@ -74,6 +19,7 @@ try {
     $welcomeBlock = null;
     $cardBlocks = [];
     $infoBlock = null;
+    $contactBlock = null;
     $customBlocks = [];
     
     foreach ($pageBlocks as $block) {
@@ -86,6 +32,8 @@ try {
             $cardBlocks[] = $block;
         } elseif ($layout === 'info') {
             $infoBlock = $block;
+        } elseif ($layout === 'contact') {
+            $contactBlock = $block;
         } else {
             $customBlocks[] = $block;
         }
@@ -112,7 +60,6 @@ try {
     <link rel="modulepreload" as="script" href="build/assets/app-CAiCLEjY.js"><link rel="stylesheet" href="style.css?v=<?php echo filemtime(__DIR__.'/style.css'); ?>"><script type="module" src="build/assets/app-CAiCLEjY.js"></script>    <title>SociaalAI Lab</title>
     <meta name="description" content="SociaalAI helpt inwoners sterker te staan in een steeds digitalere wereld. We doen dit door Rotterdammers actief mee te laten denken, praten en beslissen over kunstmatige intelligentie.">
     <link rel="icon" type="image/png" href="images/Pixels_icon.png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-pV1ZjF0c5T7p9JQ+z6Q1lX4eH/Gp1r6VZ8/8Fm5VzEyNx8K8YXo+2fqf4JoN2UEZy2X+4C+VZ7XohRkCQe4fA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 
@@ -138,17 +85,26 @@ include __DIR__ . '/navbar.php';
     <?php
     $welcomeMeta = $welcomeBlock['meta'] ? json_decode($welcomeBlock['meta'], true) : [];
     $welcomeGreenText = trim((string)($welcomeMeta['green_text'] ?? ($welcomeMeta['green_heading'] ?? '')));
+    $welcomeGreenTextPosition = $welcomeMeta['green_text_position'] ?? 'above';
+    if (!in_array($welcomeGreenTextPosition, ['above', 'below'], true)) $welcomeGreenTextPosition = 'above';
     ?>
     <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg mt- p-8 max-w-6xl mx-auto my-12">
         <div class="flex-1">
-            <?php if ($welcomeGreenText !== ''): ?>
+            <?php if ($welcomeGreenText !== '' && $welcomeGreenTextPosition === 'above'): ?>
                 <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($welcomeGreenText)); ?></div>
             <?php endif; ?>
             <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900">
-                <?php echo renderEditorInline($welcomeBlock['title']); ?></h2>
-            <div class="text-gray-700 leading-relaxed">
-                <?php echo renderEditorBlock($welcomeBlock['body']); ?>
-            </div>
+                <?php echo htmlspecialchars($welcomeBlock['title']); ?></h2>
+            <?php
+            $paragraphs = array_filter(explode("\n\n", $welcomeBlock['body']), function($p) { return trim($p) !== ''; });
+            foreach ($paragraphs as $para): ?>
+                <p class="text-gray-700 leading-relaxed mb-4">
+                    <?php echo htmlspecialchars($para); ?>
+                </p>
+            <?php endforeach; ?>
+            <?php if ($welcomeGreenText !== '' && $welcomeGreenTextPosition === 'below'): ?>
+                <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($welcomeGreenText)); ?></div>
+            <?php endif; ?>
         </div>
     </section>
     <?php endif; ?>
@@ -159,10 +115,12 @@ include __DIR__ . '/navbar.php';
         <?php
         $cardMeta = $block['meta'] ? json_decode($block['meta'], true) : [];
         $cardGreenText = trim((string)($cardMeta['green_text'] ?? ($cardMeta['green_heading'] ?? '')));
+        $cardGreenTextPosition = $cardMeta['green_text_position'] ?? 'above';
+        if (!in_array($cardGreenTextPosition, ['above', 'below'], true)) $cardGreenTextPosition = 'above';
         ?>
         <div class="space-y-6">
-            <div class="card-container bg-white shadow-lg pt-0 pb-6 mb-4 min-h-[220px] max-w-sm mx-auto">
-                <div class="flex flex-1 items-center justify-center">
+            <div class="bg-white shadow-lg pt-0 pb-6 mb-4 min-h-[220px] max-w-sm mx-auto">
+                <div class="flex flex-1 items-center justify-center">   
                     <?php if (!empty($block['image'])): ?>
                         <?php
                         $imagePath = trim((string)$block['image']);
@@ -176,13 +134,16 @@ include __DIR__ . '/navbar.php';
                              alt="<?php echo htmlspecialchars($block['title']); ?>"
                              class="card-icon">                    <?php endif; ?>
                 </div>
-                <?php if ($cardGreenText !== ''): ?>
+                <?php if ($cardGreenText !== '' && $cardGreenTextPosition === 'above'): ?>
                     <div class="text-center mb-2"><div class="green-highlight"><?php echo nl2br(htmlspecialchars($cardGreenText)); ?></div></div>
                 <?php endif; ?>
-                <h3 class="text-xl text-center font-semibold"><?php echo renderEditorInline($block['title']); ?></h3>
-                <div class="text-center p-4">
-                    <?php echo renderEditorBlock($block['body']); ?>
-                </div>
+                <h3 class="text-xl text-center font-semibold"><?php echo htmlspecialchars($block['title']); ?></h3>
+                <p class="text-center p-4">
+                    <?php echo htmlspecialchars($block['body']); ?>
+                </p>
+                <?php if ($cardGreenText !== '' && $cardGreenTextPosition === 'below'): ?>
+                    <div class="text-center mb-2"><div class="green-highlight"><?php echo nl2br(htmlspecialchars($cardGreenText)); ?></div></div>
+                <?php endif; ?>
             </div>
         </div>
         <?php endforeach; ?>
@@ -190,11 +151,41 @@ include __DIR__ . '/navbar.php';
     <?php endif; ?>
     
     <?php if ($infoBlock): ?>
+    <?php
+    $infoMeta = $infoBlock['meta'] ? json_decode($infoBlock['meta'], true) : [];
+    $infoGreenText = trim((string)($infoMeta['green_text'] ?? ($infoMeta['green_heading'] ?? '')));
+    $infoGreenTextPosition = $infoMeta['green_text_position'] ?? 'above';
+    if (!in_array($infoGreenTextPosition, ['above', 'below'], true)) $infoGreenTextPosition = 'above';
+    ?>
     <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
         <div class="flex-1">
-            <div class="text-1xl md:text-1xl mb-4 text-gray-900">
-                <?php echo renderEditorBlock($infoBlock['body']); ?>
-            </div>
+            <?php if ($infoGreenText !== '' && $infoGreenTextPosition === 'above'): ?>
+                <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($infoGreenText)); ?></div>
+            <?php endif; ?>
+            <?php if (!empty($infoBlock['title'])): ?>
+                <h3 class="text-2xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($infoBlock['title']); ?></h3>
+            <?php endif; ?>
+            <p class="text-1xl md:text-1xl mb-4 text-gray-900">
+                <?php
+                $normalizedInfoBody = normalizeDisplayText($infoBlock['body'] ?? '');
+                $lines = explode("\n", str_replace("\r\n", "\n", $normalizedInfoBody));
+                foreach ($lines as $idx => $line):
+                    $line = trim($line);
+                    if (!empty($line)): ?>
+                        <?php if (strpos($line, 'Kunstmatige Intelligentie') !== false): ?>
+                            </p>
+                            <p class="green-highlight mb-3"><?php echo htmlspecialchars($line); ?></p>
+                            <p class="text-1xl md:text-1xl mb-4 text-gray-900">
+                        <?php else: ?>
+                            <?php echo htmlspecialchars($line); ?><br>
+                        <?php endif;
+                    endif;
+                endforeach;
+                ?>
+            </p>
+            <?php if ($infoGreenText !== '' && $infoGreenTextPosition === 'below'): ?>
+                <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($infoGreenText)); ?></div>
+            <?php endif; ?>
         </div>
     </section>
     <?php endif; ?>
@@ -207,6 +198,8 @@ include __DIR__ . '/navbar.php';
         $imagePosition = $metaArr['image_position'] ?? 'normal';
         if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) $imagePosition = 'normal';
         $greenText = trim((string)($metaArr['green_text'] ?? ($metaArr['green_heading'] ?? '')));
+        $greenTextPosition = $metaArr['green_text_position'] ?? 'above';
+        if (!in_array($greenTextPosition, ['above', 'below'], true)) $greenTextPosition = 'above';
         
         $flexDir = 'column';
         if ($imagePosition === 'left' && $hasText) {
@@ -247,14 +240,17 @@ include __DIR__ . '/navbar.php';
             <?php endif; ?>
             <?php if ($hasText): ?>
                 <div style="<?php echo ($imagePosition !== 'normal' && $hasImage) ? 'flex: 0 0 50%; padding: 0 1.5rem;' : ''; ?>">
-                    <?php if ($greenText !== ''): ?>
+                    <?php if ($greenText !== '' && $greenTextPosition === 'above'): ?>
                         <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($greenText)); ?></div>
                     <?php endif; ?>
                     <?php if (!empty($block['title'])): ?>
-                        <h3 class="text-2xl font-semibold mb-4 text-gray-900"><?php echo renderEditorInline($block['title']); ?></h3>
+                        <h3 class="text-2xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($block['title']); ?></h3>
                     <?php endif; ?>
                     <?php if (!empty($block['body'])): ?>
-                        <div class="text-gray-700 leading-relaxed"><?php echo renderEditorBlock($block['body']); ?></div>
+                        <div class="text-gray-700 leading-relaxed"><?php echo nl2br(htmlspecialchars($block['body'])); ?></div>
+                    <?php endif; ?>
+                    <?php if ($greenText !== '' && $greenTextPosition === 'below'): ?>
+                        <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($greenText)); ?></div>
                     <?php endif; ?>
                 </div>
             <?php endif; ?>
@@ -266,8 +262,8 @@ foreach ($events as $event):
 ?>
 <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
     <div class="flex-1">
-        <span class="inline-block text-white text-sm font-medium px-4 py-1 mb-4" style="background-color:#ce0245;">Evenement</span>
-        <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900"><?php echo renderEditorInline($event['title']); ?></h2>
+        <span class="inline-block bg-[#00811F] text-white text-sm font-medium px-4 py-1 mb-4">Evenement</span>
+        <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($event['title']); ?></h2>
         <div class="space-y-4">
                 <div class="flex items-center space-x-3">
                     <i class="fa-regular fa-calendar text-[#00811F] ml-[2px] text-3xl"></i>
@@ -281,7 +277,7 @@ foreach ($events as $event):
             </div>
             <div class="flex mb-6 space-x-3">
                 <i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>
-                <div class="text-gray-700 pb-3"><strong> Wat:</strong><div class="mt-1"><?php echo renderEditorBlock($event['description']); ?></div></div>
+                <p class="text-gray-700 pb-3"><strong> Wat:</strong> <?php echo nl2br(htmlspecialchars($event['description'])); ?></p>
             </div>
         </div>
     </div>
@@ -291,15 +287,19 @@ foreach ($events as $event):
 </section>
 <?php endforeach; ?>
 
-<?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
-    <a href="admin.php" title="Voeg evenement toe" class="fixed bottom-6 right-6 bg-[#00811F] text-white rounded-full w-12 h-12 flex items-center justify-center text-3xl shadow-lg">+</a>
-<?php endif; ?>
+<?php if ($contactBlock): ?>
 <a href="contact.php">
     <div class="flex items-center justify-center">
         <i class="text-[#cc0033] fa-3x fa-regular fa-envelope-open"></i>
     </div>
-    <h2 class="text-center text-2xl md:text-xl font-bold text-white mb-2">Neem Contact Op</h2>
+    <h2 class="text-center text-2xl md:text-xl font-bold text-white mb-2"><?php echo htmlspecialchars($contactBlock['title']); ?></h2>
+    <p class="text-center text-white"><?php echo htmlspecialchars($contactBlock['body']); ?></p>
 </a>
+<?php endif; ?>
+
+<?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
+    <a href="admin.php" title="Voeg evenement toe" class="fixed bottom-6 right-6 bg-[#00811F] text-white rounded-full w-12 h-12 flex items-center justify-center text-3xl shadow-lg">+</a>
+<?php endif; ?>
 
 </main>
 
