@@ -56,6 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $location = sanitizeEditorPlainText($_POST['location'] ?? '');
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
         $showOnHomepage = isset($_POST['show_on_homepage']) ? 1 : 0;
+        $infoLink = $_POST['info_link'] ?? '';
 
         if ($date === '') {
             $message = 'Datum is verplicht.';
@@ -69,8 +70,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $imageName = $upload['name'] ?? null;
                 // voeg updated_at en updated_by toe bij insert
-                $stmt = $pdo->prepare('INSERT INTO events (title, date, end_date, time, time_end, description, image, location, show_signup_button, show_on_homepage, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)');
-                $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $imageName, $location ?: null, $showSignupButton, $showOnHomepage, $currentUser]);
+                $stmt = $pdo->prepare('INSERT INTO events (title, date, end_date, time, time_end, description, image, location, show_signup_button, show_on_homepage, info_link, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)');
+                $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $imageName, $location ?: null, $showSignupButton, $showOnHomepage, $infoLink, $currentUser]);
                 $eventId = $pdo->lastInsertId();
                 // Audit log: event created
                 audit_log($pdo, 'create', 'events', $eventId, 'title: ' . $title, $currentUser);
@@ -114,8 +115,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $imageName = $upload['name'] ?? $oldImage;
                 }
                 // update nu ook updated_at en updated_by
-                $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, end_date=?, time=?, time_end=?, description=?, image=?, location=?, show_signup_button=?, show_on_homepage=?, updated_at=NOW(), updated_by=? WHERE id=?');
-                $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $imageName, $location ?: null, $showSignupButton, $showOnHomepage, $currentUser, $id]);
+                $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, end_date=?, time=?, time_end=?, description=?, image=?, location=?, show_signup_button=?, show_on_homepage=?, info_link=?, updated_at=NOW(), updated_by=? WHERE id=?');
+                $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $imageName, $location ?: null, $showSignupButton, $showOnHomepage, $infoLink, $currentUser, $id]);
                 // Audit log: event updated
                 audit_log($pdo, 'update', 'events', $id, 'title: ' . $title, $currentUser);
 
@@ -889,6 +890,22 @@ if ($page === 'audit') {
                                     </label>
                                 <?php endif; ?>
                             </div>
+                            <div>
+                                <label class="form-label" for="info_link">Meer info link (optioneel):</label>
+                                <input
+                                    type="url"
+                                    name="info_link"
+                                    id="info_link"
+                                    class="form-input admin-input-surface"
+                                    value="<?php echo htmlspecialchars($editEvent['info_link'] ?? ''); ?>"
+                                    placeholder="https://voorbeeld.nl"
+                                />
+                                <?php if (!empty($editEvent['info_link'])): ?>
+                                    <a href="<?php echo htmlspecialchars($editEvent['info_link']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-info bg-[#00811F] text-white px-3 py-1 rounded shadow hover:bg-[#00691A] transition mt-2 inline-block">
+                                        <i class="fa-solid fa-circle-info mr-1"></i> Meer info
+                                    </a>
+                                <?php endif; ?>
+                            </div>
 
                             <div>
                                 <label class="form-checkbox">
@@ -996,6 +1013,22 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <label class="form-label">Afbeelding (optioneel)</label>
                                 <input type="file" name="image" accept="image/*" class="form-input" />
                             </div>
+                            <div>
+                                <label class="form-label" for="info_link">Meer info link (optioneel):</label>
+                                <input
+                                    type="url"
+                                    name="info_link"
+                                    id="info_link"
+                                    class="form-input admin-input-surface"
+                                    value=""
+                                    placeholder="https://voorbeeld.nl"
+                                />
+                                <?php if (!empty($_POST['info_link'])): ?>
+                                    <a href="<?php echo htmlspecialchars($_POST['info_link']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-info bg-[#00811F] text-white px-3 py-1 rounded shadow hover:bg-[#00691A] transition mt-2 inline-block">
+                                        <i class="fa-solid fa-circle-info mr-1"></i> Meer info
+                                    </a>
+                                <?php endif; ?>
+                            </div>
 
                             <div>
                                 <label class="form-checkbox">
@@ -1055,6 +1088,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 <p class="text-sm text-gray-600"><strong>Plaats:</strong> <?php echo htmlspecialchars($event['location']); ?></p>
                                             <?php endif; ?>
                                             <p class="text-sm text-gray-600 mt-2 line-clamp-2"><?php echo nl2br(htmlspecialchars($eventDescriptionPreview)); ?></p>
+                                            <?php if (!empty($event['info_link'])): ?>
+                                                <a href="<?php echo htmlspecialchars($event['info_link']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-info bg-[#00811F] text-white px-3 py-1 rounded shadow hover:bg-[#00691A] transition mt-2 inline-block">
+                                                    <i class="fa-solid fa-circle-info mr-1"></i> Meer info
+                                                </a>
+                                            <?php endif; ?>
                                         </div>
                                         <div class="admin-row-actions flex gap-2 flex-shrink-0">
                                             <?php if (!empty($event['image'])): ?>
@@ -1337,6 +1375,21 @@ document.addEventListener('DOMContentLoaded', function() {
                                     </label>
                                 <?php endif; ?>
                             </div>
+                                    
+                            
+
+
+                            <div>
+                                <label class="form-label" for="info_link">Meer info link (optioneel):</label>
+                                <input
+                                    type="url"
+                                    name="info_link"
+                                    id="info_link"
+                                    class="form-input"
+                                    value="<?php echo htmlspecialchars($editPage['info_link'] ?? ''); ?>"
+                                    placeholder="https://voorbeeld.nl"
+                                />
+                            </div>
 
                             <div>
                                 <label class="form-label">Foto positie</label>
@@ -1396,6 +1449,19 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div>
                                 <label class="form-label">Afbeelding (optioneel)</label>
                                 <input type="file" name="image" accept="image/*" class="form-input" />
+                            </div>
+
+
+                            <div>
+                                <label class="form-label" for="info_link">Meer info link (optioneel):</label>
+                                <input
+                                    type="url"
+                                    name="info_link"
+                                    id="info_link"
+                                    class="form-input"
+                                    value="<?php echo htmlspecialchars($_POST['info_link'] ?? ''); ?>"
+                                    placeholder="https://voorbeeld.nl"
+                                />
                             </div>
 
                             <div>
