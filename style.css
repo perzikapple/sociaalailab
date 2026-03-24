@@ -872,8 +872,8 @@ button,
 }
 
 /* Fix wie-zijn-we image overflow on mobile */
-    .wie-zijn-we-page section.bg-white,
-    section.bg-white.max-w-6xl[style*="flex-direction"] {
+@media (max-width: 768px) {
+    .wie-zijn-we-page section.bg-white {
         flex-direction: column !important;
     }
     section.bg-white.max-w-6xl [style*="min-width: 340px"],
@@ -882,6 +882,7 @@ button,
         min-width: 0 !important;
         max-width: 100% !important;
     }
+}
 
 
 section{

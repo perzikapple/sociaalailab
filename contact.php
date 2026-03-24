@@ -76,7 +76,7 @@ include __DIR__ . '/navbar.php';
         if ($imagePosition === 'left' && $hasText) {
             $flexDir = 'row';
         } elseif ($imagePosition === 'right' && $hasText) {
-            $flexDir = 'row-reverse';
+            $flexDir = 'row';
         }
         $divStyle = '';
         if ($hasImage && $imagePosition !== 'normal' && $hasText) {

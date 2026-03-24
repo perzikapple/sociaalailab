@@ -54,14 +54,15 @@ include __DIR__ . '/navbar.php';
         $imagePosition = $metaArr['image_position'] ?? 'normal';
         if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) $imagePosition = 'normal';
         $isEven = ($index % 2 == 0);
-        $isImageLeft = $imagePosition === 'normal' ? $isEven : ($imagePosition === 'left');
+        $index = $index ?? 0;
+        
         $flexDir = 'row';
-        if ($isImageLeft) {
-            $flexDir = 'row';
+        $flexWrap = 'nowrap';
+        if ($imagePosition !== 'normal' && $hasText && $hasImage) {
+            $sectionStyle = "display: flex; flex-direction: " . $flexDir . "; flex-wrap: " . $flexWrap . "; gap: 2rem; align-items: flex-start;";
         } else {
-            $flexDir = 'row-reverse';
+            $sectionStyle = "display: flex; flex-direction: column; gap: 1.5rem;";
         }
-        $sectionStyle = "display: flex; flex-direction: " . $flexDir . "; align-items: center; gap: 2.5rem;";
         // Set image size class for bottom 2 blocks
         $imgClass = 'consistent-img';
         if ($index >= count($pageBlocks) - 2) {
@@ -70,20 +71,22 @@ include __DIR__ . '/navbar.php';
         $index++;
     ?>
         <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12 text-padding" style="<?php echo $sectionStyle; ?>">
-            <?php if ($hasImage): ?>
+            <?php if ($imagePosition === 'left' && $hasImage): ?>
                 <?php
-                $imageStyle = 'flex-shrink: 0; width: 340px; min-width: 340px; max-width: 340px;';
+                $imageStyle = '';
                 if (!$hasText) {
                     $imageStyle = 'width: 100%;';
+                } else {
+                    $imageStyle = 'flex: 0 0 auto; max-width: 280px; width: 100%;';
                 }
                 ?>
                 <div style="<?php echo $imageStyle; ?>">
-                    <img class="<?php echo $imgClass; ?>" src="uploads/<?php echo htmlspecialchars($block['image']); ?>" 
-                        alt="<?php echo htmlspecialchars($block['title']); ?>">
+                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
                 </div>
             <?php endif; ?>
+            
             <?php if ($hasText): ?>
-            <div style="flex: 1; padding: 0 1.5rem;">
+            <div style="<?php echo ($imagePosition !== 'normal' && $hasImage) ? 'flex: 1 1 auto; min-width: 0;' : ''; ?>">
                 <?php if (!empty($block['title'])): ?>
                     <h3 class="font-bold text-2xl mb-3"><?php echo renderEditorInline($block['title']); ?></h3>
                 <?php endif; ?>
@@ -91,6 +94,29 @@ include __DIR__ . '/navbar.php';
                     <div class="text-gray-700 text-base leading-relaxed"><?php echo renderEditorBlock($block['body']); ?></div>
                 <?php endif; ?>
             </div>
+            <?php endif; ?>
+            
+            <?php if ($imagePosition === 'right' && $hasImage): ?>
+                <?php
+                $imageStyle = '';
+                if (!$hasText) {
+                    $imageStyle = 'width: 100%;';
+                } else {
+                    $imageStyle = 'flex: 0 0 auto; max-width: 280px; width: 100%;';
+                }
+                ?>
+                <div style="<?php echo $imageStyle; ?>">
+                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
+                </div>
+            <?php endif; ?>
+            
+            <?php if ($imagePosition === 'normal' && $hasImage): ?>
+                <?php
+                $imageStyle = 'width: 100%;';
+                ?>
+                <div style="<?php echo $imageStyle; ?>">
+                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
+                </div>
             <?php endif; ?>
         </section>
     <?php endforeach; ?>

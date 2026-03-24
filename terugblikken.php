@@ -12,7 +12,17 @@ try {
 
     $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'terugblikken' ORDER BY (sort_order IS NULL OR sort_order = 0) ASC, sort_order ASC, created_at ASC, id ASC");
     $stmt->execute();
-    $pageBlocks = $stmt->fetchAll();
+    $allBlocks = $stmt->fetchAll();
+    
+    // Filter blocks to only show custom layout
+    $pageBlocks = [];
+    foreach ($allBlocks as $block) {
+        $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
+        $layout = $metaArr['layout'] ?? 'custom';
+        if ($layout === 'custom' || !in_array($layout, ['welcome', 'card', 'info', 'contact'], true)) {
+            $pageBlocks[] = $block;
+        }
+    }
 
     $stmt = $pdo->prepare("SELECT * FROM events WHERE date < CURDATE() ORDER BY date DESC, time DESC");
     $stmt->execute();
@@ -74,10 +84,10 @@ include __DIR__ . '/navbar.php';
         $flexWrap = 'nowrap';
         if ($imagePosition === 'left' && $hasText) {
             $flexDir = 'row';
-            $flexWrap = 'wrap';
+            $flexWrap = 'nowrap';
         } elseif ($imagePosition === 'right' && $hasText) {
             $flexDir = 'row';
-            $flexWrap = 'wrap';
+            $flexWrap = 'nowrap';
         }
         $sectionStyle = "display: flex; flex-direction: " . $flexDir . "; flex-wrap: " . $flexWrap . ";";
         if ($imagePosition !== 'normal' && $hasText) {

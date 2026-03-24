@@ -192,10 +192,10 @@ include __DIR__ . '/navbar.php';
         $flexWrap = 'nowrap';
         if ($imagePosition === 'left' && $hasText) {
             $flexDir = 'row';
-            $flexWrap = 'wrap';
+            $flexWrap = 'nowrap';
         } elseif ($imagePosition === 'right' && $hasText) {
             $flexDir = 'row';
-            $flexWrap = 'wrap';
+            $flexWrap = 'nowrap';
         }
         $sectionStyle = "display: flex; flex-direction: " . $flexDir . "; flex-wrap: " . $flexWrap . ";";
         if ($imagePosition !== 'normal' && $hasText) {
