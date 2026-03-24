@@ -50,28 +50,29 @@ include __DIR__ . '/navbar.php';
         if (!in_array($greenTextPosition, ['above', 'below'], true)) $greenTextPosition = 'above';
         
         $flexDir = 'column';
+        $flexWrap = 'nowrap';
         if ($imagePosition === 'left' && $hasText) {
             $flexDir = 'row';
+            $flexWrap = 'wrap';
         } elseif ($imagePosition === 'right' && $hasText) {
-            $flexDir = 'row-reverse';
+            $flexDir = 'row';
+            $flexWrap = 'wrap';
         }
-        $sectionStyle = "display: flex; flex-direction: " . $flexDir . "; ";
+        $sectionStyle = "display: flex; flex-direction: " . $flexDir . "; flex-wrap: " . $flexWrap . ";";
         if ($imagePosition !== 'normal' && $hasText) {
-            $sectionStyle .= "gap: 2rem; align-items: center;";
+            $sectionStyle .= " gap: 2rem; align-items: flex-start;";
         } else {
-            $sectionStyle .= "gap: 1.5rem;";
+            $sectionStyle .= " gap: 1.5rem;";
         }
     ?>
         <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" style="<?php echo $sectionStyle; ?>">
-            <?php if ($hasImage): ?>
+            <?php if ($hasImage && $imagePosition === 'left'): ?>
                 <?php
                 $imageStyle = '';
                 if (!$hasText) {
                     $imageStyle = 'width: 100%;';
-                } elseif ($imagePosition !== 'normal') {
-                    $imageStyle = 'flex: 0 0 50%; max-width: 600px;';
                 } else {
-                    $imageStyle = 'width: 100%; max-width: 600px;';
+                    $imageStyle = 'flex: 0 0 auto; max-width: 280px; width: 100%;';
                 }
                 ?>
                 <div style="<?php echo $imageStyle; ?>">
@@ -79,7 +80,7 @@ include __DIR__ . '/navbar.php';
                 </div>
             <?php endif; ?>
             <?php if ($hasText): ?>
-                <div style="<?php echo ($imagePosition !== 'normal' && $hasImage) ? 'flex: 0 0 50%; padding: 0 1.5rem;' : ''; ?>">
+                <div style="<?php echo ($imagePosition !== 'normal' && $hasImage) ? 'flex: 1 1 auto; min-width: 0;' : ''; ?>">
                     <?php if ($greenText !== '' && $greenTextPosition === 'above'): ?>
                         <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($greenText)); ?></div>
                     <?php endif; ?>
@@ -92,6 +93,24 @@ include __DIR__ . '/navbar.php';
                     <?php if ($greenText !== '' && $greenTextPosition === 'below'): ?>
                         <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($greenText)); ?></div>
                     <?php endif; ?>
+                </div>
+            <?php endif; ?>
+            <?php if ($hasImage && $imagePosition === 'right'): ?>
+                <?php
+                $imageStyle = '';
+                if (!$hasText) {
+                    $imageStyle = 'width: 100%;';
+                } else {
+                    $imageStyle = 'flex: 0 0 auto; max-width: 280px; width: 100%;';
+                }
+                ?>
+                <div style="<?php echo $imageStyle; ?>">
+                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
+                </div>
+            <?php endif; ?>
+            <?php if ($hasImage && $imagePosition === 'normal'): ?>
+                <div style="width: 100%; max-width: 600px;">
+                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
                 </div>
             <?php endif; ?>
         </section>
