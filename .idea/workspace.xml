@@ -4,9 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="303eae4d-7ca5-4634-9557-4de1cdbec390" name="Changes" comment="terugblik en agenda class toegevoegd en width 95% gegeven">
+    <list default="true" id="303eae4d-7ca5-4634-9557-4de1cdbec390" name="Changes" comment="Navbar sticky verwijderd">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/index.php" beforeDir="false" afterPath="$PROJECT_DIR$/index.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/programma/actie.php" beforeDir="false" afterPath="$PROJECT_DIR$/programma/actie.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/programma/faciliteit.php" beforeDir="false" afterPath="$PROJECT_DIR$/programma/faciliteit.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/programma/kennis.php" beforeDir="false" afterPath="$PROJECT_DIR$/programma/kennis.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/style.css" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -18,7 +20,7 @@
     <execution />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="210" />
+    <option name="cachedIndexableFilesCount" value="212" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="Git.Settings">
@@ -107,7 +109,10 @@
       <workItem from="1773753840947" duration="2641000" />
       <workItem from="1773827822828" duration="5953000" />
       <workItem from="1773994269245" duration="4254000" />
-      <workItem from="1774007201631" duration="5927000" />
+      <workItem from="1774007201631" duration="6616000" />
+      <workItem from="1774350745345" duration="2680000" />
+      <workItem from="1774353966979" duration="2032000" />
+      <workItem from="1774356105321" duration="2807000" />
     </task>
     <task id="LOCAL-00001" summary="Padding toegevoegd aan terugblik text-blok">
       <option name="closed" value="true" />
@@ -285,7 +290,15 @@
       <option name="project" value="LOCAL" />
       <updated>1774011447217</updated>
     </task>
-    <option name="localTasksCounter" value="23" />
+    <task id="LOCAL-00023" summary="Navbar sticky verwijderd">
+      <option name="closed" value="true" />
+      <created>1774013202727</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1774013202727</updated>
+    </task>
+    <option name="localTasksCounter" value="24" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -341,6 +354,7 @@
     <MESSAGE value="Tablet ui verbeterd" />
     <MESSAGE value="Tablet ui Foto's op wat doen we page verbeterd" />
     <MESSAGE value="terugblik en agenda class toegevoegd en width 95% gegeven" />
-    <option name="LAST_COMMIT_MESSAGE" value="terugblik en agenda class toegevoegd en width 95% gegeven" />
+    <MESSAGE value="Navbar sticky verwijderd" />
+    <option name="LAST_COMMIT_MESSAGE" value="Navbar sticky verwijderd" />
   </component>
 </project>
