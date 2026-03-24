@@ -51,7 +51,7 @@ if (!function_exists('sanitizeEditorHtml')) {
 
         $allowedTags = $mode === 'inline'
             ? '<strong><b><em><i><u><a><br>'
-            : '<p><br><strong><b><em><i><u><ul><ol><li><a>';
+            : '<br><strong><b><em><i><u><ul><ol><li><a>';
 
         $value = strip_tags($value, $allowedTags);
 
@@ -76,6 +76,8 @@ if (!function_exists('sanitizeEditorHtml')) {
         // Remove attributes from all non-link tags.
         $value = preg_replace('/<(?!\/?a\b)([a-z0-9]+)\b[^>]*>/i', '<$1>', $value);
         $value = preg_replace('~<p>\s*</p>~i', '', $value);
+        // Remove all <p> and </p> tags while preserving content
+        $value = preg_replace('~</?p\b[^>]*>~i', '', $value);
 
         return trim($value);
     }

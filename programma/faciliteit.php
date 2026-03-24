@@ -98,7 +98,7 @@ include __DIR__ . '/../navbar.php';
             if ($imagePosition === 'left') {
                 $flexDir = 'row';
             } elseif ($imagePosition === 'right') {
-                $flexDir = 'row-reverse';
+                $flexDir = 'row';
             }
 
             $hasImage = !empty($block['image']);

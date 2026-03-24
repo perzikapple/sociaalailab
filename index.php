@@ -95,13 +95,9 @@ include __DIR__ . '/navbar.php';
             <?php endif; ?>
             <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900">
                 <?php echo htmlspecialchars($welcomeBlock['title']); ?></h2>
-            <?php
-            $paragraphs = array_filter(explode("\n\n", $welcomeBlock['body']), function($p) { return trim($p) !== ''; });
-            foreach ($paragraphs as $para): ?>
-                <p class="text-gray-700 leading-relaxed mb-4">
-                    <?php echo htmlspecialchars($para); ?>
-                </p>
-            <?php endforeach; ?>
+            <div class="text-gray-700 leading-relaxed">
+                <?php echo renderEditorBlock($welcomeBlock['body']); ?>
+            </div>
             <?php if ($welcomeGreenText !== '' && $welcomeGreenTextPosition === 'below'): ?>
                 <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($welcomeGreenText)); ?></div>
             <?php endif; ?>
@@ -124,10 +120,16 @@ include __DIR__ . '/navbar.php';
                     <?php if (!empty($block['image'])): ?>
                         <?php
                         $imagePath = trim((string)$block['image']);
+                        // Bepaal het absolute pad naar de afbeelding
                         if (strpos($imagePath, 'images/') === 0 || strpos($imagePath, 'uploads/') === 0) {
+                            // Is al een volledig pad
+                            $imageSrc = $imagePath;
+                        } elseif (preg_match('#^https?://#i', $imagePath)) {
+                            // Externe URL
                             $imageSrc = $imagePath;
                         } else {
-                            $imageSrc = 'images/' . $imagePath;
+                            // Anders in uploads aanmen
+                            $imageSrc = 'uploads/' . $imagePath;
                         }
                         ?>
                         <img src="<?php echo htmlspecialchars($imageSrc); ?>"
@@ -138,9 +140,9 @@ include __DIR__ . '/navbar.php';
                     <div class="text-center mb-2"><div class="green-highlight"><?php echo nl2br(htmlspecialchars($cardGreenText)); ?></div></div>
                 <?php endif; ?>
                 <h3 class="text-xl text-center font-semibold"><?php echo htmlspecialchars($block['title']); ?></h3>
-                <p class="text-center p-4">
-                    <?php echo htmlspecialchars($block['body']); ?>
-                </p>
+                <div class="text-center p-4">
+                    <?php echo renderEditorBlock($block['body']); ?>
+                </div>
                 <?php if ($cardGreenText !== '' && $cardGreenTextPosition === 'below'): ?>
                     <div class="text-center mb-2"><div class="green-highlight"><?php echo nl2br(htmlspecialchars($cardGreenText)); ?></div></div>
                 <?php endif; ?>
@@ -165,24 +167,9 @@ include __DIR__ . '/navbar.php';
             <?php if (!empty($infoBlock['title'])): ?>
                 <h3 class="text-2xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($infoBlock['title']); ?></h3>
             <?php endif; ?>
-            <p class="text-1xl md:text-1xl mb-4 text-gray-900">
-                <?php
-                $normalizedInfoBody = normalizeDisplayText($infoBlock['body'] ?? '');
-                $lines = explode("\n", str_replace("\r\n", "\n", $normalizedInfoBody));
-                foreach ($lines as $idx => $line):
-                    $line = trim($line);
-                    if (!empty($line)): ?>
-                        <?php if (strpos($line, 'Kunstmatige Intelligentie') !== false): ?>
-                            </p>
-                            <p class="green-highlight mb-3"><?php echo htmlspecialchars($line); ?></p>
-                            <p class="text-1xl md:text-1xl mb-4 text-gray-900">
-                        <?php else: ?>
-                            <?php echo htmlspecialchars($line); ?><br>
-                        <?php endif;
-                    endif;
-                endforeach;
-                ?>
-            </p>
+            <div class="text-1xl md:text-1xl mb-4 text-gray-900">
+                <?php echo renderEditorBlock($infoBlock['body']); ?>
+            </div>
             <?php if ($infoGreenText !== '' && $infoGreenTextPosition === 'below'): ?>
                 <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($infoGreenText)); ?></div>
             <?php endif; ?>
@@ -202,26 +189,29 @@ include __DIR__ . '/navbar.php';
         if (!in_array($greenTextPosition, ['above', 'below'], true)) $greenTextPosition = 'above';
         
         $flexDir = 'column';
+        $flexWrap = 'nowrap';
         if ($imagePosition === 'left' && $hasText) {
             $flexDir = 'row';
+            $flexWrap = 'nowrap';
         } elseif ($imagePosition === 'right' && $hasText) {
-            $flexDir = 'row-reverse';
+            $flexDir = 'row';
+            $flexWrap = 'nowrap';
         }
-        $sectionStyle = "display: flex; flex-direction: " . $flexDir . "; ";
+        $sectionStyle = "display: flex; flex-direction: " . $flexDir . "; flex-wrap: " . $flexWrap . ";";
         if ($imagePosition !== 'normal' && $hasText) {
-            $sectionStyle .= "gap: 2rem; align-items: center;";
+            $sectionStyle .= " gap: 2rem; align-items: flex-start;";
         } else {
-            $sectionStyle .= "gap: 1.5rem;";
+            $sectionStyle .= " gap: 1.5rem;";
         }
     ?>
         <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" style="<?php echo $sectionStyle; ?>">
-            <?php if ($hasImage): ?>
+            <?php if ($hasImage && $imagePosition === 'left'): ?>
                 <?php
                 $imageStyle = '';
                 if (!$hasText) {
                     $imageStyle = 'width: 100%;';
                 } elseif ($imagePosition !== 'normal') {
-                    $imageStyle = 'flex: 0 0 50%; max-width: 600px;';
+                    $imageStyle = 'flex: 0 0 auto; max-width: 280px; width: 100%;';
                 } else {
                     $imageStyle = 'width: 100%; max-width: 600px;';
                 }
@@ -239,7 +229,7 @@ include __DIR__ . '/navbar.php';
                 </div>
             <?php endif; ?>
             <?php if ($hasText): ?>
-                <div style="<?php echo ($imagePosition !== 'normal' && $hasImage) ? 'flex: 0 0 50%; padding: 0 1.5rem;' : ''; ?>">
+                <div style="<?php echo ($imagePosition !== 'normal' && $hasImage) ? 'flex: 1 1 auto; min-width: 0;' : ''; ?>">
                     <?php if ($greenText !== '' && $greenTextPosition === 'above'): ?>
                         <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($greenText)); ?></div>
                     <?php endif; ?>
@@ -247,11 +237,50 @@ include __DIR__ . '/navbar.php';
                         <h3 class="text-2xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($block['title']); ?></h3>
                     <?php endif; ?>
                     <?php if (!empty($block['body'])): ?>
-                        <div class="text-gray-700 leading-relaxed"><?php echo nl2br(htmlspecialchars($block['body'])); ?></div>
+                        <div class="text-gray-700 leading-relaxed"><?php echo renderEditorBlock($block['body']); ?></div>
                     <?php endif; ?>
                     <?php if ($greenText !== '' && $greenTextPosition === 'below'): ?>
                         <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($greenText)); ?></div>
                     <?php endif; ?>
+                </div>
+            <?php endif; ?>
+            <?php if ($hasImage && $imagePosition === 'right'): ?>
+                <?php
+                $imageStyle = '';
+                if (!$hasText) {
+                    $imageStyle = 'width: 100%;';
+                } elseif ($imagePosition !== 'normal') {
+                    $imageStyle = 'flex: 0 0 auto; max-width: 280px; width: 100%;';
+                } else {
+                    $imageStyle = 'width: 100%; max-width: 600px;';
+                }
+                ?>
+                <div style="<?php echo $imageStyle; ?>">
+                    <?php
+                    $imagePath = trim((string)$block['image']);
+                    if (strpos($imagePath, 'images/') === 0 || strpos($imagePath, 'uploads/') === 0) {
+                        $imageSrc = $imagePath;
+                    } else {
+                        $imageSrc = 'uploads/' . $imagePath;
+                    }
+                    ?>
+                    <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
+                </div>
+            <?php endif; ?>
+            <?php if ($hasImage && $imagePosition === 'normal'): ?>
+                <?php
+                $imageStyle = 'width: 100%; max-width: 600px;';
+                ?>
+                <div style="<?php echo $imageStyle; ?>">
+                    <?php
+                    $imagePath = trim((string)$block['image']);
+                    if (strpos($imagePath, 'images/') === 0 || strpos($imagePath, 'uploads/') === 0) {
+                        $imageSrc = $imagePath;
+                    } else {
+                        $imageSrc = 'uploads/' . $imagePath;
+                    }
+                    ?>
+                    <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
                 </div>
             <?php endif; ?>
         </section>
@@ -293,7 +322,7 @@ foreach ($events as $event):
         <i class="text-[#cc0033] fa-3x fa-regular fa-envelope-open"></i>
     </div>
     <h2 class="text-center text-2xl md:text-xl font-bold text-white mb-2"><?php echo htmlspecialchars($contactBlock['title']); ?></h2>
-    <p class="text-center text-white"><?php echo htmlspecialchars($contactBlock['body']); ?></p>
+    <div class="text-center text-white"><?php echo renderEditorBlock($contactBlock['body']); ?></div>
 </a>
 <?php endif; ?>
 

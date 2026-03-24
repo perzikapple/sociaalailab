@@ -76,7 +76,7 @@ include __DIR__ . '/navbar.php';
         if ($imagePosition === 'left' && $hasText) {
             $flexDir = 'row';
         } elseif ($imagePosition === 'right' && $hasText) {
-            $flexDir = 'row-reverse';
+            $flexDir = 'row';
         }
         $divStyle = '';
         if ($hasImage && $imagePosition !== 'normal' && $hasText) {
@@ -106,17 +106,6 @@ include __DIR__ . '/navbar.php';
                     <?php endif; ?>
                     <?php if (!empty($block['body'])): ?>
                         <div class="text-gray-700 leading-relaxed"><?php echo renderEditorBlock($block['body']); ?></div>
-                    <?php endif; ?>
-                    <?php if (!empty($metaArr['address'])): ?>
-                        <?php $addr = $metaArr['address']; ?>
-                        <div class="text-gray-700 mt-2"><strong>Adres:</strong> <a href="<?php echo googleMapsDirectionsUrl($addr); ?>" target="_blank" rel="noopener noreferrer" class="underline hover:text-[#00811F]"><?php echo htmlspecialchars($addr); ?></a></div>
-                    <?php endif; ?>
-                    <?php if (!empty($metaArr['email'])): ?>
-                        <div class="text-gray-700 mt-2">
-                            <a href="mailto:<?php echo htmlspecialchars($metaArr['email']); ?>">
-                                <?php echo htmlspecialchars($metaArr['email']); ?>
-                            </a>
-                        </div>
                     <?php endif; ?>
                 </div>
                 <?php endif; ?>

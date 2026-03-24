@@ -354,7 +354,12 @@ if ($pageAction === 'create_page') {
     if (empty($pageKey)) {
         $message = 'Page key is verplicht.';
     } else {
+        $layout = $_POST['layout'] ?? 'custom';
+        if (!in_array($layout, ['welcome', 'card', 'info', 'contact', 'custom'], true)) {
+            $layout = 'custom';
+        }
         $meta = [
+            'layout' => $layout,
             'image_position' => $imagePosition,
         ];
         if ($greenText !== '') {
@@ -430,6 +435,10 @@ if ($pageAction === 'create_page') {
             $imagePosition = 'normal';
         }
 
+        $layout = $_POST['layout'] ?? 'custom';
+        if (!in_array($layout, ['welcome', 'card', 'info', 'contact', 'custom'], true)) {
+            $layout = 'custom';
+        }
         $meta = [];
         if (!empty($row['meta'])) {
             $decodedMeta = json_decode($row['meta'], true);
@@ -437,6 +446,7 @@ if ($pageAction === 'create_page') {
                 $meta = $decodedMeta;
             }
         }
+        $meta['layout'] = $layout;
         $meta['image_position'] = $imagePosition;
         if ($greenText !== '') {
             $meta['green_text'] = $greenText;
@@ -1245,6 +1255,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         $editMeta = $decodedEditMeta;
                     }
                 }
+                $currentLayout = $editMeta['layout'] ?? 'custom';
+                if (!in_array($currentLayout, ['welcome', 'card', 'info', 'contact', 'custom'], true)) {
+                    $currentLayout = 'custom';
+                }
                 $currentImagePosition = $editMeta['image_position'] ?? 'normal';
                 if (!in_array($currentImagePosition, ['normal', 'left', 'right'], true)) {
                     $currentImagePosition = 'normal';
@@ -1286,6 +1300,17 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div>
                                 <label class="form-label">Inhoud</label>
                                 <textarea name="body" rows="6" class="form-textarea"><?php echo htmlspecialchars($editPage['body'] ?? ''); ?></textarea>
+                            </div>
+
+                            <div>
+                                <label class="form-label">Layout</label>
+                                <select name="layout" class="form-input">
+                                    <option value="custom" <?php echo $currentLayout === 'custom' ? 'selected' : ''; ?>>Custom (standaard)</option>
+                                    <option value="card" <?php echo $currentLayout === 'card' ? 'selected' : ''; ?>>Kaart</option>
+                                    <option value="welcome" <?php echo $currentLayout === 'welcome' ? 'selected' : ''; ?>>Welkom sectie</option>
+                                    <option value="info" <?php echo $currentLayout === 'info' ? 'selected' : ''; ?>>Info blok</option>
+                                    <option value="contact" <?php echo $currentLayout === 'contact' ? 'selected' : ''; ?>>Contact</option>
+                                </select>
                             </div>
 
                             <div>
@@ -1342,6 +1367,17 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div>
                                 <label class="form-label">Inhoud</label>
                                 <textarea name="body" rows="6" class="form-textarea"></textarea>
+                            </div>
+
+                            <div>
+                                <label class="form-label">Layout</label>
+                                <select name="layout" class="form-input">
+                                    <option value="custom" selected>Custom (standaard)</option>
+                                    <option value="card">Kaart</option>
+                                    <option value="welcome">Welkom sectie</option>
+                                    <option value="info">Info blok</option>
+                                    <option value="contact">Contact</option>
+                                </select>
                             </div>
 
                             <div>
