@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="303eae4d-7ca5-4634-9557-4de1cdbec390" name="Changes" comment="Mobile en tablet Ui fix">
+    <list default="true" id="303eae4d-7ca5-4634-9557-4de1cdbec390" name="Changes" comment="Mobile en tablet Ui fixes van row-&gt;column">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/style.css" afterDir="false" />
     </list>
@@ -17,7 +17,7 @@
     <execution />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="212" />
+    <option name="cachedIndexableFilesCount" value="228" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="Git.Settings">
@@ -109,7 +109,8 @@
       <workItem from="1774007201631" duration="6616000" />
       <workItem from="1774350745345" duration="2680000" />
       <workItem from="1774353966979" duration="2032000" />
-      <workItem from="1774356105321" duration="7891000" />
+      <workItem from="1774356105321" duration="8164000" />
+      <workItem from="1774423901049" duration="304000" />
     </task>
     <task id="LOCAL-00001" summary="Padding toegevoegd aan terugblik text-blok">
       <option name="closed" value="true" />
@@ -303,7 +304,23 @@
       <option name="project" value="LOCAL" />
       <updated>1774359279188</updated>
     </task>
-    <option name="localTasksCounter" value="25" />
+    <task id="LOCAL-00025" summary="Mobile en tablet Ui fixes van row-&gt;column">
+      <option name="closed" value="true" />
+      <created>1774366894559</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1774366894559</updated>
+    </task>
+    <task id="LOCAL-00026" summary="Mobile en tablet Ui fixes van row-&gt;column">
+      <option name="closed" value="true" />
+      <created>1774366986303</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1774366986303</updated>
+    </task>
+    <option name="localTasksCounter" value="27" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -361,6 +378,8 @@
     <MESSAGE value="terugblik en agenda class toegevoegd en width 95% gegeven" />
     <MESSAGE value="Navbar sticky verwijderd" />
     <MESSAGE value="Mobile en tablet Ui fix" />
-    <option name="LAST_COMMIT_MESSAGE" value="Mobile en tablet Ui fix" />
+    <MESSAGE value="Mobile ui Row-&gt;Column fixes" />
+    <MESSAGE value="Mobile en tablet Ui fixes van row-&gt;column" />
+    <option name="LAST_COMMIT_MESSAGE" value="Mobile en tablet Ui fixes van row-&gt;column" />
   </component>
 </project>

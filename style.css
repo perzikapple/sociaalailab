@@ -800,6 +800,19 @@ section{
         align-items: center; /* items mooi centreren */
         gap: 0.5rem; /* eventueel kleinere spacing */
     }
+
+    #agenda-terugblik-switch {
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0 16px; /* iets meer ruimte links/rechts */
+    }
+
+    #agenda-terugblik-switch > div {
+        width: 100%;
+        max-width: 600px;   /* 🔥 groter maken (zelfde gevoel als je cards) */
+        padding: 0.75rem;
+    }
 }
 
 @media (min-width: 768px) and (max-width: 1035px) {
@@ -881,6 +894,19 @@ section{
         align-items: center; /* items mooi centreren */
         gap: 0.5rem; /* eventueel kleinere spacing */
     }
+
+    #agenda-terugblik-switch {
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0 16px; /* iets meer ruimte links/rechts */
+    }
+
+    #agenda-terugblik-switch > div {
+        width: 100%;
+        max-width: 600px;   /* 🔥 groter maken (zelfde gevoel als je cards) */
+        padding: 0.75rem;
+    }
 }
 
 @media (min-width: 1036px) and (max-width: 1160px) {
@@ -888,5 +914,17 @@ section{
         flex-direction: column;
         align-items: center; /* items mooi centreren */
         gap: 0.5rem; /* eventueel kleinere spacing */
+    }
+    #agenda-terugblik-switch {
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0 16px; /* iets meer ruimte links/rechts */
+    }
+
+    #agenda-terugblik-switch > div {
+        width: 100%;
+        max-width: 600px;   /* 🔥 groter maken (zelfde gevoel als je cards) */
+        padding: 0.75rem;
     }
 }
