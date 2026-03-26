@@ -72,6 +72,12 @@ try {
     if (!in_array('end_date', $columns)) {
         $pdo->exec("ALTER TABLE events ADD COLUMN end_date DATE DEFAULT NULL");
     }
+    if (!in_array('info_link', $columns)) {
+        $pdo->exec("ALTER TABLE events ADD COLUMN info_link VARCHAR(255) DEFAULT NULL");
+    }
+    if (!in_array('show_on_homepage', $columns)) {
+        $pdo->exec("ALTER TABLE events ADD COLUMN show_on_homepage TINYINT(1) DEFAULT 0");
+    }
 
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS settings (

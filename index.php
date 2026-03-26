@@ -39,7 +39,7 @@ try {
         }
     }
     
-    $stmt = $pdo->prepare("SELECT * FROM events WHERE date >= CURDATE() AND (show_on_homepage IS NULL OR show_on_homepage = 1) ORDER BY date, time LIMIT 2");
+    $stmt = $pdo->prepare("SELECT * FROM events WHERE CONCAT(COALESCE(end_date, date), ' ', COALESCE(time_end, COALESCE(time, '23:59:59'))) > DATE_SUB(NOW(), INTERVAL 1 DAY) AND (show_on_homepage IS NULL OR show_on_homepage = 1) ORDER BY date, time LIMIT 2");
     $stmt->execute();
     $events = $stmt->fetchAll();
 } catch (Exception $e) {

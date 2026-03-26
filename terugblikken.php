@@ -24,7 +24,7 @@ try {
         }
     }
 
-    $stmt = $pdo->prepare("SELECT * FROM events WHERE date < CURDATE() ORDER BY date DESC, time DESC");
+    $stmt = $pdo->prepare("SELECT * FROM events WHERE COALESCE(end_date, date) <= DATE_SUB(CURDATE(), INTERVAL 1 DAY) ORDER BY date DESC, time DESC");
     $stmt->execute();
     $events = $stmt->fetchAll();
 } catch (Exception $e) {
@@ -155,7 +155,7 @@ include __DIR__ . '/navbar.php';
 
     <?php
     require 'db.php';
-    $stmt = $pdo->prepare("SELECT * FROM events WHERE date < CURDATE() ORDER BY date DESC, time DESC");
+    $stmt = $pdo->prepare("SELECT * FROM events WHERE COALESCE(end_date, date) <= DATE_SUB(CURDATE(), INTERVAL 1 DAY) ORDER BY date DESC, time DESC");
     $stmt->execute();
     $events = $stmt->fetchAll();
     

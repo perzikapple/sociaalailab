@@ -98,9 +98,12 @@ include __DIR__ . '/navbar.php';
                 } else {
                     $imageStyle = 'flex: 0 0 auto; max-width: 280px; width: 100%;';
                 }
+                $imageContainerStyle = !$hasText ? 'width: 100%;' : '';
                 ?>
-                <div style="<?php echo $imageStyle; ?>">
-                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
+                <div style="<?php echo $imageContainerStyle; ?>">
+                    <div style="<?php echo $imageStyle; ?>">
+                        <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
+                    </div>
                 </div>
             <?php endif; ?>
 
@@ -129,13 +132,16 @@ include __DIR__ . '/navbar.php';
                 } else {
                     $imageStyle = 'flex: 0 0 auto; max-width: 280px; width: 100%;';
                 }
+                $imageContainerStyle = !$hasText ? 'width: 100%;' : '';
                 ?>
-                <div style="<?php echo $imageStyle; ?>">
-                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
+                <div style="<?php echo $imageContainerStyle; ?>">
+                    <div style="<?php echo $imageStyle; ?>">
+                        <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
+                    </div>
                 </div>
             <?php endif; ?>
             <?php if ($hasImage && $imagePosition === 'normal'): ?>
-                <div style="width: 100%; max-width: 300px;">
+                <div style="width: 100%;">
                     <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
                 </div>
             <?php endif; ?>
