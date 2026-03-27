@@ -91,7 +91,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 </a>
             </li>
         <?php endif; ?>
-        <?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
+        <?php if (!empty($_SESSION['can_access_admin']) || (isset($_SESSION['admin']) && (int)$_SESSION['admin'] === 1)): ?>
             <li>
                 <a href="admin.php" class="bg-yellow-100 hover:bg-yellow-200">
                     <i class="fa-solid fa-lock"></i>

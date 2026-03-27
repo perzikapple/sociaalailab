@@ -2,10 +2,35 @@
 session_start();
 require 'db.php';
 require 'helpers.php';
-if (!isset($_SESSION['admin']) || $_SESSION['admin'] != 1) {
+
+$sessionRole = trim((string)($_SESSION['role'] ?? ''));
+if ($sessionRole === '') {
+    $sessionRole = (isset($_SESSION['admin']) && (int)$_SESSION['admin'] === 1) ? 'superadmin' : 'viewer';
+    $_SESSION['role'] = $sessionRole;
+}
+$canAccessAdmin = (bool)($_SESSION['can_access_admin'] ?? false);
+if (!$canAccessAdmin) {
+    $canAccessAdmin = (isset($_SESSION['admin']) && (int)$_SESSION['admin'] === 1)
+        || in_array($sessionRole, ['superadmin', 'content_manager', 'editor'], true);
+    $_SESSION['can_access_admin'] = $canAccessAdmin;
+}
+
+if (!$canAccessAdmin) {
     header('Location: login.php');
     exit;
 }
+
+$rolePermissions = [
+    'superadmin' => ['manage_users', 'view_audit', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages'],
+    'content_manager' => ['manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages'],
+    'editor' => ['manage_events', 'manage_pages'],
+    'viewer' => [],
+];
+
+$hasPermission = function ($permission) use (&$sessionRole, &$rolePermissions) {
+    $permissions = $rolePermissions[$sessionRole] ?? [];
+    return in_array($permission, $permissions, true);
+};
 
 $message = '';
 // Helper voor upload
@@ -45,6 +70,24 @@ $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = '
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     $currentUser = $_SESSION['user'] ?? null; // email van ingelogde gebruiker (kan null zijn)
+
+    $actionPermissionMap = [
+        'create' => 'manage_events',
+        'update' => 'manage_events',
+        'delete' => 'delete_events',
+        'delete_bulk_events' => 'delete_events',
+        'reorder_event' => 'manage_events',
+        'delete_bulk_pages' => 'delete_pages',
+        'update_banner' => 'manage_banners',
+        'reset_banners' => 'manage_banners',
+        'create_user' => 'manage_users',
+        'update_user_role' => 'manage_users',
+    ];
+
+    if ($action !== '' && isset($actionPermissionMap[$action]) && !$hasPermission($actionPermissionMap[$action])) {
+        $message = 'Je hebt geen rechten om deze actie uit te voeren.';
+        $action = '';
+    }
 
     if ($action === 'create') {
         $title = sanitizeEditorInlineInput($_POST['title'] ?? '');
@@ -328,11 +371,81 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $banner1 = $defaultBanner1;
         $banner2 = $defaultBanner2;
         $message = 'Banners zijn teruggezet naar de standaard waarden.';
+
+    } elseif ($action === 'create_user') {
+        $newEmail = trim((string)($_POST['new_email'] ?? ''));
+        $newPassword = (string)($_POST['new_password'] ?? '');
+        $newFirstName = trim((string)($_POST['new_first_name'] ?? ''));
+        $newLastName = trim((string)($_POST['new_last_name'] ?? ''));
+        $newRole = trim((string)($_POST['new_role'] ?? 'viewer'));
+        $allowedRoles = ['superadmin', 'content_manager', 'editor', 'viewer'];
+
+        if ($newEmail === '' || !filter_var($newEmail, FILTER_VALIDATE_EMAIL)) {
+            $message = 'Vul een geldig e-mailadres in.';
+        } elseif ($newPassword === '') {
+            $message = 'Wachtwoord is verplicht.';
+        } elseif (!in_array($newRole, $allowedRoles, true)) {
+            $message = 'Ongeldige rol gekozen.';
+        } else {
+            $existsStmt = $pdo->prepare('SELECT id FROM accounts WHERE email = ?');
+            $existsStmt->execute([$newEmail]);
+            if ($existsStmt->fetch()) {
+                $message = 'Er bestaat al een gebruiker met dit e-mailadres.';
+            } else {
+                $adminFlag = in_array($newRole, ['superadmin', 'content_manager', 'editor'], true) ? 1 : 0;
+                $insertStmt = $pdo->prepare('INSERT INTO accounts (email, wachtwoord, first_name, last_name, admin, role) VALUES (?, ?, ?, ?, ?, ?)');
+                $insertStmt->execute([
+                    $newEmail,
+                    $newPassword,
+                    $newFirstName !== '' ? $newFirstName : null,
+                    $newLastName !== '' ? $newLastName : null,
+                    $adminFlag,
+                    $newRole,
+                ]);
+
+                audit_log($pdo, 'create', 'accounts', $newEmail, 'new user with role ' . $newRole, $currentUser);
+                $message = 'Nieuwe gebruiker toegevoegd.';
+            }
+        }
+
+    } elseif ($action === 'update_user_role') {
+        $targetEmail = trim((string)($_POST['target_email'] ?? ''));
+        $newRole = trim((string)($_POST['role'] ?? 'viewer'));
+        $allowedRoles = ['superadmin', 'content_manager', 'editor', 'viewer'];
+
+        if ($targetEmail === '' || !filter_var($targetEmail, FILTER_VALIDATE_EMAIL)) {
+            $message = 'Ongeldig e-mailadres.';
+        } elseif (!in_array($newRole, $allowedRoles, true)) {
+            $message = 'Ongeldige rol gekozen.';
+        } else {
+            $adminFlag = in_array($newRole, ['superadmin', 'content_manager', 'editor'], true) ? 1 : 0;
+            $stmt = $pdo->prepare('UPDATE accounts SET role = ?, admin = ? WHERE email = ?');
+            $stmt->execute([$newRole, $adminFlag, $targetEmail]);
+
+            if ($targetEmail === ($_SESSION['email'] ?? '')) {
+                $_SESSION['role'] = $newRole;
+                $_SESSION['admin'] = $adminFlag;
+                $_SESSION['can_access_admin'] = ($adminFlag === 1) || in_array($newRole, ['superadmin', 'content_manager', 'editor'], true);
+            }
+
+            audit_log($pdo, 'update', 'accounts', $targetEmail, 'role set to ' . $newRole, $currentUser);
+            $message = 'Gebruikersrol bijgewerkt.';
+        }
     }
 }
 
 // Handle page management (create_page, update_page, delete_page)
 $pageAction = $_POST['page_action'] ?? '';
+$pageActionPermissionMap = [
+    'create_page' => 'manage_pages',
+    'update_page' => 'manage_pages',
+    'reorder_page' => 'manage_pages',
+    'delete_page' => 'delete_pages',
+];
+if ($pageAction !== '' && isset($pageActionPermissionMap[$pageAction]) && !$hasPermission($pageActionPermissionMap[$pageAction])) {
+    $message = 'Je hebt geen rechten om deze pagina-actie uit te voeren.';
+    $pageAction = '';
+}
 if ($pageAction === 'create_page') {
     $pageKey = $_POST['page_key'] ?? '';
     $title = sanitizeEditorInlineInput($_POST['title'] ?? '');
@@ -613,8 +726,45 @@ $events = $stmt->fetchAll();
 // Welke admin pagina tonen (standaard index)
 $page = $_GET['page'] ?? 'index';
 
+$allowedPagesByPermission = [
+    'banner' => 'manage_banners',
+    'agenda' => 'manage_events',
+    'audit' => 'view_audit',
+    'users' => 'manage_users',
+    'index' => 'manage_pages',
+    'evenementen' => 'manage_pages',
+    'terugblikken' => 'manage_pages',
+    'over' => 'manage_pages',
+    'wie-zijn-we' => 'manage_pages',
+    'verantwoord-ai' => 'manage_pages',
+    'contact' => 'manage_pages',
+    'programma-kennis' => 'manage_pages',
+    'programma-actie' => 'manage_pages',
+    'programma-faciliteit' => 'manage_pages',
+];
+
+if (isset($allowedPagesByPermission[$page]) && !$hasPermission($allowedPagesByPermission[$page])) {
+    $fallbackPage = null;
+    foreach ($allowedPagesByPermission as $candidatePage => $candidatePermission) {
+        if ($hasPermission($candidatePermission)) {
+            $fallbackPage = $candidatePage;
+            break;
+        }
+    }
+
+    if ($fallbackPage === null) {
+        $message = 'Je account heeft momenteel geen toegewezen beheerrechten.';
+    } else {
+        $page = $fallbackPage;
+        $message = 'Je hebt geen toegang tot de gevraagde beheersectie.';
+    }
+}
+
+$canDeleteEvents = $hasPermission('delete_events');
+$canDeletePages = $hasPermission('delete_pages');
+
 $pageItems = [];
-if ($page !== 'banner' && $page !== 'agenda' && $page !== 'audit') {
+if ($page !== 'banner' && $page !== 'agenda' && $page !== 'audit' && $page !== 'users') {
     $stmt = $pdo->prepare(
         'SELECT * FROM pages WHERE page_key = ?
          ORDER BY (sort_order IS NULL OR sort_order = 0) ASC, sort_order ASC, created_at ASC, id ASC'
@@ -636,6 +786,7 @@ if (!in_array($auditPerPage, $auditPerPageOptions, true)) {
 $auditTotalPages = 1;
 $auditActionFilter = trim((string)($_GET['audit_action'] ?? ''));
 $auditTableFilter = trim((string)($_GET['audit_table'] ?? ''));
+$userAccounts = [];
 
 if ($page === 'audit') {
     try {
@@ -675,6 +826,15 @@ if ($page === 'audit') {
         $auditLogs = $listStmt->fetchAll();
     } catch (Exception $e) {
         $message = 'Auditlogboek kon niet worden geladen.';
+    }
+}
+
+if ($page === 'users') {
+    try {
+        $stmt = $pdo->query('SELECT email, first_name, last_name, admin, role FROM accounts ORDER BY email ASC');
+        $userAccounts = $stmt->fetchAll();
+    } catch (Exception $e) {
+        $message = 'Gebruikers konden niet worden geladen.';
     }
 }
 ?>
@@ -740,9 +900,11 @@ if ($page === 'audit') {
             <h1 class="text-2xl font-bold">Admin Panel</h1>
         </div>
         <div class="admin-header-actions flex items-center gap-3 flex-nowrap">
-            <a href="admin.php?page=audit" class="btn <?php echo $page==='audit' ? 'btn-primary' : 'btn-secondary'; ?> text-sm">
-                <i class="fa-solid fa-clipboard-list"></i> Auditlogboek
-            </a>
+            <?php if ($hasPermission('view_audit')): ?>
+                <a href="admin.php?page=audit" class="btn <?php echo $page==='audit' ? 'btn-primary' : 'btn-secondary'; ?> text-sm">
+                    <i class="fa-solid fa-clipboard-list"></i> Auditlogboek
+                </a>
+            <?php endif; ?>
             <a href="index.php" class="btn btn-secondary text-sm">
                 <i class="fa-solid fa-arrow-left"></i> Terug naar site
             </a>
@@ -768,46 +930,57 @@ if ($page === 'audit') {
             </div>
             <nav class="divide-y">
                 <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Beheer</div>
-                <a href="admin.php?page=banner" class="sidebar-link <?php echo $page==='banner' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-image"></i> Banners
-                </a>
-                <a href="admin.php?page=agenda" class="sidebar-link <?php echo $page==='agenda' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-calendar"></i> Agenda
-                </a>
+                <?php if ($hasPermission('manage_banners')): ?>
+                    <a href="admin.php?page=banner" class="sidebar-link <?php echo $page==='banner' ? 'active' : ''; ?>">
+                        <i class="fa-solid fa-image"></i> Banners
+                    </a>
+                <?php endif; ?>
+                <?php if ($hasPermission('manage_events')): ?>
+                    <a href="admin.php?page=agenda" class="sidebar-link <?php echo $page==='agenda' ? 'active' : ''; ?>">
+                        <i class="fa-solid fa-calendar"></i> Agenda
+                    </a>
+                <?php endif; ?>
+                <?php if ($hasPermission('manage_users')): ?>
+                    <a href="admin.php?page=users" class="sidebar-link <?php echo $page==='users' ? 'active' : ''; ?>">
+                        <i class="fa-solid fa-users"></i> Gebruikers & Rollen
+                    </a>
+                <?php endif; ?>
                 
-<div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Pagina's</div>
-                <a href="admin.php?page=index" class="sidebar-link <?php echo $page==='index' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-house"></i> Homepage
-                </a>
-                <a href="admin.php?page=evenementen" class="sidebar-link <?php echo $page==='evenementen' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-calendar-check"></i> Evenementen
-                </a>
-                <a href="admin.php?page=terugblikken" class="sidebar-link <?php echo $page==='terugblikken' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-history"></i> Terugblikken
-                </a>
-                <a href="admin.php?page=over" class="sidebar-link <?php echo $page==='over' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-info-circle"></i> Voor wie?
-                </a>
-                <a href="admin.php?page=wie-zijn-we" class="sidebar-link <?php echo $page==='wie-zijn-we' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-people-group"></i> Wie zijn we?
-                </a>
-                <a href="admin.php?page=verantwoord-ai" class="sidebar-link <?php echo $page==='verantwoord-ai' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-shield"></i> Verantwoord AI
-                </a>
-                <a href="admin.php?page=contact" class="sidebar-link <?php echo $page==='contact' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-envelope"></i> Contact
-                </a>
+                <?php if ($hasPermission('manage_pages')): ?>
+                    <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Pagina's</div>
+                    <a href="admin.php?page=index" class="sidebar-link <?php echo $page==='index' ? 'active' : ''; ?>">
+                        <i class="fa-solid fa-house"></i> Homepage
+                    </a>
+                    <a href="admin.php?page=evenementen" class="sidebar-link <?php echo $page==='evenementen' ? 'active' : ''; ?>">
+                        <i class="fa-solid fa-calendar-check"></i> Evenementen
+                    </a>
+                    <a href="admin.php?page=terugblikken" class="sidebar-link <?php echo $page==='terugblikken' ? 'active' : ''; ?>">
+                        <i class="fa-solid fa-history"></i> Terugblikken
+                    </a>
+                    <a href="admin.php?page=over" class="sidebar-link <?php echo $page==='over' ? 'active' : ''; ?>">
+                        <i class="fa-solid fa-info-circle"></i> Voor wie?
+                    </a>
+                    <a href="admin.php?page=wie-zijn-we" class="sidebar-link <?php echo $page==='wie-zijn-we' ? 'active' : ''; ?>">
+                        <i class="fa-solid fa-people-group"></i> Wie zijn we?
+                    </a>
+                    <a href="admin.php?page=verantwoord-ai" class="sidebar-link <?php echo $page==='verantwoord-ai' ? 'active' : ''; ?>">
+                        <i class="fa-solid fa-shield"></i> Verantwoord AI
+                    </a>
+                    <a href="admin.php?page=contact" class="sidebar-link <?php echo $page==='contact' ? 'active' : ''; ?>">
+                        <i class="fa-solid fa-envelope"></i> Contact
+                    </a>
 
-                <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Wat doen we</div>
-                <a href="admin.php?page=programma-kennis" class="sidebar-link <?php echo $page==='programma-kennis' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-brain"></i> Kennis & Vaardigheden
-                </a>
-                <a href="admin.php?page=programma-actie" class="sidebar-link <?php echo $page==='programma-actie' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-rocket"></i> Actie, onderzoek & ontwerp
-                </a>
-                <a href="admin.php?page=programma-faciliteit" class="sidebar-link <?php echo $page==='programma-faciliteit' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-building"></i> Faciliteit van het Lab
-                </a>
+                    <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Wat doen we</div>
+                    <a href="admin.php?page=programma-kennis" class="sidebar-link <?php echo $page==='programma-kennis' ? 'active' : ''; ?>">
+                        <i class="fa-solid fa-brain"></i> Kennis & Vaardigheden
+                    </a>
+                    <a href="admin.php?page=programma-actie" class="sidebar-link <?php echo $page==='programma-actie' ? 'active' : ''; ?>">
+                        <i class="fa-solid fa-rocket"></i> Actie, onderzoek & ontwerp
+                    </a>
+                    <a href="admin.php?page=programma-faciliteit" class="sidebar-link <?php echo $page==='programma-faciliteit' ? 'active' : ''; ?>">
+                        <i class="fa-solid fa-building"></i> Faciliteit van het Lab
+                    </a>
+                <?php endif; ?>
             </nav>
         </aside>
 
@@ -1061,20 +1234,24 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <p>Geen evenementen aangemaakt</p>
                             </div>
                         <?php else: ?>
-                            <div class="mb-4 flex gap-2 items-center">
-                                <input type="checkbox" id="selectAllEvents" class="w-4 h-4 cursor-pointer" title="Selecteer alles">
-                                <label for="selectAllEvents" class="cursor-pointer text-sm font-medium">Selecteer alles</label>
-                                <button type="button" class="btn btn-danger btn-sm admin-hidden" id="bulkDeleteEventsBtn">
-                                    <i class="fa-solid fa-trash"></i> Verwijder geselecteerde (<span id="eventCount">0</span>)
-                                </button>
-                            </div>
+                            <?php if ($canDeleteEvents): ?>
+                                <div class="mb-4 flex gap-2 items-center">
+                                    <input type="checkbox" id="selectAllEvents" class="w-4 h-4 cursor-pointer" title="Selecteer alles">
+                                    <label for="selectAllEvents" class="cursor-pointer text-sm font-medium">Selecteer alles</label>
+                                    <button type="button" class="btn btn-danger btn-sm admin-hidden" id="bulkDeleteEventsBtn">
+                                        <i class="fa-solid fa-trash"></i> Verwijder geselecteerde (<span id="eventCount">0</span>)
+                                    </button>
+                                </div>
+                            <?php endif; ?>
                             <form method="POST" id="bulkDeleteEventsForm">
                                 <input type="hidden" name="action" value="delete_bulk_events">
                             <div class="space-y-4">
                             <?php foreach ($events as $event): ?>
                                 <div class="border border-gray-200 rounded p-4 hover:shadow-md transition">
                                     <div class="admin-row flex justify-between items-start gap-4">
-                                        <input type="checkbox" class="event-checkbox w-4 h-4 mt-1 flex-shrink-0 cursor-pointer" name="event_ids[]" value="<?php echo (int)$event['id']; ?>">
+                                        <?php if ($canDeleteEvents): ?>
+                                            <input type="checkbox" class="event-checkbox w-4 h-4 mt-1 flex-shrink-0 cursor-pointer" name="event_ids[]" value="<?php echo (int)$event['id']; ?>">
+                                        <?php endif; ?>
                                         <div class="flex-1">
                                             <h4 class="font-bold text-lg text-gray-800"><?php echo htmlspecialchars(sanitizeEditorText($event['title'])); ?></h4>
                                             <?php 
@@ -1104,13 +1281,15 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 <a href="admin.php?page=agenda&edit=<?php echo (int)$event['id']; ?>" class="btn btn-secondary btn-sm">
                                                     <i class="fa-solid fa-pencil"></i> Bewerk
                                                 </a>
-                                                <form method="POST" onsubmit="return confirm('Verwijder dit evenement?');" class="admin-inline-form">
-                                                    <input type="hidden" name="action" value="delete">
-                                                    <input type="hidden" name="id" value="<?php echo (int)$event['id']; ?>">
-                                                    <button type="submit" class="btn btn-danger btn-sm w-full">
-                                                        <i class="fa-solid fa-trash"></i> Verwijder
-                                                    </button>
-                                                </form>
+                                                <?php if ($canDeleteEvents): ?>
+                                                    <form method="POST" onsubmit="return confirm('Verwijder dit evenement?');" class="admin-inline-form">
+                                                        <input type="hidden" name="action" value="delete">
+                                                        <input type="hidden" name="id" value="<?php echo (int)$event['id']; ?>">
+                                                        <button type="submit" class="btn btn-danger btn-sm w-full">
+                                                            <i class="fa-solid fa-trash"></i> Verwijder
+                                                        </button>
+                                                    </form>
+                                                <?php endif; ?>
                                             </div>
                                         </div>
                                     </div>
@@ -1120,6 +1299,102 @@ document.addEventListener('DOMContentLoaded', function() {
                             </form>
                         <?php endif; ?>
                     </div>
+                </div>
+
+            <?php elseif ($page === 'users'): ?>
+                <div class="card p-6">
+                    <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
+                        <i class="fa-solid fa-users text-2xl text-[#00811F]"></i>
+                        <h2 class="text-2xl font-bold">Gebruikers & Rollen</h2>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-4">Wijs per gebruiker een rol toe. Rollen bepalen welke onderdelen van het adminpaneel zichtbaar en bewerkbaar zijn.</p>
+
+                    <form method="POST" class="bg-white p-6 shadow-md space-y-4 mb-6 border border-gray-200 rounded">
+                        <h3 class="font-semibold text-lg">Gebruiker toevoegen</h3>
+                        <input type="hidden" name="action" value="create_user">
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="form-label" for="new_first_name">Voornaam</label>
+                                <input id="new_first_name" type="text" name="new_first_name" class="form-input" maxlength="120" placeholder="Voornaam">
+                            </div>
+                            <div>
+                                <label class="form-label" for="new_last_name">Achternaam</label>
+                                <input id="new_last_name" type="text" name="new_last_name" class="form-input" maxlength="120" placeholder="Achternaam">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="md:col-span-2">
+                                <label class="form-label" for="new_email">E-mailadres</label>
+                                <input id="new_email" type="email" name="new_email" class="form-input" required placeholder="naam@voorbeeld.nl">
+                            </div>
+                            <div>
+                                <label class="form-label" for="new_role">Rol</label>
+                                <select id="new_role" name="new_role" class="form-input">
+                                    <option value="editor">Bewerker</option>
+                                    <option value="content_manager">Content Manager</option>
+                                    <option value="superadmin">Administrator</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="form-label" for="new_password">Wachtwoord</label>
+                            <input id="new_password" type="text" name="new_password" class="form-input" required placeholder="Voer wachtwoord in">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa-solid fa-user-plus"></i> Gebruiker toevoegen
+                        </button>
+                    </form>
+
+                    <?php if (empty($userAccounts)): ?>
+                        <div class="text-center py-8 text-gray-500">
+                            <i class="fa-solid fa-inbox text-4xl mb-2"></i>
+                            <p>Geen gebruikers gevonden.</p>
+                        </div>
+                    <?php else: ?>
+                        <div class="space-y-3">
+                            <?php foreach ($userAccounts as $acc): ?>
+                                <?php
+                                    $accEmail = (string)($acc['email'] ?? '');
+                                    $accFirstName = trim((string)($acc['first_name'] ?? ''));
+                                    $accLastName = trim((string)($acc['last_name'] ?? ''));
+                                    $accFullName = trim($accFirstName . ' ' . $accLastName);
+                                    $accRole = trim((string)($acc['role'] ?? ''));
+                                    if ($accRole === '') {
+                                        $accRole = ((int)($acc['admin'] ?? 0) === 1) ? 'superadmin' : 'viewer';
+                                    }
+                                ?>
+                                <form method="POST" class="border border-gray-200 rounded p-4 bg-white flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
+                                    <input type="hidden" name="action" value="update_user_role">
+                                    <input type="hidden" name="target_email" value="<?php echo htmlspecialchars($accEmail); ?>">
+
+                                    <div>
+                                        <?php if ($accFullName !== ''): ?>
+                                            <p class="font-semibold text-gray-900"><?php echo htmlspecialchars($accFullName); ?></p>
+                                        <?php endif; ?>
+                                        <p class="font-semibold text-gray-900"><?php echo htmlspecialchars($accEmail); ?></p>
+                                        <p class="text-xs text-gray-500">Huidige rol: <?php echo htmlspecialchars($accRole); ?></p>
+                                    </div>
+
+                                    <div class="flex items-center gap-2">
+                                        <label class="text-sm text-gray-700" for="role_<?php echo md5($accEmail); ?>">Rol</label>
+                                        <select id="role_<?php echo md5($accEmail); ?>" name="role" class="form-input">
+                                            <option value="superadmin" <?php echo $accRole === 'superadmin' ? 'selected' : ''; ?>>Administrator</option>
+                                            <option value="content_manager" <?php echo $accRole === 'content_manager' ? 'selected' : ''; ?>>Content Manager</option>
+                                            <option value="editor" <?php echo $accRole === 'editor' ? 'selected' : ''; ?>>Bewerker</option>
+                                           
+                                        </select>
+                                        <button type="submit" class="btn btn-primary btn-sm">
+                                            <i class="fa-solid fa-save"></i> Opslaan
+                                        </button>
+                                    </div>
+                                </form>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
             <?php elseif ($page === 'audit'): ?>
@@ -1500,13 +1775,15 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <p>Geen <?php echo $isProgrammaPage ? 'kaarten' : 'items'; ?> toegevoegd voor deze pagina</p>
                             </div>
                         <?php else: ?>
-                            <div class="mb-4 flex gap-2 items-center">
-                                <input type="checkbox" id="selectAllPages_<?php echo htmlspecialchars($pageKey); ?>" class="w-4 h-4 cursor-pointer selectAllPages" data-page="<?php echo htmlspecialchars($pageKey); ?>" title="Selecteer alles">
-                                <label for="selectAllPages_<?php echo htmlspecialchars($pageKey); ?>" class="cursor-pointer text-sm font-medium">Selecteer alles</label>
-                                <button type="button" class="btn btn-danger btn-sm admin-hidden" id="bulkDeletePagesBtn_<?php echo htmlspecialchars($pageKey); ?>">
-                                    <i class="fa-solid fa-trash"></i> Verwijder geselecteerde (<span id="pageCount_<?php echo htmlspecialchars($pageKey); ?>">0</span>)
-                                </button>
-                            </div>
+                            <?php if ($canDeletePages): ?>
+                                <div class="mb-4 flex gap-2 items-center">
+                                    <input type="checkbox" id="selectAllPages_<?php echo htmlspecialchars($pageKey); ?>" class="w-4 h-4 cursor-pointer selectAllPages" data-page="<?php echo htmlspecialchars($pageKey); ?>" title="Selecteer alles">
+                                    <label for="selectAllPages_<?php echo htmlspecialchars($pageKey); ?>" class="cursor-pointer text-sm font-medium">Selecteer alles</label>
+                                    <button type="button" class="btn btn-danger btn-sm admin-hidden" id="bulkDeletePagesBtn_<?php echo htmlspecialchars($pageKey); ?>">
+                                        <i class="fa-solid fa-trash"></i> Verwijder geselecteerde (<span id="pageCount_<?php echo htmlspecialchars($pageKey); ?>">0</span>)
+                                    </button>
+                                </div>
+                            <?php endif; ?>
                             <form method="POST" id="bulkDeletePagesForm_<?php echo htmlspecialchars($pageKey); ?>">
                                 <input type="hidden" name="action" value="delete_bulk_pages">
                                 <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
@@ -1518,7 +1795,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                 ?>
                                 <div class="border border-gray-200 rounded p-4 hover:shadow-md transition">
                                     <div class="admin-row flex justify-between items-start gap-4">
-                                        <input type="checkbox" class="page-checkbox page-checkbox-<?php echo htmlspecialchars($pageKey); ?> w-4 h-4 mt-1 flex-shrink-0 cursor-pointer" name="page_ids[]" value="<?php echo (int)$it['id']; ?>">
+                                        <?php if ($canDeletePages): ?>
+                                            <input type="checkbox" class="page-checkbox page-checkbox-<?php echo htmlspecialchars($pageKey); ?> w-4 h-4 mt-1 flex-shrink-0 cursor-pointer" name="page_ids[]" value="<?php echo (int)$it['id']; ?>">
+                                        <?php endif; ?>
                                         <div class="flex-1">
                                             <?php $pageBodyPreview = editorPreviewText($it['body'] ?? '', 150); ?>
                                             <h4 class="font-bold text-lg text-gray-800"><?php echo htmlspecialchars(sanitizeEditorText($it['title'] ?? '')); ?></h4>
@@ -1554,14 +1833,16 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 <a href="admin.php?edit_page=<?php echo (int)$it['id']; ?>&page=<?php echo urlencode($pageKey); ?>" class="btn btn-secondary btn-sm">
                                                     <i class="fa-solid fa-pencil"></i> Bewerk
                                                 </a>
-                                                <form method="POST" onsubmit="return confirm('Verwijder dit item?');" class="admin-inline-form">
-                                                    <input type="hidden" name="page_action" value="delete_page">
-                                                    <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
-                                                    <input type="hidden" name="id" value="<?php echo (int)$it['id']; ?>">
-                                                    <button type="submit" class="btn btn-danger btn-sm w-full">
-                                                        <i class="fa-solid fa-trash"></i> Verwijder
-                                                    </button>
-                                                </form>
+                                                <?php if ($canDeletePages): ?>
+                                                    <form method="POST" onsubmit="return confirm('Verwijder dit item?');" class="admin-inline-form">
+                                                        <input type="hidden" name="page_action" value="delete_page">
+                                                        <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
+                                                        <input type="hidden" name="id" value="<?php echo (int)$it['id']; ?>">
+                                                        <button type="submit" class="btn btn-danger btn-sm w-full">
+                                                            <i class="fa-solid fa-trash"></i> Verwijder
+                                                        </button>
+                                                    </form>
+                                                <?php endif; ?>
                                             </div>
                                         </div>
                                     </div>
