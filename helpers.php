@@ -140,6 +140,99 @@ if (!function_exists('editorPreviewText')) {
     }
 }
 
+if (!function_exists('eventShortSummary')) {
+    function eventShortSummary($value, $maxChars = 180) {
+        $text = sanitizeEditorPlainText($value);
+        if ($text === '') {
+            return '';
+        }
+
+        $maxChars = max(80, (int)$maxChars);
+        $sentences = preg_split('/(?<=[.!?])\s+/u', $text, -1, PREG_SPLIT_NO_EMPTY);
+
+        if (empty($sentences)) {
+            return editorPreviewText($text, $maxChars);
+        }
+
+        $summary = '';
+        foreach ($sentences as $sentence) {
+            $candidate = trim($summary === '' ? $sentence : $summary . ' ' . $sentence);
+
+            if (function_exists('mb_strlen')) {
+                if (mb_strlen($candidate) <= $maxChars) {
+                    $summary = $candidate;
+                    continue;
+                }
+            } else {
+                if (strlen($candidate) <= $maxChars) {
+                    $summary = $candidate;
+                    continue;
+                }
+            }
+
+            break;
+        }
+
+        if ($summary === '') {
+            return editorPreviewText($text, $maxChars);
+        }
+
+        return $summary;
+    }
+}
+
+if (!function_exists('eventNarrativeSummary')) {
+    function eventNarrativeSummary($title, $description, $date = null, $location = null, $maxChars = 280) {
+        $descriptionText = sanitizeEditorPlainText($description);
+        if ($descriptionText === '') {
+            return '';
+        }
+
+        $textLower = function_exists('mb_strtolower')
+            ? mb_strtolower($descriptionText, 'UTF-8')
+            : strtolower($descriptionText);
+
+        $signals = [];
+        if (preg_match('/spreker|gastspreker|presentatie/i', $textLower)) {
+            $signals[] = 'er was een spreker';
+        }
+        if (preg_match('/workshop|sessie|oefening/i', $textLower)) {
+            $signals[] = 'er was een workshop of sessie';
+        }
+        if (preg_match('/discussie|gesprek|dialoog|vragen/i', $textLower)) {
+            $signals[] = 'er was ruimte voor gesprek en vragen';
+        }
+        if (preg_match('/inzicht|conclusie|resultaat|opgehaald/i', $textLower)) {
+            $signals[] = 'er zijn inzichten opgehaald';
+        }
+
+        $summaryLead = 'Korte samenvatting: tijdens dit event ';
+        if (!empty($signals)) {
+            $summaryLead .= implode(', ', $signals) . '. ';
+        } else {
+            $summaryLead .= 'zijn deelnemers samengekomen rondom het onderwerp. ';
+        }
+
+        $core = eventShortSummary($descriptionText, 170);
+        if ($core === '') {
+            return rtrim($summaryLead);
+        }
+
+        $maxChars = max(140, (int)$maxChars);
+        if (function_exists('mb_strlen')) {
+            $available = $maxChars - mb_strlen($summaryLead);
+        } else {
+            $available = $maxChars - strlen($summaryLead);
+        }
+
+        if ($available < 50) {
+            $available = 50;
+        }
+
+        return $summaryLead . editorPreviewText($core, $available);
+    }
+}
+
 if (!function_exists('normalizeDisplayText')) {
     function normalizeDisplayText($value) {
         $value = (string)$value;

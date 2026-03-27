@@ -39,7 +39,7 @@ try {
         }
     }
     
-    $stmt = $pdo->prepare("SELECT * FROM events WHERE date >= CURDATE() AND (show_on_homepage IS NULL OR show_on_homepage = 1) ORDER BY date, time LIMIT 2");
+    $stmt = $pdo->prepare("SELECT * FROM events WHERE COALESCE(end_date, date) >= CURDATE() AND (show_on_homepage IS NULL OR show_on_homepage = 1) ORDER BY date, time LIMIT 2");
     $stmt->execute();
     $events = $stmt->fetchAll();
 } catch (Exception $e) {
@@ -294,11 +294,11 @@ foreach ($events as $event):
         <span class="inline-block bg-[#00811F] text-white text-sm font-medium px-4 py-1 mb-4">Evenement</span>
         <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($event['title']); ?></h2>
         <div class="space-y-4">
-                <div class="flex items-center space-x-3">
-                    <i class="fa-regular fa-calendar text-[#00811F] ml-[2px] text-3xl"></i>
-                    <?php $dateDisplay = formatEventDateDisplay($event['date']); $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : ''; ?>
-                    <p class="text-gray-700"><strong> Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?><?php if ($timeDisplay) echo ' - ' . htmlspecialchars($timeDisplay); ?></p>
-                </div>
+            <div class="flex items-center space-x-3">
+                <i class="fa-regular fa-calendar text-[#00811F] ml-[2px] text-3xl"></i>
+                <?php $dateDisplay = formatEventDateDisplay($event['date']); $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : ''; ?>
+                <p class="text-gray-700"><strong> Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?><?php if ($timeDisplay) echo ' - ' . htmlspecialchars($timeDisplay); ?></p>
+            </div>
             <div class="flex items-center space-x-3">
                 <i class="fa-solid fa-location-dot text-[#00811F] ml-1 text-3xl"></i>
                 <?php $loc = $event['location'] ?: 'Rotterdam - Hillevliet 90'; ?>
@@ -308,6 +308,13 @@ foreach ($events as $event):
                 <i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>
                 <p class="text-gray-700 pb-3"><strong> Wat:</strong> <?php echo nl2br(htmlspecialchars($event['description'])); ?></p>
             </div>
+            <?php if (!empty($event['info_link'])): ?>
+                <div class="w-full mt-4 flex justify-start">
+                    <a href="<?php echo htmlspecialchars($event['info_link']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-info bg-[#00811F] text-white px-4 py-2 rounded shadow hover:bg-[#00691A] transition">
+                        Meer info
+                    </a>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
     <div class="flex-1">
@@ -326,7 +333,7 @@ foreach ($events as $event):
 </a>
 <?php endif; ?>
 
-<?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
+<?php if (!empty($_SESSION['can_access_admin']) || (isset($_SESSION['admin']) && (int)$_SESSION['admin'] === 1)): ?>
     <a href="admin.php" title="Voeg evenement toe" class="fixed bottom-6 right-6 bg-[#00811F] text-white rounded-full w-12 h-12 flex items-center justify-center text-3xl shadow-lg">+</a>
 <?php endif; ?>
 
