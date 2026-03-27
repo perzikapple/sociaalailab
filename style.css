@@ -26,6 +26,13 @@
   padding: 30px;
 }
 
+.responsive-img {
+    max-width: 280px; /* desktop breedte */
+    width: 100%;      /* past in container */
+    height: auto;
+    border-radius: 0.5rem;
+}
+
 /* create_admin.php styles */
 .create-admin-body {
   font-family: Arial, sans-serif;
@@ -663,7 +670,7 @@ section{
         padding: 0;
     }
 
-    /* Elk item */
+
     #watdoenwe-switch > div {
         background-color: #ffffff;
         border-radius: 12px;
@@ -671,26 +678,31 @@ section{
         width: 90%;          /* gelijke breedte */
         max-width: 250px;
 
-        /* Compacte hoogte en padding */
-        padding: 0.5rem;      /* beetje ruimte rond tekst */
-        min-height: 60px;     /* vaste minimale hoogte voor consistente look */
-        max-height: 100px;    /* limiet voor niet te groot */
+        padding: 0.5rem;
+        min-height: 60px;
+        max-height: 100px;
 
-        /* Tekst mooi in het midden */
         display: flex;
         justify-content: center;
         align-items: center;
         text-align: center;
 
-        box-sizing: border-box; /* padding en border tellen mee */
-        overflow: hidden;       /* voorkomt dat iets buiten valt */
+        box-sizing: border-box;
+        overflow: hidden;
     }
 
-    /* Tekst zelf */
-    #watdoenwe-switch p {
+        #watdoenwe-switch p {
         margin: 0;
         font-size: 0.9rem;
         line-height: 1.2;
+    }
+
+        /* Size homepage Pictures */
+    .card-icon {
+        width: 120px;
+        height: auto;
+        display: block;
+        margin: 0 auto;
     }
 }
 
@@ -699,6 +711,14 @@ section{
     .hamburger {
         display: block;
         font-size: 28px;
+    }
+
+    /* Size homepage pictures*/
+    .card-icon {
+        width: 120px;
+        height: auto;
+        display: block;
+        margin: 0 auto;
     }
 
     .nav-menu {
@@ -878,6 +898,13 @@ section{
         width: 95%;
     }
 
+    .card-icon {
+        width: 120px;
+        height: auto;
+        display: block;
+        margin: 0 auto;
+    }
+
     .watdoenwe-page .grid {
         grid-template-columns: repeat(2, 1fr) !important;
         gap: 1rem;
@@ -891,20 +918,20 @@ section{
     }
     .flexrow {
         flex-direction: column;
-        align-items: center; /* items mooi centreren */
-        gap: 0.5rem; /* eventueel kleinere spacing */
+        align-items: center;
+        gap: 0.5rem;
     }
 
     #agenda-terugblik-switch {
         flex-direction: column;
         align-items: center;
         gap: 0.5rem;
-        padding: 0 16px; /* iets meer ruimte links/rechts */
+        padding: 0 16px;
     }
 
     #agenda-terugblik-switch > div {
         width: 100%;
-        max-width: 600px;   /* 🔥 groter maken (zelfde gevoel als je cards) */
+        max-width: 600px;
         padding: 0.75rem;
     }
 }
@@ -912,8 +939,8 @@ section{
 @media (min-width: 1036px) and (max-width: 1160px) {
     .flexrow {
         flex-direction: column;
-        align-items: center; /* items mooi centreren */
-        gap: 0.5rem; /* eventueel kleinere spacing */
+        align-items: center;
+        gap: 0.5rem;
     }
     #agenda-terugblik-switch {
         flex-direction: column;
@@ -926,5 +953,12 @@ section{
         width: 100%;
         max-width: 600px;   /* 🔥 groter maken (zelfde gevoel als je cards) */
         padding: 0.75rem;
+    }
+
+    .card-icon {
+        width: 120px;
+        height: auto;
+        display: block;
+        margin: 0 auto;
     }
 }

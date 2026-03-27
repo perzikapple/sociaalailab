@@ -134,7 +134,7 @@ include __DIR__ . '/navbar.php';
                         ?>
                         <img src="<?php echo htmlspecialchars($imageSrc); ?>"
                              alt="<?php echo htmlspecialchars($block['title']); ?>"
-                             class="card-icon">                    <?php endif; ?>
+                             class="card-icon w-24 md:w-32 lg:w-40 mx-auto">                    <?php endif; ?>
                 </div>
                 <?php if ($cardGreenText !== '' && $cardGreenTextPosition === 'above'): ?>
                     <div class="text-center mb-2"><div class="green-highlight"><?php echo nl2br(htmlspecialchars($cardGreenText)); ?></div></div>
