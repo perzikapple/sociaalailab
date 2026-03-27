@@ -348,6 +348,9 @@ if ($pageAction === 'create_page') {
         $imagePosition = 'normal';
     }
 
+    // Add info_link to meta for terugblik blocks
+    $infoLink = $_POST['info_link'] ?? '';
+
     if ($title === '') {
         $title = ' ';
     }
@@ -366,6 +369,11 @@ if ($pageAction === 'create_page') {
         if ($greenText !== '') {
             $meta['green_text'] = $greenText;
             $meta['green_text_position'] = $greenTextPosition;
+        }
+
+        // Save info_link in meta for terugblik blocks
+        if ($pageKey === 'terugblikken' && $infoLink !== '') {
+            $meta['info_link'] = $infoLink;
         }
 
         // Extra velden voor contact pagina
@@ -455,6 +463,12 @@ if ($pageAction === 'create_page') {
         } else {
             unset($meta['green_text']);
             unset($meta['green_text_position']);
+        }
+
+        // Save info_link in meta for terugblik blocks
+        $infoLink = $_POST['info_link'] ?? '';
+        if ($pageKey === 'terugblikken') {
+            $meta['info_link'] = $infoLink;
         }
 
         if ($pageKey === 'contact') {
@@ -597,11 +611,16 @@ if (!empty($_GET['edit'])) {
 
 // Edit page mode
 $editPage = null;
+$editPageInfoLink = '';
 if (!empty($_GET['edit_page'])) {
     $id = (int)$_GET['edit_page'];
     $stmt = $pdo->prepare('SELECT * FROM pages WHERE id = ?');
     $stmt->execute([$id]);
     $editPage = $stmt->fetch();
+    if ($editPage && $editPage['page_key'] === 'terugblikken') {
+        $metaArr = $editPage['meta'] ? json_decode($editPage['meta'], true) : [];
+        $editPageInfoLink = $metaArr['info_link'] ?? '';
+    }
 }
 
 // Haal events voor overzicht (datum-gestuurd)
@@ -1377,8 +1396,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                                     
                             
-
-
                             <div>
                                 <label class="form-label" for="info_link">Meer info link (optioneel):</label>
                                 <input

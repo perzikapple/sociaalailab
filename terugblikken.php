@@ -70,6 +70,25 @@ include __DIR__ . '/navbar.php';
     $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'terugblikken' ORDER BY (sort_order IS NULL OR sort_order = 0) ASC, sort_order ASC, created_at ASC, id ASC");
     $stmt->execute();
     $pageBlocks = $stmt->fetchAll();
+
+    // Show 'Meer info' and partner for the most recent terugblik block
+    if (!empty($pageBlocks)) {
+        $mostRecent = $pageBlocks[0];
+        $metaArr = $mostRecent['meta'] ? json_decode($mostRecent['meta'], true) : [];
+        $infoLink = $mostRecent['info_link'] ?? ($metaArr['info_link'] ?? '');
+        $partner = $metaArr['partner'] ?? '';
+        ?>
+        <section class="bg-white shadow-lg px-3 sm:px-8 py-6 sm:py-8 max-w-6xl mx-auto mt-8 sm:mt-12 mb-6 sm:mb-12">
+            <?php if ($infoLink): ?>
+                <a href="<?php echo htmlspecialchars($infoLink); ?>" target="_blank" class="inline-block bg-[#00811F] text-white px-6 py-2 rounded-lg font-semibold hover:bg-[#005c16] transition">Meer info</a>
+            <?php endif; ?>
+            <?php if ($partner): ?>
+                <div class="mt-4 text-gray-700"><strong>Partner:</strong> <?php echo htmlspecialchars($partner); ?></div>
+            <?php endif; ?>
+        </section>
+        <?php
+    }
+
     foreach ($pageBlocks as $block):
         $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
         $hasImage = !empty($block['image']);
@@ -186,6 +205,11 @@ include __DIR__ . '/navbar.php';
                     <i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>
                     <div class="text-gray-700 pb-3 "><strong> Wat:</strong><div class="mt-1"><?php echo renderEditorBlock($event['description']); ?></div></div>
                 </div>
+                <?php if (!empty($event['info_link'])): ?>
+                    <div class="mb-4">
+                        <a href="<?php echo htmlspecialchars($event['info_link']); ?>" target="_blank" class="inline-block bg-[#00811F] text-white px-6 py-2 rounded-lg font-semibold hover:bg-[#005c16] transition">Meer info</a>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
         <?php if ($event['image']): ?>
