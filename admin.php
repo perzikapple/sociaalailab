@@ -23,7 +23,7 @@ if (!$canAccessAdmin) {
 $rolePermissions = [
     'superadmin' => ['manage_users', 'view_audit', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages'],
     'content_manager' => ['manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages'],
-    'editor' => ['manage_events', 'manage_pages'],
+    'editor' => ['manage_events'],
     'viewer' => [],
 ];
 
@@ -726,6 +726,20 @@ $events = $stmt->fetchAll();
 // Welke admin pagina tonen (standaard index)
 $page = $_GET['page'] ?? 'index';
 
+$editorViewOnlyPages = [
+    'banner',
+    'index',
+    'evenementen',
+    'terugblikken',
+    'over',
+    'wie-zijn-we',
+    'verantwoord-ai',
+    'contact',
+    'programma-kennis',
+    'programma-actie',
+    'programma-faciliteit',
+];
+
 $allowedPagesByPermission = [
     'banner' => 'manage_banners',
     'agenda' => 'manage_events',
@@ -743,10 +757,26 @@ $allowedPagesByPermission = [
     'programma-faciliteit' => 'manage_pages',
 ];
 
-if (isset($allowedPagesByPermission[$page]) && !$hasPermission($allowedPagesByPermission[$page])) {
+$canViewPage = function ($candidatePage) use (&$allowedPagesByPermission, &$hasPermission, &$sessionRole, &$editorViewOnlyPages) {
+    if (!isset($allowedPagesByPermission[$candidatePage])) {
+        return true;
+    }
+
+    if ($hasPermission($allowedPagesByPermission[$candidatePage])) {
+        return true;
+    }
+
+    if ($sessionRole === 'editor' && in_array($candidatePage, $editorViewOnlyPages, true)) {
+        return true;
+    }
+
+    return false;
+};
+
+if (!$canViewPage($page)) {
     $fallbackPage = null;
     foreach ($allowedPagesByPermission as $candidatePage => $candidatePermission) {
-        if ($hasPermission($candidatePermission)) {
+        if ($canViewPage($candidatePage)) {
             $fallbackPage = $candidatePage;
             break;
         }
@@ -762,6 +792,7 @@ if (isset($allowedPagesByPermission[$page]) && !$hasPermission($allowedPagesByPe
 
 $canDeleteEvents = $hasPermission('delete_events');
 $canDeletePages = $hasPermission('delete_pages');
+$isEditorReadOnlyPage = ($sessionRole === 'editor' && $page !== 'agenda');
 
 $pageItems = [];
 if ($page !== 'banner' && $page !== 'agenda' && $page !== 'audit' && $page !== 'users') {
@@ -852,6 +883,14 @@ if ($page === 'users') {
 </head>
 <!-- TinyMCE toevoegen met API key -->
 <script src="https://cdn.tiny.cloud/1/1ui5rgslm5rlya4exbujnv26e5j6xyq87233fv56zmvcq39e/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+<style>
+.btn-readonly-disabled {
+    opacity: 0.55;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+    filter: grayscale(0.2);
+}
+</style>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const isCompactEditor = window.matchMedia('(max-width: 1023.98px)').matches;
@@ -930,7 +969,7 @@ if ($page === 'users') {
             </div>
             <nav class="divide-y">
                 <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Beheer</div>
-                <?php if ($hasPermission('manage_banners')): ?>
+                <?php if ($hasPermission('manage_banners') || $sessionRole === 'editor'): ?>
                     <a href="admin.php?page=banner" class="sidebar-link <?php echo $page==='banner' ? 'active' : ''; ?>">
                         <i class="fa-solid fa-image"></i> Banners
                     </a>
@@ -946,7 +985,7 @@ if ($page === 'users') {
                     </a>
                 <?php endif; ?>
                 
-                <?php if ($hasPermission('manage_pages')): ?>
+                <?php if ($hasPermission('manage_pages') || $sessionRole === 'editor'): ?>
                     <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Pagina's</div>
                     <a href="admin.php?page=index" class="sidebar-link <?php echo $page==='index' ? 'active' : ''; ?>">
                         <i class="fa-solid fa-house"></i> Homepage
@@ -984,7 +1023,13 @@ if ($page === 'users') {
             </nav>
         </aside>
 
-        <div class="lg:col-span-3">
+        <div class="lg:col-span-3 <?php echo $isEditorReadOnlyPage ? 'admin-readonly-scope' : ''; ?>">
+
+            <?php if ($isEditorReadOnlyPage): ?>
+                <div class="alert alert-error" style="background:#f3f4f6; color:#1f2937; border-left-color:#9ca3af;">
+                    <i class="fa-solid fa-eye"></i> Alleen-lezen modus: is dit een fout? Neem contact op met een beheerder om je rechten te controleren.
+                </div>
+            <?php endif; ?>
 
             <?php if ($page === 'agenda'): ?>
                 <div class="card p-6">
@@ -1000,7 +1045,7 @@ if ($page === 'users') {
                     <?php endif; ?>
 
                     <?php if ($editEvent): ?>
-                        <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6">
+                        <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6 js-content-preview-form">
                             <h3 class="font-semibold text-lg">Bewerk Evenement</h3>
                             <input type="hidden" name="action" value="update">
                             <input type="hidden" name="id" value="<?php echo (int)$editEvent['id']; ?>">
@@ -1054,6 +1099,7 @@ if ($page === 'users') {
 
                             <div>
                                 <label class="form-label">Afbeelding (optioneel)</label>
+                                <input type="hidden" name="existing_image" value="<?php echo htmlspecialchars($editEvent['image'] ?? ''); ?>" />
                                 <input type="file" name="image" accept="image/*" class="form-input" />
                                 <?php if (!empty($editEvent['image'])): ?>
                                     <p class="text-sm mt-2 text-gray-600">Huidige: <?php echo htmlspecialchars($editEvent['image']); ?></p>
@@ -1094,12 +1140,17 @@ if ($page === 'users') {
                                 </label>
                             </div>
 
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fa-solid fa-save"></i> Opslaan
-                            </button>
+                            <div class="flex gap-2 pt-2">
+                                <button type="button" class="btn btn-secondary js-content-preview-btn">
+                                    <i class="fa-solid fa-eye"></i> Preview
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa-solid fa-save"></i> Opslaan
+                                </button>
+                            </div>
                         </form>
                     <?php else: ?>
-                        <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6">
+                        <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6 js-content-preview-form">
                             <h3 class="font-semibold text-lg">Nieuw Evenement</h3>
                             <input type="hidden" name="action" value="create">
 
@@ -1217,9 +1268,14 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </label>
                             </div>
 
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fa-solid fa-plus"></i> Toevoegen
-                            </button>
+                            <div class="flex gap-2 pt-2">
+                                <button type="button" class="btn btn-secondary js-content-preview-btn">
+                                    <i class="fa-solid fa-eye"></i> Preview
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa-solid fa-plus"></i> Toevoegen
+                                </button>
+                            </div>
                         </form>
                     <?php endif; ?>
 
@@ -1599,7 +1655,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <?php endif; ?>
 
                     <?php if ($editPage): ?>
-                        <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6">
+                        <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6 js-content-preview-form">
                             <h3 class="font-semibold text-lg">Bewerk <?php echo htmlspecialchars($itemLabel); ?></h3>
                             <input type="hidden" name="page_action" value="update_page">
                             <input type="hidden" name="id" value="<?php echo (int)$editPage['id']; ?>">
@@ -1641,6 +1697,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                             <div>
                                 <label class="form-label">Afbeelding (optioneel)</label>
+                                <input type="hidden" name="existing_image" value="<?php echo htmlspecialchars($editPage['image'] ?? ''); ?>" />
                                 <input type="file" name="image" accept="image/*" class="form-input" />
                                 <?php if (!empty($editPage['image'])): ?>
                                     <p class="text-sm mt-2 text-gray-600">Huidige afbeelding: <?php echo htmlspecialchars($editPage['image']); ?></p>
@@ -1677,12 +1734,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
                             
 
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fa-solid fa-save"></i> Opslaan
-                            </button>
+                            <div class="flex gap-2 pt-2">
+                                <button type="button" class="btn btn-secondary js-content-preview-btn">
+                                    <i class="fa-solid fa-eye"></i> Preview
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa-solid fa-save"></i> Opslaan
+                                </button>
+                            </div>
                         </form>
                     <?php else: ?>
-                        <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6">
+                        <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6 js-content-preview-form">
                             <h3 class="font-semibold text-lg">Nieuw <?php echo htmlspecialchars($itemLabel); ?></h3>
                             <input type="hidden" name="page_action" value="create_page">
                             <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
@@ -1758,9 +1820,14 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </select>
                             </div>
 
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fa-solid fa-plus"></i> <?php echo $isProgrammaPage ? 'Kaart toevoegen' : 'Toevoegen'; ?>
-                            </button>
+                            <div class="flex gap-2 pt-2">
+                                <button type="button" class="btn btn-secondary js-content-preview-btn">
+                                    <i class="fa-solid fa-eye"></i> Preview
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa-solid fa-plus"></i> <?php echo $isProgrammaPage ? 'Kaart toevoegen' : 'Toevoegen'; ?>
+                                </button>
+                            </div>
                         </form>
                     <?php endif; ?>
 
@@ -1916,7 +1983,294 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 </main>
 
+<div id="content-preview-modal" class="hidden" style="position: fixed; inset: 0; z-index: 9999; background: rgba(17,24,39,.6); padding: 1rem;">
+    <div style="max-width: 860px; margin: 0 auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,.25); max-height: calc(100vh - 2rem); display: flex; flex-direction: column;">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding: .9rem 1rem; border-bottom: 1px solid #e5e7eb;">
+            <h3 style="font-size: 1.1rem; font-weight: 700; color: #111827; margin: 0;">Preview zoals op de website</h3>
+            <button type="button" id="content-preview-close" class="btn btn-secondary btn-sm">
+                <i class="fa-solid fa-xmark"></i> Sluiten
+            </button>
+        </div>
+        <div style="padding: 1rem; overflow: auto; background:#f8fafc;">
+            <div id="preview-rendered"></div>
+            <p id="preview-empty" class="hidden" style="color: #6b7280; margin-top: .75rem;">Nog geen inhoud om te tonen.</p>
+        </div>
+    </div>
+</div>
+
 <script>
+(function () {
+    const modal = document.getElementById('content-preview-modal');
+    const closeBtn = document.getElementById('content-preview-close');
+    const renderedEl = document.getElementById('preview-rendered');
+    const emptyEl = document.getElementById('preview-empty');
+    const previewButtons = document.querySelectorAll('.js-content-preview-btn');
+    let currentImageUrl = null;
+
+    if (!modal || !closeBtn || !previewButtons.length) return;
+
+    function escapeHtml(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function getEditorContentByName(fieldName) {
+        if (!window.tinymce || !Array.isArray(window.tinymce.editors)) {
+            return null;
+        }
+
+        for (const editor of window.tinymce.editors) {
+            if (editor && editor.targetElm && editor.targetElm.name === fieldName) {
+                return editor.getContent();
+            }
+        }
+        return null;
+    }
+
+    function getFieldInput(form, fieldName) {
+        return form.querySelector('[name="' + fieldName + '"]');
+    }
+
+    function getFieldValue(form, fieldName) {
+        const input = getFieldInput(form, fieldName);
+        if (!input) return '';
+
+        if (input.tagName === 'TEXTAREA') {
+            if (window.tinymce && Array.isArray(window.tinymce.editors)) {
+                for (const editor of window.tinymce.editors) {
+                    if (!editor) continue;
+                    const sameElement = editor.targetElm === input;
+                    const sameName = editor.targetElm && editor.targetElm.name === input.name;
+                    const sameId = editor.id && input.id && editor.id === input.id;
+                    if (sameElement || sameName || sameId) {
+                        return editor.getContent();
+                    }
+                }
+            }
+            return input.value || '';
+        }
+
+        return input.value || '';
+    }
+
+    function clearImagePreview() {
+        if (currentImageUrl) {
+            URL.revokeObjectURL(currentImageUrl);
+            currentImageUrl = null;
+        }
+    }
+
+    function resolveImageSrc(form) {
+        const imageInput = getFieldInput(form, 'image');
+        if (imageInput && imageInput.files && imageInput.files.length) {
+            clearImagePreview();
+            currentImageUrl = URL.createObjectURL(imageInput.files[0]);
+            return currentImageUrl;
+        }
+
+        const removeImage = getFieldInput(form, 'remove_image');
+        if (removeImage && removeImage.checked) {
+            return '';
+        }
+
+        const existingImage = getFieldValue(form, 'existing_image').trim();
+        if (existingImage) {
+            return 'uploads/' + existingImage;
+        }
+
+        return '';
+    }
+
+    function isEventForm(form) {
+        return !!getFieldInput(form, 'description') && !!getFieldInput(form, 'date');
+    }
+
+    function formatDateDisplay(dateValue) {
+        if (!dateValue) return '';
+        const parsed = new Date(dateValue + 'T00:00:00');
+        if (Number.isNaN(parsed.getTime())) return dateValue;
+        return parsed.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    function formatTimeDisplay(timeValue) {
+        if (!timeValue) return '';
+        const normalized = String(timeValue).slice(0, 5);
+        return normalized;
+    }
+
+    function renderEventPreview(form) {
+        const titleHtml = getFieldValue(form, 'title').trim() || 'Preview titel';
+        const descriptionHtml = getFieldValue(form, 'description').trim() || '';
+        const startDate = getFieldValue(form, 'date').trim();
+        const endDate = getFieldValue(form, 'end_date').trim();
+        const startTime = formatTimeDisplay(getFieldValue(form, 'time').trim());
+        const endTime = formatTimeDisplay(getFieldValue(form, 'time_end').trim());
+        const location = getFieldValue(form, 'location').trim() || 'Rotterdam - Hillevliet 90';
+        const infoLink = getFieldValue(form, 'info_link').trim();
+        const imageSrc = resolveImageSrc(form);
+        const mapUrl = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(location);
+        const hasSignup = !!(getFieldInput(form, 'show_signup_button') && getFieldInput(form, 'show_signup_button').checked);
+        const dateDisplay = formatDateDisplay(startDate);
+        const endDateDisplay = formatDateDisplay(endDate);
+
+        renderedEl.innerHTML = '' +
+            '<section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">' +
+                '<div class="flex-1">' +
+                    '<span class="inline-block text-white text-sm font-medium px-4 py-1 mb-4" style="background-color:#ce0245;">Evenement</span>' +
+                    '<h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900">' + titleHtml + '</h2>' +
+                    '<div class="space-y-4">' +
+                        '<div class="flex items-center space-x-3">' +
+                            '<i class="fa-regular fa-calendar text-[#00811F] ml-[2px] text-3xl"></i>' +
+                            '<p class="text-gray-700"><strong> Wanneer:</strong> ' + escapeHtml(dateDisplay || startDate) + (endDateDisplay ? ' t/m ' + escapeHtml(endDateDisplay) : '') + '</p>' +
+                        '</div>' +
+                        ((startTime || endTime) ?
+                        '<div class="flex items-center space-x-3">' +
+                            '<i class="fa-solid fa-clock text-[#00811F] ml-[2px] text-3xl"></i>' +
+                            '<p class="text-gray-700"><strong>Hoelaat:</strong> ' + escapeHtml(startTime) + (endTime ? ' - ' + escapeHtml(endTime) : '') + '</p>' +
+                        '</div>' : '') +
+                        '<div class="flex items-center space-x-3">' +
+                            '<i class="fa-solid fa-location-dot text-[#00811F] ml-1 text-3xl"></i>' +
+                            '<p class="text-gray-700 ml-1"><strong>Waar:</strong> <a href="' + escapeHtml(mapUrl) + '" target="_blank" rel="noopener noreferrer" class="underline hover:text-[#00811F]">' + escapeHtml(location) + '</a></p>' +
+                        '</div>' +
+                        '<div class="flex mb-6 space-x-3">' +
+                            '<i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>' +
+                            '<div class="text-gray-700 pb-3"><strong> Wat:</strong><div class="mt-1">' + descriptionHtml + '</div></div>' +
+                        '</div>' +
+                    '</div>' +
+                    (hasSignup ? '<a href="#" onclick="return false;" class="mt-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">Inschrijven</a>' : '') +
+                    (infoLink ? '<a href="' + escapeHtml(infoLink) + '" target="_blank" rel="noopener noreferrer" class="mt-4 ml-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">Meer info</a>' : '') +
+                '</div>' +
+                (imageSrc ? '<div class="flex-1"><img src="' + escapeHtml(imageSrc) + '" alt="" class="w-full h-auto object-cover shadow-md"></div>' : '') +
+            '</section>';
+    }
+
+    function renderPagePreview(form) {
+        const titleHtml = getFieldValue(form, 'title').trim() || 'Preview titel';
+        const bodyHtml = getFieldValue(form, 'body').trim() || '';
+        const greenText = getFieldValue(form, 'green_text').trim();
+        const greenTextPos = (getFieldValue(form, 'green_text_position').trim() || 'above');
+        const imagePosition = (getFieldValue(form, 'image_position').trim() || 'normal');
+        const infoLink = getFieldValue(form, 'info_link').trim();
+        const imageSrc = resolveImageSrc(form);
+        const hasImage = !!imageSrc;
+        const hasText = !!(titleHtml || bodyHtml);
+        const sideBySide = hasImage && hasText && imagePosition !== 'normal';
+        const textStyle = sideBySide ? 'flex: 1; padding: 0 1.5rem;' : '';
+
+        const leftImage = (imagePosition === 'left' && hasText)
+            ? '<div style="flex: 0 0 50%; min-width: 0; max-width: 600px;"><img src="' + escapeHtml(imageSrc) + '" alt="" class="w-full h-auto object-cover shadow-md"></div>' : '';
+        const rightImage = (imagePosition === 'right' && hasText)
+            ? '<div style="flex: 0 0 50%; min-width: 0; max-width: 600px;"><img src="' + escapeHtml(imageSrc) + '" alt="" class="w-full h-auto object-cover shadow-md"></div>' : '';
+        const imageOnly = (hasImage && !hasText)
+            ? '<div style="width: 100%;"><img src="' + escapeHtml(imageSrc) + '" alt="" class="w-full h-auto object-cover shadow-md"></div>' : '';
+        const belowImage = (hasImage && imagePosition === 'normal' && hasText)
+            ? '<div class="mt-6" style="max-width: 600px;"><img src="' + escapeHtml(imageSrc) + '" alt="" class="w-full h-auto object-cover shadow-md"></div>' : '';
+
+        renderedEl.innerHTML = '' +
+            '<section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">' +
+                '<div style="' + (sideBySide ? ('display: flex; flex-direction: ' + (imagePosition === 'left' ? 'row' : 'row-reverse') + '; align-items: flex-start; gap: 2rem;') : '') + '">' +
+                    leftImage +
+                    imageOnly +
+                    (hasText ?
+                        '<div style="' + textStyle + '">' +
+                            (greenText && greenTextPos === 'above' ? '<div class="green-highlight mb-3">' + escapeHtml(greenText).replace(/\n/g, '<br>') + '</div>' : '') +
+                            '<h1 class="text-3xl font-bold text-gray-900 mb-4">' + titleHtml + '</h1>' +
+                            '<div class="text-gray-700 text-lg">' + bodyHtml + '</div>' +
+                            (greenText && greenTextPos === 'below' ? '<div class="green-highlight mb-3">' + escapeHtml(greenText).replace(/\n/g, '<br>') + '</div>' : '') +
+                            (infoLink ? '<a href="' + escapeHtml(infoLink) + '" target="_blank" rel="noopener noreferrer" class="mt-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">Meer info</a>' : '') +
+                        '</div>'
+                        : '') +
+                    rightImage +
+                '</div>' +
+                belowImage +
+            '</section>';
+    }
+
+    function renderPreview(form) {
+        if (!renderedEl) return;
+
+        if (isEventForm(form)) {
+            renderEventPreview(form);
+            return;
+        }
+        renderPagePreview(form);
+    }
+
+    function openModal() {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+        clearImagePreview();
+        if (renderedEl) renderedEl.innerHTML = '';
+    }
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', function (event) {
+        if (event.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && !modal.classList.contains('hidden')) {
+            closeModal();
+        }
+    });
+
+    previewButtons.forEach(function (button) {
+        button.addEventListener('click', function () {
+            const form = button.closest('form.js-content-preview-form');
+            if (!form) return;
+
+            // Sync TinyMCE editors back to their textarea values before reading fields.
+            if (window.tinymce && typeof window.tinymce.triggerSave === 'function') {
+                window.tinymce.triggerSave();
+            }
+
+            renderPreview(form);
+
+            if (renderedEl && renderedEl.textContent.trim() !== '') {
+                emptyEl.classList.add('hidden');
+            } else {
+                emptyEl.classList.remove('hidden');
+            }
+
+            openModal();
+        });
+    });
+})();
+
+(function () {
+    const isReadOnly = <?php echo $isEditorReadOnlyPage ? 'true' : 'false'; ?>;
+    if (!isReadOnly) return;
+
+    const scope = document.querySelector('.admin-readonly-scope');
+    if (!scope) return;
+
+    const controls = scope.querySelectorAll('button, input, select, textarea');
+    controls.forEach(function (el) {
+        if (el.tagName === 'INPUT' && (el.type || '').toLowerCase() === 'hidden') return;
+        el.disabled = true;
+        if (el.tagName === 'BUTTON') {
+            el.classList.add('btn-readonly-disabled');
+        }
+    });
+
+    const actionLinks = scope.querySelectorAll('a.btn, a.sidebar-link');
+    actionLinks.forEach(function (link) {
+        link.classList.add('btn-readonly-disabled');
+        link.setAttribute('aria-disabled', 'true');
+        link.addEventListener('click', function (event) {
+            event.preventDefault();
+        });
+    });
+})();
+
 (function () {
   const wraps = document.querySelectorAll('.event-image-wrap');
   if (!wraps.length) return;
