@@ -4,8 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="303eae4d-7ca5-4634-9557-4de1cdbec390" name="Changes" comment="foto's mobile kleiner homepage">
+    <list default="true" id="303eae4d-7ca5-4634-9557-4de1cdbec390" name="Changes" comment="witte balk terugblik verwijderd">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/agenda.php" beforeDir="false" afterPath="$PROJECT_DIR$/agenda.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/terugblikken.php" beforeDir="false" afterPath="$PROJECT_DIR$/terugblikken.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -111,7 +112,7 @@
       <workItem from="1774353966979" duration="2032000" />
       <workItem from="1774356105321" duration="8164000" />
       <workItem from="1774423901049" duration="2574000" />
-      <workItem from="1774598516506" duration="10130000" />
+      <workItem from="1774598516506" duration="10817000" />
     </task>
     <task id="LOCAL-00001" summary="Padding toegevoegd aan terugblik text-blok">
       <option name="closed" value="true" />
@@ -337,7 +338,15 @@
       <option name="project" value="LOCAL" />
       <updated>1774610799601</updated>
     </task>
-    <option name="localTasksCounter" value="29" />
+    <task id="LOCAL-00029" summary="witte balk terugblik verwijderd">
+      <option name="closed" value="true" />
+      <created>1774611793932</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1774611793932</updated>
+    </task>
+    <option name="localTasksCounter" value="30" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -372,7 +381,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="kennis page column foto's max-width en height gegeven." />
     <MESSAGE value="Padding terugblik blok toegevoegd" />
     <MESSAGE value="update branch" />
     <MESSAGE value="Foto breedte en hoogte veranderd kennis en actie page." />
@@ -397,7 +405,8 @@
     <MESSAGE value="Mobile en tablet Ui fixes van row-&gt;column" />
     <MESSAGE value="agenda en terublik knoppen verbeterd op mobile en tablet" />
     <MESSAGE value="foto's mobile kleiner homepage" />
-    <option name="LAST_COMMIT_MESSAGE" value="foto's mobile kleiner homepage" />
+    <MESSAGE value="witte balk terugblik verwijderd" />
+    <option name="LAST_COMMIT_MESSAGE" value="witte balk terugblik verwijderd" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

@@ -3,6 +3,18 @@ session_start();
 require 'db.php';
 require 'helpers.php';
 
+
+// Tel het totaal aantal aankomende evenementen
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE COALESCE(end_date, date) >= CURDATE()");
+$stmt->execute();
+$totalUpcoming = $stmt->fetchColumn();
+
+// Tel het totaal aantal terugblikken (afgelopen evenementen)
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE COALESCE(end_date, date) < CURDATE()");
+$stmt->execute();
+$totalPast = $stmt->fetchColumn();
+
+
 $banner1 = 'images/banner_website_01.jpg';
 $banner2 = 'images/banner_website_02.jpg';
 
@@ -58,11 +70,19 @@ include __DIR__ . '/navbar.php';
 
 <main class="pt-8 sm:pt-12">
     <div id="agenda-terugblik-switch" class="mobile flex items-center justify-center gap-1" style="scroll-margin-top: 110px;">
-         <div class="agenda bg-white p-6 shadow-lg max-w-xl mt-6 w-full border-r text-center">
-            <a href="agenda.php#agenda-terugblik-switch"><h1 class="text-2xl text-[#00000] font-semibold">Agenda</h1></a>
+        <div class="agenda bg-white p-6 shadow-lg max-w-xl mt-6 w-full border-r text-center">
+            <a href="agenda.php#agenda-terugblik-switch">
+                <h1 class="text-2xl text-[#000000] font-semibold">
+                    Agenda (<?php echo $totalUpcoming; ?>)
+                </h1>
+            </a>
         </div>
         <div class="terugblik bg-white p-6 max-w-xl mt-6 w-full text-center border-r border-gray-500">
-            <a href="terugblikken.php#agenda-terugblik-switch"><h1 class="text-2xl text-[#00811F] font-semibold">Terugblik</h1></a>
+            <a href="terugblikken.php#agenda-terugblik-switch">
+                <h1 class="text-2xl text-[#000000] font-semibold">
+                    Terugblik (<?php echo $totalPast; ?>)
+                </h1>
+            </a>
         </div>
     </div>
 
