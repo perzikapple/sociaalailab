@@ -31,7 +31,7 @@ try {
     
     if ($check->fetch()) {
         // Update bestaand account
-        $stmt = $pdo->prepare("UPDATE accounts SET wachtwoord = ? WHERE email = ?");
+        $stmt = $pdo->prepare("UPDATE accounts SET wachtwoord = ?, admin = 1, role = 'superadmin' WHERE email = ?");
         $stmt->execute([$adminPassword, $adminEmail]);
         
         echo "<div class='create-admin-success'>";
@@ -42,7 +42,7 @@ try {
         echo "</div>";
     } else {
         // Maak nieuw account aan
-        $stmt = $pdo->prepare("INSERT INTO accounts (email, wachtwoord) VALUES (?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO accounts (email, wachtwoord, admin, role) VALUES (?, ?, 1, 'superadmin')");
         $stmt->execute([$adminEmail, $adminPassword]);
         
         echo "<div class='create-admin-success'>";

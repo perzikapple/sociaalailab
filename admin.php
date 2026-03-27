@@ -2,10 +2,35 @@
 session_start();
 require 'db.php';
 require 'helpers.php';
-if (!isset($_SESSION['admin']) || $_SESSION['admin'] != 1) {
+
+$sessionRole = trim((string)($_SESSION['role'] ?? ''));
+if ($sessionRole === '') {
+    $sessionRole = (isset($_SESSION['admin']) && (int)$_SESSION['admin'] === 1) ? 'superadmin' : 'viewer';
+    $_SESSION['role'] = $sessionRole;
+}
+$canAccessAdmin = (bool)($_SESSION['can_access_admin'] ?? false);
+if (!$canAccessAdmin) {
+    $canAccessAdmin = (isset($_SESSION['admin']) && (int)$_SESSION['admin'] === 1)
+        || in_array($sessionRole, ['superadmin', 'content_manager', 'editor'], true);
+    $_SESSION['can_access_admin'] = $canAccessAdmin;
+}
+
+if (!$canAccessAdmin) {
     header('Location: login.php');
     exit;
 }
+
+$rolePermissions = [
+    'superadmin' => ['manage_users', 'view_audit', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages'],
+    'content_manager' => ['manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages'],
+    'editor' => ['manage_events'],
+    'viewer' => [],
+];
+
+$hasPermission = function ($permission) use (&$sessionRole, &$rolePermissions) {
+    $permissions = $rolePermissions[$sessionRole] ?? [];
+    return in_array($permission, $permissions, true);
+};
 
 $message = '';
 // Helper voor upload
@@ -45,6 +70,24 @@ $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = '
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     $currentUser = $_SESSION['user'] ?? null; // email van ingelogde gebruiker (kan null zijn)
+
+    $actionPermissionMap = [
+        'create' => 'manage_events',
+        'update' => 'manage_events',
+        'delete' => 'delete_events',
+        'delete_bulk_events' => 'delete_events',
+        'reorder_event' => 'manage_events',
+        'delete_bulk_pages' => 'delete_pages',
+        'update_banner' => 'manage_banners',
+        'reset_banners' => 'manage_banners',
+        'create_user' => 'manage_users',
+        'update_user_role' => 'manage_users',
+    ];
+
+    if ($action !== '' && isset($actionPermissionMap[$action]) && !$hasPermission($actionPermissionMap[$action])) {
+        $message = 'Je hebt geen rechten om deze actie uit te voeren.';
+        $action = '';
+    }
 
     if ($action === 'create') {
         $title = sanitizeEditorInlineInput($_POST['title'] ?? '');
@@ -328,11 +371,81 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $banner1 = $defaultBanner1;
         $banner2 = $defaultBanner2;
         $message = 'Banners zijn teruggezet naar de standaard waarden.';
+
+    } elseif ($action === 'create_user') {
+        $newEmail = trim((string)($_POST['new_email'] ?? ''));
+        $newPassword = (string)($_POST['new_password'] ?? '');
+        $newFirstName = trim((string)($_POST['new_first_name'] ?? ''));
+        $newLastName = trim((string)($_POST['new_last_name'] ?? ''));
+        $newRole = trim((string)($_POST['new_role'] ?? 'viewer'));
+        $allowedRoles = ['superadmin', 'content_manager', 'editor', 'viewer'];
+
+        if ($newEmail === '' || !filter_var($newEmail, FILTER_VALIDATE_EMAIL)) {
+            $message = 'Vul een geldig e-mailadres in.';
+        } elseif ($newPassword === '') {
+            $message = 'Wachtwoord is verplicht.';
+        } elseif (!in_array($newRole, $allowedRoles, true)) {
+            $message = 'Ongeldige rol gekozen.';
+        } else {
+            $existsStmt = $pdo->prepare('SELECT id FROM accounts WHERE email = ?');
+            $existsStmt->execute([$newEmail]);
+            if ($existsStmt->fetch()) {
+                $message = 'Er bestaat al een gebruiker met dit e-mailadres.';
+            } else {
+                $adminFlag = in_array($newRole, ['superadmin', 'content_manager', 'editor'], true) ? 1 : 0;
+                $insertStmt = $pdo->prepare('INSERT INTO accounts (email, wachtwoord, first_name, last_name, admin, role) VALUES (?, ?, ?, ?, ?, ?)');
+                $insertStmt->execute([
+                    $newEmail,
+                    $newPassword,
+                    $newFirstName !== '' ? $newFirstName : null,
+                    $newLastName !== '' ? $newLastName : null,
+                    $adminFlag,
+                    $newRole,
+                ]);
+
+                audit_log($pdo, 'create', 'accounts', $newEmail, 'new user with role ' . $newRole, $currentUser);
+                $message = 'Nieuwe gebruiker toegevoegd.';
+            }
+        }
+
+    } elseif ($action === 'update_user_role') {
+        $targetEmail = trim((string)($_POST['target_email'] ?? ''));
+        $newRole = trim((string)($_POST['role'] ?? 'viewer'));
+        $allowedRoles = ['superadmin', 'content_manager', 'editor', 'viewer'];
+
+        if ($targetEmail === '' || !filter_var($targetEmail, FILTER_VALIDATE_EMAIL)) {
+            $message = 'Ongeldig e-mailadres.';
+        } elseif (!in_array($newRole, $allowedRoles, true)) {
+            $message = 'Ongeldige rol gekozen.';
+        } else {
+            $adminFlag = in_array($newRole, ['superadmin', 'content_manager', 'editor'], true) ? 1 : 0;
+            $stmt = $pdo->prepare('UPDATE accounts SET role = ?, admin = ? WHERE email = ?');
+            $stmt->execute([$newRole, $adminFlag, $targetEmail]);
+
+            if ($targetEmail === ($_SESSION['email'] ?? '')) {
+                $_SESSION['role'] = $newRole;
+                $_SESSION['admin'] = $adminFlag;
+                $_SESSION['can_access_admin'] = ($adminFlag === 1) || in_array($newRole, ['superadmin', 'content_manager', 'editor'], true);
+            }
+
+            audit_log($pdo, 'update', 'accounts', $targetEmail, 'role set to ' . $newRole, $currentUser);
+            $message = 'Gebruikersrol bijgewerkt.';
+        }
     }
 }
 
 // Handle page management (create_page, update_page, delete_page)
 $pageAction = $_POST['page_action'] ?? '';
+$pageActionPermissionMap = [
+    'create_page' => 'manage_pages',
+    'update_page' => 'manage_pages',
+    'reorder_page' => 'manage_pages',
+    'delete_page' => 'delete_pages',
+];
+if ($pageAction !== '' && isset($pageActionPermissionMap[$pageAction]) && !$hasPermission($pageActionPermissionMap[$pageAction])) {
+    $message = 'Je hebt geen rechten om deze pagina-actie uit te voeren.';
+    $pageAction = '';
+}
 if ($pageAction === 'create_page') {
     $pageKey = $_POST['page_key'] ?? '';
     $title = sanitizeEditorInlineInput($_POST['title'] ?? '');
@@ -632,8 +745,76 @@ $events = $stmt->fetchAll();
 // Welke admin pagina tonen (standaard index)
 $page = $_GET['page'] ?? 'index';
 
+$editorViewOnlyPages = [
+    'banner',
+    'index',
+    'evenementen',
+    'terugblikken',
+    'over',
+    'wie-zijn-we',
+    'verantwoord-ai',
+    'contact',
+    'programma-kennis',
+    'programma-actie',
+    'programma-faciliteit',
+];
+
+$allowedPagesByPermission = [
+    'banner' => 'manage_banners',
+    'agenda' => 'manage_events',
+    'audit' => 'view_audit',
+    'users' => 'manage_users',
+    'index' => 'manage_pages',
+    'evenementen' => 'manage_pages',
+    'terugblikken' => 'manage_pages',
+    'over' => 'manage_pages',
+    'wie-zijn-we' => 'manage_pages',
+    'verantwoord-ai' => 'manage_pages',
+    'contact' => 'manage_pages',
+    'programma-kennis' => 'manage_pages',
+    'programma-actie' => 'manage_pages',
+    'programma-faciliteit' => 'manage_pages',
+];
+
+$canViewPage = function ($candidatePage) use (&$allowedPagesByPermission, &$hasPermission, &$sessionRole, &$editorViewOnlyPages) {
+    if (!isset($allowedPagesByPermission[$candidatePage])) {
+        return true;
+    }
+
+    if ($hasPermission($allowedPagesByPermission[$candidatePage])) {
+        return true;
+    }
+
+    if ($sessionRole === 'editor' && in_array($candidatePage, $editorViewOnlyPages, true)) {
+        return true;
+    }
+
+    return false;
+};
+
+if (!$canViewPage($page)) {
+    $fallbackPage = null;
+    foreach ($allowedPagesByPermission as $candidatePage => $candidatePermission) {
+        if ($canViewPage($candidatePage)) {
+            $fallbackPage = $candidatePage;
+            break;
+        }
+    }
+
+    if ($fallbackPage === null) {
+        $message = 'Je account heeft momenteel geen toegewezen beheerrechten.';
+    } else {
+        $page = $fallbackPage;
+        $message = 'Je hebt geen toegang tot de gevraagde beheersectie.';
+    }
+}
+
+$canDeleteEvents = $hasPermission('delete_events');
+$canDeletePages = $hasPermission('delete_pages');
+$isEditorReadOnlyPage = ($sessionRole === 'editor' && $page !== 'agenda');
+
 $pageItems = [];
-if ($page !== 'banner' && $page !== 'agenda' && $page !== 'audit') {
+if ($page !== 'banner' && $page !== 'agenda' && $page !== 'audit' && $page !== 'users') {
     $stmt = $pdo->prepare(
         'SELECT * FROM pages WHERE page_key = ?
          ORDER BY (sort_order IS NULL OR sort_order = 0) ASC, sort_order ASC, created_at ASC, id ASC'
@@ -655,6 +836,7 @@ if (!in_array($auditPerPage, $auditPerPageOptions, true)) {
 $auditTotalPages = 1;
 $auditActionFilter = trim((string)($_GET['audit_action'] ?? ''));
 $auditTableFilter = trim((string)($_GET['audit_table'] ?? ''));
+$userAccounts = [];
 
 if ($page === 'audit') {
     try {
@@ -696,6 +878,15 @@ if ($page === 'audit') {
         $message = 'Auditlogboek kon niet worden geladen.';
     }
 }
+
+if ($page === 'users') {
+    try {
+        $stmt = $pdo->query('SELECT email, first_name, last_name, admin, role FROM accounts ORDER BY email ASC');
+        $userAccounts = $stmt->fetchAll();
+    } catch (Exception $e) {
+        $message = 'Gebruikers konden niet worden geladen.';
+    }
+}
 ?>
 <!doctype html>
 <html lang="nl">
@@ -711,6 +902,14 @@ if ($page === 'audit') {
 </head>
 <!-- TinyMCE toevoegen met API key -->
 <script src="https://cdn.tiny.cloud/1/1ui5rgslm5rlya4exbujnv26e5j6xyq87233fv56zmvcq39e/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+<style>
+.btn-readonly-disabled {
+    opacity: 0.55;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+    filter: grayscale(0.2);
+}
+</style>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const isCompactEditor = window.matchMedia('(max-width: 1023.98px)').matches;
@@ -759,9 +958,11 @@ if ($page === 'audit') {
             <h1 class="text-2xl font-bold">Admin Panel</h1>
         </div>
         <div class="admin-header-actions flex items-center gap-3 flex-nowrap">
-            <a href="admin.php?page=audit" class="btn <?php echo $page==='audit' ? 'btn-primary' : 'btn-secondary'; ?> text-sm">
-                <i class="fa-solid fa-clipboard-list"></i> Auditlogboek
-            </a>
+            <?php if ($hasPermission('view_audit')): ?>
+                <a href="admin.php?page=audit" class="btn <?php echo $page==='audit' ? 'btn-primary' : 'btn-secondary'; ?> text-sm">
+                    <i class="fa-solid fa-clipboard-list"></i> Auditlogboek
+                </a>
+            <?php endif; ?>
             <a href="index.php" class="btn btn-secondary text-sm">
                 <i class="fa-solid fa-arrow-left"></i> Terug naar site
             </a>
@@ -787,50 +988,67 @@ if ($page === 'audit') {
             </div>
             <nav class="divide-y">
                 <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Beheer</div>
-                <a href="admin.php?page=banner" class="sidebar-link <?php echo $page==='banner' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-image"></i> Banners
-                </a>
-                <a href="admin.php?page=agenda" class="sidebar-link <?php echo $page==='agenda' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-calendar"></i> Agenda
-                </a>
+                <?php if ($hasPermission('manage_banners') || $sessionRole === 'editor'): ?>
+                    <a href="admin.php?page=banner" class="sidebar-link <?php echo $page==='banner' ? 'active' : ''; ?>">
+                        <i class="fa-solid fa-image"></i> Banners
+                    </a>
+                <?php endif; ?>
+                <?php if ($hasPermission('manage_events')): ?>
+                    <a href="admin.php?page=agenda" class="sidebar-link <?php echo $page==='agenda' ? 'active' : ''; ?>">
+                        <i class="fa-solid fa-calendar"></i> Agenda
+                    </a>
+                <?php endif; ?>
+                <?php if ($hasPermission('manage_users')): ?>
+                    <a href="admin.php?page=users" class="sidebar-link <?php echo $page==='users' ? 'active' : ''; ?>">
+                        <i class="fa-solid fa-users"></i> Gebruikers & Rollen
+                    </a>
+                <?php endif; ?>
                 
-<div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Pagina's</div>
-                <a href="admin.php?page=index" class="sidebar-link <?php echo $page==='index' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-house"></i> Homepage
-                </a>
-                <a href="admin.php?page=evenementen" class="sidebar-link <?php echo $page==='evenementen' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-calendar-check"></i> Evenementen
-                </a>
-                <a href="admin.php?page=terugblikken" class="sidebar-link <?php echo $page==='terugblikken' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-history"></i> Terugblikken
-                </a>
-                <a href="admin.php?page=over" class="sidebar-link <?php echo $page==='over' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-info-circle"></i> Voor wie?
-                </a>
-                <a href="admin.php?page=wie-zijn-we" class="sidebar-link <?php echo $page==='wie-zijn-we' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-people-group"></i> Wie zijn we?
-                </a>
-                <a href="admin.php?page=verantwoord-ai" class="sidebar-link <?php echo $page==='verantwoord-ai' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-shield"></i> Verantwoord AI
-                </a>
-                <a href="admin.php?page=contact" class="sidebar-link <?php echo $page==='contact' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-envelope"></i> Contact
-                </a>
+                <?php if ($hasPermission('manage_pages') || $sessionRole === 'editor'): ?>
+                    <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Pagina's</div>
+                    <a href="admin.php?page=index" class="sidebar-link <?php echo $page==='index' ? 'active' : ''; ?>">
+                        <i class="fa-solid fa-house"></i> Homepage
+                    </a>
+                    <a href="admin.php?page=evenementen" class="sidebar-link <?php echo $page==='evenementen' ? 'active' : ''; ?>">
+                        <i class="fa-solid fa-calendar-check"></i> Evenementen
+                    </a>
+                    <a href="admin.php?page=terugblikken" class="sidebar-link <?php echo $page==='terugblikken' ? 'active' : ''; ?>">
+                        <i class="fa-solid fa-history"></i> Terugblikken
+                    </a>
+                    <a href="admin.php?page=over" class="sidebar-link <?php echo $page==='over' ? 'active' : ''; ?>">
+                        <i class="fa-solid fa-info-circle"></i> Voor wie?
+                    </a>
+                    <a href="admin.php?page=wie-zijn-we" class="sidebar-link <?php echo $page==='wie-zijn-we' ? 'active' : ''; ?>">
+                        <i class="fa-solid fa-people-group"></i> Wie zijn we?
+                    </a>
+                    <a href="admin.php?page=verantwoord-ai" class="sidebar-link <?php echo $page==='verantwoord-ai' ? 'active' : ''; ?>">
+                        <i class="fa-solid fa-shield"></i> Verantwoord AI
+                    </a>
+                    <a href="admin.php?page=contact" class="sidebar-link <?php echo $page==='contact' ? 'active' : ''; ?>">
+                        <i class="fa-solid fa-envelope"></i> Contact
+                    </a>
 
-                <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Wat doen we</div>
-                <a href="admin.php?page=programma-kennis" class="sidebar-link <?php echo $page==='programma-kennis' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-brain"></i> Kennis & Vaardigheden
-                </a>
-                <a href="admin.php?page=programma-actie" class="sidebar-link <?php echo $page==='programma-actie' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-rocket"></i> Actie, onderzoek & ontwerp
-                </a>
-                <a href="admin.php?page=programma-faciliteit" class="sidebar-link <?php echo $page==='programma-faciliteit' ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-building"></i> Faciliteit van het Lab
-                </a>
+                    <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Wat doen we</div>
+                    <a href="admin.php?page=programma-kennis" class="sidebar-link <?php echo $page==='programma-kennis' ? 'active' : ''; ?>">
+                        <i class="fa-solid fa-brain"></i> Kennis & Vaardigheden
+                    </a>
+                    <a href="admin.php?page=programma-actie" class="sidebar-link <?php echo $page==='programma-actie' ? 'active' : ''; ?>">
+                        <i class="fa-solid fa-rocket"></i> Actie, onderzoek & ontwerp
+                    </a>
+                    <a href="admin.php?page=programma-faciliteit" class="sidebar-link <?php echo $page==='programma-faciliteit' ? 'active' : ''; ?>">
+                        <i class="fa-solid fa-building"></i> Faciliteit van het Lab
+                    </a>
+                <?php endif; ?>
             </nav>
         </aside>
 
-        <div class="lg:col-span-3">
+        <div class="lg:col-span-3 <?php echo $isEditorReadOnlyPage ? 'admin-readonly-scope' : ''; ?>">
+
+            <?php if ($isEditorReadOnlyPage): ?>
+                <div class="alert alert-error" style="background:#f3f4f6; color:#1f2937; border-left-color:#9ca3af;">
+                    <i class="fa-solid fa-eye"></i> Alleen-lezen modus: is dit een fout? Neem contact op met een beheerder om je rechten te controleren.
+                </div>
+            <?php endif; ?>
 
             <?php if ($page === 'agenda'): ?>
                 <div class="card p-6">
@@ -846,7 +1064,7 @@ if ($page === 'audit') {
                     <?php endif; ?>
 
                     <?php if ($editEvent): ?>
-                        <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6">
+                        <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6 js-content-preview-form">
                             <h3 class="font-semibold text-lg">Bewerk Evenement</h3>
                             <input type="hidden" name="action" value="update">
                             <input type="hidden" name="id" value="<?php echo (int)$editEvent['id']; ?>">
@@ -900,6 +1118,7 @@ if ($page === 'audit') {
 
                             <div>
                                 <label class="form-label">Afbeelding (optioneel)</label>
+                                <input type="hidden" name="existing_image" value="<?php echo htmlspecialchars($editEvent['image'] ?? ''); ?>" />
                                 <input type="file" name="image" accept="image/*" class="form-input" />
                                 <?php if (!empty($editEvent['image'])): ?>
                                     <p class="text-sm mt-2 text-gray-600">Huidige: <?php echo htmlspecialchars($editEvent['image']); ?></p>
@@ -940,12 +1159,17 @@ if ($page === 'audit') {
                                 </label>
                             </div>
 
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fa-solid fa-save"></i> Opslaan
-                            </button>
+                            <div class="flex gap-2 pt-2">
+                                <button type="button" class="btn btn-secondary js-content-preview-btn">
+                                    <i class="fa-solid fa-eye"></i> Preview
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa-solid fa-save"></i> Opslaan
+                                </button>
+                            </div>
                         </form>
                     <?php else: ?>
-                        <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6">
+                        <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6 js-content-preview-form">
                             <h3 class="font-semibold text-lg">Nieuw Evenement</h3>
                             <input type="hidden" name="action" value="create">
 
@@ -1063,9 +1287,14 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </label>
                             </div>
 
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fa-solid fa-plus"></i> Toevoegen
-                            </button>
+                            <div class="flex gap-2 pt-2">
+                                <button type="button" class="btn btn-secondary js-content-preview-btn">
+                                    <i class="fa-solid fa-eye"></i> Preview
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa-solid fa-plus"></i> Toevoegen
+                                </button>
+                            </div>
                         </form>
                     <?php endif; ?>
 
@@ -1080,20 +1309,24 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <p>Geen evenementen aangemaakt</p>
                             </div>
                         <?php else: ?>
-                            <div class="mb-4 flex gap-2 items-center">
-                                <input type="checkbox" id="selectAllEvents" class="w-4 h-4 cursor-pointer" title="Selecteer alles">
-                                <label for="selectAllEvents" class="cursor-pointer text-sm font-medium">Selecteer alles</label>
-                                <button type="button" class="btn btn-danger btn-sm admin-hidden" id="bulkDeleteEventsBtn">
-                                    <i class="fa-solid fa-trash"></i> Verwijder geselecteerde (<span id="eventCount">0</span>)
-                                </button>
-                            </div>
+                            <?php if ($canDeleteEvents): ?>
+                                <div class="mb-4 flex gap-2 items-center">
+                                    <input type="checkbox" id="selectAllEvents" class="w-4 h-4 cursor-pointer" title="Selecteer alles">
+                                    <label for="selectAllEvents" class="cursor-pointer text-sm font-medium">Selecteer alles</label>
+                                    <button type="button" class="btn btn-danger btn-sm admin-hidden" id="bulkDeleteEventsBtn">
+                                        <i class="fa-solid fa-trash"></i> Verwijder geselecteerde (<span id="eventCount">0</span>)
+                                    </button>
+                                </div>
+                            <?php endif; ?>
                             <form method="POST" id="bulkDeleteEventsForm">
                                 <input type="hidden" name="action" value="delete_bulk_events">
                             <div class="space-y-4">
                             <?php foreach ($events as $event): ?>
                                 <div class="border border-gray-200 rounded p-4 hover:shadow-md transition">
                                     <div class="admin-row flex justify-between items-start gap-4">
-                                        <input type="checkbox" class="event-checkbox w-4 h-4 mt-1 flex-shrink-0 cursor-pointer" name="event_ids[]" value="<?php echo (int)$event['id']; ?>">
+                                        <?php if ($canDeleteEvents): ?>
+                                            <input type="checkbox" class="event-checkbox w-4 h-4 mt-1 flex-shrink-0 cursor-pointer" name="event_ids[]" value="<?php echo (int)$event['id']; ?>">
+                                        <?php endif; ?>
                                         <div class="flex-1">
                                             <h4 class="font-bold text-lg text-gray-800"><?php echo htmlspecialchars(sanitizeEditorText($event['title'])); ?></h4>
                                             <?php 
@@ -1123,13 +1356,15 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 <a href="admin.php?page=agenda&edit=<?php echo (int)$event['id']; ?>" class="btn btn-secondary btn-sm">
                                                     <i class="fa-solid fa-pencil"></i> Bewerk
                                                 </a>
-                                                <form method="POST" onsubmit="return confirm('Verwijder dit evenement?');" class="admin-inline-form">
-                                                    <input type="hidden" name="action" value="delete">
-                                                    <input type="hidden" name="id" value="<?php echo (int)$event['id']; ?>">
-                                                    <button type="submit" class="btn btn-danger btn-sm w-full">
-                                                        <i class="fa-solid fa-trash"></i> Verwijder
-                                                    </button>
-                                                </form>
+                                                <?php if ($canDeleteEvents): ?>
+                                                    <form method="POST" onsubmit="return confirm('Verwijder dit evenement?');" class="admin-inline-form">
+                                                        <input type="hidden" name="action" value="delete">
+                                                        <input type="hidden" name="id" value="<?php echo (int)$event['id']; ?>">
+                                                        <button type="submit" class="btn btn-danger btn-sm w-full">
+                                                            <i class="fa-solid fa-trash"></i> Verwijder
+                                                        </button>
+                                                    </form>
+                                                <?php endif; ?>
                                             </div>
                                         </div>
                                     </div>
@@ -1139,6 +1374,102 @@ document.addEventListener('DOMContentLoaded', function() {
                             </form>
                         <?php endif; ?>
                     </div>
+                </div>
+
+            <?php elseif ($page === 'users'): ?>
+                <div class="card p-6">
+                    <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
+                        <i class="fa-solid fa-users text-2xl text-[#00811F]"></i>
+                        <h2 class="text-2xl font-bold">Gebruikers & Rollen</h2>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-4">Wijs per gebruiker een rol toe. Rollen bepalen welke onderdelen van het adminpaneel zichtbaar en bewerkbaar zijn.</p>
+
+                    <form method="POST" class="bg-white p-6 shadow-md space-y-4 mb-6 border border-gray-200 rounded">
+                        <h3 class="font-semibold text-lg">Gebruiker toevoegen</h3>
+                        <input type="hidden" name="action" value="create_user">
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="form-label" for="new_first_name">Voornaam</label>
+                                <input id="new_first_name" type="text" name="new_first_name" class="form-input" maxlength="120" placeholder="Voornaam">
+                            </div>
+                            <div>
+                                <label class="form-label" for="new_last_name">Achternaam</label>
+                                <input id="new_last_name" type="text" name="new_last_name" class="form-input" maxlength="120" placeholder="Achternaam">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="md:col-span-2">
+                                <label class="form-label" for="new_email">E-mailadres</label>
+                                <input id="new_email" type="email" name="new_email" class="form-input" required placeholder="naam@voorbeeld.nl">
+                            </div>
+                            <div>
+                                <label class="form-label" for="new_role">Rol</label>
+                                <select id="new_role" name="new_role" class="form-input">
+                                    <option value="editor">Bewerker</option>
+                                    <option value="content_manager">Content Manager</option>
+                                    <option value="superadmin">Administrator</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="form-label" for="new_password">Wachtwoord</label>
+                            <input id="new_password" type="text" name="new_password" class="form-input" required placeholder="Voer wachtwoord in">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa-solid fa-user-plus"></i> Gebruiker toevoegen
+                        </button>
+                    </form>
+
+                    <?php if (empty($userAccounts)): ?>
+                        <div class="text-center py-8 text-gray-500">
+                            <i class="fa-solid fa-inbox text-4xl mb-2"></i>
+                            <p>Geen gebruikers gevonden.</p>
+                        </div>
+                    <?php else: ?>
+                        <div class="space-y-3">
+                            <?php foreach ($userAccounts as $acc): ?>
+                                <?php
+                                    $accEmail = (string)($acc['email'] ?? '');
+                                    $accFirstName = trim((string)($acc['first_name'] ?? ''));
+                                    $accLastName = trim((string)($acc['last_name'] ?? ''));
+                                    $accFullName = trim($accFirstName . ' ' . $accLastName);
+                                    $accRole = trim((string)($acc['role'] ?? ''));
+                                    if ($accRole === '') {
+                                        $accRole = ((int)($acc['admin'] ?? 0) === 1) ? 'superadmin' : 'viewer';
+                                    }
+                                ?>
+                                <form method="POST" class="border border-gray-200 rounded p-4 bg-white flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
+                                    <input type="hidden" name="action" value="update_user_role">
+                                    <input type="hidden" name="target_email" value="<?php echo htmlspecialchars($accEmail); ?>">
+
+                                    <div>
+                                        <?php if ($accFullName !== ''): ?>
+                                            <p class="font-semibold text-gray-900"><?php echo htmlspecialchars($accFullName); ?></p>
+                                        <?php endif; ?>
+                                        <p class="font-semibold text-gray-900"><?php echo htmlspecialchars($accEmail); ?></p>
+                                        <p class="text-xs text-gray-500">Huidige rol: <?php echo htmlspecialchars($accRole); ?></p>
+                                    </div>
+
+                                    <div class="flex items-center gap-2">
+                                        <label class="text-sm text-gray-700" for="role_<?php echo md5($accEmail); ?>">Rol</label>
+                                        <select id="role_<?php echo md5($accEmail); ?>" name="role" class="form-input">
+                                            <option value="superadmin" <?php echo $accRole === 'superadmin' ? 'selected' : ''; ?>>Administrator</option>
+                                            <option value="content_manager" <?php echo $accRole === 'content_manager' ? 'selected' : ''; ?>>Content Manager</option>
+                                            <option value="editor" <?php echo $accRole === 'editor' ? 'selected' : ''; ?>>Bewerker</option>
+                                           
+                                        </select>
+                                        <button type="submit" class="btn btn-primary btn-sm">
+                                            <i class="fa-solid fa-save"></i> Opslaan
+                                        </button>
+                                    </div>
+                                </form>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
             <?php elseif ($page === 'audit'): ?>
@@ -1343,7 +1674,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <?php endif; ?>
 
                     <?php if ($editPage): ?>
-                        <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6">
+                        <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6 js-content-preview-form">
                             <h3 class="font-semibold text-lg">Bewerk <?php echo htmlspecialchars($itemLabel); ?></h3>
                             <input type="hidden" name="page_action" value="update_page">
                             <input type="hidden" name="id" value="<?php echo (int)$editPage['id']; ?>">
@@ -1385,6 +1716,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                             <div>
                                 <label class="form-label">Afbeelding (optioneel)</label>
+                                <input type="hidden" name="existing_image" value="<?php echo htmlspecialchars($editPage['image'] ?? ''); ?>" />
                                 <input type="file" name="image" accept="image/*" class="form-input" />
                                 <?php if (!empty($editPage['image'])): ?>
                                     <p class="text-sm mt-2 text-gray-600">Huidige afbeelding: <?php echo htmlspecialchars($editPage['image']); ?></p>
@@ -1419,12 +1751,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
                             
 
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fa-solid fa-save"></i> Opslaan
-                            </button>
+                            <div class="flex gap-2 pt-2">
+                                <button type="button" class="btn btn-secondary js-content-preview-btn">
+                                    <i class="fa-solid fa-eye"></i> Preview
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa-solid fa-save"></i> Opslaan
+                                </button>
+                            </div>
                         </form>
                     <?php else: ?>
-                        <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6">
+                        <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6 js-content-preview-form">
                             <h3 class="font-semibold text-lg">Nieuw <?php echo htmlspecialchars($itemLabel); ?></h3>
                             <input type="hidden" name="page_action" value="create_page">
                             <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
@@ -1500,9 +1837,14 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </select>
                             </div>
 
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fa-solid fa-plus"></i> <?php echo $isProgrammaPage ? 'Kaart toevoegen' : 'Toevoegen'; ?>
-                            </button>
+                            <div class="flex gap-2 pt-2">
+                                <button type="button" class="btn btn-secondary js-content-preview-btn">
+                                    <i class="fa-solid fa-eye"></i> Preview
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa-solid fa-plus"></i> <?php echo $isProgrammaPage ? 'Kaart toevoegen' : 'Toevoegen'; ?>
+                                </button>
+                            </div>
                         </form>
                     <?php endif; ?>
 
@@ -1517,13 +1859,15 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <p>Geen <?php echo $isProgrammaPage ? 'kaarten' : 'items'; ?> toegevoegd voor deze pagina</p>
                             </div>
                         <?php else: ?>
-                            <div class="mb-4 flex gap-2 items-center">
-                                <input type="checkbox" id="selectAllPages_<?php echo htmlspecialchars($pageKey); ?>" class="w-4 h-4 cursor-pointer selectAllPages" data-page="<?php echo htmlspecialchars($pageKey); ?>" title="Selecteer alles">
-                                <label for="selectAllPages_<?php echo htmlspecialchars($pageKey); ?>" class="cursor-pointer text-sm font-medium">Selecteer alles</label>
-                                <button type="button" class="btn btn-danger btn-sm admin-hidden" id="bulkDeletePagesBtn_<?php echo htmlspecialchars($pageKey); ?>">
-                                    <i class="fa-solid fa-trash"></i> Verwijder geselecteerde (<span id="pageCount_<?php echo htmlspecialchars($pageKey); ?>">0</span>)
-                                </button>
-                            </div>
+                            <?php if ($canDeletePages): ?>
+                                <div class="mb-4 flex gap-2 items-center">
+                                    <input type="checkbox" id="selectAllPages_<?php echo htmlspecialchars($pageKey); ?>" class="w-4 h-4 cursor-pointer selectAllPages" data-page="<?php echo htmlspecialchars($pageKey); ?>" title="Selecteer alles">
+                                    <label for="selectAllPages_<?php echo htmlspecialchars($pageKey); ?>" class="cursor-pointer text-sm font-medium">Selecteer alles</label>
+                                    <button type="button" class="btn btn-danger btn-sm admin-hidden" id="bulkDeletePagesBtn_<?php echo htmlspecialchars($pageKey); ?>">
+                                        <i class="fa-solid fa-trash"></i> Verwijder geselecteerde (<span id="pageCount_<?php echo htmlspecialchars($pageKey); ?>">0</span>)
+                                    </button>
+                                </div>
+                            <?php endif; ?>
                             <form method="POST" id="bulkDeletePagesForm_<?php echo htmlspecialchars($pageKey); ?>">
                                 <input type="hidden" name="action" value="delete_bulk_pages">
                                 <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
@@ -1535,7 +1879,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                 ?>
                                 <div class="border border-gray-200 rounded p-4 hover:shadow-md transition">
                                     <div class="admin-row flex justify-between items-start gap-4">
-                                        <input type="checkbox" class="page-checkbox page-checkbox-<?php echo htmlspecialchars($pageKey); ?> w-4 h-4 mt-1 flex-shrink-0 cursor-pointer" name="page_ids[]" value="<?php echo (int)$it['id']; ?>">
+                                        <?php if ($canDeletePages): ?>
+                                            <input type="checkbox" class="page-checkbox page-checkbox-<?php echo htmlspecialchars($pageKey); ?> w-4 h-4 mt-1 flex-shrink-0 cursor-pointer" name="page_ids[]" value="<?php echo (int)$it['id']; ?>">
+                                        <?php endif; ?>
                                         <div class="flex-1">
                                             <?php $pageBodyPreview = editorPreviewText($it['body'] ?? '', 150); ?>
                                             <h4 class="font-bold text-lg text-gray-800"><?php echo htmlspecialchars(sanitizeEditorText($it['title'] ?? '')); ?></h4>
@@ -1571,14 +1917,16 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 <a href="admin.php?edit_page=<?php echo (int)$it['id']; ?>&page=<?php echo urlencode($pageKey); ?>" class="btn btn-secondary btn-sm">
                                                     <i class="fa-solid fa-pencil"></i> Bewerk
                                                 </a>
-                                                <form method="POST" onsubmit="return confirm('Verwijder dit item?');" class="admin-inline-form">
-                                                    <input type="hidden" name="page_action" value="delete_page">
-                                                    <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
-                                                    <input type="hidden" name="id" value="<?php echo (int)$it['id']; ?>">
-                                                    <button type="submit" class="btn btn-danger btn-sm w-full">
-                                                        <i class="fa-solid fa-trash"></i> Verwijder
-                                                    </button>
-                                                </form>
+                                                <?php if ($canDeletePages): ?>
+                                                    <form method="POST" onsubmit="return confirm('Verwijder dit item?');" class="admin-inline-form">
+                                                        <input type="hidden" name="page_action" value="delete_page">
+                                                        <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
+                                                        <input type="hidden" name="id" value="<?php echo (int)$it['id']; ?>">
+                                                        <button type="submit" class="btn btn-danger btn-sm w-full">
+                                                            <i class="fa-solid fa-trash"></i> Verwijder
+                                                        </button>
+                                                    </form>
+                                                <?php endif; ?>
                                             </div>
                                         </div>
                                     </div>
@@ -1652,7 +2000,294 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 </main>
 
+<div id="content-preview-modal" class="hidden" style="position: fixed; inset: 0; z-index: 9999; background: rgba(17,24,39,.6); padding: 1rem;">
+    <div style="max-width: 860px; margin: 0 auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,.25); max-height: calc(100vh - 2rem); display: flex; flex-direction: column;">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding: .9rem 1rem; border-bottom: 1px solid #e5e7eb;">
+            <h3 style="font-size: 1.1rem; font-weight: 700; color: #111827; margin: 0;">Preview zoals op de website</h3>
+            <button type="button" id="content-preview-close" class="btn btn-secondary btn-sm">
+                <i class="fa-solid fa-xmark"></i> Sluiten
+            </button>
+        </div>
+        <div style="padding: 1rem; overflow: auto; background:#f8fafc;">
+            <div id="preview-rendered"></div>
+            <p id="preview-empty" class="hidden" style="color: #6b7280; margin-top: .75rem;">Nog geen inhoud om te tonen.</p>
+        </div>
+    </div>
+</div>
+
 <script>
+(function () {
+    const modal = document.getElementById('content-preview-modal');
+    const closeBtn = document.getElementById('content-preview-close');
+    const renderedEl = document.getElementById('preview-rendered');
+    const emptyEl = document.getElementById('preview-empty');
+    const previewButtons = document.querySelectorAll('.js-content-preview-btn');
+    let currentImageUrl = null;
+
+    if (!modal || !closeBtn || !previewButtons.length) return;
+
+    function escapeHtml(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function getEditorContentByName(fieldName) {
+        if (!window.tinymce || !Array.isArray(window.tinymce.editors)) {
+            return null;
+        }
+
+        for (const editor of window.tinymce.editors) {
+            if (editor && editor.targetElm && editor.targetElm.name === fieldName) {
+                return editor.getContent();
+            }
+        }
+        return null;
+    }
+
+    function getFieldInput(form, fieldName) {
+        return form.querySelector('[name="' + fieldName + '"]');
+    }
+
+    function getFieldValue(form, fieldName) {
+        const input = getFieldInput(form, fieldName);
+        if (!input) return '';
+
+        if (input.tagName === 'TEXTAREA') {
+            if (window.tinymce && Array.isArray(window.tinymce.editors)) {
+                for (const editor of window.tinymce.editors) {
+                    if (!editor) continue;
+                    const sameElement = editor.targetElm === input;
+                    const sameName = editor.targetElm && editor.targetElm.name === input.name;
+                    const sameId = editor.id && input.id && editor.id === input.id;
+                    if (sameElement || sameName || sameId) {
+                        return editor.getContent();
+                    }
+                }
+            }
+            return input.value || '';
+        }
+
+        return input.value || '';
+    }
+
+    function clearImagePreview() {
+        if (currentImageUrl) {
+            URL.revokeObjectURL(currentImageUrl);
+            currentImageUrl = null;
+        }
+    }
+
+    function resolveImageSrc(form) {
+        const imageInput = getFieldInput(form, 'image');
+        if (imageInput && imageInput.files && imageInput.files.length) {
+            clearImagePreview();
+            currentImageUrl = URL.createObjectURL(imageInput.files[0]);
+            return currentImageUrl;
+        }
+
+        const removeImage = getFieldInput(form, 'remove_image');
+        if (removeImage && removeImage.checked) {
+            return '';
+        }
+
+        const existingImage = getFieldValue(form, 'existing_image').trim();
+        if (existingImage) {
+            return 'uploads/' + existingImage;
+        }
+
+        return '';
+    }
+
+    function isEventForm(form) {
+        return !!getFieldInput(form, 'description') && !!getFieldInput(form, 'date');
+    }
+
+    function formatDateDisplay(dateValue) {
+        if (!dateValue) return '';
+        const parsed = new Date(dateValue + 'T00:00:00');
+        if (Number.isNaN(parsed.getTime())) return dateValue;
+        return parsed.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    function formatTimeDisplay(timeValue) {
+        if (!timeValue) return '';
+        const normalized = String(timeValue).slice(0, 5);
+        return normalized;
+    }
+
+    function renderEventPreview(form) {
+        const titleHtml = getFieldValue(form, 'title').trim() || 'Preview titel';
+        const descriptionHtml = getFieldValue(form, 'description').trim() || '';
+        const startDate = getFieldValue(form, 'date').trim();
+        const endDate = getFieldValue(form, 'end_date').trim();
+        const startTime = formatTimeDisplay(getFieldValue(form, 'time').trim());
+        const endTime = formatTimeDisplay(getFieldValue(form, 'time_end').trim());
+        const location = getFieldValue(form, 'location').trim() || 'Rotterdam - Hillevliet 90';
+        const infoLink = getFieldValue(form, 'info_link').trim();
+        const imageSrc = resolveImageSrc(form);
+        const mapUrl = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(location);
+        const hasSignup = !!(getFieldInput(form, 'show_signup_button') && getFieldInput(form, 'show_signup_button').checked);
+        const dateDisplay = formatDateDisplay(startDate);
+        const endDateDisplay = formatDateDisplay(endDate);
+
+        renderedEl.innerHTML = '' +
+            '<section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">' +
+                '<div class="flex-1">' +
+                    '<span class="inline-block text-white text-sm font-medium px-4 py-1 mb-4" style="background-color:#ce0245;">Evenement</span>' +
+                    '<h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900">' + titleHtml + '</h2>' +
+                    '<div class="space-y-4">' +
+                        '<div class="flex items-center space-x-3">' +
+                            '<i class="fa-regular fa-calendar text-[#00811F] ml-[2px] text-3xl"></i>' +
+                            '<p class="text-gray-700"><strong> Wanneer:</strong> ' + escapeHtml(dateDisplay || startDate) + (endDateDisplay ? ' t/m ' + escapeHtml(endDateDisplay) : '') + '</p>' +
+                        '</div>' +
+                        ((startTime || endTime) ?
+                        '<div class="flex items-center space-x-3">' +
+                            '<i class="fa-solid fa-clock text-[#00811F] ml-[2px] text-3xl"></i>' +
+                            '<p class="text-gray-700"><strong>Hoelaat:</strong> ' + escapeHtml(startTime) + (endTime ? ' - ' + escapeHtml(endTime) : '') + '</p>' +
+                        '</div>' : '') +
+                        '<div class="flex items-center space-x-3">' +
+                            '<i class="fa-solid fa-location-dot text-[#00811F] ml-1 text-3xl"></i>' +
+                            '<p class="text-gray-700 ml-1"><strong>Waar:</strong> <a href="' + escapeHtml(mapUrl) + '" target="_blank" rel="noopener noreferrer" class="underline hover:text-[#00811F]">' + escapeHtml(location) + '</a></p>' +
+                        '</div>' +
+                        '<div class="flex mb-6 space-x-3">' +
+                            '<i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>' +
+                            '<div class="text-gray-700 pb-3"><strong> Wat:</strong><div class="mt-1">' + descriptionHtml + '</div></div>' +
+                        '</div>' +
+                    '</div>' +
+                    (hasSignup ? '<a href="#" onclick="return false;" class="mt-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">Inschrijven</a>' : '') +
+                    (infoLink ? '<a href="' + escapeHtml(infoLink) + '" target="_blank" rel="noopener noreferrer" class="mt-4 ml-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">Meer info</a>' : '') +
+                '</div>' +
+                (imageSrc ? '<div class="flex-1"><img src="' + escapeHtml(imageSrc) + '" alt="" class="w-full h-auto object-cover shadow-md"></div>' : '') +
+            '</section>';
+    }
+
+    function renderPagePreview(form) {
+        const titleHtml = getFieldValue(form, 'title').trim() || 'Preview titel';
+        const bodyHtml = getFieldValue(form, 'body').trim() || '';
+        const greenText = getFieldValue(form, 'green_text').trim();
+        const greenTextPos = (getFieldValue(form, 'green_text_position').trim() || 'above');
+        const imagePosition = (getFieldValue(form, 'image_position').trim() || 'normal');
+        const infoLink = getFieldValue(form, 'info_link').trim();
+        const imageSrc = resolveImageSrc(form);
+        const hasImage = !!imageSrc;
+        const hasText = !!(titleHtml || bodyHtml);
+        const sideBySide = hasImage && hasText && imagePosition !== 'normal';
+        const textStyle = sideBySide ? 'flex: 1; padding: 0 1.5rem;' : '';
+
+        const leftImage = (imagePosition === 'left' && hasText)
+            ? '<div style="flex: 0 0 50%; min-width: 0; max-width: 600px;"><img src="' + escapeHtml(imageSrc) + '" alt="" class="w-full h-auto object-cover shadow-md"></div>' : '';
+        const rightImage = (imagePosition === 'right' && hasText)
+            ? '<div style="flex: 0 0 50%; min-width: 0; max-width: 600px;"><img src="' + escapeHtml(imageSrc) + '" alt="" class="w-full h-auto object-cover shadow-md"></div>' : '';
+        const imageOnly = (hasImage && !hasText)
+            ? '<div style="width: 100%;"><img src="' + escapeHtml(imageSrc) + '" alt="" class="w-full h-auto object-cover shadow-md"></div>' : '';
+        const belowImage = (hasImage && imagePosition === 'normal' && hasText)
+            ? '<div class="mt-6" style="max-width: 600px;"><img src="' + escapeHtml(imageSrc) + '" alt="" class="w-full h-auto object-cover shadow-md"></div>' : '';
+
+        renderedEl.innerHTML = '' +
+            '<section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">' +
+                '<div style="' + (sideBySide ? ('display: flex; flex-direction: ' + (imagePosition === 'left' ? 'row' : 'row-reverse') + '; align-items: flex-start; gap: 2rem;') : '') + '">' +
+                    leftImage +
+                    imageOnly +
+                    (hasText ?
+                        '<div style="' + textStyle + '">' +
+                            (greenText && greenTextPos === 'above' ? '<div class="green-highlight mb-3">' + escapeHtml(greenText).replace(/\n/g, '<br>') + '</div>' : '') +
+                            '<h1 class="text-3xl font-bold text-gray-900 mb-4">' + titleHtml + '</h1>' +
+                            '<div class="text-gray-700 text-lg">' + bodyHtml + '</div>' +
+                            (greenText && greenTextPos === 'below' ? '<div class="green-highlight mb-3">' + escapeHtml(greenText).replace(/\n/g, '<br>') + '</div>' : '') +
+                            (infoLink ? '<a href="' + escapeHtml(infoLink) + '" target="_blank" rel="noopener noreferrer" class="mt-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">Meer info</a>' : '') +
+                        '</div>'
+                        : '') +
+                    rightImage +
+                '</div>' +
+                belowImage +
+            '</section>';
+    }
+
+    function renderPreview(form) {
+        if (!renderedEl) return;
+
+        if (isEventForm(form)) {
+            renderEventPreview(form);
+            return;
+        }
+        renderPagePreview(form);
+    }
+
+    function openModal() {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+        clearImagePreview();
+        if (renderedEl) renderedEl.innerHTML = '';
+    }
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', function (event) {
+        if (event.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && !modal.classList.contains('hidden')) {
+            closeModal();
+        }
+    });
+
+    previewButtons.forEach(function (button) {
+        button.addEventListener('click', function () {
+            const form = button.closest('form.js-content-preview-form');
+            if (!form) return;
+
+            // Sync TinyMCE editors back to their textarea values before reading fields.
+            if (window.tinymce && typeof window.tinymce.triggerSave === 'function') {
+                window.tinymce.triggerSave();
+            }
+
+            renderPreview(form);
+
+            if (renderedEl && renderedEl.textContent.trim() !== '') {
+                emptyEl.classList.add('hidden');
+            } else {
+                emptyEl.classList.remove('hidden');
+            }
+
+            openModal();
+        });
+    });
+})();
+
+(function () {
+    const isReadOnly = <?php echo $isEditorReadOnlyPage ? 'true' : 'false'; ?>;
+    if (!isReadOnly) return;
+
+    const scope = document.querySelector('.admin-readonly-scope');
+    if (!scope) return;
+
+    const controls = scope.querySelectorAll('button, input, select, textarea');
+    controls.forEach(function (el) {
+        if (el.tagName === 'INPUT' && (el.type || '').toLowerCase() === 'hidden') return;
+        el.disabled = true;
+        if (el.tagName === 'BUTTON') {
+            el.classList.add('btn-readonly-disabled');
+        }
+    });
+
+    const actionLinks = scope.querySelectorAll('a.btn, a.sidebar-link');
+    actionLinks.forEach(function (link) {
+        link.classList.add('btn-readonly-disabled');
+        link.setAttribute('aria-disabled', 'true');
+        link.addEventListener('click', function (event) {
+            event.preventDefault();
+        });
+    });
+})();
+
 (function () {
   const wraps = document.querySelectorAll('.event-image-wrap');
   if (!wraps.length) return;

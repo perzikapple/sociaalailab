@@ -77,7 +77,7 @@ include __DIR__ . '/navbar.php';
                 if (!$hasText) {
                     $imageStyle = 'width: 100%;';
                 } else {
-                    $imageStyle = 'flex: 0 0 auto; max-width: 280px; width: 100%;';
+                    $imageStyle = 'display: flex; flex-direction: column; gap: 1.5rem;';
                 }
                 ?>
                 <div style="<?php echo $imageStyle; ?>">
@@ -102,17 +102,18 @@ include __DIR__ . '/navbar.php';
                 if (!$hasText) {
                     $imageStyle = 'width: 100%;';
                 } else {
-                    $imageStyle = 'flex: 0 0 auto; max-width: 280px; width: 100%;';
+                    $imageStyle = 'display: flex; flex-direction: column; gap: 1.5rem;';
                 }
                 ?>
                 <div style="<?php echo $imageStyle; ?>">
                     <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
                 </div>
             <?php endif; ?>
-            
+
             <?php if ($imagePosition === 'normal' && $hasImage): ?>
                 <?php
-                $imageStyle = 'width: 100%;';
+            // Partner images size
+                $imageStyle = 'display: flex; flex-direction: column; gap: 1.5rem;';
                 ?>
                 <div style="<?php echo $imageStyle; ?>">
                     <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">

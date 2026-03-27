@@ -14,7 +14,7 @@ try {
     $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'evenementen' ORDER BY (sort_order IS NULL OR sort_order = 0) ASC, sort_order ASC, created_at ASC, id ASC");
     $stmt->execute();
     $pageBlocks = $stmt->fetchAll();
-    $stmt = $pdo->prepare("SELECT * FROM events WHERE date >= CURDATE() AND date <= DATE_ADD(CURDATE(), INTERVAL 14 DAY) ORDER BY date, time");
+    $stmt = $pdo->prepare("SELECT * FROM events WHERE COALESCE(end_date, date) >= CURDATE() AND date <= DATE_ADD(CURDATE(), INTERVAL 14 DAY) ORDER BY date, time");
     $stmt->execute();
     $events = $stmt->fetchAll();
 } catch (Exception $e) {

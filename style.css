@@ -26,6 +26,13 @@
   padding: 30px;
 }
 
+.responsive-img {
+    max-width: 280px; /* desktop breedte */
+    width: 100%;      /* past in container */
+    height: auto;
+    border-radius: 0.5rem;
+}
+
 /* create_admin.php styles */
 .create-admin-body {
   font-family: Arial, sans-serif;
@@ -307,6 +314,113 @@ main > div.grid > div:hover {
     padding: 15px;
 }
 
+.sociaalai-contact-wrap {
+    max-width: 900px;
+}
+
+.sociaalai-contact-intro {
+    color: #374151;
+    margin-bottom: 1.25rem;
+}
+
+.sociaalai-contact-form {
+    background: linear-gradient(180deg, #f8fff9 0%, #ffffff 100%);
+    border: 1px solid #d1e7d7;
+    border-radius: 12px;
+    padding: 1rem;
+}
+
+.sociaalai-label {
+    display: block;
+    color: #0b5e2a;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+}
+
+.sociaalai-input {
+    background-color: #ffffff;
+    border: 1px solid #9bc9a9 !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sociaalai-input:focus {
+    border-color: #00811f !important;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 129, 31, 0.18);
+}
+
+.sociaalai-textarea {
+    min-height: 170px;
+}
+
+.sociaalai-submit-btn {
+    display: inline-block;
+    background: #00811f;
+    color: #ffffff;
+    border: 1px solid #00811f;
+    border-radius: 10px;
+    font-weight: 700;
+    padding: 0.75rem 1.5rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.sociaalai-submit-btn:hover {
+    background: #006f19;
+}
+
+.sociaalai-submit-btn:active {
+    transform: translateY(1px);
+}
+
+.terugblik-more-wrap {
+    margin-top: 0.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.terugblik-more-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #00811f;
+    color: #ffffff;
+    border: 1px solid #00811f;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.9rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.terugblik-more-toggle:hover {
+    background: #006f19;
+}
+
+.terugblik-more-caret {
+    transition: transform 0.2s ease;
+}
+
+.terugblik-more-toggle[aria-expanded="true"] .terugblik-more-caret {
+    transform: rotate(180deg);
+}
+
+.terugblik-summary-panel {
+    margin-top: 0.65rem;
+    padding: 0.75rem 0.9rem;
+    border-left: 4px solid #00811f;
+    background: #f3faf5;
+    color: #374151;
+    border-radius: 0.35rem;
+    line-height: 1.55;
+}
+
+@media (max-width: 768px) {
+    .sociaalai-submit-btn {
+        width: 100%;
+    }
+}
+
 
 .card-icon {
     width: 300px;
@@ -327,7 +441,7 @@ main > div.grid > div:hover {
 }
 
 .nav-container {
-    max-width: 1200px;
+    max-width: 100%;
     margin: 0 auto;
     padding: 0 20px;
     display: flex;
@@ -341,19 +455,23 @@ main > div.grid > div:hover {
     display: flex;
     margin: 0;
     padding: 0;
+    flex-wrap: nowrap;
+    gap: 0;
 }
 
 .nav-menu li {
     position: relative;
+    white-space: nowrap;
 }
 
 .nav-menu a,
 .dropbtn {
     display: block;
-    padding: 15px 20px;
+    padding: 12px 16px;
     text-decoration: none;
     color: #333;
     font-weight: 500;
+    font-size: 0.95rem;
 }
 
 .nav-menu a:hover,
@@ -441,9 +559,10 @@ main > div.grid > div:hover {
 
 .nav-container {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     padding: 0.5rem 1rem;
+    flex-wrap: nowrap;
 }
 
 /* Hamburger menu */
@@ -455,7 +574,7 @@ main > div.grid > div:hover {
     cursor: pointer;
 }
 
-.fa-solid{
+.fa-solid {
     padding: 2px;
     font-size: 16px;
 }
@@ -464,7 +583,11 @@ main > div.grid > div:hover {
 .nav-menu {
     display: flex;
     list-style: none;
-    gap: 1rem;
+    gap: 0;
+    flex-wrap: nowrap;
+    margin: 0;
+    padding: 0;
+    align-items: center;
 }
 
 /* Dropdown menu */
@@ -663,7 +786,7 @@ section{
         padding: 0;
     }
 
-    /* Elk item */
+
     #watdoenwe-switch > div {
         background-color: #ffffff;
         border-radius: 12px;
@@ -671,26 +794,31 @@ section{
         width: 90%;          /* gelijke breedte */
         max-width: 250px;
 
-        /* Compacte hoogte en padding */
-        padding: 0.5rem;      /* beetje ruimte rond tekst */
-        min-height: 60px;     /* vaste minimale hoogte voor consistente look */
-        max-height: 100px;    /* limiet voor niet te groot */
+        padding: 0.5rem;
+        min-height: 60px;
+        max-height: 100px;
 
-        /* Tekst mooi in het midden */
         display: flex;
         justify-content: center;
         align-items: center;
         text-align: center;
 
-        box-sizing: border-box; /* padding en border tellen mee */
-        overflow: hidden;       /* voorkomt dat iets buiten valt */
+        box-sizing: border-box;
+        overflow: hidden;
     }
 
-    /* Tekst zelf */
-    #watdoenwe-switch p {
+        #watdoenwe-switch p {
         margin: 0;
         font-size: 0.9rem;
         line-height: 1.2;
+    }
+
+        /* Size homepage Pictures */
+    .card-icon {
+        width: 120px;
+        height: auto;
+        display: block;
+        margin: 0 auto;
     }
 }
 
@@ -699,6 +827,14 @@ section{
     .hamburger {
         display: block;
         font-size: 28px;
+    }
+
+    /* Size homepage pictures*/
+    .card-icon {
+        width: 120px;
+        height: auto;
+        display: block;
+        margin: 0 auto;
     }
 
     .nav-menu {
@@ -711,10 +847,13 @@ section{
         display: none;
         gap: 0;
         border-top: 1px solid #ddd;
+        flex-wrap: wrap;
     }
 
     .nav-container {
         position: relative;
+        flex-wrap: wrap;
+        justify-content: space-between;
     }
 
     .nav-menu.show {
@@ -732,10 +871,12 @@ section{
 
     .nav-menu li a{
         font-size: 14px;
+        text-align: left;
     }
 
     .dropbtn{
         font-size: 14px;
+        text-align: left;
     }
 
     .dropdown-content {
@@ -799,6 +940,19 @@ section{
         flex-direction: column;
         align-items: center; /* items mooi centreren */
         gap: 0.5rem; /* eventueel kleinere spacing */
+    }
+
+    #agenda-terugblik-switch {
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0 16px; /* iets meer ruimte links/rechts */
+    }
+
+    #agenda-terugblik-switch > div {
+        width: 100%;
+        max-width: 600px;   /* 🔥 groter maken (zelfde gevoel als je cards) */
+        padding: 0.75rem;
     }
 }
 
@@ -865,6 +1019,13 @@ section{
         width: 95%;
     }
 
+    .card-icon {
+        width: 120px;
+        height: auto;
+        display: block;
+        margin: 0 auto;
+    }
+
     .watdoenwe-page .grid {
         grid-template-columns: repeat(2, 1fr) !important;
         gap: 1rem;
@@ -878,15 +1039,47 @@ section{
     }
     .flexrow {
         flex-direction: column;
-        align-items: center; /* items mooi centreren */
-        gap: 0.5rem; /* eventueel kleinere spacing */
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    #agenda-terugblik-switch {
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0 16px;
+    }
+
+    #agenda-terugblik-switch > div {
+        width: 100%;
+        max-width: 600px;
+        padding: 0.75rem;
     }
 }
 
 @media (min-width: 1036px) and (max-width: 1160px) {
     .flexrow {
         flex-direction: column;
-        align-items: center; /* items mooi centreren */
-        gap: 0.5rem; /* eventueel kleinere spacing */
+        align-items: center;
+        gap: 0.5rem;
+    }
+    #agenda-terugblik-switch {
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0 16px; /* iets meer ruimte links/rechts */
+    }
+
+    #agenda-terugblik-switch > div {
+        width: 100%;
+        max-width: 600px;   /* 🔥 groter maken (zelfde gevoel als je cards) */
+        padding: 0.75rem;
+    }
+
+    .card-icon {
+        width: 120px;
+        height: auto;
+        display: block;
+        margin: 0 auto;
     }
 }

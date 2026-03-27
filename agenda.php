@@ -9,7 +9,7 @@ $banner2 = 'images/banner_website_02.jpg';
 try {
     $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: $banner1;
     $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: $banner2;
-    $stmt = $pdo->prepare("SELECT * FROM events WHERE date >= CURDATE() ORDER BY date, time");
+    $stmt = $pdo->prepare("SELECT * FROM events WHERE COALESCE(end_date, date) >= CURDATE() ORDER BY date, time");
     $stmt->execute();
     $events = $stmt->fetchAll();
 } catch (Exception $e) {
@@ -55,7 +55,7 @@ include __DIR__ . '/navbar.php';
 
 <?php
 require 'db.php';
-$stmt = $pdo->prepare("SELECT * FROM events WHERE date >= CURDATE() ORDER BY date, time");
+$stmt = $pdo->prepare("SELECT * FROM events WHERE COALESCE(end_date, date) >= CURDATE() ORDER BY date, time");
 $stmt->execute();
 $events = $stmt->fetchAll();
 foreach ($events as $event):
@@ -111,7 +111,7 @@ foreach ($events as $event):
     </section>
 <?php endforeach; ?>
 
-<?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
+<?php if (!empty($_SESSION['can_access_admin']) || (isset($_SESSION['admin']) && (int)$_SESSION['admin'] === 1)): ?>
     <a href="admin.php" title="Voeg evenement toe" class="fixed bottom-6 right-6 bg-[#00811F] text-white rounded-full w-12 h-12 flex items-center justify-center text-3xl shadow-lg">+</a>
 <?php endif; ?>
 </main>
