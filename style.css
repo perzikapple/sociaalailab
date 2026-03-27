@@ -307,6 +307,71 @@ main > div.grid > div:hover {
     padding: 15px;
 }
 
+.sociaalai-contact-wrap {
+    max-width: 900px;
+}
+
+.sociaalai-contact-intro {
+    color: #374151;
+    margin-bottom: 1.25rem;
+}
+
+.sociaalai-contact-form {
+    background: linear-gradient(180deg, #f8fff9 0%, #ffffff 100%);
+    border: 1px solid #d1e7d7;
+    border-radius: 12px;
+    padding: 1rem;
+}
+
+.sociaalai-label {
+    display: block;
+    color: #0b5e2a;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+}
+
+.sociaalai-input {
+    background-color: #ffffff;
+    border: 1px solid #9bc9a9 !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sociaalai-input:focus {
+    border-color: #00811f !important;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 129, 31, 0.18);
+}
+
+.sociaalai-textarea {
+    min-height: 170px;
+}
+
+.sociaalai-submit-btn {
+    display: inline-block;
+    background: #00811f;
+    color: #ffffff;
+    border: 1px solid #00811f;
+    border-radius: 10px;
+    font-weight: 700;
+    padding: 0.75rem 1.5rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.sociaalai-submit-btn:hover {
+    background: #006f19;
+}
+
+.sociaalai-submit-btn:active {
+    transform: translateY(1px);
+}
+
+@media (max-width: 768px) {
+    .sociaalai-submit-btn {
+        width: 100%;
+    }
+}
+
 
 .card-icon {
     width: 300px;

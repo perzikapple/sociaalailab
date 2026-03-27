@@ -132,6 +132,39 @@ include __DIR__ . '/navbar.php';
             <?php endif; ?>
         </section>
     <?php endforeach; ?>
+
+    <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
+        <div class="container sociaalai-contact-wrap">
+            <?php
+            $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+            $basePath = rtrim(str_replace('\\', '/', dirname($_SERVER['PHP_SELF'])), '/');
+            $nextUrl = $scheme . '://' . $_SERVER['HTTP_HOST'] . $basePath . '/bedankt.php';
+            ?>
+            <h1 class="font-bold text-2xl mb-2">Contact</h1>
+            <p class="sociaalai-contact-intro">Heb je een vraag of idee? Stuur ons een bericht en we reageren zo snel mogelijk.</p>
+            <form class="sociaalai-contact-form" target="_blank" action="https://formsubmit.co/sociaalailab@proton.me" method="POST">
+                <input type="hidden" name="_captcha" value="false">
+                <input type="hidden" name="_next" value="<?php echo htmlspecialchars($nextUrl); ?>">
+                <div class="form-group mb-4">
+                    <div class="form-row grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="col">
+                            <label for="contact-name" class="sociaalai-label">Naam</label>
+                            <input id="contact-name" type="text" name="name" class="form-control sociaalai-input w-full border border-gray-300 rounded px-3 py-2" placeholder="Volledige naam" required>
+                        </div>
+                        <div class="col">
+                            <label for="contact-email" class="sociaalai-label">E-mailadres</label>
+                            <input id="contact-email" type="email" name="email" class="form-control sociaalai-input w-full border border-gray-300 rounded px-3 py-2" placeholder="jij@voorbeeld.nl" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group mb-4">
+                    <label for="contact-message" class="sociaalai-label">Bericht</label>
+                    <textarea id="contact-message" placeholder="Typ hier je bericht" class="form-control sociaalai-input sociaalai-textarea w-full border border-gray-300 rounded px-3 py-2" name="message" rows="6" required></textarea>
+                </div>
+                <button type="submit" class="sociaalai-submit-btn">Versturen</button>
+            </form>
+        </div>
+    </section>
 </main>
 <?php include __DIR__ . '/footer.php'; ?>
 
