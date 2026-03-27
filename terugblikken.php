@@ -78,7 +78,6 @@ include __DIR__ . '/navbar.php';
         $infoLink = $mostRecent['info_link'] ?? ($metaArr['info_link'] ?? '');
         $partner = $metaArr['partner'] ?? '';
         ?>
-        <section class="bg-white shadow-lg px-3 sm:px-8 py-6 sm:py-8 max-w-6xl mx-auto mt-8 sm:mt-12 mb-6 sm:mb-12">
             <?php if ($infoLink): ?>
                 <a href="<?php echo htmlspecialchars($infoLink); ?>" target="_blank" class="inline-block bg-[#00811F] text-white px-6 py-2 rounded-lg font-semibold hover:bg-[#005c16] transition">Meer info</a>
             <?php endif; ?>
