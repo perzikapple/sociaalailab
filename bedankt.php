@@ -23,7 +23,7 @@ include __DIR__ . '/navbar.php';
     <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
         <div class="container sociaalai-contact-wrap">
             <h1 class="font-bold text-3xl mb-4 text-[#00811F]">Bedankt voor je bericht!</h1>
-            <p class="text-gray-700 leading-relaxed mb-6">We hebben je bericht goed ontvangen en nemen zo snel mogelijk contact met je op.</p>
+            <p class="text-gray-700 leading-relaxed mb-6">We hebben je bericht goed ontvangen en nemen binnen 1-2 werkdagen contact met je op</p>
             <div class="flex flex-col md:flex-row gap-3">
                 <a href="index.php" class="sociaalai-submit-btn text-center">Terug naar voorpagina</a>
                 <a href="contact.php" class="sociaalai-submit-btn text-center" style="background:#ffffff;color:#00811F;border-color:#00811F;">Nog een bericht sturen</a>
