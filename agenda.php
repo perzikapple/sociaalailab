@@ -67,7 +67,7 @@ include __DIR__ . '/navbar.php';
         <div class="terugblik bg-white p-6 max-w-xl mt-6 w-full text-center border-r border-gray-500">
             <a href="terugblikken.php#agenda-terugblik-switch">
                 <h1 class="text-2xl text-[#000000] font-semibold">
-                    Terugblik (<?php echo $totalPast; ?>)
+                    Terugblik
                 </h1>
             </a>
         </div>

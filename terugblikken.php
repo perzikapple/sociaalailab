@@ -14,6 +14,17 @@ $stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE COALESCE(end_date, date
 $stmt->execute();
 $totalPast = $stmt->fetchColumn();
 
+$itemsPerPage = 6;
+$currentPage = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+if ($currentPage < 1) {
+    $currentPage = 1;
+}
+$totalPages = max(1, (int)ceil($totalPast / $itemsPerPage));
+if ($currentPage > $totalPages) {
+    $currentPage = $totalPages;
+}
+$offset = ($currentPage - 1) * $itemsPerPage;
+
 
 $banner1 = 'images/banner_website_01.jpg';
 $banner2 = 'images/banner_website_02.jpg';
@@ -36,7 +47,9 @@ try {
         }
     }
 
-    $stmt = $pdo->prepare("SELECT * FROM events WHERE COALESCE(end_date, date) < CURDATE() ORDER BY date DESC, time DESC");
+    $stmt = $pdo->prepare("SELECT * FROM events WHERE COALESCE(end_date, date) < CURDATE() ORDER BY date DESC, time DESC LIMIT :limit OFFSET :offset");
+    $stmt->bindValue(':limit', $itemsPerPage, PDO::PARAM_INT);
+    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
     $stmt->execute();
     $events = $stmt->fetchAll();
 } catch (Exception $e) {
@@ -80,7 +93,7 @@ include __DIR__ . '/navbar.php';
         <div class="terugblik bg-white p-6 max-w-xl mt-6 w-full text-center border-r border-gray-500">
             <a href="terugblikken.php#agenda-terugblik-switch">
                 <h1 class="text-2xl text-[#000000] font-semibold">
-                    Terugblik (<?php echo $totalPast; ?>)
+                    Terugblik
                 </h1>
             </a>
         </div>
@@ -191,14 +204,7 @@ include __DIR__ . '/navbar.php';
         </section>
     <?php endforeach; ?>
 
-    <?php
-    require 'db.php';
-    $stmt = $pdo->prepare("SELECT * FROM events WHERE COALESCE(end_date, date) < CURDATE() ORDER BY date DESC, time DESC");
-    $stmt->execute();
-    $events = $stmt->fetchAll();
-    
-    if (empty($events)):
-    ?>
+    <?php if (empty($events)): ?>
         <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12 text-center">
             <p class="text-gray-700">Er zijn nog geen voorbije evenementen.</p>
         </section>
@@ -255,6 +261,26 @@ include __DIR__ . '/navbar.php';
         <?php endif; ?>
     </section>
         <?php endforeach; ?>
+
+        <?php if ($totalPages > 1): ?>
+            <nav class="max-w-6xl mx-auto my-10 flex items-center justify-center gap-2" aria-label="Paginering terugblikken">
+                <?php if ($currentPage > 1): ?>
+                    <a href="?page=<?php echo $currentPage - 1; ?>#agenda-terugblik-switch" class="px-4 py-2 bg-white border border-gray-300 rounded hover:bg-gray-100 transition">Vorige</a>
+                <?php endif; ?>
+
+                <?php for ($p = 1; $p <= $totalPages; $p++): ?>
+                    <?php if ($p === $currentPage): ?>
+                        <span class="px-4 py-2 rounded bg-[#00811F] text-white font-semibold"><?php echo $p; ?></span>
+                    <?php else: ?>
+                        <a href="?page=<?php echo $p; ?>#agenda-terugblik-switch" class="px-4 py-2 bg-white border border-gray-300 rounded hover:bg-gray-100 transition"><?php echo $p; ?></a>
+                    <?php endif; ?>
+                <?php endfor; ?>
+
+                <?php if ($currentPage < $totalPages): ?>
+                    <a href="?page=<?php echo $currentPage + 1; ?>#agenda-terugblik-switch" class="px-4 py-2 bg-white border border-gray-300 rounded hover:bg-gray-100 transition">Volgende</a>
+                <?php endif; ?>
+            </nav>
+        <?php endif; ?>
     <?php endif; ?>
 </main>
 
