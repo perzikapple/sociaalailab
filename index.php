@@ -288,6 +288,11 @@ include __DIR__ . '/navbar.php';
         
 <?php
 foreach ($events as $event):
+    $eventDateTs = strtotime((string)$event['date']);
+    $eventDayMonth = $eventDateTs ? date('d.m', $eventDateTs) : '';
+    $eventYear = $eventDateTs ? date('Y', $eventDateTs) : '';
+    $eventImageName = trim((string)($event['image'] ?? ''));
+    $hasValidImage = $eventImageName !== '' && file_exists(__DIR__ . '/uploads/' . $eventImageName);
 ?>
 <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
     <div class="flex-1">
@@ -317,8 +322,16 @@ foreach ($events as $event):
             <?php endif; ?>
         </div>
     </div>
-    <div class="flex-1">
-        <img src="<?php echo $event['image'] ? 'uploads/' . htmlspecialchars($event['image']) : 'images/event/Agenda_event_2_Studenten_en_bewoners_verkennen_de_sociale_invloed_van_AI.jpg'; ?>" alt="" class="w-full h-auto object-cover shadow-md">
+    <div class="flex-1<?php echo !$hasValidImage ? ' mobile-hide-no-image' : ''; ?>">
+        <div class="image-template-wrap">
+            <img src="<?php echo $hasValidImage ? 'uploads/' . htmlspecialchars($eventImageName) : 'images/event/Agenda_event_2_Studenten_en_bewoners_verkennen_de_sociale_invloed_van_AI.jpg'; ?>" alt="<?php echo htmlspecialchars(strip_tags((string)$event['title'])); ?>" class="image-template-photo">
+            <div class="image-template-badge">
+                <span><?php echo htmlspecialchars($eventDayMonth); ?></span>
+                <span><?php echo htmlspecialchars($eventYear); ?></span>
+            </div>
+            <span class="image-template-square image-template-square-left"></span>
+            <span class="image-template-square image-template-square-right"></span>
+        </div>
     </div>
 </section>
 <?php endforeach; ?>

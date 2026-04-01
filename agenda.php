@@ -80,6 +80,19 @@ $stmt->execute();
 $events = $stmt->fetchAll();
 foreach ($events as $event):
 ?>
+    <?php
+    $dateDisplay = formatEventDateDisplay($event['date']);
+    $endDateDisplay = !empty($event['end_date']) ? formatEventDateDisplay($event['end_date']) : null;
+    $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : '';
+    $timeEndDisplay = $event['time_end'] ? formatEventTimeDisplay($event['time_end']) : '';
+    $dateTs = strtotime((string)$event['date']);
+    $dayMonth = $dateTs ? date('d.m', $dateTs) : $dateDisplay;
+    $year = $dateTs ? date('Y', $dateTs) : '';
+    $loc = $event['location'] ?: 'Rotterdam - Hillevliet 90';
+    $mapsLocationUrl = 'https://www.google.com/maps/dir/?api=1&destination=' . rawurlencode((string)$loc);
+    $eventImageName = trim((string)($event['image'] ?? ''));
+    $hasValidImage = $eventImageName !== '' && file_exists(__DIR__ . '/uploads/' . $eventImageName);
+    ?>
     <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
         <div class="flex-1">
             <span class="inline-block text-white text-sm font-medium px-4 py-1 mb-4" style="background-color:#ce0245;">Evenement</span>
@@ -87,14 +100,8 @@ foreach ($events as $event):
             <div class="space-y-4">
                 <div class="flex items-center space-x-3">
                     <i class="fa-regular fa-calendar text-[#00811F] ml-[2px] text-3xl"></i>
-                    <?php $dateDisplay = formatEventDateDisplay($event['date']); ?>
-                    <?php $endDateDisplay = !empty($event['end_date']) ? formatEventDateDisplay($event['end_date']) : null; ?>
                     <p class="text-gray-700"><strong> Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?><?php if ($endDateDisplay) { echo ' t/m ' . htmlspecialchars($endDateDisplay); } ?></p>
                 </div>
-                <?php 
-                    $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : '';
-                    $timeEndDisplay = $event['time_end'] ? formatEventTimeDisplay($event['time_end']) : '';
-                ?>
                 <?php if ($timeDisplay || $timeEndDisplay): ?>
                 <div class="flex items-center space-x-3">
                     <i class="fa-solid fa-clock text-[#00811F] ml-[2px] text-3xl"></i>
@@ -103,8 +110,6 @@ foreach ($events as $event):
                 <?php endif; ?>
                 <div class="flex items-center space-x-3">
                     <i class="fa-solid fa-location-dot text-[#00811F] ml-1 text-3xl"></i>
-                    <?php $loc = $event['location'] ?: 'Rotterdam - Hillevliet 90'; ?>
-                    <?php $mapsLocationUrl = 'https://www.google.com/maps/dir/?api=1&destination=' . rawurlencode((string)$loc); ?>
                     <p class="text-gray-700 ml-1 "><strong>Waar:</strong> <a href="<?php echo htmlspecialchars($mapsLocationUrl); ?>" target="_blank" rel="noopener noreferrer" class="underline hover:text-[#00811F]"><?php echo htmlspecialchars($loc); ?></a></p>
                 </div>
                 <div class="flex mb-6 space-x-3">
@@ -121,9 +126,17 @@ foreach ($events as $event):
                 Meer info
             </a>
         </div>
-        <?php if ($event['image']): ?>
+        <?php if ($hasValidImage): ?>
         <div class="flex-1">
-            <img src="uploads/<?php echo htmlspecialchars($event['image']); ?>" alt="" class="w-full h-auto object-cover shadow-md">
+            <div class="image-template-wrap">
+                <img src="uploads/<?php echo htmlspecialchars($eventImageName); ?>" alt="<?php echo htmlspecialchars(strip_tags((string)$event['title'])); ?>" class="image-template-photo">
+                <div class="image-template-badge">
+                    <span><?php echo htmlspecialchars($dayMonth); ?></span>
+                    <span><?php echo htmlspecialchars($year); ?></span>
+                </div>
+                <span class="image-template-square image-template-square-left"></span>
+                <span class="image-template-square image-template-square-right"></span>
+            </div>
         </div>
         <?php endif; ?>
     </section>

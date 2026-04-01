@@ -1079,3 +1079,353 @@ section{
         margin: 0 auto;
     }
 }
+
+/* Overlay template for agenda and terugblik image blocks */
+.event-template {
+    background: linear-gradient(135deg, #038a40 0%, #6faa3a 100%);
+    color: #ffffff;
+    padding: 2rem;
+    border-radius: 0;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.18);
+}
+
+.event-template.is-retrospective {
+    background: linear-gradient(135deg, #0c8146 0%, #719f3f 100%);
+}
+
+.event-template-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.event-template-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.event-template-logo {
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+}
+
+.event-template-brand-title {
+    font-size: 2rem;
+    line-height: 1;
+    font-weight: 500;
+}
+
+.event-template-brand-subtitle {
+    font-size: 1.4rem;
+    line-height: 1;
+    opacity: 0.95;
+}
+
+.event-template-meta {
+    text-align: right;
+    margin-left: auto;
+    margin-right: 1rem;
+}
+
+.event-template-meta-time {
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.event-template-meta-location {
+    font-size: 1rem;
+}
+
+.event-template-date-badge {
+    background: #ce0245;
+    padding: 0.9rem 1rem;
+    min-width: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.1;
+    font-weight: 700;
+}
+
+.event-template-date-badge span:first-child {
+    font-size: 2rem;
+}
+
+.event-template-date-badge span:last-child {
+    font-size: 1.15rem;
+}
+
+.event-template-body {
+    margin-bottom: 1.25rem;
+}
+
+.event-template-label {
+    display: inline-block;
+    font-size: 1.7rem;
+    line-height: 1.1;
+    margin-bottom: 0.25rem;
+}
+
+.event-template-title {
+    font-size: clamp(1.85rem, 3.8vw, 3rem);
+    line-height: 1.12;
+    font-weight: 700;
+}
+
+.event-template-description {
+    font-size: clamp(1.05rem, 2vw, 1.4rem);
+    line-height: 1.35;
+    margin-top: 0.6rem;
+}
+
+.event-template-description p {
+    margin: 0;
+}
+
+.event-template-photo-wrap {
+    position: relative;
+}
+
+.event-template-photo {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+}
+
+.event-template-square {
+    position: absolute;
+    background: #68b04a;
+    width: 3.4rem;
+    height: 3.4rem;
+}
+
+.event-template-square-left {
+    left: 1.6rem;
+    bottom: -1.2rem;
+}
+
+.event-template-square-right {
+    right: 1.8rem;
+    top: 2rem;
+}
+
+.event-template-footer {
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.event-template-footer-text {
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+.event-template-divider {
+    margin: 0 0.45rem;
+    opacity: 0.8;
+}
+
+.event-template-location-link {
+    text-decoration: underline;
+}
+
+.event-template-location-link:hover {
+    color: #ecffd9;
+}
+
+.event-template-actions {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    justify-content: flex-end;
+}
+
+.event-template-cta {
+    display: inline-flex;
+    align-items: center;
+    background: #ffffff;
+    color: #007a1d;
+    font-weight: 700;
+    padding: 0.7rem 1.2rem;
+    border-radius: 0.45rem;
+    white-space: nowrap;
+}
+
+.event-template-cta:hover {
+    background: #f1ffe8;
+}
+
+.event-template-cta-alt {
+    background: #ce0245;
+    color: #ffffff;
+}
+
+.event-template-cta-alt:hover {
+    background: #b6003c;
+}
+
+.event-template-cta-pink {
+    background: #ffffff;
+    color: #ce0245;
+}
+
+.event-template-cta-pink:hover {
+    background: #ffeaf2;
+}
+
+@media (max-width: 900px) {
+    .event-template {
+        padding: 1.25rem;
+    }
+
+    .event-template-head {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .event-template-meta {
+        text-align: left;
+        margin: 0;
+    }
+
+    .event-template-date-badge {
+        align-self: flex-start;
+    }
+
+    .event-template-label {
+        font-size: 1.45rem;
+    }
+
+    .event-template-footer {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .event-template-actions {
+        justify-content: flex-start;
+    }
+
+    .event-template-divider {
+        display: none;
+    }
+
+    .event-template-footer-text {
+        display: grid;
+        gap: 0.3rem;
+    }
+
+    .event-template-square {
+        width: 2.2rem;
+        height: 2.2rem;
+    }
+
+    .event-template-square-left {
+        left: 0.8rem;
+        bottom: -0.6rem;
+    }
+
+    .event-template-square-right {
+        right: 0.9rem;
+        top: 0.9rem;
+    }
+}
+
+/* Image-only template for agenda and terugblik photo blocks */
+.image-template-wrap {
+    position: relative;
+    overflow: visible;
+}
+
+.image-template-photo {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-radius: 0;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.image-template-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: #ce0245;
+    color: #ffffff;
+    font-weight: 700;
+    line-height: 1.1;
+    padding: 0.65rem 0.8rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 90px;
+}
+
+.image-template-badge span:first-child {
+    font-size: 1.45rem;
+}
+
+.image-template-badge span:last-child {
+    font-size: 1rem;
+}
+
+.image-template-square {
+    position: absolute;
+    width: 2.8rem;
+    height: 2.8rem;
+    background: #68b04a;
+}
+
+.image-template-square-left {
+    left: 0.9rem;
+    bottom: -0.9rem;
+}
+
+.image-template-square-right {
+    right: 1rem;
+    top: 42%;
+}
+
+@media (max-width: 900px) {
+    .image-template-badge {
+        top: 0.65rem;
+        right: 0.65rem;
+        min-width: 78px;
+        padding: 0.5rem 0.6rem;
+    }
+
+    .image-template-badge span:first-child {
+        font-size: 1.2rem;
+    }
+
+    .image-template-badge span:last-child {
+        font-size: 0.85rem;
+    }
+
+    .image-template-square {
+        width: 2rem;
+        height: 2rem;
+    }
+
+    .image-template-square-left {
+        left: 0.45rem;
+        bottom: -0.55rem;
+    }
+
+    .image-template-square-right {
+        right: 0.55rem;
+        top: 38%;
+    }
+}
+
+@media (max-width: 768px) {
+    .mobile-hide-no-image {
+        display: none;
+    }
+}
