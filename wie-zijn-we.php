@@ -51,6 +51,8 @@ include __DIR__ . '/navbar.php';
         $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
         $hasImage = !empty($block['image']);
         $hasText = !empty($block['title']) || !empty($block['body']);
+        $plainTitle = trim(strip_tags((string)($block['title'] ?? '')));
+        $isPartnersBlock = (stripos($plainTitle, 'partner') !== false);
         $imagePosition = $metaArr['image_position'] ?? 'normal';
         if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) $imagePosition = 'normal';
         $isEven = ($index % 2 == 0);
@@ -93,6 +95,16 @@ include __DIR__ . '/navbar.php';
                 <?php if (!empty($block['body'])): ?>
                     <div class="text-gray-700 text-base leading-relaxed"><?php echo renderEditorBlock($block['body']); ?></div>
                 <?php endif; ?>
+
+                <?php if ($isPartnersBlock): ?>
+                    <div class="partners partners-inline" aria-label="Partners van Sociaal AILab">
+                        <img alt="Gemeente Rotterdam" src="images/Gemeente_Rotterdam.png">
+                        <img alt="Erasmus Centre for Data Analytics" src="images/Erasmus_DataOP.png">
+                        <img alt="Hogeschool Rotterdam" src="images/Hogeschool_Rotterdam.png">
+                        <img alt="Erasmus Universiteit" src="images/Erasmus_uni.png">
+                        <img alt="Techniek College Rotterdam" src="images/Techniek_College_Rotterdam_logoOP.png">
+                    </div>
+                <?php endif; ?>
             </div>
             <?php endif; ?>
             
@@ -122,6 +134,7 @@ include __DIR__ . '/navbar.php';
         </section>
     <?php endforeach; ?>
 </main>
+
 <?php include __DIR__ . '/footer.php'; ?>
 
 <script>

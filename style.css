@@ -503,6 +503,21 @@ main > div.grid > div:hover {
     transform: scale(1.1);
 }
 
+.partners-inline {
+    margin-top: 20px;
+    margin-bottom: 0;
+}
+
+@media (max-width: 640px) {
+    .partners-inline {
+        gap: 14px;
+    }
+
+    .partners-inline img {
+        max-height: 42px;
+    }
+}
+
 .site-footer p {
     font-size: 0.8rem;
     color: #000000;
