@@ -117,11 +117,9 @@ foreach ($events as $event):
                 Inschrijven
             </a>
             <?php endif; ?>
-            <?php if (!empty($event['info_link'])): ?>
-            <a href="<?php echo htmlspecialchars($event['info_link']); ?>" target="_blank" class="mt-4 ml-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">
+            <a href="event-detail.php?id=<?php echo (int)$event['id']; ?>" class="mt-4 ml-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">
                 Meer info
             </a>
-            <?php endif; ?>
         </div>
         <?php if ($event['image']): ?>
         <div class="flex-1">

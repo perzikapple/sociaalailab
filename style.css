@@ -373,48 +373,6 @@ main > div.grid > div:hover {
     transform: translateY(1px);
 }
 
-.terugblik-more-wrap {
-    margin-top: 0.25rem;
-    margin-bottom: 0.5rem;
-}
-
-.terugblik-more-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    background: #00811f;
-    color: #ffffff;
-    border: 1px solid #00811f;
-    border-radius: 0.5rem;
-    padding: 0.5rem 0.9rem;
-    font-size: 0.95rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.15s ease;
-}
-
-.terugblik-more-toggle:hover {
-    background: #006f19;
-}
-
-.terugblik-more-caret {
-    transition: transform 0.2s ease;
-}
-
-.terugblik-more-toggle[aria-expanded="true"] .terugblik-more-caret {
-    transform: rotate(180deg);
-}
-
-.terugblik-summary-panel {
-    margin-top: 0.65rem;
-    padding: 0.75rem 0.9rem;
-    border-left: 4px solid #00811f;
-    background: #f3faf5;
-    color: #374151;
-    border-radius: 0.35rem;
-    line-height: 1.55;
-}
-
 @media (max-width: 768px) {
     .sociaalai-submit-btn {
         width: 100%;

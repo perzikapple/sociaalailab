@@ -86,6 +86,8 @@ include __DIR__ . '/../navbar.php';
         <?php foreach ($cardBlocks as $block): ?>
             <?php
             $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
+            $imageLink = trim((string)($metaArr['info_link'] ?? ''));
+            $isExternalImageLink = preg_match('#^https?://#i', $imageLink) === 1;
             $imagePosition = $metaArr['image_position'] ?? 'normal';
             if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) $imagePosition = 'normal';
             $greenText = trim((string)($metaArr['green_text'] ?? ($metaArr['green_heading'] ?? '')));
@@ -121,7 +123,13 @@ include __DIR__ . '/../navbar.php';
                     }
                     ?>
                     <div style="<?php echo $hasText ? 'flex-shrink: 0; width: 120px; min-width: 120px; max-width: 120px;' : 'width: 100%;'; ?>">
-                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; <?php echo $hasText ? 'height: 112px; object-fit: cover;' : 'height: auto;'; ?>">
+                        <?php if ($imageLink !== ''): ?>
+                            <a href="<?php echo htmlspecialchars($imageLink); ?>"<?php echo $isExternalImageLink ? ' target="_blank" rel="noopener noreferrer"' : ''; ?> class="block">
+                                <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; <?php echo $hasText ? 'height: 112px; object-fit: cover;' : 'height: auto;'; ?>">
+                            </a>
+                        <?php else: ?>
+                            <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; <?php echo $hasText ? 'height: 112px; object-fit: cover;' : 'height: auto;'; ?>">
+                        <?php endif; ?>
                     </div>
                 <?php endif; ?>
 
@@ -152,7 +160,13 @@ include __DIR__ . '/../navbar.php';
                     }
                     ?>
                     <div style="<?php echo $hasText ? 'flex-shrink: 0; width: 120px; min-width: 120px; max-width: 120px;' : 'width: 100%;'; ?>">
-                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; <?php echo $hasText ? 'height: 112px; object-fit: cover;' : 'height: auto;'; ?>">
+                        <?php if ($imageLink !== ''): ?>
+                            <a href="<?php echo htmlspecialchars($imageLink); ?>"<?php echo $isExternalImageLink ? ' target="_blank" rel="noopener noreferrer"' : ''; ?> class="block">
+                                <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; <?php echo $hasText ? 'height: 112px; object-fit: cover;' : 'height: auto;'; ?>">
+                            </a>
+                        <?php else: ?>
+                            <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; <?php echo $hasText ? 'height: 112px; object-fit: cover;' : 'height: auto;'; ?>">
+                        <?php endif; ?>
                     </div>
                 <?php endif; ?>
 
@@ -168,7 +182,13 @@ include __DIR__ . '/../navbar.php';
                     }
                     ?>
                     <div style="<?php echo $hasText ? 'margin-top: auto; width: 100%; max-width: 560px;' : 'width: 100%;'; ?>">
-                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; <?php echo $hasText ? 'height: 360px; object-fit: cover;' : 'height: auto;'; ?>">
+                        <?php if ($imageLink !== ''): ?>
+                            <a href="<?php echo htmlspecialchars($imageLink); ?>"<?php echo $isExternalImageLink ? ' target="_blank" rel="noopener noreferrer"' : ''; ?> class="block">
+                                <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; <?php echo $hasText ? 'height: 360px; object-fit: cover;' : 'height: auto;'; ?>">
+                            </a>
+                        <?php else: ?>
+                            <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; <?php echo $hasText ? 'height: 360px; object-fit: cover;' : 'height: auto;'; ?>">
+                        <?php endif; ?>
                     </div>
                 <?php endif; ?>
             </div>

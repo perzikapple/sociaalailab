@@ -208,19 +208,6 @@ include __DIR__ . '/navbar.php';
         <div class="flex-1">
             <span class="inline-block text-white text-sm font-medium px-4 py-1 mb-4" style="background-color:#ce0245;">Evenement</span>
             <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900"><?php echo renderEditorInline($event['title']); ?></h2>
-            <?php
-                $summaryId = 'event-summary-' . (int)$event['id'];
-                $eventSummary = eventNarrativeSummary(
-                    $event['title'] ?? '',
-                    $event['description'] ?? '',
-                    $event['date'] ?? null,
-                    $event['location'] ?? null,
-                    420
-                );
-                if ($eventSummary === '') {
-                    $eventSummary = 'Samenvatting volgt binnenkort.';
-                }
-            ?>
             <div class="space-y-4">
                 <div class="flex items-center space-x-3">
                     <i class="fa-regular fa-calendar text-[#00811F] ml-[2px]  text-3xl"></i>
@@ -237,27 +224,12 @@ include __DIR__ . '/navbar.php';
                     <i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>
                     <div class="text-gray-700 pb-1"><strong>Wat:</strong><div class="mt-1"><?php echo renderEditorBlock($event['description']); ?></div></div>
                 </div>
-                <div class="terugblik-more-wrap">
-                    <button
-                        type="button"
-                        class="terugblik-more-toggle"
-                        aria-expanded="false"
-                        aria-controls="<?php echo htmlspecialchars($summaryId); ?>"
-                    >
-                        Meer info
-                        <span class="terugblik-more-caret" aria-hidden="true">
-                            <i class="fa-solid fa-chevron-down"></i>
-                        </span>
-                    </button>
-                    <div id="<?php echo htmlspecialchars($summaryId); ?>" class="terugblik-summary-panel hidden">
-                        <p><?php echo htmlspecialchars($eventSummary); ?></p>
-                    </div>
+                <div class="mb-4 flex flex-wrap gap-3">
+                    <a href="event-detail.php?id=<?php echo (int)$event['id']; ?>" class="inline-block bg-[#00811F] text-white px-6 py-2 rounded-lg font-semibold hover:bg-[#005c16] transition">Meer info</a>
+                    <?php if (!empty($event['info_link'])): ?>
+                        <a href="<?php echo htmlspecialchars($event['info_link']); ?>" target="_blank" rel="noopener noreferrer" class="inline-block bg-[#ce0245] text-white px-6 py-2 rounded-lg font-semibold hover:opacity-90 transition">Externe info</a>
+                    <?php endif; ?>
                 </div>
-                <?php if (!empty($event['info_link'])): ?>
-                    <div class="mb-4">
-                        <a href="<?php echo htmlspecialchars($event['info_link']); ?>" target="_blank" class="inline-block bg-[#00811F] text-white px-6 py-2 rounded-lg font-semibold hover:bg-[#005c16] transition">Meer info</a>
-                    </div>
-                <?php endif; ?>
             </div>
         </div>
         <?php if ($event['image']): ?>
@@ -352,25 +324,6 @@ include __DIR__ . '/navbar.php';
             const isHidden = mobileMenu.classList.toggle('hidden');
             mobileMenu.classList.toggle('open', !isHidden);
             mobileToggle.setAttribute('aria-expanded', (!isHidden).toString());
-        });
-    })();
-
-    (function () {
-        const infoButtons = document.querySelectorAll('.terugblik-more-toggle');
-        if (!infoButtons.length) return;
-
-        infoButtons.forEach(function (button) {
-            button.addEventListener('click', function () {
-                const targetId = button.getAttribute('aria-controls');
-                if (!targetId) return;
-
-                const panel = document.getElementById(targetId);
-                if (!panel) return;
-
-                const expanded = button.getAttribute('aria-expanded') === 'true';
-                button.setAttribute('aria-expanded', expanded ? 'false' : 'true');
-                panel.classList.toggle('hidden', expanded);
-            });
         });
     })();
 

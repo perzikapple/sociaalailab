@@ -188,48 +188,56 @@ if (!function_exists('eventNarrativeSummary')) {
             return '';
         }
 
+        $titleText = sanitizeEditorPlainText($title);
         $textLower = function_exists('mb_strtolower')
             ? mb_strtolower($descriptionText, 'UTF-8')
             : strtolower($descriptionText);
 
-        $signals = [];
-        if (preg_match('/spreker|gastspreker|presentatie/i', $textLower)) {
-            $signals[] = 'er was een spreker';
+        $partnerName = '';
+        if (preg_match('/(?:samen met|in samenwerking met|partner(?:s)?(?:chap)? met)\s+([^\.,;\n]+)/iu', $descriptionText, $match)) {
+            $partnerName = trim((string)$match[1]);
         }
+
+        $summaryLead = 'Tijdens dit evenement ';
+        if ($partnerName !== '') {
+            $summaryLead .= 'werkte het SociaalAI Lab samen met ' . $partnerName;
+        } elseif ($titleText !== '') {
+            $summaryLead .= 'stond ' . $titleText . ' centraal';
+        } else {
+            $summaryLead .= 'brachten we mensen samen rondom AI in de praktijk';
+        }
+        $summaryLead .= '. ';
+
+        $happened = eventShortSummary($descriptionText, 520);
+        if ($happened !== '') {
+            $happened = rtrim($happened);
+            if (!preg_match('/[\.\!\?]$/u', $happened)) {
+                $happened .= '.';
+            }
+            $happened .= ' ';
+        }
+
+        $learningParts = [];
         if (preg_match('/workshop|sessie|oefening/i', $textLower)) {
-            $signals[] = 'er was een workshop of sessie';
+            $learningParts[] = 'praktische vaardigheden om AI bewuster te gebruiken';
         }
         if (preg_match('/discussie|gesprek|dialoog|vragen/i', $textLower)) {
-            $signals[] = 'er was ruimte voor gesprek en vragen';
+            $learningParts[] = 'ruimte om vragen te stellen en ervaringen uit te wisselen';
         }
-        if (preg_match('/inzicht|conclusie|resultaat|opgehaald/i', $textLower)) {
-            $signals[] = 'er zijn inzichten opgehaald';
+        if (preg_match('/inzicht|conclusie|resultaat|opgehaald|geleerd/i', $textLower)) {
+            $learningParts[] = 'concrete inzichten die direct toepasbaar zijn in het dagelijks leven';
         }
 
-        $summaryLead = 'Korte samenvatting: tijdens dit event ';
-        if (!empty($signals)) {
-            $summaryLead .= implode(', ', $signals) . '. ';
+        if (!empty($learningParts)) {
+            $learning = 'Wat we hebben geleerd voor mensen: ' . implode(', ', array_unique($learningParts)) . '.';
         } else {
-            $summaryLead .= 'zijn deelnemers samengekomen rondom het onderwerp. ';
+            $learning = 'Wat we hebben geleerd voor mensen: duidelijke uitleg, meer grip op AI en praktische handvatten voor dagelijkse situaties.';
         }
 
-        $core = eventShortSummary($descriptionText, 170);
-        if ($core === '') {
-            return rtrim($summaryLead);
-        }
+        $summary = $summaryLead . $happened . $learning;
+        $maxChars = max(260, (int)$maxChars);
 
-        $maxChars = max(140, (int)$maxChars);
-        if (function_exists('mb_strlen')) {
-            $available = $maxChars - mb_strlen($summaryLead);
-        } else {
-            $available = $maxChars - strlen($summaryLead);
-        }
-
-        if ($available < 50) {
-            $available = 50;
-        }
-
-        return $summaryLead . editorPreviewText($core, $available);
+        return editorPreviewText($summary, $maxChars);
     }
 }
 

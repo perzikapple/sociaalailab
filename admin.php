@@ -461,7 +461,7 @@ if ($pageAction === 'create_page') {
         $imagePosition = 'normal';
     }
 
-    // Add info_link to meta for terugblik blocks
+    // Optional URL used by cards/pages that need click-through behavior.
     $infoLink = $_POST['info_link'] ?? '';
 
     if ($title === '') {
@@ -484,8 +484,7 @@ if ($pageAction === 'create_page') {
             $meta['green_text_position'] = $greenTextPosition;
         }
 
-        // Save info_link in meta for terugblik blocks
-        if ($pageKey === 'terugblikken' && $infoLink !== '') {
+        if ($infoLink !== '') {
             $meta['info_link'] = $infoLink;
         }
 
@@ -578,10 +577,12 @@ if ($pageAction === 'create_page') {
             unset($meta['green_text_position']);
         }
 
-        // Save info_link in meta for terugblik blocks
+        // Optional URL used by cards/pages that need click-through behavior.
         $infoLink = $_POST['info_link'] ?? '';
-        if ($pageKey === 'terugblikken') {
+        if ($infoLink !== '') {
             $meta['info_link'] = $infoLink;
+        } else {
+            unset($meta['info_link']);
         }
 
         if ($pageKey === 'contact') {
@@ -1735,7 +1736,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     name="info_link"
                                     id="info_link"
                                     class="form-input"
-                                    value="<?php echo htmlspecialchars($editPage['info_link'] ?? ''); ?>"
+                                    value="<?php echo htmlspecialchars($editMeta['info_link'] ?? ''); ?>"
                                     placeholder="https://voorbeeld.nl"
                                 />
                             </div>
