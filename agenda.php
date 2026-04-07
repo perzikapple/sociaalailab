@@ -3,18 +3,31 @@ session_start();
 require 'db.php';
 require 'helpers.php';
 
+
+// Count the total upcoming evens
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE COALESCE(end_date, date) >= CURDATE()");
+$stmt->execute();
+$totalUpcoming = $stmt->fetchColumn();
+
+// Count the total past events
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE COALESCE(end_date, date) < CURDATE()");
+$stmt->execute();
+$totalPast = $stmt->fetchColumn();
+
+
 $banner1 = 'images/banner_website_01.jpg';
 $banner2 = 'images/banner_website_02.jpg';
 
 try {
     $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: $banner1;
     $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: $banner2;
-    $stmt = $pdo->prepare("SELECT * FROM events WHERE CONCAT(COALESCE(end_date, date), ' ', COALESCE(time_end, COALESCE(time, '23:59:59'))) > DATE_SUB(NOW(), INTERVAL 1 DAY) ORDER BY date, time");
+    $stmt = $pdo->prepare("SELECT * FROM events WHERE COALESCE(end_date, date) >= CURDATE() ORDER BY date, time");
     $stmt->execute();
     $events = $stmt->fetchAll();
 } catch (Exception $e) {
     $events = [];
 }
+
 ?>
 <!doctype html>
 <html lang="nl">
@@ -43,23 +56,43 @@ include __DIR__ . '/navbar.php';
 ?>
 
 <main>
-    
-        <div id="agenda-terugblik-switch" class="mobile flex items-center justify-center gap-1" style="scroll-margin-top: 110px;">
+    <div id="agenda-terugblik-switch" class="mobile flex items-center justify-center gap-1" style="scroll-margin-top: 110px;">
         <div class="agenda bg-white p-6 shadow-lg max-w-xl mt-6 w-full border-r text-center">
-            <a href="agenda.php#agenda-terugblik-switch"><h1 class="text-2xl text-[#00811F] font-semibold">Agenda</h1></a>
+            <a href="agenda.php#agenda-terugblik-switch">
+                <h1 class="text-2xl text-[#000000] font-semibold">
+                    Agenda (<?php echo $totalUpcoming; ?>)
+                </h1>
+            </a>
         </div>
         <div class="terugblik bg-white p-6 max-w-xl mt-6 w-full text-center border-r border-gray-500">
-            <a href="terugblikken.php#agenda-terugblik-switch"><h1 class="text-2xl text-[#00000] font-semibold">Terugblik</h1></a>
+            <a href="terugblikken.php#agenda-terugblik-switch">
+                <h1 class="text-2xl text-[#000000] font-semibold">
+                    Terugblik
+                </h1>
+            </a>
         </div>
     </div>
 
 <?php
 require 'db.php';
-$stmt = $pdo->prepare("SELECT * FROM events WHERE CONCAT(COALESCE(end_date, date), ' ', COALESCE(time_end, COALESCE(time, '23:59:59'))) > DATE_SUB(NOW(), INTERVAL 1 DAY) ORDER BY date, time");
+$stmt = $pdo->prepare("SELECT * FROM events WHERE COALESCE(end_date, date) >= CURDATE() ORDER BY date, time");
 $stmt->execute();
 $events = $stmt->fetchAll();
 foreach ($events as $event):
 ?>
+    <?php
+    $dateDisplay = formatEventDateDisplay($event['date']);
+    $endDateDisplay = !empty($event['end_date']) ? formatEventDateDisplay($event['end_date']) : null;
+    $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : '';
+    $timeEndDisplay = $event['time_end'] ? formatEventTimeDisplay($event['time_end']) : '';
+    $dateTs = strtotime((string)$event['date']);
+    $dayMonth = $dateTs ? date('d.m', $dateTs) : $dateDisplay;
+    $year = $dateTs ? date('Y', $dateTs) : '';
+    $loc = $event['location'] ?: 'Rotterdam - Hillevliet 90';
+    $mapsLocationUrl = 'https://www.google.com/maps/dir/?api=1&destination=' . rawurlencode((string)$loc);
+    $eventImageName = trim((string)($event['image'] ?? ''));
+    $hasValidImage = $eventImageName !== '' && file_exists(__DIR__ . '/uploads/' . $eventImageName);
+    ?>
     <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
         <div class="flex-1">
             <span class="inline-block text-white text-sm font-medium px-4 py-1 mb-4" style="background-color:#ce0245;">Evenement</span>
@@ -67,14 +100,8 @@ foreach ($events as $event):
             <div class="space-y-4">
                 <div class="flex items-center space-x-3">
                     <i class="fa-regular fa-calendar text-[#00811F] ml-[2px] text-3xl"></i>
-                    <?php $dateDisplay = formatEventDateDisplay($event['date']); ?>
-                    <?php $endDateDisplay = !empty($event['end_date']) ? formatEventDateDisplay($event['end_date']) : null; ?>
                     <p class="text-gray-700"><strong> Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?><?php if ($endDateDisplay) { echo ' t/m ' . htmlspecialchars($endDateDisplay); } ?></p>
                 </div>
-                <?php 
-                    $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : '';
-                    $timeEndDisplay = $event['time_end'] ? formatEventTimeDisplay($event['time_end']) : '';
-                ?>
                 <?php if ($timeDisplay || $timeEndDisplay): ?>
                 <div class="flex items-center space-x-3">
                     <i class="fa-solid fa-clock text-[#00811F] ml-[2px] text-3xl"></i>
@@ -83,8 +110,6 @@ foreach ($events as $event):
                 <?php endif; ?>
                 <div class="flex items-center space-x-3">
                     <i class="fa-solid fa-location-dot text-[#00811F] ml-1 text-3xl"></i>
-                    <?php $loc = $event['location'] ?: 'Rotterdam - Hillevliet 90'; ?>
-                    <?php $mapsLocationUrl = 'https://www.google.com/maps/dir/?api=1&destination=' . rawurlencode((string)$loc); ?>
                     <p class="text-gray-700 ml-1 "><strong>Waar:</strong> <a href="<?php echo htmlspecialchars($mapsLocationUrl); ?>" target="_blank" rel="noopener noreferrer" class="underline hover:text-[#00811F]"><?php echo htmlspecialchars($loc); ?></a></p>
                 </div>
                 <div class="flex mb-6 space-x-3">
@@ -97,21 +122,27 @@ foreach ($events as $event):
                 Inschrijven
             </a>
             <?php endif; ?>
-            <?php if (!empty($event['info_link'])): ?>
-            <a href="<?php echo htmlspecialchars($event['info_link']); ?>" target="_blank" class="mt-4 ml-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">
+            <a href="event-detail.php?id=<?php echo (int)$event['id']; ?>" class="mt-4 ml-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">
                 Meer info
             </a>
-            <?php endif; ?>
         </div>
-        <?php if ($event['image']): ?>
+        <?php if ($hasValidImage): ?>
         <div class="flex-1">
-            <img src="uploads/<?php echo htmlspecialchars($event['image']); ?>" alt="" class="w-full h-auto object-cover shadow-md">
+            <div class="image-template-wrap">
+                <img src="uploads/<?php echo htmlspecialchars($eventImageName); ?>" alt="<?php echo htmlspecialchars(strip_tags((string)$event['title'])); ?>" class="image-template-photo">
+                <div class="image-template-badge">
+                    <span><?php echo htmlspecialchars($dayMonth); ?></span>
+                    <span><?php echo htmlspecialchars($year); ?></span>
+                </div>
+                <span class="image-template-square image-template-square-left"></span>
+                <span class="image-template-square image-template-square-right"></span>
+            </div>
         </div>
         <?php endif; ?>
     </section>
 <?php endforeach; ?>
 
-<?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
+<?php if (!empty($_SESSION['can_access_admin']) || (isset($_SESSION['admin']) && (int)$_SESSION['admin'] === 1)): ?>
     <a href="admin.php" title="Voeg evenement toe" class="fixed bottom-6 right-6 bg-[#00811F] text-white rounded-full w-12 h-12 flex items-center justify-center text-3xl shadow-lg">+</a>
 <?php endif; ?>
 </main>

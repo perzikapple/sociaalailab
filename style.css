@@ -176,7 +176,6 @@ img, video {
 .flexrow {
     display: flex;
     flex-direction: row;
-    gap: 1rem;
 }
 
 .hamburger {
@@ -554,9 +553,61 @@ main > div.grid > div:hover {
 #watdoenwe-switch a h1:hover {
     color: #005e13;
 }
+/* Mobile styles */
+@media (max-width: 768px) {
+    .hamburger {
+        display: block;
+        font-size: 28px;
+    }
 
+    .nav-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background-color: #fff;
+        flex-direction: column;
+        display: none;
+        gap: 0;
+        border-top: 1px solid #ddd;
+    }
 
+    .nav-container {
+        position: relative;
+    }
 
+    .nav-menu.show {
+        display: flex;
+    }
+
+    .nav-menu li {
+        border-bottom: 1px solid #eee;
+    }
+
+    .fa-solid{
+        padding: 2px;
+        font-size: 14px;
+    }
+
+    .nav-menu li a{
+        font-size: 14px;
+    }
+
+    .dropbtn{
+        font-size: 14px;
+    }
+
+    .dropdown-content {
+        position: relative;
+        box-shadow: none;
+        border-radius: 0;
+        font-size: 14px;
+    }
+
+    body.no-scroll {
+        overflow: hidden;
+    }
+}
 
   /* Global font restore */
   :root {
@@ -649,143 +700,9 @@ button,
   border-radius: var(--edge-radius-lg) !important;
   overflow: hidden;
 }
-section{
-    width: 95%;
-}
 
-@media (max-width: 571px) {
-    /* Container voor de items */
-    #watdoenwe-switch {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0;
-    }
-
-    /* Elk item */
-    #watdoenwe-switch > div {
-        background-color: #ffffff;
-        border-radius: 12px;
-        box-shadow: 0 3px 6px rgba(0,0,0,0.1);
-        width: 90%;          /* gelijke breedte */
-        max-width: 250px;
-
-        /* Compacte hoogte en padding */
-        padding: 0.5rem;      /* beetje ruimte rond tekst */
-        min-height: 60px;     /* vaste minimale hoogte voor consistente look */
-        max-height: 100px;    /* limiet voor niet te groot */
-
-        /* Tekst mooi in het midden */
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        text-align: center;
-
-        box-sizing: border-box; /* padding en border tellen mee */
-        overflow: hidden;       /* voorkomt dat iets buiten valt */
-    }
-
-    /* Tekst zelf */
-    #watdoenwe-switch p {
-        margin: 0;
-        font-size: 0.9rem;
-        line-height: 1.2;
-    }
-}
-
-/* Mobile styles */
+/* Fix wie-zijn-we image overflow on mobile */
 @media (max-width: 768px) {
-    .hamburger {
-        display: block;
-        font-size: 28px;
-    }
-
-    .nav-menu {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background-color: #fff;
-        flex-direction: column;
-        display: none;
-        gap: 0;
-        border-top: 1px solid #ddd;
-    }
-
-    .nav-container {
-        position: relative;
-    }
-
-    .nav-menu.show {
-        display: flex;
-    }
-
-    .nav-menu li {
-        border-bottom: 1px solid #eee;
-    }
-
-    .fa-solid{
-        padding: 2px;
-        font-size: 14px;
-    }
-
-    .nav-menu li a{
-        font-size: 14px;
-    }
-
-    .dropbtn{
-        font-size: 14px;
-    }
-
-    .dropdown-content {
-        position: relative;
-        box-shadow: none;
-        border-radius: 0;
-        font-size: 14px;
-    }
-
-    body.no-scroll {
-        overflow: hidden;
-    }
-
-    /* Wat doen we switch items */
-    #watdoenwe-switch {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0;
-    }
-
-    #watdoenwe-switch > div {
-        background-color: #ffffff;
-        border-radius: 12px;
-        box-shadow: 0 3px 6px rgba(0,0,0,0.1);
-        width: 90%;
-        max-width: 250px;
-
-        /* Compacte hoogte en padding */
-        padding: 0.5rem;
-        min-height: 60px;
-        max-height: 100px;
-
-        /* Tekst mooi in het midden */
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        text-align: center;
-
-        box-sizing: border-box;
-        overflow: hidden;
-    }
-
-    #watdoenwe-switch p {
-        margin: 0;
-        font-size: 0.9rem;
-        line-height: 1.2;
-    }
-
     .wie-zijn-we-page section.bg-white {
         flex-direction: column !important;
     }
@@ -795,11 +712,11 @@ section{
         min-width: 0 !important;
         max-width: 100% !important;
     }
-    .flexrow {
-        flex-direction: column;
-        align-items: center; /* items mooi centreren */
-        gap: 0.5rem; /* eventueel kleinere spacing */
-    }
+}
+
+
+section{
+    width: 95%;
 }
 
 @media (min-width: 768px) and (max-width: 1035px) {
@@ -875,18 +792,5 @@ section{
         height: auto;
         object-fit: cover;
         border-radius: 12px;
-    }
-    .flexrow {
-        flex-direction: column;
-        align-items: center; /* items mooi centreren */
-        gap: 0.5rem; /* eventueel kleinere spacing */
-    }
-}
-
-@media (min-width: 1036px) and (max-width: 1160px) {
-    .flexrow {
-        flex-direction: column;
-        align-items: center; /* items mooi centreren */
-        gap: 0.5rem; /* eventueel kleinere spacing */
     }
 }

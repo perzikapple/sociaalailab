@@ -140,6 +140,107 @@ if (!function_exists('editorPreviewText')) {
     }
 }
 
+if (!function_exists('eventShortSummary')) {
+    function eventShortSummary($value, $maxChars = 180) {
+        $text = sanitizeEditorPlainText($value);
+        if ($text === '') {
+            return '';
+        }
+
+        $maxChars = max(80, (int)$maxChars);
+        $sentences = preg_split('/(?<=[.!?])\s+/u', $text, -1, PREG_SPLIT_NO_EMPTY);
+
+        if (empty($sentences)) {
+            return editorPreviewText($text, $maxChars);
+        }
+
+        $summary = '';
+        foreach ($sentences as $sentence) {
+            $candidate = trim($summary === '' ? $sentence : $summary . ' ' . $sentence);
+
+            if (function_exists('mb_strlen')) {
+                if (mb_strlen($candidate) <= $maxChars) {
+                    $summary = $candidate;
+                    continue;
+                }
+            } else {
+                if (strlen($candidate) <= $maxChars) {
+                    $summary = $candidate;
+                    continue;
+                }
+            }
+
+            break;
+        }
+
+        if ($summary === '') {
+            return editorPreviewText($text, $maxChars);
+        }
+
+        return $summary;
+    }
+}
+
+if (!function_exists('eventNarrativeSummary')) {
+    function eventNarrativeSummary($title, $description, $date = null, $location = null, $maxChars = 280) {
+        $descriptionText = sanitizeEditorPlainText($description);
+        if ($descriptionText === '') {
+            return '';
+        }
+
+        $titleText = sanitizeEditorPlainText($title);
+        $textLower = function_exists('mb_strtolower')
+            ? mb_strtolower($descriptionText, 'UTF-8')
+            : strtolower($descriptionText);
+
+        $partnerName = '';
+        if (preg_match('/(?:samen met|in samenwerking met|partner(?:s)?(?:chap)? met)\s+([^\.,;\n]+)/iu', $descriptionText, $match)) {
+            $partnerName = trim((string)$match[1]);
+        }
+
+        $summaryLead = 'Tijdens dit evenement ';
+        if ($partnerName !== '') {
+            $summaryLead .= 'werkte het SociaalAI Lab samen met ' . $partnerName;
+        } elseif ($titleText !== '') {
+            $summaryLead .= 'stond ' . $titleText . ' centraal';
+        } else {
+            $summaryLead .= 'brachten we mensen samen rondom AI in de praktijk';
+        }
+        $summaryLead .= '. ';
+
+        $happened = eventShortSummary($descriptionText, 520);
+        if ($happened !== '') {
+            $happened = rtrim($happened);
+            if (!preg_match('/[\.\!\?]$/u', $happened)) {
+                $happened .= '.';
+            }
+            $happened .= ' ';
+        }
+
+        $learningParts = [];
+        if (preg_match('/workshop|sessie|oefening/i', $textLower)) {
+            $learningParts[] = 'praktische vaardigheden om AI bewuster te gebruiken';
+        }
+        if (preg_match('/discussie|gesprek|dialoog|vragen/i', $textLower)) {
+            $learningParts[] = 'ruimte om vragen te stellen en ervaringen uit te wisselen';
+        }
+        if (preg_match('/inzicht|conclusie|resultaat|opgehaald|geleerd/i', $textLower)) {
+            $learningParts[] = 'concrete inzichten die direct toepasbaar zijn in het dagelijks leven';
+        }
+
+        if (!empty($learningParts)) {
+            $learning = 'Wat we hebben geleerd voor mensen: ' . implode(', ', array_unique($learningParts)) . '.';
+        } else {
+            $learning = 'Wat we hebben geleerd voor mensen: duidelijke uitleg, meer grip op AI en praktische handvatten voor dagelijkse situaties.';
+        }
+
+        $summary = $summaryLead . $happened . $learning;
+        $maxChars = max(260, (int)$maxChars);
+
+        return editorPreviewText($summary, $maxChars);
+    }
+}
+
 if (!function_exists('normalizeDisplayText')) {
     function normalizeDisplayText($value) {
         $value = (string)$value;

@@ -39,7 +39,7 @@ try {
         }
     }
     
-    $stmt = $pdo->prepare("SELECT * FROM events WHERE CONCAT(COALESCE(end_date, date), ' ', COALESCE(time_end, COALESCE(time, '23:59:59'))) > DATE_SUB(NOW(), INTERVAL 1 DAY) AND (show_on_homepage IS NULL OR show_on_homepage = 1) ORDER BY date, time LIMIT 2");
+    $stmt = $pdo->prepare("SELECT * FROM events WHERE COALESCE(end_date, date) >= CURDATE() AND (show_on_homepage IS NULL OR show_on_homepage = 1) ORDER BY date, time LIMIT 2");
     $stmt->execute();
     $events = $stmt->fetchAll();
 } catch (Exception $e) {
@@ -134,7 +134,7 @@ include __DIR__ . '/navbar.php';
                         ?>
                         <img src="<?php echo htmlspecialchars($imageSrc); ?>"
                              alt="<?php echo htmlspecialchars($block['title']); ?>"
-                             class="card-icon">                    <?php endif; ?>
+                             class="card-icon w-24 md:w-32 lg:w-40 mx-auto">                    <?php endif; ?>
                 </div>
                 <?php if ($cardGreenText !== '' && $cardGreenTextPosition === 'above'): ?>
                     <div class="text-center mb-2"><div class="green-highlight"><?php echo nl2br(htmlspecialchars($cardGreenText)); ?></div></div>
@@ -288,6 +288,11 @@ include __DIR__ . '/navbar.php';
         
 <?php
 foreach ($events as $event):
+    $eventDateTs = strtotime((string)$event['date']);
+    $eventDayMonth = $eventDateTs ? date('d.m', $eventDateTs) : '';
+    $eventYear = $eventDateTs ? date('Y', $eventDateTs) : '';
+    $eventImageName = trim((string)($event['image'] ?? ''));
+    $hasValidImage = $eventImageName !== '' && file_exists(__DIR__ . '/uploads/' . $eventImageName);
 ?>
 <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
     <div class="flex-1">
@@ -317,8 +322,16 @@ foreach ($events as $event):
             <?php endif; ?>
         </div>
     </div>
-    <div class="flex-1">
-        <img src="<?php echo $event['image'] ? 'uploads/' . htmlspecialchars($event['image']) : 'images/event/Agenda_event_2_Studenten_en_bewoners_verkennen_de_sociale_invloed_van_AI.jpg'; ?>" alt="" class="w-full h-auto object-cover shadow-md">
+    <div class="flex-1<?php echo !$hasValidImage ? ' mobile-hide-no-image' : ''; ?>">
+        <div class="image-template-wrap">
+            <img src="<?php echo $hasValidImage ? 'uploads/' . htmlspecialchars($eventImageName) : 'images/event/Agenda_event_2_Studenten_en_bewoners_verkennen_de_sociale_invloed_van_AI.jpg'; ?>" alt="<?php echo htmlspecialchars(strip_tags((string)$event['title'])); ?>" class="image-template-photo">
+            <div class="image-template-badge">
+                <span><?php echo htmlspecialchars($eventDayMonth); ?></span>
+                <span><?php echo htmlspecialchars($eventYear); ?></span>
+            </div>
+            <span class="image-template-square image-template-square-left"></span>
+            <span class="image-template-square image-template-square-right"></span>
+        </div>
     </div>
 </section>
 <?php endforeach; ?>
@@ -333,7 +346,7 @@ foreach ($events as $event):
 </a>
 <?php endif; ?>
 
-<?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
+<?php if (!empty($_SESSION['can_access_admin']) || (isset($_SESSION['admin']) && (int)$_SESSION['admin'] === 1)): ?>
     <a href="admin.php" title="Voeg evenement toe" class="fixed bottom-6 right-6 bg-[#00811F] text-white rounded-full w-12 h-12 flex items-center justify-center text-3xl shadow-lg">+</a>
 <?php endif; ?>
 
