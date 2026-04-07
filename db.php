@@ -1,6 +1,6 @@
 <?php
 $host = "localhost";
-$db   = "sociaalai";
+$db   = "sociju_sociaalailab";
 $user = "root";
 $pass = "";
 try {
