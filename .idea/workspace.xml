@@ -4,11 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="303eae4d-7ca5-4634-9557-4de1cdbec390" name="Changes" comment="Event + past events counter">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/index.php" beforeDir="false" afterPath="$PROJECT_DIR$/index.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/style.css" afterDir="false" />
-    </list>
+    <list default="true" id="303eae4d-7ca5-4634-9557-4de1cdbec390" name="Changes" comment="database naam change" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -122,7 +118,7 @@
       <workItem from="1774598516506" duration="13001000" />
       <workItem from="1774614510998" duration="772000" />
       <workItem from="1774615304496" duration="1976000" />
-      <workItem from="1775560279136" duration="2785000" />
+      <workItem from="1775560279136" duration="3086000" />
     </task>
     <task id="LOCAL-00001" summary="Padding toegevoegd aan terugblik text-blok">
       <option name="closed" value="true" />
@@ -364,7 +360,15 @@
       <option name="project" value="LOCAL" />
       <updated>1774612373144</updated>
     </task>
-    <option name="localTasksCounter" value="31" />
+    <task id="LOCAL-00031" summary="database naam change">
+      <option name="closed" value="true" />
+      <created>1775569401722</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1775569401722</updated>
+    </task>
+    <option name="localTasksCounter" value="32" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -399,7 +403,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="update branch" />
     <MESSAGE value="Foto breedte en hoogte veranderd kennis en actie page." />
     <MESSAGE value="Foto's breedte faciliteit page geupdate" />
     <MESSAGE value="padding toegevoegd" />
@@ -424,7 +427,8 @@
     <MESSAGE value="foto's mobile kleiner homepage" />
     <MESSAGE value="witte balk terugblik verwijderd" />
     <MESSAGE value="Event + past events counter" />
-    <option name="LAST_COMMIT_MESSAGE" value="Event + past events counter" />
+    <MESSAGE value="database naam change" />
+    <option name="LAST_COMMIT_MESSAGE" value="database naam change" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
