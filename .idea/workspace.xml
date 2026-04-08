@@ -4,11 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="303eae4d-7ca5-4634-9557-4de1cdbec390" name="Changes" comment="database naam change">
+    <list default="true" id="303eae4d-7ca5-4634-9557-4de1cdbec390" name="Changes" comment="Wat doen we page link en hover veranderd">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/programma/actie.php" beforeDir="false" afterPath="$PROJECT_DIR$/programma/actie.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/programma/faciliteit.php" beforeDir="false" afterPath="$PROJECT_DIR$/programma/faciliteit.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/programma/kennis.php" beforeDir="false" afterPath="$PROJECT_DIR$/programma/kennis.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db.php" beforeDir="false" afterPath="$PROJECT_DIR$/db.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/style.css" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -127,7 +125,7 @@
       <workItem from="1775560279136" duration="3297000" />
       <workItem from="1775569687473" duration="801000" />
       <workItem from="1775642087716" duration="247000" />
-      <workItem from="1775642916839" duration="2775000" />
+      <workItem from="1775642916839" duration="4998000" />
     </task>
     <task id="LOCAL-00001" summary="Padding toegevoegd aan terugblik text-blok">
       <option name="closed" value="true" />
@@ -385,7 +383,15 @@
       <option name="project" value="LOCAL" />
       <updated>1775569576133</updated>
     </task>
-    <option name="localTasksCounter" value="33" />
+    <task id="LOCAL-00033" summary="Wat doen we page link en hover veranderd">
+      <option name="closed" value="true" />
+      <created>1775645722892</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1775645722892</updated>
+    </task>
+    <option name="localTasksCounter" value="34" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -420,7 +426,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Foto breedte en hoogte veranderd kennis en actie page." />
     <MESSAGE value="Foto's breedte faciliteit page geupdate" />
     <MESSAGE value="padding toegevoegd" />
     <MESSAGE value="Images homepage verkleind. Footer gap tussen samenwerkingen vergroot. Padding toegevoegd &quot;wie zijn we&quot; Page." />
@@ -445,7 +450,8 @@
     <MESSAGE value="witte balk terugblik verwijderd" />
     <MESSAGE value="Event + past events counter" />
     <MESSAGE value="database naam change" />
-    <option name="LAST_COMMIT_MESSAGE" value="database naam change" />
+    <MESSAGE value="Wat doen we page link en hover veranderd" />
+    <option name="LAST_COMMIT_MESSAGE" value="Wat doen we page link en hover veranderd" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
