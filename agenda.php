@@ -56,10 +56,10 @@ include __DIR__ . '/navbar.php';
 ?>
 
 <main>
-    <div id="agenda-terugblik-switch" class="mobile flex items-center justify-center gap-1" style="scroll-margin-top: 110px;">
+    <div id="agenda-terugblik-switch" class="mobile flex items-center justify-center gap-1 " style="scroll-margin-top: 110px;">
         <div class="agenda bg-white p-6 shadow-lg max-w-xl mt-6 w-full border-r text-center">
             <a href="agenda.php#agenda-terugblik-switch">
-                <h1 class="text-2xl text-[#000000] font-semibold">
+                <h1 class="text-2xl text-green-800 font-semibold">
                     Agenda (<?php echo $totalUpcoming; ?>)
                 </h1>
             </a>

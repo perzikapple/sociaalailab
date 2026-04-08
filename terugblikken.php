@@ -92,7 +92,7 @@ include __DIR__ . '/navbar.php';
         </div>
         <div class="terugblik bg-white p-6 max-w-xl mt-6 w-full text-center border-r border-gray-500">
             <a href="terugblikken.php#agenda-terugblik-switch">
-                <h1 class="text-2xl text-[#000000] font-semibold">
+                <h1 class="text-2xl text-green-800 font-semibold">
                     Terugblik
                 </h1>
             </a>
