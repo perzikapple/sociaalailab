@@ -545,7 +545,7 @@ main > div.grid > div:hover {
 
 #watdoenwe-switch a h1 {
     font-size: clamp(1rem, 2vw, 1.3rem);
-    color: #00811F;
+    color: black;
     font-weight: 600;
     margin: 0;
 }
@@ -553,6 +553,22 @@ main > div.grid > div:hover {
 #watdoenwe-switch a h1:hover {
     color: #005e13;
 }
+
+/* Kennis pagina actief */
+.page-kennis #watdoenwe-switch a[href*="kennis"] h1 {
+    color: #00811F;
+}
+
+/* Actie pagina actief */
+.page-actie #watdoenwe-switch a[href*="actie"] h1 {
+    color: #00811F;
+}
+
+/* Faciliteit pagina actief */
+.page-faciliteit #watdoenwe-switch a[href*="faciliteit"] h1 {
+    color: #00811F;
+}
+
 /* Mobile styles */
 @media (max-width: 768px) {
     .hamburger {

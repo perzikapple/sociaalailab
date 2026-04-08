@@ -29,7 +29,7 @@ try {
     <link rel="stylesheet" href="../ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 
-<body class="bg-gradient-to-br from-[#00811F] to-[#b9eb34]">
+<body class="page-faciliteit bg-gradient-to-br from-[#00811F] to-[#b9eb34]">
 
 
 <div class="banner-wrapper">
