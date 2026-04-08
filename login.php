@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (!$user) {
             $message = 'Email or password incorrect.';
-        } elseif ($pass !== $user['wachtwoord']) {
+        } elseif (!password_verify($pass, $user['wachtwoord'])) {
             $message = 'Email or password incorrect.';
         } else {
             // Set session and redirect

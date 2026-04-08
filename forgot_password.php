@@ -37,8 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $mail = new PHPMailer(true);
 
             try {
-                $mail->SMTPDebug = 2; // debug op niveau 2
-$mail->Debugoutput = 'html';
+                $mail->SMTPDebug = 0; // Debug uitgeschakeld voor veiligheid
                 // Server settings - Elastic Email
                 $mail->isSMTP();
                 $mail->Host       = 'smtp.elasticemail.com'; // Elastic Email SMTP server
@@ -62,7 +61,7 @@ $mail->Debugoutput = 'html';
 
                 $mail->send();
                 $success = true;
-                $message = 'Er is een reset link naar je email gestuurd.';
+                $message = 'Er is een reset link naar je email gestuurd. Check ook je spam.';
             } catch (Exception $e) {
                 $message = 'Er is een fout opgetreden bij het verzenden van de email: ' . $mail->ErrorInfo;
             }

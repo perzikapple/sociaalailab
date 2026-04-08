@@ -3,7 +3,8 @@ require 'db.php';
 
 // Admin gegevens - pas deze aan
 $adminEmail = 'admin@sociaalai.nl';
-$adminPassword = 'admin123';  // PLAIN TEXT - niet veilig!
+$adminPasswordRaw = 'admin123';
+$adminPassword = password_hash($adminPasswordRaw, PASSWORD_DEFAULT);  // Veilig gehashed
 
 echo "<!DOCTYPE html>
 <html lang='nl'>
@@ -18,10 +19,8 @@ echo "<!DOCTYPE html>
 
 echo "<h1>Admin Account Aanmaken</h1>";
 
-echo "<div class='create-admin-warning'>";
-echo "<strong>⚠️ VEILIGHEIDSRISICO:</strong><br>";
-echo "Dit systeem slaat wachtwoorden op als plain text (zonder beveiliging).<br>";
-echo "Dit is NIET veilig voor productie!";
+echo "<strong>CREATE ADMIN ? VEILIG:</strong><br>";
+echo "Wachtwoorden worden veilig gehashed opgeslagen (bcrypt).<br>";
 echo "</div>";
 
 try {
@@ -37,8 +36,8 @@ try {
         echo "<div class='create-admin-success'>";
         echo "<h2>✓ Account Bijgewerkt!</h2>";
         echo "<p><strong>Email:</strong> " . htmlspecialchars($adminEmail) . "</p>";
-        echo "<p><strong>Wachtwoord:</strong> " . htmlspecialchars($adminPassword) . "</p>";
-        echo "<p><em>(Wachtwoord is zichtbaar opgeslagen in database)</em></p>";
+        echo "<p><strong>Wachtwoord:</strong> " . htmlspecialchars($adminPasswordRaw) . "</p>";
+        echo "<p><em>(Wachtwoord is beveiligd gehashed in database)</em></p>";
         echo "</div>";
     } else {
         // Maak nieuw account aan
@@ -48,8 +47,8 @@ try {
         echo "<div class='create-admin-success'>";
         echo "<h2>✓ Account Aangemaakt!</h2>";
         echo "<p><strong>Email:</strong> " . htmlspecialchars($adminEmail) . "</p>";
-        echo "<p><strong>Wachtwoord:</strong> " . htmlspecialchars($adminPassword) . "</p>";
-        echo "<p><em>(Wachtwoord is zichtbaar opgeslagen in database)</em></p>";
+        echo "<p><strong>Wachtwoord:</strong> " . htmlspecialchars($adminPasswordRaw) . "</p>";
+        echo "<p><em>(Wachtwoord is beveiligd gehashed in database)</em></p>";
         echo "</div>";
     }
     
@@ -69,3 +68,4 @@ echo "</div>
 </body>
 </html>";
 ?>
+

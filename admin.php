@@ -392,11 +392,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($existsStmt->fetch()) {
                 $message = 'Er bestaat al een gebruiker met dit e-mailadres.';
             } else {
+                $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
                 $adminFlag = in_array($newRole, ['superadmin', 'content_manager', 'editor'], true) ? 1 : 0;
                 $insertStmt = $pdo->prepare('INSERT INTO accounts (email, wachtwoord, first_name, last_name, admin, role) VALUES (?, ?, ?, ?, ?, ?)');
                 $insertStmt->execute([
                     $newEmail,
-                    $newPassword,
+                    $hashedPassword,
                     $newFirstName !== '' ? $newFirstName : null,
                     $newLastName !== '' ? $newLastName : null,
                     $adminFlag,

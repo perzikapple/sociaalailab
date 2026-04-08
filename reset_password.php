@@ -27,9 +27,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $validToken) {
     } elseif ($newPassword !== $confirmPassword) {
         $message = 'Wachtwoorden komen niet overeen.';
     } else {
-        // Update password in database
+        // Update password in database - hash it for security
+        $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
         $stmt = $pdo->prepare("UPDATE accounts SET wachtwoord = ? WHERE email = ?");
-        $stmt->execute([$newPassword, $email]);
+        $stmt->execute([$hashedPassword, $email]);
 
         // Clear session
         unset($_SESSION['reset_token']);
