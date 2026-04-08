@@ -55,7 +55,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
                 // Content
-                $resetLink = "http://localhost:8000/reset_password.php?token=" . $token; // Vervang localhost met je domein in productie
+                // Automatisch het juiste domein detecteren
+                $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http';
+                $host = $_SERVER['HTTP_HOST'];
+                // Verwijder :8000 poort voor live server
+                $host = str_replace(':8000', '', $host);
+                $resetLink = $protocol . "://" . $host . "/reset_password.php?token=" . $token;
                 $mail->isHTML(false);
                 $mail->Subject = 'Wachtwoord reset - SociaalAI Lab';
                 $mail->Body    = "Klik op deze link om je wachtwoord te resetten: " . $resetLink . "\n\nAls je dit niet hebt aangevraagd, negeer deze email.";
