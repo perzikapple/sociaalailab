@@ -269,60 +269,7 @@ include __DIR__ . '/navbar.php';
                 </a>
             </div>
 
-            <div class="mt-8 p-5 bg-white rounded-lg border border-blue-200 shadow-sm">
-                <h3 class="text-base font-bold text-[#0A66C2] mb-2">Mock-mode</h3>
-                <p class="text-sm text-gray-700">
-        
-                <?php if (!$hasLinkedInApiData && !$isUsingLinkedInMock && $isAdminViewer): ?>
-                    <p class="text-xs text-gray-500 mt-3">
-                        API-koppeling niet actief. Stel <strong>LINKEDIN_ORG_ID</strong> en <strong>LINKEDIN_ACCESS_TOKEN</strong> in op de server om automatisch de nieuwste post op te halen.
-                    </p>
-                    <div class="mt-3 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-md p-3">
-                        <p class="font-semibold mb-1">Admin debug</p>
-                        <p>
-                            credentials: <?php echo !empty($linkedinApiDebug['credentialMissing']) ? 'missing' : 'ok'; ?>,
-                            curl: <?php echo !empty($linkedinApiDebug['curlMissing']) ? 'missing' : 'ok'; ?>
-                        </p>
-                        <?php if (!empty($linkedinApiDebug['attempts']) && is_array($linkedinApiDebug['attempts'])): ?>
-                            <?php foreach ($linkedinApiDebug['attempts'] as $attempt): ?>
-                                <p class="mt-1">
-                                    status <?php echo htmlspecialchars((string) ($attempt['httpCode'] ?? 0)); ?>
-                                    <?php if (!empty($attempt['message'])): ?>
-                                        - <?php echo htmlspecialchars((string) $attempt['message']); ?>
-                                    <?php endif; ?>
-                                    <?php if (!empty($attempt['curlError'])): ?>
-                                        - curl: <?php echo htmlspecialchars((string) $attempt['curlError']); ?>
-                                    <?php endif; ?>
-                                </p>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <p class="mt-1">Geen endpoint-response ontvangen.</p>
-                        <?php endif; ?>
-                    </div>
-                <?php endif; ?>
-
-                <?php if ($isUsingLinkedInMock && $isAdminViewer): ?>
-                    <p class="text-xs text-gray-500 mt-3">
-                        Mock-modus staat aan. Schakel uit door <strong>LINKEDIN_MOCK_MODE</strong> te verwijderen of <strong>?linkedin_mock=1</strong> weg te halen.
-                    </p>
-                <?php endif; ?>
-
-                <?php if ($isAdminViewer): ?>
-                    <div class="mt-3 flex flex-wrap gap-2">
-                        <a href="<?php echo htmlspecialchars($enableMockUrl); ?>"
-                           class="inline-flex items-center gap-2 text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 px-3 py-1 rounded">
-                            <i class="fa-solid fa-vial"></i>
-                            Mock aan
-                        </a>
-                        <a href="<?php echo htmlspecialchars($disableMockUrl); ?>"
-                           class="inline-flex items-center gap-2 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 px-3 py-1 rounded">
-                            <i class="fa-solid fa-rotate-left"></i>
-                            Mock uit
-                        </a>
-                    </div>
-                <?php endif; ?>
-            </div>
-        </div>
+            
     </section>
 
 <?php include __DIR__ . '/footer.php'; ?>

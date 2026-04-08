@@ -141,8 +141,8 @@ include __DIR__ . '/navbar.php';
             $nextUrl = $scheme . '://' . $_SERVER['HTTP_HOST'] . $basePath . '/bedankt.php';
             ?>
             <h1 class="font-bold text-2xl mb-2">Contact</h1>
-            <p class="sociaalai-contact-intro">Heb je een vraag of idee? Stuur ons dan een bericht, wij proberen binnen 1-2 werkdagen te reageren.</p>
-            <form class="sociaalai-contact-form" target="_blank" action="https://formsubmit.co/sociaalailab@proton.me" method="POST">
+            <p class="sociaalai-contact-intro">Heb je een vraag of idee? Stuur ons dan een bericht, wij proberen zo spoedig te reageren.</p>
+            <form class="sociaalai-contact-form" target="_blank" action="https://formsubmit.co/info@sociaalailab.nl" method="POST">
                 <input type="hidden" name="_captcha" value="false">
                 <input type="hidden" name="_next" value="<?php echo htmlspecialchars($nextUrl); ?>">
                 <div class="form-group mb-4">
