@@ -111,6 +111,12 @@ include __DIR__ . '/navbar.php';
                 <?php echo renderEditorBlock($event['description']); ?>
             </div>
 
+            <?php if (!empty($event['show_signup_button'])): ?>
+                <div class="mb-6">
+                    <a href="inschrijven.php?event_id=<?php echo (int)$event['id']; ?>" class="inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">Inschrijven</a>
+                </div>
+            <?php endif; ?>
+
             <?php if ($isPastEvent): ?>
                 <div class="bg-gray-50 border border-gray-200 rounded-md p-6 mb-6">
                     <h2 class="text-2xl font-semibold mb-3 text-gray-900">Samenvatting</h2>

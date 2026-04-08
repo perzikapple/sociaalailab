@@ -98,6 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $description = sanitizeEditorBlockInput($_POST['description'] ?? '');
         $location = sanitizeEditorPlainText($_POST['location'] ?? '');
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
+        $signupEmbed = trim((string)($_POST['signup_embed'] ?? ''));
         $showOnHomepage = isset($_POST['show_on_homepage']) ? 1 : 0;
         $infoLink = $_POST['info_link'] ?? '';
 
@@ -113,8 +114,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $imageName = $upload['name'] ?? null;
                 // voeg updated_at en updated_by toe bij insert
-                $stmt = $pdo->prepare('INSERT INTO events (title, date, end_date, time, time_end, description, image, location, show_signup_button, show_on_homepage, info_link, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)');
-                $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $imageName, $location ?: null, $showSignupButton, $showOnHomepage, $infoLink, $currentUser]);
+                $stmt = $pdo->prepare('INSERT INTO events (title, date, end_date, time, time_end, description, image, location, show_signup_button, signup_embed, show_on_homepage, info_link, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)');
+                $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $imageName, $location ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $infoLink, $currentUser]);
                 $eventId = $pdo->lastInsertId();
                 // Audit log: event created
                 audit_log($pdo, 'create', 'events', $eventId, 'title: ' . $title, $currentUser);
@@ -133,6 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $description = sanitizeEditorBlockInput($_POST['description'] ?? '');
         $location = sanitizeEditorPlainText($_POST['location'] ?? '');
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
+        $signupEmbed = trim((string)($_POST['signup_embed'] ?? ''));
         $showOnHomepage = isset($_POST['show_on_homepage']) ? 1 : 0;
         $removeImage = isset($_POST['remove_image']) ? 1 : 0;
 
@@ -158,8 +160,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $imageName = $upload['name'] ?? $oldImage;
                 }
                 // update nu ook updated_at en updated_by
-                $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, end_date=?, time=?, time_end=?, description=?, image=?, location=?, show_signup_button=?, show_on_homepage=?, info_link=?, updated_at=NOW(), updated_by=? WHERE id=?');
-                $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $imageName, $location ?: null, $showSignupButton, $showOnHomepage, $infoLink, $currentUser, $id]);
+                $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, end_date=?, time=?, time_end=?, description=?, image=?, location=?, show_signup_button=?, signup_embed=?, show_on_homepage=?, info_link=?, updated_at=NOW(), updated_by=? WHERE id=?');
+                $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $imageName, $location ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $infoLink, $currentUser, $id]);
                 // Audit log: event updated
                 audit_log($pdo, 'update', 'events', $id, 'title: ' . $title, $currentUser);
 
@@ -1148,6 +1150,18 @@ if ($page === 'users') {
                             </div>
 
                             <div>
+                                <label class="form-label" for="signup_embed">Aanmelder.nl embed (optioneel)</label>
+                                <textarea
+                                    name="signup_embed"
+                                    id="signup_embed"
+                                    rows="5"
+                                    class="form-textarea admin-input-surface"
+                                    placeholder="Plak hier de aanmelder.nl link en script"
+                                ><?php echo htmlspecialchars($editEvent['signup_embed'] ?? ''); ?></textarea>
+                                <p class="text-xs text-gray-500 mt-2">Als dit veld gevuld is, wordt de standaard inschrijfknop vervangen door de embed van aanmelder.nl.</p>
+                            </div>
+
+                            <div>
                                 <label class="form-checkbox">
                                     <input type="checkbox" name="show_signup_button" <?php echo $editEvent['show_signup_button'] ? 'checked' : ''; ?> />
                                     Toon inschrijf knop
@@ -1273,6 +1287,18 @@ document.addEventListener('DOMContentLoaded', function() {
                                         <i class="fa-solid fa-circle-info mr-1"></i> Meer info
                                     </a>
                                 <?php endif; ?>
+                            </div>
+
+                            <div>
+                                <label class="form-label" for="signup_embed">Aanmelder.nl embed (optioneel)</label>
+                                <textarea
+                                    name="signup_embed"
+                                    id="signup_embed"
+                                    rows="5"
+                                    class="form-textarea admin-input-surface"
+                                    placeholder="Plak hier de aanmelder.nl link en script"
+                                ><?php echo htmlspecialchars($_POST['signup_embed'] ?? ''); ?></textarea>
+                                <p class="text-xs text-gray-500 mt-2">Als dit veld gevuld is, wordt de standaard inschrijfknop vervangen door de embed van aanmelder.nl.</p>
                             </div>
 
                             <div>
@@ -2130,8 +2156,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const endTime = formatTimeDisplay(getFieldValue(form, 'time_end').trim());
         const location = getFieldValue(form, 'location').trim() || 'Rotterdam - Hillevliet 90';
         const infoLink = getFieldValue(form, 'info_link').trim();
+        const signupEmbed = getFieldValue(form, 'signup_embed').trim();
         const imageSrc = resolveImageSrc(form);
         const mapUrl = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(location);
+        const hasEmbed = signupEmbed !== '';
         const hasSignup = !!(getFieldInput(form, 'show_signup_button') && getFieldInput(form, 'show_signup_button').checked);
         const dateDisplay = formatDateDisplay(startDate);
         const endDateDisplay = formatDateDisplay(endDate);
@@ -2160,7 +2188,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             '<div class="text-gray-700 pb-3"><strong> Wat:</strong><div class="mt-1">' + descriptionHtml + '</div></div>' +
                         '</div>' +
                     '</div>' +
-                    (hasSignup ? '<a href="#" onclick="return false;" class="mt-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">Inschrijven</a>' : '') +
+                    (hasEmbed ? '<div class="mt-4 rounded-md border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-600">Aanmelder.nl embed wordt na opslaan getoond.</div>' : (hasSignup ? '<a href="#" onclick="return false;" class="mt-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">Inschrijven</a>' : '')) +
                     (infoLink ? '<a href="' + escapeHtml(infoLink) + '" target="_blank" rel="noopener noreferrer" class="mt-4 ml-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">Meer info</a>' : '') +
                 '</div>' +
                 (imageSrc ? '<div class="flex-1"><img src="' + escapeHtml(imageSrc) + '" alt="" class="w-full h-auto object-cover shadow-md"></div>' : '') +

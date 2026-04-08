@@ -75,6 +75,9 @@ try {
     if (!in_array('info_link', $columns)) {
         $pdo->exec("ALTER TABLE events ADD COLUMN info_link VARCHAR(255) DEFAULT NULL");
     }
+    if (!in_array('signup_embed', $columns)) {
+        $pdo->exec("ALTER TABLE events ADD COLUMN signup_embed TEXT DEFAULT NULL");
+    }
     if (!in_array('show_on_homepage', $columns)) {
         $pdo->exec("ALTER TABLE events ADD COLUMN show_on_homepage TINYINT(1) DEFAULT 0");
     }
