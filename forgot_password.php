@@ -1,5 +1,6 @@
 <?php
 session_start();
+ob_start(); // Start output buffering om debug output te voorkomen
 require 'db.php';
 
 // Include PHPMailer
@@ -60,9 +61,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $mail->Body    = "Klik op deze link om je wachtwoord te resetten: " . $resetLink . "\n\nAls je dit niet hebt aangevraagd, negeer deze email.";
 
                 $mail->send();
+                ob_clean(); // Clear any debug output from PHPMailer
                 $success = true;
                 $message = 'Er is een reset link naar je email gestuurd. Check ook je spam.';
             } catch (Exception $e) {
+                ob_clean(); // Clear debug output on error too
                 $message = 'Er is een fout opgetreden bij het verzenden van de email: ' . $mail->ErrorInfo;
             }
         }
@@ -192,3 +195,4 @@ include __DIR__ . '/navbar.php';
 </script>
 </body>
 </html>
+<?php ob_end_flush(); // Flush output buffer met de HTML, zonderde debug logs ?>
