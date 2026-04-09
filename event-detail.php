@@ -103,7 +103,7 @@ include __DIR__ . '/navbar.php';
 
             <?php if (!empty($event['image'])): ?>
                 <div class="mb-6">
-                    <img src="uploads/<?php echo htmlspecialchars($event['image']); ?>" alt="<?php echo htmlspecialchars((string)$event['title']); ?>" class="w-full h-auto object-cover shadow-md">
+                    <img src="uploads/<?php echo htmlspecialchars($event['image']); ?>" alt="<?php echo htmlspecialchars((string)$event['title']); ?>" class="w-full md:w-2/3 h-auto object-cover shadow-md mx-auto">
                 </div>
             <?php endif; ?>
 
