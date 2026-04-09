@@ -1,8 +1,8 @@
 <?php
-$host = "sociju-sociaalailab.db.transip.me";
+$host = "localhost";
 $db   = "sociju_sociaalailab";
-$user = "sociju_Sociaalailab";
-$pass = "Techniekcollege12345#";
+$user = "root";
+$pass = "";
 try {
     $pdo = new PDO(
         "mysql:host=$host;dbname=$db;charset=utf8mb4",
