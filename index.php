@@ -39,7 +39,7 @@ try {
         }
     }
     
-    $stmt = $pdo->prepare("SELECT * FROM events WHERE COALESCE(end_date, date) >= CURDATE() AND (show_on_homepage IS NULL OR show_on_homepage = 1) ORDER BY date, time LIMIT 2");
+    $stmt = $pdo->prepare("SELECT * FROM events WHERE COALESCE(end_date, date) >= CURDATE() AND date <= DATE_ADD(CURDATE(), INTERVAL 14 DAY) AND (show_on_homepage IS NULL OR show_on_homepage = 1) ORDER BY date, time LIMIT 2");
     $stmt->execute();
     $events = $stmt->fetchAll();
 } catch (Exception $e) {
@@ -317,12 +317,15 @@ foreach ($events as $event):
                 <i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>
                 <p class="text-gray-700 pb-3"><strong> Wat:</strong> <?php echo nl2br(htmlspecialchars($event['description'])); ?></p>
             </div>
+        </div>
+        <div class="mt-6 flex flex-wrap gap-3">
+            <a href="event-detail.php?id=<?php echo (int)$event['id']; ?>" class="inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">
+                Meer info
+            </a>
             <?php if (!empty($event['info_link'])): ?>
-                <div class="w-full mt-4 flex justify-start">
-                    <a href="<?php echo htmlspecialchars($event['info_link']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-info bg-[#00811F] text-white px-4 py-2 rounded shadow hover:bg-[#00691A] transition">
-                        Meer info
-                    </a>
-                </div>
+            <a href="<?php echo htmlspecialchars($event['info_link']); ?>" target="_blank" rel="noopener noreferrer" class="inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">
+                Externe info
+            </a>
             <?php endif; ?>
         </div>
     </div>
