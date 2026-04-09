@@ -91,21 +91,26 @@ include __DIR__ . '/navbar.php';
             ?>
 
             <span class="inline-block text-white text-sm font-medium px-4 py-1 mb-4" style="background-color:#ce0245;">Evenement info</span>
-            <h1 class="text-3xl md:text-4xl font-semibold mb-4 text-gray-900"><?php echo renderEditorInline($event['title']); ?></h1>
+            
+            <div class="space-y-6 mb-8">
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-semibold mb-4 text-gray-900"><?php echo renderEditorInline($event['title']); ?></h1>
 
-            <div class="space-y-3 mb-6">
-                <p class="text-gray-700"><strong>Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?><?php if ($endDateDisplay) { echo ' t/m ' . htmlspecialchars($endDateDisplay); } ?></p>
-                <?php if ($timeDisplay || $timeEndDisplay): ?>
-                    <p class="text-gray-700"><strong>Tijd:</strong> <?php echo htmlspecialchars($timeDisplay); ?><?php if ($timeEndDisplay) { echo ' - ' . htmlspecialchars($timeEndDisplay); } ?></p>
-                <?php endif; ?>
-                <p class="text-gray-700"><strong>Locatie:</strong> <?php echo htmlspecialchars($location); ?></p>
-            </div>
-
-            <?php if (!empty($event['image'])): ?>
-                <div class="mb-6">
-                    <img src="uploads/<?php echo htmlspecialchars($event['image']); ?>" alt="<?php echo htmlspecialchars((string)$event['title']); ?>" class="w-full md:w-2/3 h-auto object-cover shadow-md mx-auto">
+                    <div class="space-y-3">
+                        <p class="text-gray-700"><strong>Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?><?php if ($endDateDisplay) { echo ' t/m ' . htmlspecialchars($endDateDisplay); } ?></p>
+                        <?php if ($timeDisplay || $timeEndDisplay): ?>
+                            <p class="text-gray-700"><strong>Tijd:</strong> <?php echo htmlspecialchars($timeDisplay); ?><?php if ($timeEndDisplay) { echo ' - ' . htmlspecialchars($timeEndDisplay); } ?></p>
+                        <?php endif; ?>
+                        <p class="text-gray-700"><strong>Locatie:</strong> <?php echo htmlspecialchars($location); ?></p>
+                    </div>
                 </div>
-            <?php endif; ?>
+
+                <?php if (!empty($event['image'])): ?>
+                    <div class="flex-shrink-0" style="width: 100%; max-width: 640px;">
+                        <img src="uploads/<?php echo htmlspecialchars($event['image']); ?>" alt="<?php echo htmlspecialchars((string)$event['title']); ?>" class="w-full h-auto object-cover shadow-md rounded" style="aspect-ratio: 16/9;">
+                    </div>
+                <?php endif; ?>
+            </div>
 
             <div class="text-gray-700 mb-8 leading-relaxed">
                 <?php echo renderEditorBlock($event['description']); ?>
