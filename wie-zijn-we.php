@@ -61,7 +61,7 @@ include __DIR__ . '/navbar.php';
         $flexDir = 'row';
         $flexWrap = 'nowrap';
         if ($imagePosition !== 'normal' && $hasText && $hasImage) {
-            $sectionStyle = "display: flex; flex-direction: " . $flexDir . "; flex-wrap: " . $flexWrap . "; gap: 2rem; align-items: flex-start;";
+            $sectionStyle = "display: flex; flex-direction: " . $flexDir . "; flex-wrap: " . $flexWrap . "; gap: 2rem; align-items: center;";
         } else {
             $sectionStyle = "display: flex; flex-direction: column; gap: 1.5rem;";
         }

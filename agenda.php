@@ -85,6 +85,7 @@ foreach ($events as $event):
     $endDateDisplay = !empty($event['end_date']) ? formatEventDateDisplay($event['end_date']) : null;
     $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : '';
     $timeEndDisplay = $event['time_end'] ? formatEventTimeDisplay($event['time_end']) : '';
+    $signupEmbed = trim((string)($event['signup_embed'] ?? ''));
     $dateTs = strtotime((string)$event['date']);
     $dayMonth = $dateTs ? date('d.m', $dateTs) : $dateDisplay;
     $year = $dateTs ? date('Y', $dateTs) : '';
@@ -117,7 +118,9 @@ foreach ($events as $event):
                     <div class="text-gray-700 pb-3 "><strong> Wat:</strong><div class="mt-1"><?php echo renderEditorBlock($event['description']); ?></div></div>
                 </div>
             </div>
-            <?php if (!empty($event['show_signup_button'])): ?>
+            <?php if ($signupEmbed !== ''): ?>
+            <?php echo renderAanmelderEmbed($signupEmbed); ?>
+            <?php elseif (!empty($event['show_signup_button'])): ?>
             <a href="inschrijven.php?event_id=<?php echo (int)$event['id']; ?>" class="mt-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">
                 Inschrijven
             </a>

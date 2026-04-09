@@ -4,10 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="303eae4d-7ca5-4634-9557-4de1cdbec390" name="Changes" comment="witte balk terugblik verwijderd">
+    <list default="true" id="303eae4d-7ca5-4634-9557-4de1cdbec390" name="Changes" comment="ipad navbar gefixed 2">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/agenda.php" beforeDir="false" afterPath="$PROJECT_DIR$/agenda.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/terugblikken.php" beforeDir="false" afterPath="$PROJECT_DIR$/terugblikken.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db.php" beforeDir="false" afterPath="$PROJECT_DIR$/db.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -18,8 +17,15 @@
     <execution />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="228" />
+    <option name="cachedIndexableFilesCount" value="241" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
+  </component>
+  <component name="Git.Pull.Settings">
+    <option name="OPTIONS">
+      <set>
+        <option value="REBASE" />
+      </set>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
@@ -54,28 +60,29 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.MCP Project settings loaded": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "main",
-    "junie.onboarding.icon.badge.shown": "true",
-    "last_opened_file_path": "/Applications/XAMPP/xamppfiles/htdocs/sociaalailab",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "preferences.keymap",
-    "to.speed.mode.migration.done": "true",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Applications/XAMPP/xamppfiles/htdocs/sociaalailab&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.keymap&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager">
     <configuration name="index.php" type="PhpLocalRunConfigurationType" factoryName="PHP Console" path="$PROJECT_DIR$/index.php">
       <method v="2" />
@@ -84,8 +91,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-PS-253.32098.40" />
-        <option value="bundled-php-predefined-a98d8de5180a-0e0d91225499-com.jetbrains.php.sharedIndexes-PS-253.32098.40" />
+        <option value="bundled-js-predefined-d6986cc7102b-3bd3a6803838-JavaScript-PS-261.22158.283" />
+        <option value="bundled-php-predefined-a98d8de5180a-a9a4ea3ee0f4-com.jetbrains.php.sharedIndexes-PS-261.22158.283" />
       </set>
     </attachedChunks>
   </component>
@@ -112,7 +119,16 @@
       <workItem from="1774353966979" duration="2032000" />
       <workItem from="1774356105321" duration="8164000" />
       <workItem from="1774423901049" duration="2574000" />
-      <workItem from="1774598516506" duration="10817000" />
+      <workItem from="1774598516506" duration="13001000" />
+      <workItem from="1774614510998" duration="772000" />
+      <workItem from="1774615304496" duration="1976000" />
+      <workItem from="1775560279136" duration="3297000" />
+      <workItem from="1775569687473" duration="801000" />
+      <workItem from="1775642087716" duration="247000" />
+      <workItem from="1775642916839" duration="5971000" />
+      <workItem from="1775648937944" duration="242000" />
+      <workItem from="1775654585678" duration="602000" />
+      <workItem from="1775655218095" duration="47000" />
     </task>
     <task id="LOCAL-00001" summary="Padding toegevoegd aan terugblik text-blok">
       <option name="closed" value="true" />
@@ -346,7 +362,63 @@
       <option name="project" value="LOCAL" />
       <updated>1774611793932</updated>
     </task>
-    <option name="localTasksCounter" value="30" />
+    <task id="LOCAL-00030" summary="Event + past events counter">
+      <option name="closed" value="true" />
+      <created>1774612373144</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1774612373144</updated>
+    </task>
+    <task id="LOCAL-00031" summary="database naam change">
+      <option name="closed" value="true" />
+      <created>1775569401722</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1775569401722</updated>
+    </task>
+    <task id="LOCAL-00032" summary="database naam change">
+      <option name="closed" value="true" />
+      <created>1775569576133</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1775569576133</updated>
+    </task>
+    <task id="LOCAL-00033" summary="Wat doen we page link en hover veranderd">
+      <option name="closed" value="true" />
+      <created>1775645722892</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1775645722892</updated>
+    </task>
+    <task id="LOCAL-00034" summary="Wat doen we page link en hover veranderd">
+      <option name="closed" value="true" />
+      <created>1775647935338</created>
+      <option name="number" value="00034" />
+      <option name="presentableId" value="LOCAL-00034" />
+      <option name="project" value="LOCAL" />
+      <updated>1775647935338</updated>
+    </task>
+    <task id="LOCAL-00035" summary="ipad navbar gefixed">
+      <option name="closed" value="true" />
+      <created>1775655047550</created>
+      <option name="number" value="00035" />
+      <option name="presentableId" value="LOCAL-00035" />
+      <option name="project" value="LOCAL" />
+      <updated>1775655047550</updated>
+    </task>
+    <task id="LOCAL-00036" summary="ipad navbar gefixed 2">
+      <option name="closed" value="true" />
+      <created>1775655077143</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1775655077143</updated>
+    </task>
+    <option name="localTasksCounter" value="37" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -381,11 +453,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Padding terugblik blok toegevoegd" />
-    <MESSAGE value="update branch" />
-    <MESSAGE value="Foto breedte en hoogte veranderd kennis en actie page." />
-    <MESSAGE value="Foto's breedte faciliteit page geupdate" />
-    <MESSAGE value="padding toegevoegd" />
     <MESSAGE value="Images homepage verkleind. Footer gap tussen samenwerkingen vergroot. Padding toegevoegd &quot;wie zijn we&quot; Page." />
     <MESSAGE value="Navbar mobile UI verbeterd." />
     <MESSAGE value="Footer navbar Desktop en Mobile ui verbeterd" />
@@ -406,7 +473,12 @@
     <MESSAGE value="agenda en terublik knoppen verbeterd op mobile en tablet" />
     <MESSAGE value="foto's mobile kleiner homepage" />
     <MESSAGE value="witte balk terugblik verwijderd" />
-    <option name="LAST_COMMIT_MESSAGE" value="witte balk terugblik verwijderd" />
+    <MESSAGE value="Event + past events counter" />
+    <MESSAGE value="database naam change" />
+    <MESSAGE value="Wat doen we page link en hover veranderd" />
+    <MESSAGE value="ipad navbar gefixed" />
+    <MESSAGE value="ipad navbar gefixed 2" />
+    <option name="LAST_COMMIT_MESSAGE" value="ipad navbar gefixed 2" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

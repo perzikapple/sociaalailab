@@ -28,7 +28,7 @@ try {
     <link rel="stylesheet" href="../ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 
-<body class="bg-gradient-to-br from-[#00811F] to-[#b9eb34]">
+<body class="page-kennis bg-gradient-to-br from-[#00811F] to-[#b9eb34]">
 
 <div class="banner-wrapper">
     <img src="<?php echo htmlspecialchars($banner1); ?>" alt="Banner 1" class="banner active w-full object-cover h-60 md:h-96">
