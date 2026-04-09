@@ -1437,3 +1437,11 @@ section{
         display: none;
     }
 }
+
+.text-padding[style*="flex-direction: row"] {
+    align-items: center !important;
+}
+
+.text-padding[style*="flex-direction: row"] > div {
+    align-self: center;
+}
