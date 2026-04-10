@@ -1108,6 +1108,9 @@ if ($page === 'users') {
                     <i class="fa-solid fa-clipboard-list"></i> Auditlogboek
                 </a>
             <?php endif; ?>
+            <a href="booking.php" class="btn btn-secondary text-sm">
+                <i class="fa-solid fa-calendar-check"></i> Booking
+            </a>
             <a href="index.php" class="btn btn-secondary text-sm">
                 <i class="fa-solid fa-arrow-left"></i> Terug naar site
             </a>
