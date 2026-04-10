@@ -4,9 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="303eae4d-7ca5-4634-9557-4de1cdbec390" name="Changes" comment="ipad navbar gefixed 2">
+    <list default="true" id="303eae4d-7ca5-4634-9557-4de1cdbec390" name="Changes" comment="foto wie zijn we page gecentreerd">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db.php" beforeDir="false" afterPath="$PROJECT_DIR$/db.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/style.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/wie-zijn-we.php" beforeDir="false" afterPath="$PROJECT_DIR$/wie-zijn-we.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -129,6 +130,10 @@
       <workItem from="1775648937944" duration="242000" />
       <workItem from="1775654585678" duration="602000" />
       <workItem from="1775655218095" duration="47000" />
+      <workItem from="1775744294653" duration="922000" />
+      <workItem from="1775745253095" duration="2473000" />
+      <workItem from="1775803862091" duration="7903000" />
+      <workItem from="1775820884359" duration="1003000" />
     </task>
     <task id="LOCAL-00001" summary="Padding toegevoegd aan terugblik text-blok">
       <option name="closed" value="true" />
@@ -418,7 +423,15 @@
       <option name="project" value="LOCAL" />
       <updated>1775655077143</updated>
     </task>
-    <option name="localTasksCounter" value="37" />
+    <task id="LOCAL-00037" summary="foto wie zijn we page gecentreerd">
+      <option name="closed" value="true" />
+      <created>1775744527190</created>
+      <option name="number" value="00037" />
+      <option name="presentableId" value="LOCAL-00037" />
+      <option name="project" value="LOCAL" />
+      <updated>1775744527190</updated>
+    </task>
+    <option name="localTasksCounter" value="38" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -453,7 +466,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Images homepage verkleind. Footer gap tussen samenwerkingen vergroot. Padding toegevoegd &quot;wie zijn we&quot; Page." />
     <MESSAGE value="Navbar mobile UI verbeterd." />
     <MESSAGE value="Footer navbar Desktop en Mobile ui verbeterd" />
     <MESSAGE value="ruimte tussen terugblik en footer verbeterd" />
@@ -478,7 +490,8 @@
     <MESSAGE value="Wat doen we page link en hover veranderd" />
     <MESSAGE value="ipad navbar gefixed" />
     <MESSAGE value="ipad navbar gefixed 2" />
-    <option name="LAST_COMMIT_MESSAGE" value="ipad navbar gefixed 2" />
+    <MESSAGE value="foto wie zijn we page gecentreerd" />
+    <option name="LAST_COMMIT_MESSAGE" value="foto wie zijn we page gecentreerd" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

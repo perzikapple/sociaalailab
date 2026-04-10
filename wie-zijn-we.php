@@ -61,7 +61,7 @@ include __DIR__ . '/navbar.php';
         $flexDir = 'row';
         $flexWrap = 'nowrap';
         if ($imagePosition !== 'normal' && $hasText && $hasImage) {
-            $sectionStyle = "display: flex; flex-direction: " . $flexDir . "; flex-wrap: " . $flexWrap . "; gap: 2rem; align-items: center;";
+            $sectionStyle = "display: flex; flex-direction: " . $flexDir . "; flex-wrap: " . $flexWrap . "; gap: 2rem; align-items: flex-start;";
         } else {
             $sectionStyle = "display: flex; flex-direction: column; gap: 1.5rem;";
         }
@@ -79,8 +79,7 @@ include __DIR__ . '/navbar.php';
                 if (!$hasText) {
                     $imageStyle = 'width: 100%;';
                 } else {
-                    $imageStyle = 'display: flex; flex-direction: column; gap: 1.5rem;';
-                }
+                    $imageStyle = 'display: flex; justify-content: center; align-items: center;';                }
                 ?>
                 <div style="<?php echo $imageStyle; ?>">
                     <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
