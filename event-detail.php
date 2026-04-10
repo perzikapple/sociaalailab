@@ -24,6 +24,7 @@ if ($eventId > 0) {
 
 $isPastEvent = false;
 $eventSummary = '';
+$galleryImages = [];
 
 if ($event) {
     $compareDate = !empty($event['end_date']) ? $event['end_date'] : $event['date'];
@@ -34,18 +35,23 @@ if ($event) {
         $isPastEvent = $end < $today;
     }
 
-    if ($isPastEvent) {
-        $eventSummary = eventNarrativeSummary(
-            $event['title'] ?? '',
-            $event['description'] ?? '',
-            $event['date'] ?? null,
-            $event['location'] ?? null,
-            850
-        );
-        if ($eventSummary === '') {
-            $eventSummary = 'Samenvatting volgt binnenkort.';
+    if (!empty($event['event_gallery'])) {
+        $decodedGallery = json_decode((string)$event['event_gallery'], true);
+        if (is_array($decodedGallery)) {
+            foreach ($decodedGallery as $fileName) {
+                $fileName = trim((string)$fileName);
+                if ($fileName !== '') {
+                    $galleryImages[] = $fileName;
+                }
+            }
         }
     }
+
+    $manualSummary = trim((string)($event['event_summary'] ?? ''));
+    if ($manualSummary !== '') {
+        $eventSummary = $manualSummary;
+    }
+
 }
 ?>
 <!doctype html>
@@ -58,6 +64,69 @@ if ($event) {
     <meta name="description" content="Meer informatie over het evenement van SociaalAI Lab.">
     <link rel="icon" type="image/png" href="images/Pixels_icon.png">
     <link rel="stylesheet" href="ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        .event-gallery-trigger {
+            border: 0;
+            background: transparent;
+            padding: 0;
+            margin: 0;
+            width: 100%;
+            cursor: zoom-in;
+        }
+
+        .event-gallery-image {
+            width: 100%;
+            height: 18rem;
+            object-fit: cover;
+            display: block;
+        }
+
+        .event-lightbox {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.86);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .event-lightbox.is-open {
+            display: flex;
+        }
+
+        .event-lightbox-image {
+            max-width: min(92vw, 1200px);
+            max-height: 88vh;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+
+        .event-lightbox-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            border: 0;
+            background: rgba(255, 255, 255, 0.18);
+            color: #fff;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 9999px;
+            font-size: 1.5rem;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .event-lightbox-close:hover {
+            background: rgba(255, 255, 255, 0.32);
+        }
+
+        .event-lightbox-open {
+            overflow: hidden;
+        }
+    </style>
 </head>
 <body class="bg-gradient-to-br from-[#00811F] to-[#b9eb34]">
 
@@ -122,15 +191,33 @@ include __DIR__ . '/navbar.php';
                 </div>
             <?php endif; ?>
 
-            <?php if ($isPastEvent): ?>
-                <div class="bg-gray-50 border border-gray-200 rounded-md p-6 mb-6">
-                    <h2 class="text-2xl font-semibold mb-3 text-gray-900">Samenvatting</h2>
-                    <p class="text-gray-700 leading-relaxed"><?php echo htmlspecialchars($eventSummary); ?></p>
-                </div>
-            <?php else: ?>
-                <div class="bg-gray-50 border border-gray-200 rounded-md p-6 mb-6">
-                    <h2 class="text-2xl font-semibold mb-3 text-gray-900">Samenvatting</h2>
+            <div class="bg-gray-50 border border-gray-200 rounded-md p-6 mb-6">
+                <h2 class="text-2xl font-semibold mb-3 text-gray-900">Samenvatting</h2>
+                <?php if ($eventSummary !== ''): ?>
+                    <div class="text-gray-700 leading-relaxed"><?php echo renderEditorBlock($eventSummary); ?></div>
+                <?php elseif ($isPastEvent): ?>
+                    <p class="text-gray-700 leading-relaxed">Samenvatting volgt binnenkort.</p>
+                <?php else: ?>
                     <p class="text-gray-700 leading-relaxed">Na afloop van dit evenement verschijnt hier een samenvatting.</p>
+                <?php endif; ?>
+            </div>
+
+            <?php if (!empty($galleryImages)): ?>
+                <div class="bg-gray-50 border border-gray-200 rounded-md p-6 mb-6">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-900">Foto's tijdens dit event</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        <?php foreach ($galleryImages as $galleryImage): ?>
+                            <button
+                                type="button"
+                                class="event-gallery-trigger"
+                                data-gallery-image
+                                data-full-src="uploads/<?php echo htmlspecialchars($galleryImage); ?>"
+                                aria-label="Open foto in groot formaat"
+                            >
+                                <img src="uploads/<?php echo htmlspecialchars($galleryImage); ?>" alt="Foto van het event <?php echo htmlspecialchars((string)$event['title']); ?>" class="event-gallery-image">
+                            </button>
+                        <?php endforeach; ?>
+                    </div>
                 </div>
             <?php endif; ?>
 
@@ -143,6 +230,11 @@ include __DIR__ . '/navbar.php';
         <?php endif; ?>
     </section>
 </main>
+
+<div id="event-lightbox" class="event-lightbox" aria-hidden="true">
+    <button type="button" id="event-lightbox-close" class="event-lightbox-close" aria-label="Sluit foto">&times;</button>
+    <img id="event-lightbox-image" class="event-lightbox-image" src="" alt="Vergrote eventfoto">
+</div>
 
 <?php include __DIR__ . '/footer.php'; ?>
 
@@ -165,6 +257,46 @@ include __DIR__ . '/navbar.php';
       current = (current + 1) % banners.length;
       banners[current].classList.add('active');
     }, 10000);
+
+    (function() {
+        const lightbox = document.getElementById('event-lightbox');
+        const lightboxImage = document.getElementById('event-lightbox-image');
+        const closeBtn = document.getElementById('event-lightbox-close');
+        const triggers = document.querySelectorAll('[data-gallery-image]');
+
+        if (!lightbox || !lightboxImage || !closeBtn || !triggers.length) return;
+
+        function closeLightbox() {
+            lightbox.classList.remove('is-open');
+            lightbox.setAttribute('aria-hidden', 'true');
+            lightboxImage.setAttribute('src', '');
+            document.body.classList.remove('event-lightbox-open');
+        }
+
+        triggers.forEach((trigger) => {
+            trigger.addEventListener('click', function() {
+                const src = this.getAttribute('data-full-src') || '';
+                if (!src) return;
+                lightboxImage.setAttribute('src', src);
+                lightbox.classList.add('is-open');
+                lightbox.setAttribute('aria-hidden', 'false');
+                document.body.classList.add('event-lightbox-open');
+            });
+        });
+
+        closeBtn.addEventListener('click', closeLightbox);
+        lightbox.addEventListener('click', function(event) {
+            if (event.target === lightbox) {
+                closeLightbox();
+            }
+        });
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && lightbox.classList.contains('is-open')) {
+                closeLightbox();
+            }
+        });
+    })();
 </script>
 
 </body>

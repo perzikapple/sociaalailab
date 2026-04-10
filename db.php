@@ -81,6 +81,12 @@ try {
     if (!in_array('show_on_homepage', $columns)) {
         $pdo->exec("ALTER TABLE events ADD COLUMN show_on_homepage TINYINT(1) DEFAULT 0");
     }
+    if (!in_array('event_summary', $columns)) {
+        $pdo->exec("ALTER TABLE events ADD COLUMN event_summary TEXT DEFAULT NULL");
+    }
+    if (!in_array('event_gallery', $columns)) {
+        $pdo->exec("ALTER TABLE events ADD COLUMN event_gallery TEXT DEFAULT NULL");
+    }
 
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS settings (
