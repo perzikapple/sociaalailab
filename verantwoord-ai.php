@@ -63,19 +63,36 @@ include __DIR__ . '/navbar.php';
 
 <main>
     <?php
+    $totalBlocks = count($pageBlocks);
+    $blockIndex = 0;
+    $numberBlockIndex = 0;
+    
     foreach ($pageBlocks as $block):
         $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
         $hasImage = !empty($block['image']);
         $hasText = !empty($block['title']) || !empty($block['body']);
+        
+        // Bepaal of dit blok een nummer krijgt
+        $isFirstBlock = ($blockIndex === 0);
+        $isLastBlock = ($blockIndex === $totalBlocks - 1);
+        $shouldShowNumber = !$isFirstBlock && !$isLastBlock;
+        
+        // Bepaal nummer positie (links/rechts afwisselen)
+        $numberPosition = ($numberBlockIndex % 2 === 0) ? 'left' : 'right';
+        
         $imagePosition = $metaArr['image_position'] ?? 'normal';
         if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) $imagePosition = 'normal';
         $greenText = trim((string)($metaArr['green_text'] ?? ($metaArr['green_heading'] ?? '')));
         $greenTextPosition = $metaArr['green_text_position'] ?? 'above';
         if (!in_array($greenTextPosition, ['above', 'below'], true)) $greenTextPosition = 'above';
         
+        // Layout bepalen
         $flexDir = 'column';
         $flexWrap = 'nowrap';
-        if ($imagePosition === 'left' && $hasText) {
+        if ($shouldShowNumber && $hasText) {
+            $flexDir = 'row';
+            $flexWrap = 'nowrap';
+        } elseif ($imagePosition === 'left' && $hasText) {
             $flexDir = 'row';
             $flexWrap = 'nowrap';
         } elseif ($imagePosition === 'right' && $hasText) {
@@ -83,32 +100,38 @@ include __DIR__ . '/navbar.php';
             $flexWrap = 'nowrap';
         }
         $sectionStyle = "display: flex; flex-direction: " . $flexDir . "; flex-wrap: " . $flexWrap . ";";
-        if ($imagePosition !== 'normal' && $hasText) {
+        if ($shouldShowNumber && $hasText) {
+            $sectionStyle .= " gap: 2rem; align-items: flex-start;";
+        } elseif ($imagePosition !== 'normal' && $hasText) {
             $sectionStyle .= " gap: 2rem; align-items: flex-start;";
         } else {
             $sectionStyle .= " gap: 1.5rem;";
         }
     ?>
+        <!-- Image-only blokken (geen tekst, geen nummer): full-width buiten section -->
+        <?php if (!$hasText && $hasImage && !$shouldShowNumber): ?>
+            <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100vw !important; max-width: 100vw !important; height: auto; display: block; margin-left: calc(-50vw + 50%); position: relative; margin-top: 3rem; margin-bottom: 3rem;">
+        <?php else: ?>
         <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" style="<?php echo $sectionStyle; ?>">
-            <?php if ($imagePosition === 'left' && $hasImage): ?>
-                <?php
-                $imageStyle = '';
-                if (!$hasText) {
-                    $imageStyle = 'width: 100%;';
-                } else {
-                    $imageStyle = 'flex: 0 0 auto; max-width: 280px; width: 100%;';
-                }
-                $imageContainerStyle = !$hasText ? 'width: 100%;' : '';
-                ?>
-                <div style="<?php echo $imageContainerStyle; ?>">
-                    <div style="<?php echo $imageStyle; ?>">
-                        <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
+            <!-- Nummer links (als van toepassing) -->
+            <?php if ($shouldShowNumber && $numberPosition === 'left' && $hasText): ?>
+                <div style="flex: 0 0 auto; width: 280px;">
+                    <div style="font-size: 120px; font-weight: bold; color: #00811F; text-align: center; line-height: 1; display: flex; align-items: center; justify-content: center; min-height: 200px;">
+                        <?php echo $numberBlockIndex + 1; ?>
                     </div>
                 </div>
             <?php endif; ?>
+            
+            <!-- Afbeelding links (alleen voor niet-nummered blokken) -->
+            <?php if ($imagePosition === 'left' && $hasImage && !$shouldShowNumber): ?>
+                <div style="flex: 0 0 auto; max-width: 280px; width: 100%;">
+                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
+                </div>
+            <?php endif; ?>
 
+            <!-- Tekst -->
             <?php if ($hasText): ?>
-                <div style="<?php echo ($imagePosition !== 'normal' && $hasImage) ? 'flex: 1 1 auto; min-width: 0;' : ''; ?>">
+                <div style="<?php echo ($imagePosition !== 'normal' && $hasImage && !$shouldShowNumber) ? 'flex: 1 1 auto; min-width: 0;' : ''; ?>">
                     <?php if ($greenText !== '' && $greenTextPosition === 'above'): ?>
                         <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($greenText)); ?></div>
                     <?php endif; ?>
@@ -124,29 +147,38 @@ include __DIR__ . '/navbar.php';
                 </div>
             <?php endif; ?>
 
-            <?php if ($imagePosition === 'right' && $hasImage): ?>
-                <?php
-                $imageStyle = '';
-                if (!$hasText) {
-                    $imageStyle = 'width: 100%;';
-                } else {
-                    $imageStyle = 'flex: 0 0 auto; max-width: 280px; width: 100%;';
-                }
-                $imageContainerStyle = !$hasText ? 'width: 100%;' : '';
-                ?>
-                <div style="<?php echo $imageContainerStyle; ?>">
-                    <div style="<?php echo $imageStyle; ?>">
-                        <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
+            <!-- Afbeelding rechts (alleen voor niet-nummered blokken) -->
+            <?php if ($imagePosition === 'right' && $hasImage && !$shouldShowNumber): ?>
+                <div style="flex: 0 0 auto; max-width: 280px; width: 100%;">
+                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
+                </div>
+            <?php endif; ?>
+            
+            <!-- Nummer rechts (als van toepassing) -->
+            <?php if ($shouldShowNumber && $numberPosition === 'right' && $hasText): ?>
+                <div style="flex: 0 0 auto; width: 280px;">
+                    <div style="font-size: 120px; font-weight: bold; color: #00811F; text-align: center; line-height: 1; display: flex; align-items: center; justify-content: center; min-height: 200px;">
+                        <?php echo $numberBlockIndex + 1; ?>
                     </div>
                 </div>
             <?php endif; ?>
-            <?php if ($hasImage && $imagePosition === 'normal'): ?>
+            
+            <!-- Afbeelding normaal (onder tekst) - alleen voor niet-nummered blokken -->
+            <?php if ($hasImage && $imagePosition === 'normal' && !$shouldShowNumber): ?>
                 <div style="width: 100%;">
                     <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
                 </div>
             <?php endif; ?>
         </section>
-    <?php endforeach; ?>
+        <?php endif; ?>
+        
+        <?php
+        // Verhoog tellers
+        if ($shouldShowNumber) {
+            $numberBlockIndex++;
+        }
+        $blockIndex++;
+    endforeach; ?>
 </main>
 <?php include __DIR__ . '/footer.php'; ?>
 
