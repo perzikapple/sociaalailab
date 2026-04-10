@@ -805,6 +805,19 @@ section{
         display: block;
         margin: 0 auto;
     }
+
+    .watdoenwe-page .bg-white {
+        width: 95% !important;
+        padding: 10px !important;
+    }
+
+    .watdoenwe-page img {
+        width: 100% !important;
+        height: 100% !important;
+        max-height: 300px;
+        object-fit: contain;
+    }
+
 }
 
 /* Mobile styles */
@@ -814,6 +827,17 @@ section{
         font-size: 28px;
     }
 
+    .watdoenwe-page .bg-white {
+        width: 95% !important;
+        padding: 10px !important;
+    }
+
+        .watdoenwe-page img {
+        width: 100% !important;
+        height: 100% !important;
+        max-height: 300px;
+        object-fit: contain;
+    }
     /* Size homepage pictures*/
     .card-icon {
         width: 120px;
