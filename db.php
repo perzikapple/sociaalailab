@@ -1,8 +1,13 @@
 <?php
-$host = "localhost";
-$db   = "sociaalai";
-$user = "root";
-$pass = "";
+// $host = "localhost";
+// $db   = "sociaalai";
+// $user = "root";
+// $pass = "";
+
+$host = "sociju-sociaalailab.db.transip.me";
+$db   = "sociju_sociaalailab";
+$user = "sociju_Sociaalailab";
+$pass = "Techniekcollege12345#";
 try {
     $pdo = new PDO(
         "mysql:host=$host;dbname=$db;charset=utf8mb4",
@@ -81,13 +86,12 @@ try {
     if (!in_array('show_on_homepage', $columns)) {
         $pdo->exec("ALTER TABLE events ADD COLUMN show_on_homepage TINYINT(1) DEFAULT 0");
     }
-    if (!in_array('event_summary', $columns)) {
+  if (!in_array('event_summary', $columns)) {
         $pdo->exec("ALTER TABLE events ADD COLUMN event_summary TEXT DEFAULT NULL");
     }
     if (!in_array('event_gallery', $columns)) {
         $pdo->exec("ALTER TABLE events ADD COLUMN event_gallery TEXT DEFAULT NULL");
     }
-
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS settings (
             id INT AUTO_INCREMENT PRIMARY KEY,
