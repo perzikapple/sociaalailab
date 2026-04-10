@@ -814,7 +814,7 @@ section{
     .watdoenwe-page img {
         width: 100% !important;
         height: 100% !important;
-        max-height: 300px;
+        max-height: 200px;
         object-fit: contain;
     }
 
