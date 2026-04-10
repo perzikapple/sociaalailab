@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="303eae4d-7ca5-4634-9557-4de1cdbec390" name="Changes" comment="fotos actie pagina's verkleind (mobile)">
+    <list default="true" id="303eae4d-7ca5-4634-9557-4de1cdbec390" name="Changes" comment="fotos actie pagina's verkleind (mobile) 2">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/style.css" afterDir="false" />
     </list>
@@ -132,7 +132,7 @@
       <workItem from="1775744294653" duration="922000" />
       <workItem from="1775745253095" duration="2473000" />
       <workItem from="1775803862091" duration="7903000" />
-      <workItem from="1775820884359" duration="2436000" />
+      <workItem from="1775820884359" duration="3220000" />
     </task>
     <task id="LOCAL-00001" summary="Padding toegevoegd aan terugblik text-blok">
       <option name="closed" value="true" />
@@ -438,7 +438,15 @@
       <option name="project" value="LOCAL" />
       <updated>1775822051489</updated>
     </task>
-    <option name="localTasksCounter" value="39" />
+    <task id="LOCAL-00039" summary="fotos actie pagina's verkleind (mobile) 2">
+      <option name="closed" value="true" />
+      <created>1775823529348</created>
+      <option name="number" value="00039" />
+      <option name="presentableId" value="LOCAL-00039" />
+      <option name="project" value="LOCAL" />
+      <updated>1775823529348</updated>
+    </task>
+    <option name="localTasksCounter" value="40" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -473,7 +481,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Footer navbar Desktop en Mobile ui verbeterd" />
     <MESSAGE value="ruimte tussen terugblik en footer verbeterd" />
     <MESSAGE value="styling navbar" />
     <MESSAGE value="Navbar ui verbeteringen" />
@@ -498,7 +505,8 @@
     <MESSAGE value="ipad navbar gefixed 2" />
     <MESSAGE value="foto wie zijn we page gecentreerd" />
     <MESSAGE value="fotos actie pagina's verkleind (mobile)" />
-    <option name="LAST_COMMIT_MESSAGE" value="fotos actie pagina's verkleind (mobile)" />
+    <MESSAGE value="fotos actie pagina's verkleind (mobile) 2" />
+    <option name="LAST_COMMIT_MESSAGE" value="fotos actie pagina's verkleind (mobile) 2" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
