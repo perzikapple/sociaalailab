@@ -37,8 +37,8 @@ $message = '';
 function handleUpload($fileField) {
     if (empty($_FILES[$fileField]['name'])) return null;
     $allowed = ['image/jpeg','image/png','image/gif','image/webp'];
-    if (!in_array($_FILES[$fileField]['type'], $allowed) || $_FILES[$fileField]['size'] > 10 * 1024 * 1024) {
-        return ['error' => 'Ongeldig afbeeldingsbestand (jpg/png/gif/webp, max 10MB).'];
+    if (!in_array($_FILES[$fileField]['type'], $allowed) || $_FILES[$fileField]['size'] > 50 * 1024 * 1024) {
+        return ['error' => 'Ongeldig afbeeldingsbestand (jpg/png/gif/webp, max 50MB).'];
     }
     if (!is_dir(__DIR__ . '/uploads')) mkdir(__DIR__ . '/uploads', 0755, true);
     $ext = pathinfo($_FILES[$fileField]['name'], PATHINFO_EXTENSION);
@@ -48,6 +48,90 @@ function handleUpload($fileField) {
         return ['error' => 'Kon afbeelding niet opslaan.'];
     }
     return ['name' => $imageName];
+}
+
+function handleMultiUpload($fileField) {
+    if (empty($_FILES[$fileField]) || !isset($_FILES[$fileField]['name']) || !is_array($_FILES[$fileField]['name'])) {
+        return ['names' => []];
+    }
+
+    $allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    $saved = [];
+
+    if (!is_dir(__DIR__ . '/uploads')) {
+        mkdir(__DIR__ . '/uploads', 0755, true);
+    }
+
+    $count = count($_FILES[$fileField]['name']);
+    for ($i = 0; $i < $count; $i++) {
+        $name = $_FILES[$fileField]['name'][$i] ?? '';
+        if ($name === '') {
+            continue;
+        }
+
+        $tmp = $_FILES[$fileField]['tmp_name'][$i] ?? '';
+        $type = $_FILES[$fileField]['type'][$i] ?? '';
+        $size = (int)($_FILES[$fileField]['size'][$i] ?? 0);
+        $error = (int)($_FILES[$fileField]['error'][$i] ?? UPLOAD_ERR_OK);
+
+        if ($error !== UPLOAD_ERR_OK) {
+            foreach ($saved as $fileName) {
+                $path = __DIR__ . '/uploads/' . $fileName;
+                if (file_exists($path)) {
+                    @unlink($path);
+                }
+            }
+            return ['error' => 'Een van de galerijfoto\'s kon niet worden geupload.'];
+        }
+
+        if (!in_array($type, $allowed, true) || $size > 50 * 1024 * 1024) {
+            foreach ($saved as $fileName) {
+                $path = __DIR__ . '/uploads/' . $fileName;
+                if (file_exists($path)) {
+                    @unlink($path);
+                }
+            }
+            return ['error' => 'Ongeldig galerijbestand (jpg/png/gif/webp, max 50MB per foto).'];
+        }
+
+        $ext = pathinfo($name, PATHINFO_EXTENSION);
+        $imageName = time() . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+        $dest = __DIR__ . '/uploads/' . $imageName;
+        if (!move_uploaded_file($tmp, $dest)) {
+            foreach ($saved as $fileName) {
+                $path = __DIR__ . '/uploads/' . $fileName;
+                if (file_exists($path)) {
+                    @unlink($path);
+                }
+            }
+            return ['error' => 'Kon een galerijafbeelding niet opslaan.'];
+        }
+
+        $saved[] = $imageName;
+    }
+
+    return ['names' => $saved];
+}
+
+function decodeEventGallery($value) {
+    if (!is_string($value) || $value === '') {
+        return [];
+    }
+
+    $decoded = json_decode($value, true);
+    if (!is_array($decoded)) {
+        return [];
+    }
+
+    $items = [];
+    foreach ($decoded as $fileName) {
+        $fileName = trim((string)$fileName);
+        if ($fileName !== '') {
+            $items[] = $fileName;
+        }
+    }
+
+    return $items;
 }
 
 function sanitizeEditorText($value) {
@@ -96,6 +180,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $time = $_POST['time'] ?? null;
         $time_end = isset($_POST['add_end_time']) && !empty($_POST['time_end']) ? $_POST['time_end'] : null;
         $description = sanitizeEditorBlockInput($_POST['description'] ?? '');
+        $eventSummary = sanitizeEditorBlockInput($_POST['event_summary'] ?? '');
         $location = sanitizeEditorPlainText($_POST['location'] ?? '');
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
         $signupEmbed = trim((string)($_POST['signup_embed'] ?? ''));
@@ -113,14 +198,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message = $upload['error'];
             } else {
                 $imageName = $upload['name'] ?? null;
-                // voeg updated_at en updated_by toe bij insert
-                $stmt = $pdo->prepare('INSERT INTO events (title, date, end_date, time, time_end, description, image, location, show_signup_button, signup_embed, show_on_homepage, info_link, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)');
-                $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $imageName, $location ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $infoLink, $currentUser]);
-                $eventId = $pdo->lastInsertId();
-                // Audit log: event created
-                audit_log($pdo, 'create', 'events', $eventId, 'title: ' . $title, $currentUser);
-                header('Location: admin.php?page=agenda&ok=create');
-                exit;
+                $galleryUpload = handleMultiUpload('gallery_images');
+                if (isset($galleryUpload['error'])) {
+                    if (!empty($imageName) && file_exists(__DIR__ . '/uploads/' . $imageName)) {
+                        @unlink(__DIR__ . '/uploads/' . $imageName);
+                    }
+                    $message = $galleryUpload['error'];
+                } else {
+                    $galleryJson = !empty($galleryUpload['names'])
+                        ? json_encode(array_values($galleryUpload['names']), JSON_UNESCAPED_SLASHES)
+                        : null;
+
+                    // voeg updated_at en updated_by toe bij insert
+                    $stmt = $pdo->prepare('INSERT INTO events (title, date, end_date, time, time_end, description, event_summary, image, event_gallery, location, show_signup_button, signup_embed, show_on_homepage, info_link, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)');
+                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $imageName, $galleryJson, $location ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $infoLink, $currentUser]);
+                    $eventId = $pdo->lastInsertId();
+                    // Audit log: event created
+                    audit_log($pdo, 'create', 'events', $eventId, 'title: ' . $title, $currentUser);
+                    header('Location: admin.php?page=agenda&ok=create');
+                    exit;
+                }
             }
         }
 
@@ -132,10 +229,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $time = $_POST['time'] ?? null;
         $time_end = isset($_POST['add_end_time']) && !empty($_POST['time_end']) ? $_POST['time_end'] : null;
         $description = sanitizeEditorBlockInput($_POST['description'] ?? '');
+        $eventSummary = sanitizeEditorBlockInput($_POST['event_summary'] ?? '');
         $location = sanitizeEditorPlainText($_POST['location'] ?? '');
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
         $signupEmbed = trim((string)($_POST['signup_embed'] ?? ''));
         $showOnHomepage = isset($_POST['show_on_homepage']) ? 1 : 0;
+        $infoLink = $_POST['info_link'] ?? '';
         $removeImage = isset($_POST['remove_image']) ? 1 : 0;
 
         if ($date === '') {
@@ -145,47 +244,81 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $title = ' ';
             }
             // check existing image
-            $stmt = $pdo->prepare('SELECT image FROM events WHERE id = ?');
+            $stmt = $pdo->prepare('SELECT image, event_gallery FROM events WHERE id = ?');
             $stmt->execute([$id]);
             $row = $stmt->fetch();
             $oldImage = $row ? $row['image'] : null;
+            $oldGallery = decodeEventGallery($row['event_gallery'] ?? null);
+            $removeGallery = $_POST['remove_gallery_images'] ?? [];
+            if (!is_array($removeGallery)) {
+                $removeGallery = [];
+            }
+            $removeGallery = array_values(array_intersect($oldGallery, array_map('strval', $removeGallery)));
+            $keptGallery = array_values(array_diff($oldGallery, $removeGallery));
 
             $upload = handleUpload('image');
             if (isset($upload['error'])) {
                 $message = $upload['error'];
             } else {
-                if ($removeImage) {
-                    $imageName = null;
+                $galleryUpload = handleMultiUpload('gallery_images');
+                if (isset($galleryUpload['error'])) {
+                    if (!empty($upload['name']) && file_exists(__DIR__ . '/uploads/' . $upload['name'])) {
+                        @unlink(__DIR__ . '/uploads/' . $upload['name']);
+                    }
+                    $message = $galleryUpload['error'];
                 } else {
-                    $imageName = $upload['name'] ?? $oldImage;
-                }
-                // update nu ook updated_at en updated_by
-                $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, end_date=?, time=?, time_end=?, description=?, image=?, location=?, show_signup_button=?, signup_embed=?, show_on_homepage=?, info_link=?, updated_at=NOW(), updated_by=? WHERE id=?');
-                $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $imageName, $location ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $infoLink, $currentUser, $id]);
-                // Audit log: event updated
-                audit_log($pdo, 'update', 'events', $id, 'title: ' . $title, $currentUser);
 
-                // indien nieuwe upload en oud bestaat: verwijderen
-                if (!empty($upload['name']) && $oldImage && file_exists(__DIR__ . '/uploads/' . $oldImage)) {
-                    @unlink(__DIR__ . '/uploads/' . $oldImage);
+                    if ($removeImage) {
+                        $imageName = null;
+                    } else {
+                        $imageName = $upload['name'] ?? $oldImage;
+                    }
+
+                    $galleryNames = array_values(array_merge($keptGallery, $galleryUpload['names'] ?? []));
+                    $galleryJson = !empty($galleryNames)
+                        ? json_encode($galleryNames, JSON_UNESCAPED_SLASHES)
+                        : null;
+
+                    // update nu ook updated_at en updated_by
+                    $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, end_date=?, time=?, time_end=?, description=?, event_summary=?, image=?, event_gallery=?, location=?, show_signup_button=?, signup_embed=?, show_on_homepage=?, info_link=?, updated_at=NOW(), updated_by=? WHERE id=?');
+                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $imageName, $galleryJson, $location ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $infoLink, $currentUser, $id]);
+                    // Audit log: event updated
+                    audit_log($pdo, 'update', 'events', $id, 'title: ' . $title, $currentUser);
+
+                    // indien nieuwe upload en oud bestaat: verwijderen
+                    if (!empty($upload['name']) && $oldImage && file_exists(__DIR__ . '/uploads/' . $oldImage)) {
+                        @unlink(__DIR__ . '/uploads/' . $oldImage);
+                    }
+                    if ($removeImage && $oldImage && file_exists(__DIR__ . '/uploads/' . $oldImage)) {
+                        @unlink(__DIR__ . '/uploads/' . $oldImage);
+                    }
+                    foreach ($removeGallery as $galleryFile) {
+                        $galleryPath = __DIR__ . '/uploads/' . $galleryFile;
+                        if (file_exists($galleryPath)) {
+                            @unlink($galleryPath);
+                        }
+                    }
+                    header('Location: admin.php?page=agenda&ok=update');
+                    exit;
                 }
-                if ($removeImage && $oldImage && file_exists(__DIR__ . '/uploads/' . $oldImage)) {
-                    @unlink(__DIR__ . '/uploads/' . $oldImage);
-                }
-                header('Location: admin.php?page=agenda&ok=update');
-                exit;
             }
         }
 
     } elseif ($action === 'delete' && !empty($_POST['id'])) {
         $id = (int)$_POST['id'];
         // haal image op en delete
-        $stmt = $pdo->prepare('SELECT image FROM events WHERE id = ?');
+        $stmt = $pdo->prepare('SELECT image, event_gallery FROM events WHERE id = ?');
         $stmt->execute([$id]);
         $row = $stmt->fetch();
         if ($row) {
             if ($row['image'] && file_exists(__DIR__ . '/uploads/' . $row['image'])) {
                 @unlink(__DIR__ . '/uploads/' . $row['image']);
+            }
+            foreach (decodeEventGallery($row['event_gallery'] ?? null) as $galleryFile) {
+                $galleryPath = __DIR__ . '/uploads/' . $galleryFile;
+                if (file_exists($galleryPath)) {
+                    @unlink($galleryPath);
+                }
             }
             $stmt = $pdo->prepare('DELETE FROM events WHERE id = ?');
             $stmt->execute([$id]);
@@ -204,11 +337,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $deletedCount = 0;
         foreach ($ids as $id) {
-            $stmt = $pdo->prepare('SELECT image FROM events WHERE id = ?');
+            $stmt = $pdo->prepare('SELECT image, event_gallery FROM events WHERE id = ?');
             $stmt->execute([$id]);
             $row = $stmt->fetch();
             if ($row && $row['image'] && file_exists(__DIR__ . '/uploads/' . $row['image'])) {
                 @unlink(__DIR__ . '/uploads/' . $row['image']);
+            }
+            if ($row) {
+                foreach (decodeEventGallery($row['event_gallery'] ?? null) as $galleryFile) {
+                    $galleryPath = __DIR__ . '/uploads/' . $galleryFile;
+                    if (file_exists($galleryPath)) {
+                        @unlink($galleryPath);
+                    }
+                }
             }
             $stmt = $pdo->prepare('DELETE FROM events WHERE id = ?');
             $result = $stmt->execute([$id]);
@@ -1121,6 +1262,12 @@ if ($page === 'users') {
                             </div>
 
                             <div>
+                                <label class="form-label">Samenvatting na afloop (optioneel)</label>
+                                <textarea name="event_summary" rows="5" class="form-textarea"><?php echo htmlspecialchars($editEvent['event_summary'] ?? ''); ?></textarea>
+                                <p class="text-xs text-gray-500 mt-2">Deze samenvatting wordt op de evenement detailpagina getoond zodra deze is ingevuld.</p>
+                            </div>
+
+                            <div>
                                 <label class="form-label">Afbeelding (optioneel)</label>
                                 <input type="hidden" name="existing_image" value="<?php echo htmlspecialchars($editEvent['image'] ?? ''); ?>" />
                                 <input type="file" name="image" accept="image/*" class="form-input" />
@@ -1130,6 +1277,25 @@ if ($page === 'users') {
                                         <input type="checkbox" name="remove_image" value="1">
                                         Verwijder huidige afbeelding
                                     </label>
+                                <?php endif; ?>
+                            </div>
+
+                            <div>
+                                <label class="form-label">Foto's tijdens event (optioneel, meerdere bestanden)</label>
+                                <input type="file" name="gallery_images[]" accept="image/*" multiple class="form-input" />
+                                <?php $editGallery = decodeEventGallery($editEvent['event_gallery'] ?? null); ?>
+                                <?php if (!empty($editGallery)): ?>
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
+                                        <?php foreach ($editGallery as $galleryImage): ?>
+                                            <label class="border border-gray-200 rounded p-2 block">
+                                                <img src="uploads/<?php echo htmlspecialchars($galleryImage); ?>" alt="Eventfoto" class="w-full h-24 object-cover rounded">
+                                                <span class="form-checkbox mt-2 inline-flex items-center gap-2">
+                                                    <input type="checkbox" name="remove_gallery_images[]" value="<?php echo htmlspecialchars($galleryImage); ?>">
+                                                    Verwijder
+                                                </span>
+                                            </label>
+                                        <?php endforeach; ?>
+                                    </div>
                                 <?php endif; ?>
                             </div>
                             <div>
@@ -1274,8 +1440,19 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
 
                             <div>
+                                <label class="form-label">Samenvatting na afloop (optioneel)</label>
+                                <textarea name="event_summary" rows="5" class="form-textarea"><?php echo htmlspecialchars($_POST['event_summary'] ?? ''); ?></textarea>
+                                <p class="text-xs text-gray-500 mt-2">Deze samenvatting wordt op de evenement detailpagina getoond zodra deze is ingevuld.</p>
+                            </div>
+
+                            <div>
                                 <label class="form-label">Afbeelding (optioneel)</label>
                                 <input type="file" name="image" accept="image/*" class="form-input" />
+                            </div>
+
+                            <div>
+                                <label class="form-label">Foto's tijdens event (optioneel, meerdere bestanden)</label>
+                                <input type="file" name="gallery_images[]" accept="image/*" multiple class="form-input" />
                             </div>
                             <div>
                                 <label class="form-label" for="info_link">Meer info link (optioneel):</label>
@@ -1372,12 +1549,16 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : ''; 
                                                 $timeEndDisplay = $event['time_end'] ? formatEventTimeDisplay($event['time_end']) : ''; 
                                                 $eventDescriptionPreview = editorPreviewText($event['description'] ?? '', 200);
+                                                $eventGalleryCount = count(decodeEventGallery($event['event_gallery'] ?? null));
                                             ?>
                                             <p class="text-sm text-gray-600 mt-1"><strong>Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?><?php if ($timeDisplay) { echo ' ' . htmlspecialchars($timeDisplay); } ?><?php if ($timeEndDisplay) { echo ' - ' . htmlspecialchars($timeEndDisplay); } ?></p>
                                             <?php if (!empty($event['location'])): ?>
                                                 <p class="text-sm text-gray-600"><strong>Plaats:</strong> <?php echo htmlspecialchars($event['location']); ?></p>
                                             <?php endif; ?>
                                             <p class="text-sm text-gray-600 mt-2 line-clamp-2"><?php echo nl2br(htmlspecialchars($eventDescriptionPreview)); ?></p>
+                                            <?php if ($eventGalleryCount > 0): ?>
+                                                <p class="text-sm text-gray-600 mt-1"><strong>Eventfoto's:</strong> <?php echo (int)$eventGalleryCount; ?></p>
+                                            <?php endif; ?>
                                             <?php if (!empty($event['info_link'])): ?>
                                                 <a href="<?php echo htmlspecialchars($event['info_link']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-info bg-[#00811F] text-white px-3 py-1 rounded shadow hover:bg-[#00691A] transition mt-2 inline-block">
                                                     <i class="fa-solid fa-circle-info mr-1"></i> Meer info
