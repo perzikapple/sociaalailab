@@ -33,51 +33,29 @@ if (!function_exists('googleMapsDirectionsUrl')) {
 
 if (!function_exists('renderAanmelderEmbed')) {
     function renderAanmelderEmbed($value) {
-        $value = html_entity_decode((string)$value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        if (trim($value) === '') {
+        $value = trim((string)$value);
+        if ($value === '') {
             return '';
         }
 
-        $anchorHtml = '';
-        if (preg_match('~<a\b[^>]*href\s*=\s*(["\'])(.*?)\1[^>]*>(.*?)</a>~is', $value, $matches)) {
-            $href = trim((string)$matches[2]);
-            $label = trim(preg_replace('~\s+~u', ' ', strip_tags((string)$matches[3])));
-            $parsedHref = parse_url($href);
-            $hrefHost = strtolower($parsedHref['host'] ?? '');
-            $hrefPath = $parsedHref['path'] ?? '';
-
-            if ($href !== '' && preg_match('~(^|\.)aanmelder\.nl$~i', $hrefHost) && preg_match('~^/subscribe/?$~i', $hrefPath)) {
-                $anchorHtml = '<a href="' . htmlspecialchars($href, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '" target="_blank" rel="noopener noreferrer" class="inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">' . htmlspecialchars($label !== '' ? $label : 'Online registreren voor het event.', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</a>';
+        $href = null;
+        
+        // Check if it's a plain URL
+        if (filter_var($value, FILTER_VALIDATE_URL)) {
+            $href = $value;
+        } else {
+            // Extract URL from HTML anchor tag
+            if (preg_match('~<a\b[^>]*href\s*=\s*(["\'])(.*?)\1[^>]*>(.*?)</a>~is', $value, $matches)) {
+                $href = trim((string)$matches[2]);
             }
         }
-
-        $scriptHtml = '';
-        if (preg_match('~<script\b[^>]*src\s*=\s*(["\'])(.*?)\1[^>]*>\s*</script>~is', $value, $matches)) {
-            $src = trim((string)$matches[2]);
-            $parsedSrc = parse_url($src);
-            $srcHost = strtolower($parsedSrc['host'] ?? '');
-            $srcPath = $parsedSrc['path'] ?? '';
-            $srcQuery = $parsedSrc['query'] ?? '';
-
-            if ($src !== '' && $srcHost === 'www.aanmelder.nl' && preg_match('~^/[^/]+/xsembed$~i', $srcPath) && preg_match('~(?:^|&)auth=[^&]+(?:&|$)~', $srcQuery)) {
-                $scriptHtml = '<script referrerpolicy="origin" src="' . htmlspecialchars($src, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '"></script>';
-            }
+        
+        if ($href !== null && $href !== '') {
+            // Return as simple link button
+            return '<a href="' . htmlspecialchars($href, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '" target="_blank" rel="noopener noreferrer" class="inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">Aanmelden voor dit evenement</a>';
         }
-
-        if ($anchorHtml === '' && $scriptHtml === '') {
-            return '';
-        }
-
-        $output = '<div class="mt-4 space-y-3">';
-        if ($anchorHtml !== '') {
-            $output .= '<div>' . $anchorHtml . '</div>';
-        }
-        if ($scriptHtml !== '') {
-            $output .= $scriptHtml;
-        }
-        $output .= '</div>';
-
-        return $output;
+        
+        return '';
     }
 }
 

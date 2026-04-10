@@ -1150,15 +1150,20 @@ if ($page === 'users') {
                             </div>
 
                             <div>
-                                <label class="form-label" for="signup_embed">Aanmelder.nl embed (optioneel)</label>
-                                <textarea
+                                <label class="form-label" for="signup_embed">Aanmelder.nl link (optioneel):</label>
+                                <input
+                                    type="url"
                                     name="signup_embed"
                                     id="signup_embed"
-                                    rows="5"
-                                    class="form-textarea admin-input-surface"
-                                    placeholder="Plak hier de aanmelder.nl link en script"
-                                ><?php echo htmlspecialchars($editEvent['signup_embed'] ?? ''); ?></textarea>
-                                <p class="text-xs text-gray-500 mt-2">Als dit veld gevuld is, wordt de standaard inschrijfknop vervangen door de embed van aanmelder.nl.</p>
+                                    class="form-input admin-input-surface"
+                                    value="<?php echo htmlspecialchars($editEvent['signup_embed'] ?? ''); ?>"
+                                    placeholder="https://aanmelder.nl/subscribe/..."
+                                />
+                                <?php if (!empty($editEvent['signup_embed'])): ?>
+                                    <a href="<?php echo htmlspecialchars($editEvent['signup_embed']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-info bg-[#00811F] text-white px-3 py-1 rounded shadow hover:bg-[#00691A] transition mt-2 inline-block">
+                                        <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i> Aanmelden
+                                    </a>
+                                <?php endif; ?>
                             </div>
 
                             <div>
@@ -1290,20 +1295,25 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
 
                             <div>
-                                <label class="form-label" for="signup_embed">Aanmelder.nl embed (optioneel)</label>
-                                <textarea
+                                <label class="form-label" for="signup_embed">Aanmelder.nl link (optioneel):</label>
+                                <input
+                                    type="url"
                                     name="signup_embed"
                                     id="signup_embed"
-                                    rows="5"
-                                    class="form-textarea admin-input-surface"
-                                    placeholder="Plak hier de aanmelder.nl link en script"
-                                ><?php echo htmlspecialchars($_POST['signup_embed'] ?? ''); ?></textarea>
-                                <p class="text-xs text-gray-500 mt-2">Als dit veld gevuld is, wordt de standaard inschrijfknop vervangen door de embed van aanmelder.nl.</p>
+                                    class="form-input admin-input-surface"
+                                    value=""
+                                    placeholder="https://aanmelder.nl/subscribe/..."
+                                />
+                                <?php if (!empty($_POST['signup_embed'])): ?>
+                                    <a href="<?php echo htmlspecialchars($_POST['signup_embed']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-info bg-[#00811F] text-white px-3 py-1 rounded shadow hover:bg-[#00691A] transition mt-2 inline-block">
+                                        <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i> Aanmelden
+                                    </a>
+                                <?php endif; ?>
                             </div>
 
                             <div>
                                 <label class="form-checkbox">
-                                    <input type="checkbox" name="show_signup_button" />
+                                    <input type="checkbox" name="show_signup_button" checked />
                                     Toon inschrijf knop
                                 </label>
                             </div>
