@@ -1,46 +1,260 @@
-/* Booking Page Styles */
+.glass-header,
+.glass-card {
+    position: relative;
+    overflow: visible;
+}
 
+.glass-header::before,
+.glass-card::before {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    z-index: 0;
+    border-radius: inherit;
+    background: linear-gradient(120deg, #2D9EE4, #3BBFDA, #eaf6fd, #2D9EE4);
+    background-size: 300% 300%;
+    filter: blur(6px) brightness(1.2);
+    opacity: 0.55;
+    animation: borderFlow 8s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes borderFlow {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+.glass-header>*,
+.glass-card>* {
+    position: relative;
+    z-index: 1;
+}
+
+.glass-header:hover,
+.glass-card:hover {
+    box-shadow: 0 24px 64px 0 rgba(45, 158, 228, 0.18), 0 8px 32px rgba(59, 191, 218, 0.13);
+    transform: translateY(-2px) scale(1.012);
+    transition: box-shadow 0.3s, transform 0.3s;
+}
+
+/* Animated underline for headings */
+.gradient-text {
+    position: relative;
+    display: inline-block;
+}
+
+.gradient-text::after {
+    content: "";
+    display: block;
+    height: 4px;
+    border-radius: 2px;
+    margin-top: 0.18em;
+    background: linear-gradient(90deg, #2D9EE4 0%, #3BBFDA 100%);
+    opacity: 0.7;
+    width: 0;
+    transition: width 0.5s cubic-bezier(.4, 2, .6, 1);
+}
+
+.gradient-text:hover::after,
+.gradient-text:focus::after {
+    width: 100%;
+}
+
+/* Premium button glow and micro-interaction */
+.btn-premium {
+    box-shadow: 0 6px 24px rgba(45, 158, 228, 0.22), 0 0 16px 2px #3BBFDA55;
+    transition: box-shadow 0.3s, filter 0.3s, transform 0.2s;
+}
+
+.btn-premium:hover,
+.btn-premium:focus {
+    box-shadow: 0 0 0 6px #2D9EE433, 0 12px 32px #2d9ee433, 0 0 32px 4px #3BBFDA77;
+    filter: brightness(1.08) saturate(1.2);
+    transform: translateY(-2px) scale(1.03);
+}
+
+.btn-premium:active {
+    transform: scale(0.97);
+    filter: brightness(0.98);
+}
+
+/* Premium glassmorphism header and card */
+.glass-header {
+    background: rgba(255, 255, 255, 0.68);
+    border-radius: 24px;
+    border: 1.5px solid #e0eaff;
+    box-shadow: 0 12px 48px 0 rgba(45, 158, 228, 0.13), 0 2px 8px rgba(59, 191, 218, 0.10);
+    backdrop-filter: blur(28px) saturate(200%);
+    -webkit-backdrop-filter: blur(28px) saturate(200%);
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+    margin-bottom: 2rem;
+    padding: 1.2rem 2rem;
+}
+
+.glass-card {
+    background: rgba(255, 255, 255, 0.72);
+    border-radius: 22px;
+    border: 1.5px solid #e0eaff;
+    box-shadow: 0 8px 32px 0 rgba(45, 158, 228, 0.10), 0 1.5px 6px rgba(59, 191, 218, 0.08);
+    backdrop-filter: blur(18px) saturate(180%);
+    -webkit-backdrop-filter: blur(18px) saturate(180%);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 2rem;
+    padding: 2rem 2.5rem 1.5rem 2.5rem;
+}
+
+/* Gradient text for headings */
+.gradient-text {
+    background: linear-gradient(90deg, #2D9EE4 0%, #3BBFDA 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-fill-color: transparent;
+    filter: drop-shadow(0 2px 8px #2d9ee422);
+}
+
+/* Premium subtitle */
+.subtitle-premium {
+    font-size: 1.13rem;
+    color: #2d9ee4;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 1px 8px #2d9ee41a;
+}
+
+/* Premium pill buttons */
+.btn-premium {
+    background: linear-gradient(90deg, #2D9EE4 0%, #3BBFDA 100%);
+    color: #fff !important;
+    border: none;
+    padding: 0.8rem 2.1rem;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 1.08rem;
+    cursor: pointer;
+    box-shadow: 0 6px 24px rgba(45, 158, 228, 0.22);
+    position: relative;
+    overflow: hidden;
+    transition: background 0.3s, box-shadow 0.3s, filter 0.3s, transform 0.2s;
+    outline: none;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6em;
+}
+
+.btn-premium:focus {
+    box-shadow: 0 0 0 4px #2D9EE488, 0 6px 24px rgba(45, 158, 228, 0.22);
+    filter: brightness(1.12) saturate(1.3);
+}
+
+.btn-premium:active {
+    transform: scale(0.97);
+    filter: brightness(0.98);
+}
+
+.btn-premium::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    background: radial-gradient(circle at 60% 40%, rgba(255, 255, 255, 0.18) 0%, rgba(59, 191, 218, 0.10) 100%);
+    opacity: 0.5;
+    filter: blur(2px);
+    z-index: 1;
+    transition: opacity 0.3s;
+}
+
+/* Icon glass effect */
+.icon-glass {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.55);
+    border-radius: 50%;
+    box-shadow: 0 2px 8px #2d9ee41a;
+    padding: 0.5em;
+    margin-right: 0.7em;
+    font-size: 1.3em;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+/* Hide text on small screens */
+.hide-sm {
+    display: inline;
+}
+
+@media (max-width: 600px) {
+    .hide-sm {
+        display: none;
+    }
+}
+
+/* =========================
+   GLOBAL RESET
+========================= */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    transition:
+        background 0.25s ease,
+        color 0.25s ease,
+        box-shadow 0.25s ease,
+        transform 0.25s ease;
 }
 
+/* =========================
+   BODY
+========================= */
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: linear-gradient(135deg, #eaf6fd 0%, #dbeafe 100%);
     min-height: 100vh;
     padding: 2rem;
+    color: #111827;
+    letter-spacing: 0.01em;
 }
 
+
+/* =========================
+   LAYOUT
+========================= */
 .booking-container {
-    max-width: 1400px;
+    max-width: 1920px;
     margin: 0 auto;
-}
-
-.booking-header {
-    background: white;
-    border-radius: 12px;
-    padding: 2rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-}
-
-.booking-header h1 {
-    font-size: 2.5rem;
-    color: #333;
-    margin-bottom: 0.5rem;
-}
-
-.booking-header p {
-    color: #666;
-    font-size: 1.1rem;
+    padding-left: 2vw;
+    padding-right: 2vw;
+    background: linear-gradient(120deg, #eaf6fd 0%, #dbeafe 60%, #3bbfda 100%);
+    border-radius: 2.5rem;
+    box-shadow: 0 8px 64px 0 #2d9ee41a, 0 1.5px 6px #3bbfda14;
+    position: relative;
+    overflow: visible;
 }
 
 .booking-content {
     display: grid;
-    grid-template-columns: 1fr 300px;
-    gap: 2rem;
+    grid-template-columns: 2.2fr 0.65fr;
+    gap: 4.5rem;
+    align-items: flex-start;
+    min-height: 700px;
 }
 
 @media (max-width: 1024px) {
@@ -49,13 +263,115 @@ body {
     }
 }
 
-.calendar-wrapper {
-    background: white;
-    border-radius: 12px;
-    padding: 2rem;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+/* =========================
+   CARDS
+========================= */
+/* Glassmorphism cards */
+.booking-header,
+.calendar-wrapper,
+.sidebar-card {
+    background: rgba(255, 255, 255, 0.75);
+    border-radius: 22px;
+    border: 1.5px solid #e0eaff;
+    box-shadow: 0 8px 32px 0 rgba(45, 158, 228, 0.10), 0 1.5px 6px rgba(59, 191, 218, 0.08);
+    backdrop-filter: blur(18px) saturate(180%);
+    -webkit-backdrop-filter: blur(18px) saturate(180%);
+    position: relative;
+    overflow: hidden;
 }
 
+.booking-header::after,
+.calendar-wrapper::after,
+.sidebar-card::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    background: linear-gradient(120deg, rgba(59, 191, 218, 0.08) 0%, rgba(45, 158, 228, 0.10) 100%);
+    mix-blend-mode: lighten;
+    opacity: 0.7;
+    z-index: 0;
+}
+
+
+/* =========================
+   HEADER
+========================= */
+.booking-header {
+    padding: 2.7rem 2.2rem 2.2rem 2.2rem;
+    margin-bottom: 2.2rem;
+    box-shadow: 0 12px 40px 0 rgba(45, 158, 228, 0.13), 0 2px 8px rgba(59, 191, 218, 0.10);
+    border: 1.5px solid #c7e0fa;
+}
+
+
+.booking-header h1 {
+    font-size: 3.2rem;
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 2px 16px rgba(45, 158, 228, 0.10);
+    background: linear-gradient(90deg, #2D9EE4 0%, #3BBFDA 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+
+.booking-header p {
+    color: #3bbfda;
+    font-size: 1.13rem;
+    font-weight: 500;
+    text-shadow: 0 1px 8px rgba(45, 158, 228, 0.08);
+}
+
+
+/* =========================
+   CALENDAR WRAPPER
+========================= */
+.calendar-wrapper {
+    width: 100%;
+    min-width: 0;
+    max-width: 100vw;
+    padding: 2.8rem 2.5rem 2.5rem 2.5rem;
+    margin-bottom: 2.5rem;
+    background: rgba(255, 255, 255, 0.82);
+    border-radius: 2.2rem;
+    border: 2.5px solid #e0eaff;
+    box-shadow: 0 16px 64px 0 rgba(45, 158, 228, 0.13), 0 2px 8px rgba(59, 191, 218, 0.10);
+    backdrop-filter: blur(32px) saturate(220%);
+    -webkit-backdrop-filter: blur(32px) saturate(220%);
+    position: relative;
+    overflow: visible;
+    z-index: 1;
+}
+
+.calendar-wrapper::before {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: inherit;
+    background: linear-gradient(120deg, #2D9EE4, #3BBFDA, #eaf6fd, #2D9EE4);
+    background-size: 300% 300%;
+    filter: blur(8px) brightness(1.15);
+    opacity: 0.45;
+    animation: borderFlow 10s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.calendar-wrapper>* {
+    position: relative;
+    z-index: 1;
+}
+
+/* =========================
+   NAVIGATION
+========================= */
 .calendar-nav {
     display: flex;
     justify-content: space-between;
@@ -64,136 +380,250 @@ body {
 }
 
 .calendar-nav h2 {
-    font-size: 1.5rem;
-    color: #333;
+    font-size: 1.6rem;
+    font-weight: 700;
 }
 
 .calendar-nav button {
-    background: #667eea;
-    color: white;
+    background: linear-gradient(90deg, #2D9EE4 0%, #3BBFDA 100%);
+    color: #fff;
     border: none;
-    padding: 0.5rem 1.5rem;
-    border-radius: 6px;
+    padding: 0.8rem 1.7rem;
+    border-radius: 16px;
+    font-weight: 700;
+    font-size: 1.08rem;
     cursor: pointer;
-    font-size: 0.95rem;
-    transition: background 0.3s;
+    box-shadow: 0 4px 18px rgba(45, 158, 228, 0.18);
+    position: relative;
+    overflow: hidden;
+    transition: background 0.3s, box-shadow 0.3s, filter 0.3s, transform 0.2s;
+}
+
+.calendar-nav button::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    background: linear-gradient(120deg, rgba(255, 255, 255, 0.13) 0%, #3BBFDA 100%);
+    opacity: 0.5;
+    filter: blur(2px);
+    z-index: 1;
 }
 
 .calendar-nav button:hover {
-    background: #764ba2;
+    background: linear-gradient(90deg, #3BBFDA 0%, #2D9EE4 100%);
+    box-shadow: 0 8px 28px rgba(45, 158, 228, 0.22), 0 0 12px #3BBFDA88;
+    filter: brightness(1.08) saturate(1.2);
+    transform: translateY(-2px) scale(1.04);
+}
+
+
+.calendar-nav button:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 8px 18px rgba(79, 70, 229, 0.45);
 }
 
 .calendar-nav button:disabled {
-    background: #ccc;
+    background: #d1eaff;
+    color: #b3bfcf;
     cursor: not-allowed;
+    box-shadow: none;
 }
 
+/* =========================
+   TABLE
+========================= */
 .calendar-table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 6px;
 }
 
 .calendar-table thead th {
-    background: #f5f5f5;
+    background: #f9fafb;
     padding: 1rem;
     text-align: center;
-    font-weight: 600;
-    color: #333;
-    border-bottom: 2px solid #e0e0e0;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #6b7280;
+    border-radius: 12px;
 }
 
+/* =========================
+   DAYS
+========================= */
 .calendar-table tbody td {
-    border: 1px solid #e0e0e0;
-    padding: 0.75rem;
-    height: 120px;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1.5px solid #e0eaff;
+    border-radius: 18px;
+    padding: 0.85rem;
+    height: 130px;
     vertical-align: top;
     cursor: pointer;
-    transition: background 0.2s;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(45, 158, 228, 0.06);
+    transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
 }
 
 .calendar-table tbody td:hover {
-    background: #f9f9f9;
+    background: #eaf6fd;
+    transform: scale(1.025);
+    box-shadow: 0 4px 18px #2d9ee41a, 0 0 0 2px #2D9EE4;
 }
 
 .calendar-table tbody td.other-month {
-    background: #fafafa;
-    color: #aaa;
+    background: #f4f7fb;
+    color: #b3c2d1;
+    opacity: 0.55;
 }
 
+/* =========================
+   DAY NUMBER
+========================= */
 .day-number {
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 0.5rem;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: #2D9EE4;
+    margin-bottom: 0.6rem;
+    text-shadow: 0 1px 8px #3BBFDA33;
 }
 
+/* =========================
+   ROOM SLOTS
+========================= */
 .room-slot {
-    font-size: 0.8rem;
-    padding: 0.3rem 0.5rem;
-    border-radius: 4px;
-    margin-bottom: 0.25rem;
-    color: white;
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 0.5rem 1.1rem;
+    border-radius: 999px;
+    margin-bottom: 0.4rem;
+    color: #fff;
     text-align: center;
+    letter-spacing: 0.3px;
     cursor: pointer;
-    transition: opacity 0.2s;
+    box-shadow: 0 2px 8px #2d9ee41a;
+    border: 1.5px solid #e0eaff;
+    background: linear-gradient(90deg, #2D9EE4 0%, #3BBFDA 100%);
+    transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
 }
 
 .room-slot:hover {
-    opacity: 0.8;
+    background: linear-gradient(90deg, #3BBFDA 0%, #2D9EE4 100%);
+    box-shadow: 0 4px 16px #3BBFDA33;
+    transform: scale(1.08);
 }
 
 .room-slot.available {
-    background: #00811F;
+    background: linear-gradient(90deg, #2D9EE4 0%, #3BBFDA 100%);
+    border: 1.5px solid #2D9EE4;
 }
 
 .room-slot.unavailable {
-    background: #e74c3c;
-    opacity: 0.7;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    opacity: 0.85;
 }
 
+/* =========================
+   SIDEBAR
+========================= */
 .sidebar {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 2.2rem;
+    min-width: 260px;
+    max-width: 340px;
 }
 
 .sidebar-card {
-    background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    padding: 1.3rem 1.5rem 1.3rem 1.5rem;
+    position: sticky;
+    top: 2rem;
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 1.5rem;
+    box-shadow: 0 8px 32px 0 rgba(45, 158, 228, 0.13), 0 1.5px 6px rgba(59, 191, 218, 0.10);
+    border: 1.5px solid #e0eaff;
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+    margin-bottom: 1.5rem;
+    transition: box-shadow 0.3s, transform 0.3s;
+}
+
+.sidebar-card:hover {
+    box-shadow: 0 16px 48px 0 rgba(45, 158, 228, 0.18), 0 4px 16px rgba(59, 191, 218, 0.13);
+    transform: translateY(-2px) scale(1.012);
 }
 
 .sidebar-card h3 {
-    font-size: 1.1rem;
-    color: #333;
-    margin-bottom: 1rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 2px solid #e0e0e0;
+    font-size: 1.18rem;
+    font-weight: 800;
+    margin-bottom: 1.1rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1.5px solid #e0eaff;
+    color: #2D9EE4;
+    letter-spacing: 0.02em;
+    text-shadow: 0 2px 12px #3BBFDA33;
+    background: linear-gradient(90deg, #2D9EE4 0%, #3BBFDA 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
+/* =========================
+   LEGEND
+========================= */
 .legend-item {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.8rem;
     font-size: 0.95rem;
+    color: #374151;
 }
 
 .legend-item .color-box {
-    width: 30px;
-    height: 30px;
-    border-radius: 4px;
+    width: 28px;
+    height: 28px;
+    border-radius: 10px;
+    border: 1.5px solid #3BBFDA88;
+    background: linear-gradient(135deg, #2D9EE4 0%, #3BBFDA 100%);
+    box-shadow: 0 2px 8px #2d9ee41a;
 }
 
+/* =========================
+   HARDWARE LIST
+========================= */
 .hardware-list {
     list-style: none;
 }
 
 .hardware-list li {
-    padding: 0.5rem 0;
-    border-bottom: 1px solid #f0f0f0;
-    font-size: 0.95rem;
-    color: #555;
+    padding: 0.6rem 0.2rem 0.6rem 0.2rem;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 1.04rem;
+    color: #256080;
+    letter-spacing: 0.01em;
+    display: flex;
+    align-items: center;
+    gap: 0.7em;
+    transition: background 0.2s, color 0.2s;
+}
+
+.hardware-list li strong {
+    color: #2D9EE4;
+    font-weight: 800;
+    font-size: 1.08em;
+    margin-right: 0.3em;
+}
+
+.hardware-list li:hover {
+    background: #eaf6fd;
+    color: #2D9EE4;
 }
 
 .hardware-list li:last-child {
@@ -201,5 +631,11 @@ body {
 }
 
 .hardware-list strong {
-    color: #00811F;
+    color: #2D9EE4;
+    font-weight: 700;
+}
+
+.today {
+    border: 2.5px solid #2D9EE4 !important;
+    background: #eaf6fd !important;
 }
