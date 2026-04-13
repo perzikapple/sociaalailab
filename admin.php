@@ -1044,9 +1044,32 @@ if ($page === 'users') {
 <link rel="stylesheet" href="ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link rel="icon" type="image/png" href="images/Pixels_icon.png">
 <script src="custom.js"></script>
-</head>
 <!-- TinyMCE toevoegen met API key -->
-<script src="https://cdn.tiny.cloud/1/1ui5rgslm5rlya4exbujnv26e5j6xyq87233fv56zmvcq39e/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+<script src="https://cdn.tiny.cloud/1/qnkn0kjik1i39qbzy3vn798sz5jjf0brz2sp43v420o1rnqx/tinymce/8/tinymce.min.js" referrerpolicy="origin" crossorigin="anonymous"></script>
+<script>
+  tinymce.init({
+    selector: 'textarea',
+    plugins: [
+      // Core editing features
+      'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'link', 'lists', 'media', 'searchreplace', 'table', 'visualblocks', 'wordcount',
+      // Your account includes a free trial of TinyMCE premium features
+      // Try the most popular premium features until Apr 27, 2026:
+      'checklist', 'mediaembed', 'casechange', 'formatpainter', 'pageembed', 'a11ychecker', 'tinymcespellchecker', 'permanentpen', 'powerpaste', 'advtable', 'advcode', 'advtemplate', 'tinymceai', 'uploadcare', 'mentions', 'tinycomments', 'tableofcontents', 'footnotes', 'mergetags', 'autocorrect', 'typography', 'inlinecss', 'markdown','importword', 'exportword', 'exportpdf'
+    ],
+    toolbar: 'undo redo | tinymceai-chat tinymceai-quickactions tinymceai-review | blocks fontfamily fontsize | bold italic underline strikethrough | link media table mergetags | addcomment showcomments | spellcheckdialog a11ycheck typography uploadcare | align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat',
+    tinycomments_mode: 'embedded',
+    tinycomments_author: 'Author name',
+    mergetags_list: [
+      { value: 'First.Name', title: 'First Name' },
+      { value: 'Email', title: 'Email' },
+    ],
+    tinymceai_token_provider: async () => {
+      await fetch(`https://demo.api.tiny.cloud/1/qnkn0kjik1i39qbzy3vn798sz5jjf0brz2sp43v420o1rnqx/auth/random`, { method: "POST", credentials: "include" });
+      return { token: await fetch(`https://demo.api.tiny.cloud/1/qnkn0kjik1i39qbzy3vn798sz5jjf0brz2sp43v420o1rnqx/jwt/tinymceai`, { credentials: "include" }).then(r => r.text()) };
+    },
+    uploadcare_public_key: '7802a2584c2144503210',
+  });
+</script>
 <style>
 .btn-readonly-disabled {
     opacity: 0.55;
@@ -1398,40 +1421,6 @@ if ($page === 'users') {
                                     </div>
                                 </div>
                             </div>
-<script>
-// Toggle end date/time for create/edit
-document.addEventListener('DOMContentLoaded', function() {
-    var addEndDateCreate = document.getElementById('add-end-date-create');
-    var endDateContainerCreate = document.getElementById('end-date-container-create');
-    if (addEndDateCreate && endDateContainerCreate) {
-        addEndDateCreate.addEventListener('change', function() {
-            endDateContainerCreate.style.display = this.checked ? 'block' : 'none';
-        });
-    }
-    var addEndDateEdit = document.getElementById('add-end-date-edit');
-    var endDateContainerEdit = document.getElementById('end-date-container-edit');
-    if (addEndDateEdit && endDateContainerEdit) {
-        addEndDateEdit.addEventListener('change', function() {
-            endDateContainerEdit.style.display = this.checked ? 'block' : 'none';
-        });
-    }
-    var addEndTimeCreate = document.getElementById('add-end-time-create');
-    var endTimeContainerCreate = document.getElementById('end-time-container-create');
-    if (addEndTimeCreate && endTimeContainerCreate) {
-        addEndTimeCreate.addEventListener('change', function() {
-            endTimeContainerCreate.style.display = this.checked ? 'block' : 'none';
-        });
-    }
-    var addEndTimeEdit = document.getElementById('add-end-time-edit');
-    var endTimeContainerEdit = document.getElementById('end-time-container-edit');
-    if (addEndTimeEdit && endTimeContainerEdit) {
-        addEndTimeEdit.addEventListener('change', function() {
-            endTimeContainerEdit.style.display = this.checked ? 'block' : 'none';
-        });
-    }
-});
-</script>
-
                             <div>
                                 <label class="form-label">Plaats</label>
                                 <input name="location" class="form-input admin-input-surface" />
@@ -1467,11 +1456,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                     value=""
                                     placeholder="https://voorbeeld.nl"
                                 />
-                                <?php if (!empty($_POST['info_link'])): ?>
-                                    <a href="<?php echo htmlspecialchars($_POST['info_link']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-info bg-[#00811F] text-white px-3 py-1 rounded shadow hover:bg-[#00691A] transition mt-2 inline-block">
-                                        <i class="fa-solid fa-circle-info mr-1"></i> Meer info
-                                    </a>
-                                <?php endif; ?>
                             </div>
 
                             <div>
@@ -1484,11 +1468,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                     value=""
                                     placeholder="https://aanmelder.nl/subscribe/..."
                                 />
-                                <?php if (!empty($_POST['signup_embed'])): ?>
-                                    <a href="<?php echo htmlspecialchars($_POST['signup_embed']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-info bg-[#00811F] text-white px-3 py-1 rounded shadow hover:bg-[#00691A] transition mt-2 inline-block">
-                                        <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i> Aanmelden
-                                    </a>
-                                <?php endif; ?>
                             </div>
 
                             <div>
@@ -1547,10 +1526,10 @@ document.addEventListener('DOMContentLoaded', function() {
                                         <?php endif; ?>
                                         <div class="flex-1">
                                             <h4 class="font-bold text-lg text-gray-800"><?php echo htmlspecialchars(sanitizeEditorText($event['title'])); ?></h4>
-                                            <?php 
-                                                $dateDisplay = formatEventDateDisplay($event['date']); 
-                                                $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : ''; 
-                                                $timeEndDisplay = $event['time_end'] ? formatEventTimeDisplay($event['time_end']) : ''; 
+                                            <?php
+                                                $dateDisplay = formatEventDateDisplay($event['date']);
+                                                $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : '';
+                                                $timeEndDisplay = $event['time_end'] ? formatEventTimeDisplay($event['time_end']) : '';
                                                 $eventDescriptionPreview = editorPreviewText($event['description'] ?? '', 200);
                                                 $eventGalleryCount = count(decodeEventGallery($event['event_gallery'] ?? null));
                                             ?>
@@ -1682,7 +1661,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                             <option value="superadmin" <?php echo $accRole === 'superadmin' ? 'selected' : ''; ?>>Administrator</option>
                                             <option value="content_manager" <?php echo $accRole === 'content_manager' ? 'selected' : ''; ?>>Content Manager</option>
                                             <option value="editor" <?php echo $accRole === 'editor' ? 'selected' : ''; ?>>Bewerker</option>
-                                           
+
                                         </select>
                                         <button type="submit" class="btn btn-primary btn-sm">
                                             <i class="fa-solid fa-save"></i> Opslaan
@@ -1948,8 +1927,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                     </label>
                                 <?php endif; ?>
                             </div>
-                                    
-                            
+
+
                             <div>
                                 <label class="form-label" for="info_link">Meer info link (optioneel):</label>
                                 <input
@@ -1971,7 +1950,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </select>
                             </div>
 
-                            
+
 
                             <div class="flex gap-2 pt-2">
                                 <button type="button" class="btn btn-secondary js-content-preview-btn">
@@ -2049,7 +2028,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </select>
                             </div>
 
-                            
+
 
                             <div>
                                 <label class="form-label">Positie</label>
@@ -2372,7 +2351,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         '<div class="flex items-center space-x-3">' +
                             '<i class="fa-solid fa-clock text-[#00811F] ml-[2px] text-3xl"></i>' +
                             '<p class="text-gray-700"><strong>Hoelaat:</strong> ' + escapeHtml(startTime) + (endTime ? ' - ' + escapeHtml(endTime) : '') + '</p>' +
-                        '</div>' : '') +
+                        </div> : '') +
                         '<div class="flex items-center space-x-3">' +
                             '<i class="fa-solid fa-location-dot text-[#00811F] ml-1 text-3xl"></i>' +
                             '<p class="text-gray-700 ml-1"><strong>Waar:</strong> <a href="' + escapeHtml(mapUrl) + '" target="_blank" rel="noopener noreferrer" class="underline hover:text-[#00811F]">' + escapeHtml(location) + '</a></p>' +
@@ -2380,8 +2359,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         '<div class="flex mb-6 space-x-3">' +
                             '<i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>' +
                             '<div class="text-gray-700 pb-3"><strong> Wat:</strong><div class="mt-1">' + descriptionHtml + '</div></div>' +
-                        '</div>' +
-                    '</div>' +
+                        </div>' +
+                    </div>' +
                     (hasEmbed ? '<div class="mt-4 rounded-md border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-600">Aanmelder.nl embed wordt na opslaan getoond.</div>' : (hasSignup ? '<a href="#" onclick="return false;" class="mt-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">Inschrijven</a>' : '')) +
                     (infoLink ? '<a href="' + escapeHtml(infoLink) + '" target="_blank" rel="noopener noreferrer" class="mt-4 ml-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">Meer info</a>' : '') +
                 '</div>' +
