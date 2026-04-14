@@ -3450,7 +3450,24 @@ button,
 section {
     width: 95%;
 }
+@media (max-width: 490px) {
 
+    .watdoenwe-page .card.row {
+        flex-direction: column !important;
+    }
+
+    .watdoenwe-page .card-image-container {
+        width: 100% !important;
+    }
+
+    /* 🔥 DIT is de key fix */
+    .watdoenwe-page img {
+        width: 100% !important;
+        height: auto !important;
+        object-fit: contain !important;
+    }
+
+}
 @media (max-width: 571px) {
 
     /* Container voor de items */
@@ -3463,7 +3480,12 @@ section {
     }
 
 
+<<<<<<< HEAD
     #watdoenwe-switch>div {
+=======
+
+    #watdoenwe-switch > div {
+>>>>>>> origin/main
         background-color: #ffffff;
         border-radius: 12px;
         box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
@@ -3498,18 +3520,6 @@ section {
         margin: 0 auto;
     }
 
-    .watdoenwe-page .bg-white {
-        width: 95% !important;
-        padding: 10px !important;
-    }
-
-    .watdoenwe-page img {
-        width: 100% !important;
-        height: 100% !important;
-        max-height: 200px;
-        object-fit: contain;
-    }
-
 }
 
 /* Mobile styles */
@@ -3519,17 +3529,6 @@ section {
         font-size: 28px;
     }
 
-    .watdoenwe-page .bg-white {
-        width: 95% !important;
-        padding: 10px !important;
-    }
-
-        .watdoenwe-page img {
-        width: 100% !important;
-        height: 100% !important;
-        max-height: 300px;
-        object-fit: contain;
-    }
     /* Size homepage pictures*/
     .card-icon {
         width: 120px;
@@ -3660,6 +3659,18 @@ section {
         max-width: 600px;
         padding: 0.75rem;
     }
+
+    .mobile-hide-no-image {
+        display: none;
+    }
+}
+
+.text-padding[style*="flex-direction: row"] {
+    align-items: center !important;
+}
+
+.text-padding[style*="flex-direction: row"] > div {
+    align-self: center;
 }
 
 @media (min-width: 768px) and (max-width: 1035px) {
@@ -4159,6 +4170,7 @@ section {
     }
 }
 
+<<<<<<< HEAD
 @media (max-width: 768px) {
     .mobile-hide-no-image {
         display: none;
@@ -4172,3 +4184,5 @@ section {
 .text-padding[style*="flex-direction: row"]>div {
     align-self: center;
 }
+=======
+>>>>>>> origin/main
