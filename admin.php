@@ -125,7 +125,7 @@ function optimizeImage($imagePath, $quality = 85) {
     finfo_close($finfo);
 
     $ext = strtolower(pathinfo($imagePath, PATHINFO_EXTENSION));
-    
+
     // Check if GD library is available
     if (!extension_loaded('gd')) {
         return ['error' => 'GD-bibliotheek niet geïnstalleerd op server.', 'size_original' => $originalSize];
@@ -133,7 +133,7 @@ function optimizeImage($imagePath, $quality = 85) {
 
     try {
         $image = null;
-        
+
         // Load image based on type
         if (in_array($mimeType, ['image/jpeg', 'image/jpg'])) {
             $image = imagecreatefromjpeg($imagePath);
@@ -640,11 +640,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } elseif ($action === 'optimize_image') {
         $imagePath = trim((string)($_POST['image_path'] ?? ''));
-        
+
         // Validate the image path to prevent directory traversal
         $uploadDir = __DIR__ . '/uploads/';
         $fullPath = realpath($uploadDir . $imagePath);
-        
+
         if (!$fullPath || strpos($fullPath, realpath($uploadDir)) !== 0) {
             $message = 'Ongeldig pad voor afbeelding.';
         } else if (!file_exists($fullPath)) {
@@ -652,9 +652,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $quality = intval($_POST['quality'] ?? 85);
             $quality = max(60, min(95, $quality)); // Limit between 60-95
-            
+
             $result = optimizeImage($fullPath, $quality);
-            
+
             if (isset($result['error'])) {
                 $message = $result['error'];
             } else {
@@ -1781,7 +1781,7 @@ if ($page === 'users') {
 
                     <div class="bg-white p-6 shadow-md border border-gray-200 rounded mb-6">
                         <h3 class="font-semibold text-lg mb-4">Afbeelding selecteren</h3>
-                        
+
                         <div class="mb-6">
                             <label class="form-label" for="image_select">Selecteer een afbeelding uit uploads</label>
                             <select id="image_select" name="image_path" class="form-input">
@@ -2940,7 +2940,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Handle form submission
     optimizeForm.addEventListener('submit', function(e) {
         e.preventDefault();
-        
+
         if (!imageSelect.value) {
             showToast('Selecteer een afbeelding om te optimaliseren.', 'error');
             return;
@@ -2957,7 +2957,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             optimizeBtn.disabled = false;
             optimizeBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Afbeelding optimaliseren';
-            
+
             // Check if optimization was successful
             if (data.includes('alert-success') || data.includes('Afbeelding geoptimaliseerd')) {
                 // Extract success message
@@ -2967,7 +2967,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     showToast(message, 'success');
                     resultsText.textContent = message;
                     resultsContainer.style.display = 'block';
-                    
+
                     // Reset form after 2 seconds
                     setTimeout(() => {
                         imageSelect.value = '';
@@ -2999,8 +2999,8 @@ document.addEventListener('DOMContentLoaded', function() {
     <?php if (!empty($_SESSION['optimize_success'])): ?>
         const optimizeData = <?php echo json_encode($_SESSION['optimize_data'] ?? []); ?>;
         if (optimizeData && optimizeData.saved_percent) {
-            const message = 'Afbeelding geoptimaliseerd! ' + 
-                (optimizeData.saved_bytes / 1024 / 1024).toFixed(2) + ' MB bespaard (' + 
+            const message = 'Afbeelding geoptimaliseerd! ' +
+                (optimizeData.saved_bytes / 1024 / 1024).toFixed(2) + ' MB bespaard (' +
                 optimizeData.saved_percent + '%).';
             showToast(message, 'success');
             resultsText.textContent = message;
@@ -3074,7 +3074,39 @@ document.head.appendChild(style);
     <img id="modalImage" src="" alt="Preview">
   </div>
 </div>
+<script>
+    const sidebar = document.querySelector('.sidebar');
+    const toggleBtn = document.querySelector('.sidebar-toggle-btn');
 
+    function openSidebar() {
+        sidebar.classList.add('open');
+    }
+
+    function closeSidebar() {
+        sidebar.classList.remove('open');
+    }
+
+    // Toggle button
+    toggleBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        sidebar.classList.toggle('open');
+    });
+
+    // Klik buiten sidebar = sluiten
+    document.addEventListener('click', function (e) {
+        const isClickInsideSidebar = sidebar.contains(e.target);
+        const isClickOnButton = toggleBtn.contains(e.target);
+
+        if (!isClickInsideSidebar && !isClickOnButton) {
+            closeSidebar();
+        }
+    });
+
+    // Klik binnen sidebar niet laten sluiten
+    sidebar.addEventListener('click', function (e) {
+        e.stopPropagation();
+    });
+</script>
 </body>
 </html>
 
