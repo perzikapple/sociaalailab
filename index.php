@@ -332,12 +332,14 @@ foreach ($events as $event):
     <div class="flex-1<?php echo !$hasValidImage ? ' mobile-hide-no-image' : ''; ?>">
         <div class="image-template-wrap">
             <img src="<?php echo $hasValidImage ? 'uploads/' . htmlspecialchars($eventImageName) : 'images/event/Agenda_event_2_Studenten_en_bewoners_verkennen_de_sociale_invloed_van_AI.jpg'; ?>" alt="<?php echo htmlspecialchars(strip_tags((string)$event['title'])); ?>" class="image-template-photo">
+            <!--
             <div class="image-template-badge">
                 <span><?php echo htmlspecialchars($eventDayMonth); ?></span>
                 <span><?php echo htmlspecialchars($eventYear); ?></span>
             </div>
-            <span class="image-template-square image-template-square-left"></span>
-            <span class="image-template-square image-template-square-right"></span>
+            -->
+            <!-- <span class="image-template-square image-template-square-left"></span>
+            <span class="image-template-square image-template-square-right"></span> -->
         </div>
     </div>
 </section>
