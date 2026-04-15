@@ -562,21 +562,22 @@ body {
 
 /* Responsive adjustments */
 @media (max-width: 1200px) {
+
     .week-header,
     .week-body {
         grid-template-columns: 50px repeat(7, 1fr);
     }
-    
+
     .time-slot {
         min-height: 50px;
         font-size: 0.75rem;
     }
-    
+
     .booked-slot {
         min-height: 50px;
         font-size: 0.7rem;
     }
-    
+
     .empty-slot {
         min-height: 50px;
     }
@@ -586,26 +587,26 @@ body {
     .day-preview-content {
         grid-template-columns: 1fr;
     }
-    
+
     .week-header {
         grid-template-columns: 40px repeat(7, 1fr);
         gap: 0;
         padding: 0;
     }
-    
+
     .week-day-header {
         padding: 0.5rem 0.25rem;
         font-size: 0.8rem;
     }
-    
+
     .week-day-name {
         display: none;
     }
-    
+
     .week-day-number {
         font-size: 1rem;
     }
-    
+
     .room-title {
         writing-mode: horizontal-tb;
         transform: rotate(-90deg);
@@ -614,17 +615,17 @@ body {
         font-size: 0.7rem;
         padding: 0.25rem;
     }
-    
+
     .time-slot {
         min-height: 40px;
         font-size: 0.65rem;
     }
-    
+
     .booked-slot {
         min-height: 40px;
         font-size: 0.6rem;
     }
-    
+
     .empty-slot {
         min-height: 40px;
     }
@@ -635,25 +636,24 @@ body {
     border-radius: 12px;
     padding: 2rem;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
->>>>>>> origin/main
-}
 
-.booking-header::after,
-.calendar-wrapper::after,
-.sidebar-card::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-    background: linear-gradient(120deg, rgba(59, 191, 218, 0.08) 0%, rgba(45, 158, 228, 0.10) 100%);
-    mix-blend-mode: lighten;
-    opacity: 0.7;
-    z-index: 0;
-}
 
+    .booking-header::after,
+    .calendar-wrapper::after,
+    .sidebar-card::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        pointer-events: none;
+        background: linear-gradient(120deg, rgba(59, 191, 218, 0.08) 0%, rgba(45, 158, 228, 0.10) 100%);
+        mix-blend-mode: lighten;
+        opacity: 0.7;
+        z-index: 0;
+    }
+}
 
 /* =========================
    HEADER
@@ -993,12 +993,12 @@ body {
     font-weight: 700;
 }
 
-<<<<<<< HEAD
+
 .today {
     border: 2.5px solid #2D9EE4 !important;
     background: #eaf6fd !important;
 }
-=======
+
 /* Booking Form Styles */
 .booking-form-card {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -1008,4 +1008,36 @@ body {
 .booking-form-card h3 {
     color: white;
     border-bottom-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Premium Navbar Background */
+.navbar {
+    width: 100%;
+    background: linear-gradient(90deg, #eaf6fd 0%, #dbeafe 60%, #3bbfda 100%);
+    box-shadow: 0 8px 32px 0 rgba(45, 158, 228, 0.10), 0 1.5px 6px rgba(59, 191, 218, 0.08);
+    border-bottom: 2.5px solid #e0eaff;
+    padding: 0;
+    margin-bottom: 2.2rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(18px) saturate(180%);
+    -webkit-backdrop-filter: blur(18px) saturate(180%);
+    transition: box-shadow 0.3s, background 0.3s;
+    animation: navbarGlow 12s linear infinite;
+    border-radius: 1.5rem 1.5rem 2.2rem 2.2rem;
+}
+
+@keyframes navbarGlow {
+    0% {
+        filter: brightness(1) drop-shadow(0 0 0 #2D9EE4);
+    }
+
+    50% {
+        filter: brightness(1.08) drop-shadow(0 0 16px #3BBFDA55);
+    }
+
+    100% {
+        filter: brightness(1) drop-shadow(0 0 0 #2D9EE4);
+    }
 }
