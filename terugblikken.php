@@ -156,7 +156,7 @@ include __DIR__ . '/navbar.php';
                 }
                 ?>
                 <div style="<?php echo $imageStyle; ?>">
-                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
+                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; object-fit: contain; border-radius: 0.5rem;">
                 </div>
             <?php endif; ?>
             <?php if ($hasText): ?>
@@ -193,12 +193,12 @@ include __DIR__ . '/navbar.php';
                 }
                 ?>
                 <div style="<?php echo $imageStyle; ?>">
-                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
+                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; object-fit: contain; border-radius: 0.5rem;">
                 </div>
             <?php endif; ?>
             <?php if ($hasImage && $imagePosition === 'normal'): ?>
                 <div style="width: 100%; max-width: 600px;">
-                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
+                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; object-fit: contain; border-radius: 0.5rem;">
                 </div>
             <?php endif; ?>
         </section>
@@ -249,7 +249,7 @@ include __DIR__ . '/navbar.php';
         <?php if ($hasValidImage): ?>
         <div class="flex-1">
             <div class="image-template-wrap">
-                <img src="uploads/<?php echo htmlspecialchars($eventImageName); ?>" alt="<?php echo htmlspecialchars(strip_tags((string)$event['title'])); ?>" class="image-template-photo">
+                <img src="uploads/<?php echo htmlspecialchars($eventImageName); ?>" alt="<?php echo htmlspecialchars(strip_tags((string)$event['title'])); ?>" class="image-template-photo" style="object-fit: contain;">
                 <!--
                 <div class="image-template-badge">
                     <span><?php echo htmlspecialchars($dayMonth); ?></span>
