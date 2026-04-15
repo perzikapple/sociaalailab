@@ -1057,6 +1057,11 @@ main {
         top: 110px;
         height: calc(100vh - 140px);
     }
+
+    /* Hide mobile toggle button on desktop */
+    .sidebar-toggle-btn {
+        display: none;
+    }
 }
 
 
