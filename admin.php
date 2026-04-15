@@ -3075,36 +3075,31 @@ document.head.appendChild(style);
   </div>
 </div>
 <script>
-    const sidebar = document.querySelector('.sidebar');
-    const toggleBtn = document.querySelector('.sidebar-toggle-btn');
+    document.addEventListener("DOMContentLoaded", function () {
 
-    function openSidebar() {
-        sidebar.classList.add('open');
-    }
+        const sidebar = document.querySelector('.sidebar');
+        const toggleBtn = document.querySelector('#sidebarToggle');
 
-    function closeSidebar() {
-        sidebar.classList.remove('open');
-    }
+        if (!sidebar || !toggleBtn) return;
 
-    // Toggle button
-    toggleBtn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        sidebar.classList.toggle('open');
-    });
+        // Toggle sidebar
+        toggleBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            sidebar.classList.toggle('open');
+        });
 
-    // Klik buiten sidebar = sluiten
-    document.addEventListener('click', function (e) {
-        const isClickInsideSidebar = sidebar.contains(e.target);
-        const isClickOnButton = toggleBtn.contains(e.target);
+        // Klik buiten = sluiten
+        document.addEventListener('click', function (e) {
+            if (!sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
+                sidebar.classList.remove('open');
+            }
+        });
 
-        if (!isClickInsideSidebar && !isClickOnButton) {
-            closeSidebar();
-        }
-    });
+        // klik binnen sidebar = niet sluiten
+        sidebar.addEventListener('click', function (e) {
+            e.stopPropagation();
+        });
 
-    // Klik binnen sidebar niet laten sluiten
-    sidebar.addEventListener('click', function (e) {
-        e.stopPropagation();
     });
 </script>
 </body>
