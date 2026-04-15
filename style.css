@@ -3827,17 +3827,13 @@ section {
 }
 
 /* Overlay template for agenda and terugblik image blocks */
-.event-template {
-    background: linear-gradient(135deg, #038a40 0%, #6faa3a 100%);
-    color: #ffffff;
-    padding: 2rem;
-    border-radius: 0;
-    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.18);
-}
 
+
+/*
 .event-template.is-retrospective {
     background: linear-gradient(135deg, #0c8146 0%, #719f3f 100%);
 }
+*/
 
 .event-template-head {
     display: flex;
@@ -3943,12 +3939,14 @@ section {
     object-fit: cover;
 }
 
+/*
 .event-template-square {
     position: absolute;
     background: #68b04a;
     width: 3.4rem;
     height: 3.4rem;
 }
+*/
 
 .event-template-square-left {
     left: 1.6rem;

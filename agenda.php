@@ -133,12 +133,14 @@ foreach ($events as $event):
         <div class="flex-1">
             <div class="image-template-wrap">
                 <img src="uploads/<?php echo htmlspecialchars($eventImageName); ?>" alt="<?php echo htmlspecialchars(strip_tags((string)$event['title'])); ?>" class="image-template-photo">
+                <!--
                 <div class="image-template-badge">
                     <span><?php echo htmlspecialchars($dayMonth); ?></span>
                     <span><?php echo htmlspecialchars($year); ?></span>
                 </div>
-                <span class="image-template-square image-template-square-left"></span>
-                <span class="image-template-square image-template-square-right"></span>
+                -->
+                <!-- <span class="image-template-square image-template-square-left"></span>
+                <span class="image-template-square image-template-square-right"></span> -->
             </div>
         </div>
         <?php endif; ?>

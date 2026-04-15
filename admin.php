@@ -125,7 +125,7 @@ function optimizeImage($imagePath, $quality = 85) {
     finfo_close($finfo);
 
     $ext = strtolower(pathinfo($imagePath, PATHINFO_EXTENSION));
-    
+
     // Check if GD library is available
     if (!extension_loaded('gd')) {
         return ['error' => 'GD-bibliotheek niet geïnstalleerd op server.', 'size_original' => $originalSize];
@@ -133,7 +133,7 @@ function optimizeImage($imagePath, $quality = 85) {
 
     try {
         $image = null;
-        
+
         // Load image based on type
         if (in_array($mimeType, ['image/jpeg', 'image/jpg'])) {
             $image = imagecreatefromjpeg($imagePath);
@@ -640,11 +640,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } elseif ($action === 'optimize_image') {
         $imagePath = trim((string)($_POST['image_path'] ?? ''));
-        
+
         // Validate the image path to prevent directory traversal
         $uploadDir = __DIR__ . '/uploads/';
         $fullPath = realpath($uploadDir . $imagePath);
-        
+
         if (!$fullPath || strpos($fullPath, realpath($uploadDir)) !== 0) {
             $message = 'Ongeldig pad voor afbeelding.';
         } else if (!file_exists($fullPath)) {
@@ -652,9 +652,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $quality = intval($_POST['quality'] ?? 85);
             $quality = max(60, min(95, $quality)); // Limit between 60-95
-            
+
             $result = optimizeImage($fullPath, $quality);
-            
+
             if (isset($result['error'])) {
                 $message = $result['error'];
             } else {
@@ -1781,7 +1781,7 @@ if ($page === 'users') {
 
                     <div class="bg-white p-6 shadow-md border border-gray-200 rounded mb-6">
                         <h3 class="font-semibold text-lg mb-4">Afbeelding selecteren</h3>
-                        
+
                         <div class="mb-6">
                             <label class="form-label" for="image_select">Selecteer een afbeelding uit uploads</label>
                             <select id="image_select" name="image_path" class="form-input">
@@ -2363,6 +2363,27 @@ if ($page === 'users') {
         </div>
     </div>
 </main>
+    <script>
+    // Tijdelijke test: einddatum/eindtijd tonen/verbergen
+    function toggleField(checkboxId, containerId) {
+        var checkbox = document.getElementById(checkboxId);
+        var container = document.getElementById(containerId);
+        if (!checkbox || !container) return;
+        function update() {
+            if (checkbox.checked) {
+                container.classList.remove('admin-hidden');
+            } else {
+                container.classList.add('admin-hidden');
+            }
+        }
+        checkbox.addEventListener('change', update);
+        update();
+    }
+    toggleField('add-end-date-edit', 'end-date-container-edit');
+    toggleField('add-end-time-edit', 'end-time-container-edit');
+    toggleField('add-end-date-create', 'end-date-container-create');
+    toggleField('add-end-time-create', 'end-time-container-create');
+    </script>
 
 <div id="content-preview-modal" class="hidden" style="position: fixed; inset: 0; z-index: 9999; background: rgba(17,24,39,.6); padding: 1rem;">
     <div style="max-width: 860px; margin: 0 auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,.25); max-height: calc(100vh - 2rem); display: flex; flex-direction: column;">
@@ -2940,7 +2961,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Handle form submission
     optimizeForm.addEventListener('submit', function(e) {
         e.preventDefault();
-        
+
         if (!imageSelect.value) {
             showToast('Selecteer een afbeelding om te optimaliseren.', 'error');
             return;
@@ -2957,7 +2978,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             optimizeBtn.disabled = false;
             optimizeBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Afbeelding optimaliseren';
-            
+
             // Check if optimization was successful
             if (data.includes('alert-success') || data.includes('Afbeelding geoptimaliseerd')) {
                 // Extract success message
@@ -2967,7 +2988,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     showToast(message, 'success');
                     resultsText.textContent = message;
                     resultsContainer.style.display = 'block';
-                    
+
                     // Reset form after 2 seconds
                     setTimeout(() => {
                         imageSelect.value = '';
@@ -2999,8 +3020,8 @@ document.addEventListener('DOMContentLoaded', function() {
     <?php if (!empty($_SESSION['optimize_success'])): ?>
         const optimizeData = <?php echo json_encode($_SESSION['optimize_data'] ?? []); ?>;
         if (optimizeData && optimizeData.saved_percent) {
-            const message = 'Afbeelding geoptimaliseerd! ' + 
-                (optimizeData.saved_bytes / 1024 / 1024).toFixed(2) + ' MB bespaard (' + 
+            const message = 'Afbeelding geoptimaliseerd! ' +
+                (optimizeData.saved_bytes / 1024 / 1024).toFixed(2) + ' MB bespaard (' +
                 optimizeData.saved_percent + '%).';
             showToast(message, 'success');
             resultsText.textContent = message;
@@ -3074,7 +3095,34 @@ document.head.appendChild(style);
     <img id="modalImage" src="" alt="Preview">
   </div>
 </div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
 
+        const sidebar = document.querySelector('.sidebar');
+        const toggleBtn = document.querySelector('#sidebarToggle');
+
+        if (!sidebar || !toggleBtn) return;
+
+        // Toggle sidebar
+        toggleBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            sidebar.classList.toggle('open');
+        });
+
+        // Klik buiten = sluiten
+        document.addEventListener('click', function (e) {
+            if (!sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
+                sidebar.classList.remove('open');
+            }
+        });
+
+        // klik binnen sidebar = niet sluiten
+        sidebar.addEventListener('click', function (e) {
+            e.stopPropagation();
+        });
+
+    });
+</script>
 </body>
 </html>
 
