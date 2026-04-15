@@ -21,8 +21,8 @@ if (!$canAccessAdmin) {
 }
 
 $rolePermissions = [
-    'superadmin' => ['manage_users', 'view_audit', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages'],
-    'content_manager' => ['manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages'],
+    'superadmin' => ['manage_users', 'view_audit', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images'],
+    'content_manager' => ['manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images'],
     'editor' => ['manage_events'],
     'viewer' => [],
 ];
@@ -113,6 +113,68 @@ function handleMultiUpload($fileField) {
     return ['names' => $saved];
 }
 
+// Image optimizer function
+function optimizeImage($imagePath, $quality = 85) {
+    if (!file_exists($imagePath)) {
+        return ['error' => 'Afbeelding niet gevonden.'];
+    }
+
+    $originalSize = filesize($imagePath);
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mimeType = finfo_file($finfo, $imagePath);
+    finfo_close($finfo);
+
+    $ext = strtolower(pathinfo($imagePath, PATHINFO_EXTENSION));
+
+    // Check if GD library is available
+    if (!extension_loaded('gd')) {
+        return ['error' => 'GD-bibliotheek niet geïnstalleerd op server.', 'size_original' => $originalSize];
+    }
+
+    try {
+        $image = null;
+
+        // Load image based on type
+        if (in_array($mimeType, ['image/jpeg', 'image/jpg'])) {
+            $image = imagecreatefromjpeg($imagePath);
+        } elseif ($mimeType === 'image/png') {
+            $image = imagecreatefrompng($imagePath);
+        } elseif ($mimeType === 'image/gif') {
+            $image = imagecreatefromgif($imagePath);
+        } elseif ($mimeType === 'image/webp') {
+            $image = imagecreatefromwebp($imagePath);
+        }
+
+        if (!$image) {
+            return ['error' => 'Kon afbeelding niet laden.', 'size_original' => $originalSize];
+        }
+
+        // Save optimized JPEG (best compatibility)
+        $optimizedPath = str_replace('.' . $ext, '_optimized.jpg', $imagePath);
+        imagejpeg($image, $optimizedPath, $quality);
+        imagedestroy($image);
+
+        $newSize = filesize($optimizedPath);
+        $saved = $originalSize - $newSize;
+        $savedPercent = $originalSize > 0 ? round(($saved / $originalSize) * 100, 1) : 0;
+
+        // Replace original with optimized
+        @unlink($imagePath);
+        rename($optimizedPath, $imagePath);
+
+        return [
+            'success' => true,
+            'size_original' => $originalSize,
+            'size_optimized' => $newSize,
+            'saved_bytes' => $saved,
+            'saved_percent' => $savedPercent,
+            'format' => 'JPEG'
+        ];
+    } catch (Exception $e) {
+        return ['error' => 'Fout bij optimalisatie: ' . $e->getMessage(), 'size_original' => $originalSize];
+    }
+}
+
 function decodeEventGallery($value) {
     if (!is_string($value) || $value === '') {
         return [];
@@ -166,6 +228,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'reset_banners' => 'manage_banners',
         'create_user' => 'manage_users',
         'update_user_role' => 'manage_users',
+        'optimize_image' => 'optimize_images',
     ];
 
     if ($action !== '' && isset($actionPermissionMap[$action]) && !$hasPermission($actionPermissionMap[$action])) {
@@ -574,6 +637,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             audit_log($pdo, 'update', 'accounts', $targetEmail, 'role set to ' . $newRole, $currentUser);
             $message = 'Gebruikersrol bijgewerkt.';
+        }
+    } elseif ($action === 'optimize_image') {
+        $imagePath = trim((string)($_POST['image_path'] ?? ''));
+
+        // Validate the image path to prevent directory traversal
+        $uploadDir = __DIR__ . '/uploads/';
+        $fullPath = realpath($uploadDir . $imagePath);
+
+        if (!$fullPath || strpos($fullPath, realpath($uploadDir)) !== 0) {
+            $message = 'Ongeldig pad voor afbeelding.';
+        } else if (!file_exists($fullPath)) {
+            $message = 'Afbeelding niet gevonden.';
+        } else {
+            $quality = intval($_POST['quality'] ?? 85);
+            $quality = max(60, min(95, $quality)); // Limit between 60-95
+
+            $result = optimizeImage($fullPath, $quality);
+
+            if (isset($result['error'])) {
+                $message = $result['error'];
+            } else {
+                $saved_mb = number_format($result['saved_bytes'] / 1024 / 1024, 2, '.', '');
+                $message = sprintf(
+                    'Afbeelding geoptimaliseerd! %s MB bespaard (%d%%).',
+                    $saved_mb,
+                    $result['saved_percent']
+                );
+                $_SESSION['optimize_success'] = true;
+                $_SESSION['optimize_data'] = $result;
+            }
         }
     }
 }
@@ -1044,9 +1137,32 @@ if ($page === 'users') {
 <link rel="stylesheet" href="ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link rel="icon" type="image/png" href="images/Pixels_icon.png">
 <script src="custom.js"></script>
-</head>
 <!-- TinyMCE toevoegen met API key -->
-<script src="https://cdn.tiny.cloud/1/1ui5rgslm5rlya4exbujnv26e5j6xyq87233fv56zmvcq39e/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+<script src="https://cdn.tiny.cloud/1/qnkn0kjik1i39qbzy3vn798sz5jjf0brz2sp43v420o1rnqx/tinymce/8/tinymce.min.js" referrerpolicy="origin" crossorigin="anonymous"></script>
+<script>
+  tinymce.init({
+    selector: 'textarea',
+    plugins: [
+      // Core editing features
+      'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'link', 'lists', 'media', 'searchreplace', 'table', 'visualblocks', 'wordcount',
+      // Your account includes a free trial of TinyMCE premium features
+      // Try the most popular premium features until Apr 27, 2026:
+      'checklist', 'mediaembed', 'casechange', 'formatpainter', 'pageembed', 'a11ychecker', 'tinymcespellchecker', 'permanentpen', 'powerpaste', 'advtable', 'advcode', 'advtemplate', 'tinymceai', 'uploadcare', 'mentions', 'tinycomments', 'tableofcontents', 'footnotes', 'mergetags', 'autocorrect', 'typography', 'inlinecss', 'markdown','importword', 'exportword', 'exportpdf'
+    ],
+    toolbar: 'undo redo | tinymceai-chat tinymceai-quickactions tinymceai-review | blocks fontfamily fontsize | bold italic underline strikethrough | link media table mergetags | addcomment showcomments | spellcheckdialog a11ycheck typography uploadcare | align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat',
+    tinycomments_mode: 'embedded',
+    tinycomments_author: 'Author name',
+    mergetags_list: [
+      { value: 'First.Name', title: 'First Name' },
+      { value: 'Email', title: 'Email' },
+    ],
+    tinymceai_token_provider: async () => {
+      await fetch(`https://demo.api.tiny.cloud/1/qnkn0kjik1i39qbzy3vn798sz5jjf0brz2sp43v420o1rnqx/auth/random`, { method: "POST", credentials: "include" });
+      return { token: await fetch(`https://demo.api.tiny.cloud/1/qnkn0kjik1i39qbzy3vn798sz5jjf0brz2sp43v420o1rnqx/jwt/tinymceai`, { credentials: "include" }).then(r => r.text()) };
+    },
+    uploadcare_public_key: '7802a2584c2144503210',
+  });
+</script>
 <style>
 .btn-readonly-disabled {
     opacity: 0.55;
@@ -1149,6 +1265,11 @@ if ($page === 'users') {
                 <?php if ($hasPermission('manage_users')): ?>
                     <a href="admin.php?page=users" class="sidebar-link <?php echo $page==='users' ? 'active' : ''; ?>">
                         <i class="fa-solid fa-users"></i> Gebruikers & Rollen
+                    </a>
+                <?php endif; ?>
+                <?php if ($hasPermission('optimize_images')): ?>
+                    <a href="admin.php?page=image-optimizer" class="sidebar-link <?php echo $page==='image-optimizer' ? 'active' : ''; ?>">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Afbeelding Optimizer
                     </a>
                 <?php endif; ?>
                 
@@ -1398,40 +1519,6 @@ if ($page === 'users') {
                                     </div>
                                 </div>
                             </div>
-<script>
-// Toggle end date/time for create/edit
-document.addEventListener('DOMContentLoaded', function() {
-    var addEndDateCreate = document.getElementById('add-end-date-create');
-    var endDateContainerCreate = document.getElementById('end-date-container-create');
-    if (addEndDateCreate && endDateContainerCreate) {
-        addEndDateCreate.addEventListener('change', function() {
-            endDateContainerCreate.style.display = this.checked ? 'block' : 'none';
-        });
-    }
-    var addEndDateEdit = document.getElementById('add-end-date-edit');
-    var endDateContainerEdit = document.getElementById('end-date-container-edit');
-    if (addEndDateEdit && endDateContainerEdit) {
-        addEndDateEdit.addEventListener('change', function() {
-            endDateContainerEdit.style.display = this.checked ? 'block' : 'none';
-        });
-    }
-    var addEndTimeCreate = document.getElementById('add-end-time-create');
-    var endTimeContainerCreate = document.getElementById('end-time-container-create');
-    if (addEndTimeCreate && endTimeContainerCreate) {
-        addEndTimeCreate.addEventListener('change', function() {
-            endTimeContainerCreate.style.display = this.checked ? 'block' : 'none';
-        });
-    }
-    var addEndTimeEdit = document.getElementById('add-end-time-edit');
-    var endTimeContainerEdit = document.getElementById('end-time-container-edit');
-    if (addEndTimeEdit && endTimeContainerEdit) {
-        addEndTimeEdit.addEventListener('change', function() {
-            endTimeContainerEdit.style.display = this.checked ? 'block' : 'none';
-        });
-    }
-});
-</script>
-
                             <div>
                                 <label class="form-label">Plaats</label>
                                 <input name="location" class="form-input admin-input-surface" />
@@ -1467,11 +1554,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                     value=""
                                     placeholder="https://voorbeeld.nl"
                                 />
-                                <?php if (!empty($_POST['info_link'])): ?>
-                                    <a href="<?php echo htmlspecialchars($_POST['info_link']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-info bg-[#00811F] text-white px-3 py-1 rounded shadow hover:bg-[#00691A] transition mt-2 inline-block">
-                                        <i class="fa-solid fa-circle-info mr-1"></i> Meer info
-                                    </a>
-                                <?php endif; ?>
                             </div>
 
                             <div>
@@ -1484,11 +1566,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                     value=""
                                     placeholder="https://aanmelder.nl/subscribe/..."
                                 />
-                                <?php if (!empty($_POST['signup_embed'])): ?>
-                                    <a href="<?php echo htmlspecialchars($_POST['signup_embed']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-info bg-[#00811F] text-white px-3 py-1 rounded shadow hover:bg-[#00691A] transition mt-2 inline-block">
-                                        <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i> Aanmelden
-                                    </a>
-                                <?php endif; ?>
                             </div>
 
                             <div>
@@ -1547,10 +1624,10 @@ document.addEventListener('DOMContentLoaded', function() {
                                         <?php endif; ?>
                                         <div class="flex-1">
                                             <h4 class="font-bold text-lg text-gray-800"><?php echo htmlspecialchars(sanitizeEditorText($event['title'])); ?></h4>
-                                            <?php 
-                                                $dateDisplay = formatEventDateDisplay($event['date']); 
-                                                $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : ''; 
-                                                $timeEndDisplay = $event['time_end'] ? formatEventTimeDisplay($event['time_end']) : ''; 
+                                            <?php
+                                                $dateDisplay = formatEventDateDisplay($event['date']);
+                                                $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : '';
+                                                $timeEndDisplay = $event['time_end'] ? formatEventTimeDisplay($event['time_end']) : '';
                                                 $eventDescriptionPreview = editorPreviewText($event['description'] ?? '', 200);
                                                 $eventGalleryCount = count(decodeEventGallery($event['event_gallery'] ?? null));
                                             ?>
@@ -1682,7 +1759,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                             <option value="superadmin" <?php echo $accRole === 'superadmin' ? 'selected' : ''; ?>>Administrator</option>
                                             <option value="content_manager" <?php echo $accRole === 'content_manager' ? 'selected' : ''; ?>>Content Manager</option>
                                             <option value="editor" <?php echo $accRole === 'editor' ? 'selected' : ''; ?>>Bewerker</option>
-                                           
+
                                         </select>
                                         <button type="submit" class="btn btn-primary btn-sm">
                                             <i class="fa-solid fa-save"></i> Opslaan
@@ -1692,6 +1769,71 @@ document.addEventListener('DOMContentLoaded', function() {
                             <?php endforeach; ?>
                         </div>
                     <?php endif; ?>
+                </div>
+
+            <?php elseif ($page === 'image-optimizer'): ?>
+                <div class="card p-6">
+                    <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
+                        <i class="fa-solid fa-wand-magic-sparkles text-2xl text-[#00811F]"></i>
+                        <h2 class="text-2xl font-bold">Afbeelding Optimizer</h2>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-6">Optimaliseer afbeeldingen om de laadsnelheid van uw website te verbeteren. Afbeeldingen worden gecomprimeerd tot een smaller bestandsformaat.</p>
+
+                    <div class="bg-white p-6 shadow-md border border-gray-200 rounded mb-6">
+                        <h3 class="font-semibold text-lg mb-4">Afbeelding selecteren</h3>
+
+                        <div class="mb-6">
+                            <label class="form-label" for="image_select">Selecteer een afbeelding uit uploads</label>
+                            <select id="image_select" name="image_path" class="form-input">
+                                <option value="">-- Selecteer een afbeelding --</option>
+                                <?php
+                                    $uploadDir = __DIR__ . '/uploads/';
+                                    if (is_dir($uploadDir)) {
+                                        $files = array_diff(scandir($uploadDir), ['.', '..']);
+                                        $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+                                        foreach ($files as $file) {
+                                            $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+                                            if (in_array($ext, $imageExtensions)) {
+                                                $fileSize = filesize($uploadDir . $file);
+                                                $fileSizeMB = number_format($fileSize / 1024 / 1024, 2, '.', '');
+                                                echo '<option value="' . htmlspecialchars($file) . '">' . htmlspecialchars($file) . ' (' . $fileSizeMB . ' MB)</option>';
+                                            }
+                                        }
+                                    }
+                                ?>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <div>
+                                <label class="form-label" for="quality">Compressiekwaliteit</label>
+                                <div class="flex items-center gap-3">
+                                    <input type="range" id="quality" name="quality" min="60" max="95" value="85" class="flex-1">
+                                    <span id="quality_value" class="text-sm font-semibold text-gray-700 w-12">85</span>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Lager = kleiner bestand, hogere compressie. Hoger = betere kwaliteit.</p>
+                            </div>
+                        </div>
+
+                        <form method="POST" id="optimize_form" class="flex gap-3">
+                            <input type="hidden" name="action" value="optimize_image">
+                            <input type="hidden" name="image_path" id="form_image_path" value="">
+                            <input type="hidden" name="quality" id="form_quality" value="85">
+                            <button type="submit" id="optimize_btn" class="btn btn-primary" disabled>
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Afbeelding optimaliseren
+                            </button>
+                        </form>
+                    </div>
+
+                    <div id="results_container" style="display: none;" class="bg-blue-50 border border-blue-200 rounded p-6">
+                        <div class="flex items-start gap-3">
+                            <i class="fa-solid fa-circle-check text-2xl text-blue-600 mt-1"></i>
+                            <div>
+                                <h4 class="font-semibold text-blue-900 mb-2">Optimalisatie voltooid!</h4>
+                                <p id="results_text" class="text-sm text-blue-800"></p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
             <?php elseif ($page === 'audit'): ?>
@@ -1948,8 +2090,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                     </label>
                                 <?php endif; ?>
                             </div>
-                                    
-                            
+
+
                             <div>
                                 <label class="form-label" for="info_link">Meer info link (optioneel):</label>
                                 <input
@@ -1971,7 +2113,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </select>
                             </div>
 
-                            
+
 
                             <div class="flex gap-2 pt-2">
                                 <button type="button" class="btn btn-secondary js-content-preview-btn">
@@ -2049,7 +2191,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </select>
                             </div>
 
-                            
+
 
                             <div>
                                 <label class="form-label">Positie</label>
@@ -2221,6 +2363,27 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
     </div>
 </main>
+    <script>
+    // Tijdelijke test: einddatum/eindtijd tonen/verbergen
+    function toggleField(checkboxId, containerId) {
+        var checkbox = document.getElementById(checkboxId);
+        var container = document.getElementById(containerId);
+        if (!checkbox || !container) return;
+        function update() {
+            if (checkbox.checked) {
+                container.classList.remove('admin-hidden');
+            } else {
+                container.classList.add('admin-hidden');
+            }
+        }
+        checkbox.addEventListener('change', update);
+        update();
+    }
+    toggleField('add-end-date-edit', 'end-date-container-edit');
+    toggleField('add-end-time-edit', 'end-time-container-edit');
+    toggleField('add-end-date-create', 'end-date-container-create');
+    toggleField('add-end-time-create', 'end-time-container-create');
+    </script>
 
 <div id="content-preview-modal" class="hidden" style="position: fixed; inset: 0; z-index: 9999; background: rgba(17,24,39,.6); padding: 1rem;">
     <div style="max-width: 860px; margin: 0 auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,.25); max-height: calc(100vh - 2rem); display: flex; flex-direction: column;">
@@ -2372,7 +2535,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         '<div class="flex items-center space-x-3">' +
                             '<i class="fa-solid fa-clock text-[#00811F] ml-[2px] text-3xl"></i>' +
                             '<p class="text-gray-700"><strong>Hoelaat:</strong> ' + escapeHtml(startTime) + (endTime ? ' - ' + escapeHtml(endTime) : '') + '</p>' +
-                        '</div>' : '') +
+                        </div> : '') +
                         '<div class="flex items-center space-x-3">' +
                             '<i class="fa-solid fa-location-dot text-[#00811F] ml-1 text-3xl"></i>' +
                             '<p class="text-gray-700 ml-1"><strong>Waar:</strong> <a href="' + escapeHtml(mapUrl) + '" target="_blank" rel="noopener noreferrer" class="underline hover:text-[#00811F]">' + escapeHtml(location) + '</a></p>' +
@@ -2380,8 +2543,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         '<div class="flex mb-6 space-x-3">' +
                             '<i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>' +
                             '<div class="text-gray-700 pb-3"><strong> Wat:</strong><div class="mt-1">' + descriptionHtml + '</div></div>' +
-                        '</div>' +
-                    '</div>' +
+                        </div>' +
+                    </div>' +
                     (hasEmbed ? '<div class="mt-4 rounded-md border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-600">Aanmelder.nl embed wordt na opslaan getoond.</div>' : (hasSignup ? '<a href="#" onclick="return false;" class="mt-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">Inschrijven</a>' : '')) +
                     (infoLink ? '<a href="' + escapeHtml(infoLink) + '" target="_blank" rel="noopener noreferrer" class="mt-4 ml-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">Meer info</a>' : '') +
                 '</div>' +
@@ -2768,6 +2931,159 @@ document.addEventListener('DOMContentLoaded', function() {
   // Initial check
   updateSidebarVisibility();
 });
+
+// Image Optimizer Functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const imageSelect = document.getElementById('image_select');
+    const qualitySlider = document.getElementById('quality');
+    const qualityValue = document.getElementById('quality_value');
+    const optimizeBtn = document.getElementById('optimize_btn');
+    const optimizeForm = document.getElementById('optimize_form');
+    const resultsContainer = document.getElementById('results_container');
+    const resultsText = document.getElementById('results_text');
+    const formImagePath = document.getElementById('form_image_path');
+    const formQuality = document.getElementById('form_quality');
+
+    if (!imageSelect || !qualitySlider || !optimizeBtn) return;
+
+    // Update quality display
+    qualitySlider.addEventListener('input', function() {
+        qualityValue.textContent = this.value;
+        formQuality.value = this.value;
+    });
+
+    // Enable/disable optimize button based on image selection
+    imageSelect.addEventListener('change', function() {
+        optimizeBtn.disabled = !this.value;
+        formImagePath.value = this.value;
+    });
+
+    // Handle form submission
+    optimizeForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        if (!imageSelect.value) {
+            showToast('Selecteer een afbeelding om te optimaliseren.', 'error');
+            return;
+        }
+
+        optimizeBtn.disabled = true;
+        optimizeBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Bezig...';
+
+        fetch('admin.php', {
+            method: 'POST',
+            body: new FormData(this)
+        })
+        .then(response => response.text())
+        .then(data => {
+            optimizeBtn.disabled = false;
+            optimizeBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Afbeelding optimaliseren';
+
+            // Check if optimization was successful
+            if (data.includes('alert-success') || data.includes('Afbeelding geoptimaliseerd')) {
+                // Extract success message
+                const match = data.match(/Afbeelding geoptimaliseerd[^<]*/);
+                if (match) {
+                    const message = match[0];
+                    showToast(message, 'success');
+                    resultsText.textContent = message;
+                    resultsContainer.style.display = 'block';
+
+                    // Reset form after 2 seconds
+                    setTimeout(() => {
+                        imageSelect.value = '';
+                        optimizeBtn.disabled = true;
+                        resultsContainer.style.display = 'none';
+                    }, 3000);
+                }
+            } else {
+                // Check for error
+                const errorMatch = data.match(/<div[^>]*class="alert alert-error"[^>]*>[\s\S]*?<\/div>/);
+                if (errorMatch) {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.innerHTML = errorMatch[0];
+                    const errorText = errorDiv.textContent.trim();
+                    showToast(errorText, 'error');
+                } else {
+                    showToast('Onbekende fout bij optimalisatie.', 'error');
+                }
+            }
+        })
+        .catch(error => {
+            optimizeBtn.disabled = false;
+            optimizeBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Afbeelding optimaliseren';
+            showToast('Fout bij communicatie met server: ' + error, 'error');
+        });
+    });
+
+    // Check if optimization was successful after page reload
+    <?php if (!empty($_SESSION['optimize_success'])): ?>
+        const optimizeData = <?php echo json_encode($_SESSION['optimize_data'] ?? []); ?>;
+        if (optimizeData && optimizeData.saved_percent) {
+            const message = 'Afbeelding geoptimaliseerd! ' +
+                (optimizeData.saved_bytes / 1024 / 1024).toFixed(2) + ' MB bespaard (' +
+                optimizeData.saved_percent + '%).';
+            showToast(message, 'success');
+            resultsText.textContent = message;
+            resultsContainer.style.display = 'block';
+        }
+        <?php unset($_SESSION['optimize_success'], $_SESSION['optimize_data']); ?>
+    <?php endif; ?>
+});
+
+// Toast Notification Function
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-' + type;
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 16px 24px;
+        background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+        color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 10000;
+        max-width: 400px;
+        font-size: 14px;
+        animation: slideIn 0.3s ease-out;
+    `;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease-out forwards';
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+}
+
+// Add CSS animations for toast
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    @keyframes slideOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(style);
+
 </script>
 
 <!-- Image Modal -->
@@ -2779,7 +3095,34 @@ document.addEventListener('DOMContentLoaded', function() {
     <img id="modalImage" src="" alt="Preview">
   </div>
 </div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
 
+        const sidebar = document.querySelector('.sidebar');
+        const toggleBtn = document.querySelector('#sidebarToggle');
+
+        if (!sidebar || !toggleBtn) return;
+
+        // Toggle sidebar
+        toggleBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            sidebar.classList.toggle('open');
+        });
+
+        // Klik buiten = sluiten
+        document.addEventListener('click', function (e) {
+            if (!sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
+                sidebar.classList.remove('open');
+            }
+        });
+
+        // klik binnen sidebar = niet sluiten
+        sidebar.addEventListener('click', function (e) {
+            e.stopPropagation();
+        });
+
+    });
+</script>
 </body>
 </html>
 

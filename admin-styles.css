@@ -179,13 +179,6 @@ main {
     align-items: start;
 }
 
-@media (min-width: 1024px) {
-    .lg\:grid-cols-4 {
-        grid-template-columns: 280px 1fr;
-        gap: 2.5rem;
-    }
-}
-
 /* --- Sidebar Styles --- */
 .sidebar {
     background: rgba(255, 255, 255, 0.95);
@@ -228,27 +221,6 @@ main {
     min-height: 0;
 }
 
-@media (min-width: 1024px) {
-    .sidebar {
-        height: calc(100vh - 140px);
-        max-height: calc(100vh - 140px);
-    }
-}
-
-@media (max-width: 1023.98px) {
-    .sidebar {
-        position: static;
-        height: auto;
-        max-height: none;
-        overflow: visible;
-    }
-
-    .sidebar-nav-scroll {
-        max-height: none;
-        overflow: visible;
-    }
-}
-
 .sidebar-nav-scroll > nav {
     direction: ltr;
 }
@@ -261,7 +233,7 @@ main {
 .sidebar-header {
     background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);
     color: white;
-    padding: 1.5rem 1.5rem;
+    padding: 1.5rem;
     font-weight: 700;
     font-size: 1rem;
     display: flex;
@@ -270,16 +242,10 @@ main {
     letter-spacing: 0.025em;
     position: relative;
     overflow: hidden;
-    cursor: pointer; /* Make the whole header clickable */
+    cursor: pointer;
+    transition: background 0.3s ease;
 }
 
-@media (min-width: 1024px) {
-    .sidebar-header {
-        position: sticky;
-        top: 0;
-        z-index: 2;
-    }
-}
 
 .sidebar-header i.fa-bars {
     font-size: 1.4rem;
@@ -656,30 +622,33 @@ main {
     transform: translateY(-2px);
 }
 
-/* Arrow buttons (up/down) */
-button[style*="background: transparent"],
-button:not([class]) {
-    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%) !important;
-    border: none !important;
-    border-radius: 10px !important;
-    padding: 0.55rem 0.75rem !important;
-    color: white !important;
-    box-shadow: 0 4px 14px rgba(251, 191, 36, 0.4) !important;
-    transition: all 0.25s ease !important;
+.btn-order {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
+    font-size: 1rem;
+    box-shadow: 0 4px 14px rgba(251, 191, 36, 0.4);
+    transition: all 0.25s ease;
 }
 
-button[style*="background: transparent"]:hover,
-button:not([class]):hover {
-    background: linear-gradient(135deg, #fcd34d 0%, #fbbf24 100%) !important;
-    box-shadow: 0 6px 20px rgba(251, 191, 36, 0.5) !important;
-    transform: translateY(-2px) !important;
+.btn-order:hover {
+    background: linear-gradient(135deg, #fcd34d 0%, #fbbf24 100%);
+    box-shadow: 0 6px 20px rgba(251, 191, 36, 0.5);
+    transform: translateY(-2px);
 }
+
 
 /* Foto button specific styling */
-.event-actions button[onclick*="toggleImage"],
-button:has(i.fas.fa-image) {
+.event-actions button[onclick*="toggleImage"] {
     background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    color: white;
     padding: 0.75rem 1.5rem;
     border-radius: 12px;
     display: flex;
@@ -687,6 +656,16 @@ button:has(i.fas.fa-image) {
     gap: 0.5rem;
     font-weight: 600;
     font-size: 0.9rem;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(251, 191, 36, 0.4);
+    transition: all 0.25s ease;
+}
+
+.event-actions button[onclick*="toggleImage"]:hover {
+    background: linear-gradient(135deg, #fcd34d 0%, #fbbf24 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(251, 191, 36, 0.5);
 }
 
 /* Small Button Size */
@@ -941,10 +920,6 @@ button:has(i.fas.fa-image) {
     to { transform: scale(1); opacity: 1; }
 }
 
-/* Add to admin-styles.css after the sidebar styles around line 80 */
-
-
-
 /* Sidebar Toggle Button - inside navigation header */
 .sidebar-toggle {
     background: transparent;
@@ -965,21 +940,7 @@ button:has(i.fas.fa-image) {
     opacity: 0.8;
 }
 
-/* Update sidebar header to make icon clickable */
-.sidebar-header {
-    background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);
-    color: white;
-    padding: 1.5rem 1.5rem;
-    font-weight: 700;
-    font-size: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    letter-spacing: 0.025em;
-    position: relative;
-    overflow: hidden;
-    cursor: pointer; /* Make the whole header clickable */
-}
+
 
 .sidebar-header i.fa-bars {
     font-size: 1.4rem;
@@ -993,21 +954,10 @@ button:has(i.fas.fa-image) {
     transform: scale(1.15);
 }
 
-/* Sidebar hidden state */
-.sidebar.hidden {
-    transform: translateX(-100%);
-    opacity: 0;
-    pointer-events: none;
-}
-
 .sidebar {
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Grid adjustment when sidebar is hidden */
-.lg\:grid-cols-4.sidebar-hidden {
-    grid-template-columns: 1fr;
-}
 
 .lg\:grid-cols-4 {
     transition: grid-template-columns 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1042,11 +992,6 @@ button:has(i.fas.fa-image) {
 /* Hide button when sidebar is visible */
 .sidebar-toggle-btn.hidden {
     display: none;
-}
-
-/* Sidebar header still clickable when visible */
-.sidebar-header {
-    cursor: pointer;
 }
 
 .sidebar-header:hover {
@@ -1097,8 +1042,29 @@ button:has(i.fas.fa-image) {
     justify-content: flex-end;
     flex-wrap: wrap;
 }
+/* =========================
+   DESKTOP (1024px+)
+========================= */
+@media (min-width: 1024px) {
+    .lg\:grid-cols-4 {
+        grid-template-columns: 280px 1fr;
+        gap: 2.5rem;
+    }
 
+    .sidebar {
+        position: sticky;
+        top: 110px;
+        height: calc(100vh - 140px);
+    }
+}
+
+
+/* =========================
+   MOBILE / TABLET (<1024px)
+========================= */
 @media (max-width: 1023.98px) {
+
+    /* HEADER */
     .admin-header {
         padding: 0.5rem 0;
     }
@@ -1128,6 +1094,7 @@ button:has(i.fas.fa-image) {
         width: 100%;
         justify-content: center;
         gap: 0.35rem;
+        flex-wrap: wrap;
     }
 
     .admin-header-actions .btn {
@@ -1137,12 +1104,14 @@ button:has(i.fas.fa-image) {
         padding: 0.5rem 0.7rem;
     }
 
+    /* MAIN */
     main,
     body.admin-page main {
         margin-top: 0;
         padding: 0.75rem 0.6rem 1.25rem;
     }
 
+    /* CARDS */
     .card {
         border-radius: 12px;
         padding: 0.85rem;
@@ -1152,18 +1121,29 @@ button:has(i.fas.fa-image) {
         transform: none;
     }
 
+    /* GRID */
     .admin-page .grid.grid-cols-3,
     .admin-page .grid.md\:grid-cols-2,
     .admin-page .grid.md\:grid-cols-3 {
         grid-template-columns: 1fr;
     }
 
+    /* BUTTONS */
     .admin-page .btn {
         min-height: 40px;
         padding: 0.5rem 0.85rem;
         font-size: 0.8rem;
     }
 
+    .btn,
+    .btn-primary,
+    .btn-secondary,
+    .btn-danger {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* FORM */
     .form-group {
         margin-bottom: 1rem;
     }
@@ -1174,59 +1154,41 @@ button:has(i.fas.fa-image) {
         font-size: 0.82rem;
     }
 
-    .admin-page input[type="text"],
-    .admin-page input[type="email"],
-    .admin-page input[type="date"],
-    .admin-page input[type="time"],
-    .admin-page input[type="file"],
+    .admin-page input,
     .admin-page textarea,
     .admin-page select {
+        font-size: 16px;
         padding: 0.65rem 0.9rem;
         border-radius: 10px;
-        font-size: 16px;
     }
 
+    /* ROWS */
     .admin-row {
         flex-direction: column;
         align-items: stretch;
     }
 
-    .admin-row > .event-checkbox,
-    .admin-row > [class*="page-checkbox"] {
-        margin-top: 0;
-    }
-
-    .admin-row-actions,
-    .admin-row-actions-stack {
-        width: 100%;
-    }
-
     .admin-row-actions {
         flex-direction: column;
-    }
-
-    .admin-row-actions .btn,
-    .admin-row-actions-stack .btn {
         width: 100%;
     }
 
-    .admin-row-actions-stack > .flex {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.5rem;
+    .admin-row-actions .btn {
+        width: 100%;
     }
 
-    .audit-filter-actions,
-    .audit-pagination {
+    /* EVENT LIST */
+    .event-item {
         flex-direction: column;
         align-items: stretch;
     }
 
-    .audit-filter-actions .btn,
-    .audit-pagination .btn {
+    .event-actions {
         width: 100%;
+        align-items: stretch;
     }
 
+    /* AUDIT TABLE MOBILE STACK */
     .audit-table-wrap {
         border: none;
         overflow: visible;
@@ -1247,85 +1209,62 @@ button:has(i.fas.fa-image) {
     .audit-table tr {
         border: 1px solid #e5e7eb;
         border-radius: 12px;
-        background: #ffffff;
+        background: #fff;
         margin-bottom: 0.7rem;
         padding: 0.45rem;
     }
 
-    .audit-table tr:last-child {
-        margin-bottom: 0;
-    }
-
     .audit-table td {
         border: none;
-        padding: 0.38rem 0.45rem;
         display: flex;
-        align-items: flex-start;
         justify-content: space-between;
         gap: 0.75rem;
+        padding: 0.38rem 0.45rem;
     }
 
     .audit-table td::before {
         content: attr(data-label);
         font-weight: 700;
-        color: #1f2937;
         font-size: 0.78rem;
+        color: #1f2937;
         min-width: 86px;
-        flex-shrink: 0;
     }
 
-    .audit-table td.audit-details {
-        display: block;
+    /* SIDEBAR MOBILE (IMPORTANT FIX) */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 85%;
+        max-width: 320px;
+        height: 100vh;
+        z-index: 2000;
+
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+
+        overflow-y: auto;
+        border-radius: 0;
+        -webkit-overflow-scrolling: touch;
     }
 
-    .audit-table td.audit-details::before {
-        display: block;
-        margin-bottom: 0.3rem;
+    .sidebar.open {
+        transform: translateX(0);
     }
 
-    .audit-table td.audit-details .audit-details-content {
-        font-size: 0.82rem;
-    }
-
+    /* FLOATING TOGGLE BUTTON */
     .sidebar-toggle-btn {
         left: 12px;
-        right: auto;
         bottom: 10px;
         top: auto;
         width: 48px;
         height: 48px;
-        border-radius: 12px;
         z-index: 1101;
     }
 
-    .sidebar {
-        position: fixed;
-        top: 72px;
-        right: 10px;
-        bottom: 10px;
-        left: 10px;
-        height: auto;
-        max-height: none;
-        z-index: 1100;
-        overflow-y: auto;
-        border-radius: 14px;
-    }
-
-    .sidebar.hidden {
-        display: none;
-    }
-
-    .sidebar-link {
-        padding-top: 0.7rem;
-        padding-bottom: 0.7rem;
-        padding-left: 1rem;
-        padding-right: 1rem;
-        font-size: 0.88rem;
-    }
-
-    .sidebar-nav-scroll {
-        max-height: none;
-        overflow: visible;
+    .admin-layout-grid {
+        grid-template-columns: 1fr;
     }
 }
+
 
