@@ -156,7 +156,7 @@ include __DIR__ . '/navbar.php';
                 }
                 ?>
                 <div style="<?php echo $imageStyle; ?>">
-                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
+                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; object-fit: contain; border-radius: 0.5rem;">
                 </div>
             <?php endif; ?>
             <?php if ($hasText): ?>
@@ -193,12 +193,12 @@ include __DIR__ . '/navbar.php';
                 }
                 ?>
                 <div style="<?php echo $imageStyle; ?>">
-                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
+                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; object-fit: contain; border-radius: 0.5rem;">
                 </div>
             <?php endif; ?>
             <?php if ($hasImage && $imagePosition === 'normal'): ?>
                 <div style="width: 100%; max-width: 600px;">
-                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
+                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; object-fit: contain; border-radius: 0.5rem;">
                 </div>
             <?php endif; ?>
         </section>
@@ -212,9 +212,7 @@ include __DIR__ . '/navbar.php';
         <?php foreach ($events as $event): ?>
     <?php
     $dateDisplay = formatEventDateDisplay($event['date']);
-    $endDateDisplay = !empty($event['end_date']) ? formatEventDateDisplay($event['end_date']) : null;
     $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : '';
-    $timeEndDisplay = $event['time_end'] ? formatEventTimeDisplay($event['time_end']) : '';
     $dateTs = strtotime((string)$event['date']);
     $dayMonth = $dateTs ? date('d.m', $dateTs) : $dateDisplay;
     $year = $dateTs ? date('Y', $dateTs) : '';
@@ -230,14 +228,8 @@ include __DIR__ . '/navbar.php';
             <div class="space-y-4">
                 <div class="flex items-center space-x-3">
                     <i class="fa-regular fa-calendar text-[#00811F] ml-[2px]  text-3xl"></i>
-                    <p class="text-gray-700"><strong> Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?><?php if ($endDateDisplay) { echo ' t/m ' . htmlspecialchars($endDateDisplay); } ?></p>
+                    <p class="text-gray-700"><strong> Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?> <?php echo $timeDisplay ? '- ' . htmlspecialchars($timeDisplay) : ''; ?></p>
                 </div>
-                <?php if ($timeDisplay || $timeEndDisplay): ?>
-                <div class="flex items-center space-x-3">
-                    <i class="fa-solid fa-clock text-[#00811F] ml-[2px] text-3xl"></i>
-                    <p class="text-gray-700"><strong>Hoelaat:</strong> <?php echo htmlspecialchars($timeDisplay); ?><?php if ($timeEndDisplay) { echo ' - ' . htmlspecialchars($timeEndDisplay); } ?></p>
-                </div>
-                <?php endif; ?>
                 <div class="flex items-center space-x-3">
                     <i class="fa-solid fa-location-dot text-[#00811F] ml-1 text-3xl"></i>
                     <p class="text-gray-700 ml-1 "><strong>Waar:</strong> <a href="<?php echo htmlspecialchars($mapsLocationUrl); ?>" target="_blank" rel="noopener noreferrer" class="underline hover:text-[#00811F]"><?php echo htmlspecialchars($loc); ?></a></p>
@@ -257,7 +249,7 @@ include __DIR__ . '/navbar.php';
         <?php if ($hasValidImage): ?>
         <div class="flex-1">
             <div class="image-template-wrap">
-                <img src="uploads/<?php echo htmlspecialchars($eventImageName); ?>" alt="<?php echo htmlspecialchars(strip_tags((string)$event['title'])); ?>" class="image-template-photo">
+                <img src="uploads/<?php echo htmlspecialchars($eventImageName); ?>" alt="<?php echo htmlspecialchars(strip_tags((string)$event['title'])); ?>" class="image-template-photo" style="object-fit: contain;">
                 <!--
                 <div class="image-template-badge">
                     <span><?php echo htmlspecialchars($dayMonth); ?></span>

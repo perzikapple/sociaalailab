@@ -195,7 +195,7 @@ include __DIR__ . '/navbar.php';
 
 <main>
     <!-- Nieuws Header -->
-    <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
+    <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" tabindex="0">
         <div class="mb-8">
             <h1 class="text-4xl font-bold text-[#00811F] mb-2">
                 <i class="fa-solid fa-newspaper mr-3"></i>Nieuws & Updates

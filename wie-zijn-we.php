@@ -72,7 +72,7 @@ include __DIR__ . '/navbar.php';
         }
         $index++;
     ?>
-        <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12 text-padding" style="<?php echo $sectionStyle; ?>">
+        <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12 text-padding" tabindex="0" style="<?php echo $sectionStyle; ?>">
             <?php if ($imagePosition === 'left' && $hasImage): ?>
                 <?php
                 $imageStyle = '';

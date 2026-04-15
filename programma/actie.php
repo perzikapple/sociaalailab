@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 session_start();
 require '../db.php';
 require '../helpers.php';
@@ -110,7 +110,7 @@ include __DIR__ . '/../navbar.php';
                 $cardStyle .= 'gap: 0; justify-content: space-between; flex-direction: column;';
             }
             ?>
-            <div class="bg-white p-4 shadow-lg" style="<?php echo $cardStyle; ?>">
+            <div class="bg-white p-4 shadow-lg" tabindex="0" style="<?php echo $cardStyle; ?>">
                 <?php if ($hasImage && $imagePosition === 'left'): ?>
                     <?php
                     $imagePath = trim((string)$block['image']);

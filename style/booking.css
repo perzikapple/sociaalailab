@@ -542,21 +542,22 @@ body {
 
 /* Responsive adjustments */
 @media (max-width: 1200px) {
+
     .week-header,
     .week-body {
         grid-template-columns: 50px repeat(7, 1fr);
     }
-    
+
     .time-slot {
         min-height: 50px;
         font-size: 0.75rem;
     }
-    
+
     .booked-slot {
         min-height: 50px;
         font-size: 0.7rem;
     }
-    
+
     .empty-slot {
         min-height: 50px;
     }
@@ -566,26 +567,26 @@ body {
     .day-preview-content {
         grid-template-columns: 1fr;
     }
-    
+
     .week-header {
         grid-template-columns: 40px repeat(7, 1fr);
         gap: 0;
         padding: 0;
     }
-    
+
     .week-day-header {
         padding: 0.5rem 0.25rem;
         font-size: 0.8rem;
     }
-    
+
     .week-day-name {
         display: none;
     }
-    
+
     .week-day-number {
         font-size: 1rem;
     }
-    
+
     .room-title {
         writing-mode: horizontal-tb;
         transform: rotate(-90deg);
@@ -594,17 +595,17 @@ body {
         font-size: 0.7rem;
         padding: 0.25rem;
     }
-    
+
     .time-slot {
         min-height: 40px;
         font-size: 0.65rem;
     }
-    
+
     .booked-slot {
         min-height: 40px;
         font-size: 0.6rem;
     }
-    
+
     .empty-slot {
         min-height: 40px;
     }
@@ -615,25 +616,24 @@ body {
     border-radius: 12px;
     padding: 2rem;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
->>>>>>> origin/main
-}
 
-.booking-header::after,
-.calendar-wrapper::after,
-.sidebar-card::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-    background: linear-gradient(120deg, rgba(59, 191, 218, 0.08) 0%, rgba(45, 158, 228, 0.10) 100%);
-    mix-blend-mode: lighten;
-    opacity: 0.7;
-    z-index: 0;
-}
 
+    .booking-header::after,
+    .calendar-wrapper::after,
+    .sidebar-card::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        pointer-events: none;
+        background: linear-gradient(120deg, rgba(59, 191, 218, 0.08) 0%, rgba(45, 158, 228, 0.10) 100%);
+        mix-blend-mode: lighten;
+        opacity: 0.7;
+        z-index: 0;
+    }
+}
 
 /* =========================
    HEADER
@@ -974,12 +974,12 @@ body {
     font-weight: 700;
 }
 
-<<<<<<< HEAD
+
 .today {
     border: 2.5px solid #2D9EE4 !important;
     background: #eaf6fd !important;
 }
-=======
+
 /* Booking Form Styles */
 .booking-form-card {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -989,4 +989,153 @@ body {
 .booking-form-card h3 {
     color: white;
     border-bottom-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Booking Form Premium Styles */
+.booking-form-card,
+.booking-form-below {
+    background: rgba(255, 255, 255, 0.82);
+    border-radius: 2rem;
+    border: 1.5px solid #e0eaff;
+    box-shadow: 0 8px 32px 0 rgba(45, 158, 228, 0.13), 0 1.5px 6px rgba(59, 191, 218, 0.10);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    padding: 2.2rem 2.5rem 1.5rem 2.5rem;
+    margin-bottom: 2.2rem;
+    position: relative;
+    overflow: hidden;
+    transition: box-shadow 0.3s, background 0.3s;
+}
+
+.booking-form-card::before,
+.booking-form-below::before {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: inherit;
+    background: linear-gradient(120deg, #2D9EE4, #3BBFDA, #eaf6fd, #2D9EE4);
+    background-size: 300% 300%;
+    filter: blur(7px) brightness(1.13);
+    opacity: 0.25;
+    animation: borderFlow 8s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.booking-form-card>*,
+.booking-form-below>* {
+    position: relative;
+    z-index: 1;
+}
+
+.booking-form-card h3,
+.booking-form-below h3 {
+    font-size: 1.4rem;
+    font-weight: 800;
+    margin-bottom: 1.2rem;
+    color: #2D9EE4;
+    background: linear-gradient(90deg, #2D9EE4 0%, #3BBFDA 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.booking-form-below label {
+    font-weight: 600;
+    color: #256080;
+    margin-bottom: 0.4rem;
+    display: block;
+}
+
+.booking-form-below input[type="date"],
+.booking-form-below select {
+    width: 100%;
+    padding: 0.7rem 1.1rem;
+    border-radius: 1.2rem;
+    border: 1.5px solid #e0eaff;
+    background: #f9fafb;
+    font-size: 1.05rem;
+    color: #256080;
+    margin-bottom: 1.2rem;
+    transition: border 0.2s, box-shadow 0.2s;
+}
+
+.booking-form-below input[type="date"]:focus,
+.booking-form-below select:focus {
+    border: 1.5px solid #2D9EE4;
+    box-shadow: 0 0 0 2px #3BBFDA33;
+    outline: none;
+}
+
+.hardware-checkboxes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.1rem;
+    margin-bottom: 1.2rem;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #eaf6fd;
+    border-radius: 1.2rem;
+    padding: 0.5rem 1.2rem;
+    font-size: 1.05rem;
+    color: #256080;
+    font-weight: 500;
+    cursor: pointer;
+    box-shadow: 0 2px 8px #2d9ee41a;
+    transition: background 0.2s, color 0.2s;
+}
+
+.checkbox-label input[type="checkbox"] {
+    accent-color: #2D9EE4;
+    width: 18px;
+    height: 18px;
+}
+
+.checkbox-label:hover {
+    background: #dbeafe;
+    color: #2D9EE4;
+}
+
+.btn-submit {
+    width: 100%;
+    padding: 0.9rem;
+    background: linear-gradient(90deg, #2D9EE4 0%, #3BBFDA 100%);
+    color: white;
+    border: none;
+    border-radius: 1.2rem;
+    font-weight: 700;
+    font-size: 1.08rem;
+    cursor: pointer;
+    box-shadow: 0 6px 24px rgba(45, 158, 228, 0.22);
+    transition: background 0.3s, box-shadow 0.3s, filter 0.3s, transform 0.2s;
+}
+
+.btn-submit:hover {
+    background: linear-gradient(90deg, #3BBFDA 0%, #2D9EE4 100%);
+    box-shadow: 0 0 0 6px #2D9EE433, 0 12px 32px #2d9ee433, 0 0 32px 4px #3BBFDA77;
+    filter: brightness(1.08) saturate(1.2);
+    transform: translateY(-2px) scale(1.03);
+}
+
+.btn-submit:active {
+    transform: scale(0.97);
+    filter: brightness(0.98);
+}
+
+/* Sticky Navbar */
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    z-index: 1000;
+}
+
+body {
+    padding-top: 90px;
+    /* Adjust if navbar height changes */
 }

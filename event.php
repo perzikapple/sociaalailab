@@ -1,4 +1,4 @@
-<?php 
+﻿<?php 
 session_start();
 require 'db.php';
 require 'helpers.php';
@@ -74,7 +74,7 @@ include __DIR__ . '/navbar.php';
             $divStyle = 'display: flex; flex-direction: ' . $flexDir . '; align-items: flex-start; gap: 2rem;';
         }
         ?>
-        <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
+        <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" tabindex="0">
             <div style="<?php echo $divStyle; ?>">
                 <?php if ($hasImage && $imagePosition === 'left' && $hasText): ?>
                     <div style="flex: 0 0 50%; min-width: 0; max-width: 600px;">
@@ -115,13 +115,13 @@ include __DIR__ . '/navbar.php';
     <?php endforeach; ?>
 
     <?php if (empty($events)): ?>
-        <section class="bg-white shadow-lg p-8 max-w-4xl mx-auto my-12 text-center">
+        <section class="bg-white shadow-lg p-8 max-w-4xl mx-auto my-12 text-center" tabindex="0">
             <h2 class="text-2xl font-semibold text-gray-900 mb-2">Geen evenementen in de komende 2 weken</h2>
             <p class="text-gray-700">Houd de agenda in de gaten voor nieuwe activiteiten.</p>
         </section>
     <?php else: ?>
         <?php foreach ($events as $event): ?>
-            <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
+            <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" tabindex="0">
                 <div class="flex-1">
                     <span class="inline-block text-white text-sm font-medium px-4 py-1 mb-4" style="background-color:#ce0245;">Evenement</span>
                     <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900"><?php echo renderEditorInline($event['title']); ?></h2>

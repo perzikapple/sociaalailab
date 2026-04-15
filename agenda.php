@@ -94,7 +94,7 @@ foreach ($events as $event):
     $eventImageName = trim((string)($event['image'] ?? ''));
     $hasValidImage = $eventImageName !== '' && file_exists(__DIR__ . '/uploads/' . $eventImageName);
     ?>
-    <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
+    <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" tabindex="0">
         <div class="flex-1">
             <span class="inline-block text-white text-sm font-medium px-4 py-1 mb-4" style="background-color:#ce0245;">Evenement</span>
             <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900"><?php echo renderEditorInline($event['title']); ?></h2>
@@ -132,7 +132,7 @@ foreach ($events as $event):
         <?php if ($hasValidImage): ?>
         <div class="flex-1">
             <div class="image-template-wrap">
-                <img src="uploads/<?php echo htmlspecialchars($eventImageName); ?>" alt="<?php echo htmlspecialchars(strip_tags((string)$event['title'])); ?>" class="image-template-photo">
+                <img src="uploads/<?php echo htmlspecialchars($eventImageName); ?>" alt="<?php echo htmlspecialchars(strip_tags((string)$event['title'])); ?>" class="image-template-photo" style="object-fit: contain;">
                 <!--
                 <div class="image-template-badge">
                     <span><?php echo htmlspecialchars($dayMonth); ?></span>

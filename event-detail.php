@@ -76,8 +76,8 @@ if ($event) {
 
         .event-gallery-image {
             width: 100%;
-            height: 18rem;
-            object-fit: cover;
+            height: auto;
+            object-fit: contain;
             display: block;
         }
 
@@ -145,7 +145,7 @@ include __DIR__ . '/navbar.php';
 ?>
 
 <main>
-    <section class="bg-white shadow-lg p-8 max-w-4xl mx-auto my-12">
+    <section class="bg-white shadow-lg p-8 max-w-4xl mx-auto my-12" tabindex="0">
         <?php if (!$event): ?>
             <h1 class="text-2xl font-semibold mb-3 text-gray-900">Evenement niet gevonden</h1>
             <p class="text-gray-700 mb-6">Dit evenement bestaat niet meer of de link is onjuist.</p>
@@ -176,7 +176,7 @@ include __DIR__ . '/navbar.php';
 
                 <?php if (!empty($event['image'])): ?>
                     <div class="flex-shrink-0" style="width: 100%; max-width: 640px;">
-                        <img src="uploads/<?php echo htmlspecialchars($event['image']); ?>" alt="<?php echo htmlspecialchars((string)$event['title']); ?>" class="w-full h-auto object-cover shadow-md rounded" style="aspect-ratio: 16/9;">
+                        <img src="uploads/<?php echo htmlspecialchars($event['image']); ?>" alt="<?php echo htmlspecialchars((string)$event['title']); ?>" class="w-full h-auto shadow-md rounded" style="max-width:400px;max-height:300px;width:100%;height:auto;object-fit:contain;display:block;margin-left:auto;margin-right:auto;">
                     </div>
                 <?php endif; ?>
             </div>

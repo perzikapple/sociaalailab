@@ -75,7 +75,7 @@ include __DIR__ . '/navbar.php';
             $sectionStyle .= " gap: 1.5rem;";
         }
     ?>
-        <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" style="<?php echo $sectionStyle; ?>">
+        <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" tabindex="0" style="<?php echo $sectionStyle; ?>">
             <?php if ($hasImage && $imagePosition === 'left'): ?>
                 <?php
                 $imageStyle = '';

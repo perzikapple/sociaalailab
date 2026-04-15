@@ -68,6 +68,7 @@ body.admin-page::before {
 
 body.admin-page main {
     margin-top: 10px; /* minimal gap between header and page content */
+    z-index: auto;
 }
 
 .admin-header > div {
@@ -1056,6 +1057,11 @@ main {
         top: 110px;
         height: calc(100vh - 140px);
     }
+
+    /* Hide mobile toggle button on desktop */
+    .sidebar-toggle-btn {
+        display: none;
+    }
 }
 
 
@@ -1259,7 +1265,7 @@ main {
         top: auto;
         width: 48px;
         height: 48px;
-        z-index: 1101;
+        z-index: 2100;  /* ← was 1101, must be > sidebar's z-index: 2000 */
     }
 
     .admin-layout-grid {
