@@ -319,6 +319,14 @@ foreach ($events as $event):
             </div>
         </div>
         <div class="mt-6 flex flex-wrap gap-3">
+            <?php $signupEmbed = trim((string)($event['signup_embed'] ?? '')); ?>
+            <?php if ($signupEmbed !== ''): ?>
+                <?php echo renderAanmelderEmbed($signupEmbed); ?>
+            <?php elseif (!empty($event['show_signup_button'])): ?>
+                <a href="inschrijven.php?event_id=<?php echo (int)$event['id']; ?>" class="inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">
+                    Inschrijven
+                </a>
+            <?php endif; ?>
             <a href="event-detail.php?id=<?php echo (int)$event['id']; ?>" class="inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">
                 Meer info
             </a>

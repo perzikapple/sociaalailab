@@ -12,12 +12,12 @@ if (!$canAccessAdmin) {
 // Current month and year
 $currentMonth = isset($_GET['month']) ? (int)$_GET['month'] : date('n');
 $currentYear = isset($_GET['year']) ? (int)$_GET['year'] : date('Y');
-$view = isset($_GET['view']) ? trim($_GET['view']) : 'month';
+$view = isset($_GET['view']) ? trim($_GET['view']) : 'week';
 $selectedDate = isset($_GET['date']) ? trim($_GET['date']) : date('Y-m-d');
 
 // Validate view
-if (!in_array($view, ['month', 'week', 'day'])) {
-    $view = 'month';
+if (!in_array($view, ['week', 'day'])) {
+    $view = 'week';
 }
 
 // Ensure valid month/year
@@ -78,9 +78,24 @@ try {
         id INT PRIMARY KEY AUTO_INCREMENT,
         location_id INT NOT NULL,
         booking_date DATE NOT NULL,
+        start_time TIME,
+        end_time TIME,
         hardware_ids JSON,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
+    
+    // Add start_time and end_time columns if they don't exist
+    try {
+        $pdo->exec("ALTER TABLE bookings ADD COLUMN start_time TIME DEFAULT NULL");
+    } catch (Exception $e) {
+        // Column might already exist
+    }
+    
+    try {
+        $pdo->exec("ALTER TABLE bookings ADD COLUMN end_time TIME DEFAULT NULL");
+    } catch (Exception $e) {
+        // Column might already exist
+    }
 } catch (Exception $e) {
     // Table might already exist
 }
@@ -125,19 +140,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         try {
             $location_id = isset($_POST['location_id']) ? (int)$_POST['location_id'] : 0;
             $booking_date = isset($_POST['booking_date']) ? trim($_POST['booking_date']) : '';
+            $start_time = isset($_POST['start_time']) ? trim($_POST['start_time']) : '';
+            $end_time = isset($_POST['end_time']) ? trim($_POST['end_time']) : '';
             $hardware_ids = isset($_POST['hardware']) ? (array)$_POST['hardware'] : [];
             
             // Sanitize hardware IDs
             $hardware_ids = array_map(function($id) { return (int)$id; }, $hardware_ids);
             
             if ($location_id > 0 && !empty($booking_date)) {
-                // Check if room is already booked on this date
-                $checkStmt = $pdo->prepare("SELECT COUNT(*) as count FROM bookings WHERE location_id = ? AND booking_date = ?");
-                $checkStmt->execute([$location_id, $booking_date]);
+                // Check if room is already booked on this date and time
+                $checkStmt = $pdo->prepare("SELECT COUNT(*) as count FROM bookings WHERE location_id = ? AND booking_date = ? AND start_time = ? AND end_time = ?");
+                $checkStmt->execute([$location_id, $booking_date, $start_time, $end_time]);
                 $roomCheck = $checkStmt->fetch(PDO::FETCH_ASSOC);
                 
                 if ($roomCheck['count'] > 0) {
-                    $message = 'Deze ruimte is al geboekt op deze datum!';
+                    $message = 'Deze ruimte is al geboekt op dit moment!';
                 } else {
                     // Check hardware availability
                     $hardwareIssue = false;
@@ -176,16 +193,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         $message = 'Volgende hardware is niet meer beschikbaar: ' . implode(', ', $hardwareErrors);
                     } else {
                         // All checks passed, create booking
-                        $stmt = $pdo->prepare("INSERT INTO bookings (location_id, booking_date, hardware_ids) VALUES (?, ?, ?)");
-                        $stmt->execute([$location_id, $booking_date, json_encode($hardware_ids)]);
-                        $message = 'Boeking succesvol aangemaakt!';
+                        $stmt = $pdo->prepare("INSERT INTO bookings (location_id, booking_date, start_time, end_time, hardware_ids) VALUES (?, ?, ?, ?, ?)");
+                        $stmt->execute([$location_id, $booking_date, $start_time, $end_time, json_encode($hardware_ids)]);
                         
-                        // Refresh bookings
-                        $stmt = $pdo->prepare("SELECT * FROM bookings WHERE booking_date BETWEEN ? AND ?");
-                        $firstOfMonth = sprintf('%04d-%02d-01', $currentYear, $currentMonth);
-                        $lastOfMonth = sprintf('%04d-%02d-%02d', $currentYear, $currentMonth, $daysInMonth);
-                        $stmt->execute([$firstOfMonth, $lastOfMonth]);
-                        $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                        // Redirect to clear POST data
+                        header('Location: ?view=week&date=' . $selectedDate);
+                        exit;
                     }
                 }
             } else {
@@ -246,9 +259,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     
     <!-- View Selector -->
     <div class="view-selector">
-        <a href="?view=month&month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>" class="view-btn <?php echo $view === 'month' ? 'active' : ''; ?>">
-            <i class="fa-solid fa-calendar"></i> Maand
-        </a>
         <a href="?view=week&date=<?php echo $selectedDate; ?>" class="view-btn <?php echo $view === 'week' ? 'active' : ''; ?>">
             <i class="fa-solid fa-calendar-week"></i> Week
         </a>
@@ -331,9 +341,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 </div>
                 <h2>
                     <?php
-                    if ($view === 'month') {
-                        echo htmlspecialchars($monthName);
-                    } elseif ($view === 'week') {
+                    if ($view === 'week') {
                         echo 'Week ' . $weekNumber . ' - ' . $weekStart->format('d M') . ' t/m ' . $weekEnd->format('d M Y');
                     } elseif ($view === 'day') {
                         echo $dayOfWeek . ' ' . htmlspecialchars($dayDisplay);
@@ -341,13 +349,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     ?>
                 </h2>
                 <div>
-                    <?php if ($view === 'month'): ?>
-                        <a href="?month=<?php echo $currentMonth === 12 ? 1 : $currentMonth + 1; ?>&year=<?php echo $currentMonth === 12 ? $currentYear + 1 : $currentYear; ?>&view=month" style="color: inherit; text-decoration: none;">
-                            <button <?php echo ($currentMonth === 12 && $currentYear >= date('Y') + 2) ? 'disabled' : ''; ?>>
-                                Volgende <i class="fa-solid fa-chevron-right"></i>
-                            </button>
-                        </a>
-                    <?php elseif ($view === 'week'): ?>
+                    <?php if ($view === 'week'): ?>
                         <a href="?date=<?php echo $nextWeekStart->format('Y-m-d'); ?>&view=week" style="color: inherit; text-decoration: none;">
                             <button>
                                 Volgende <i class="fa-solid fa-chevron-right"></i>
@@ -363,83 +365,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 </div>
             </div>
             
-            <?php if ($view === 'month'): ?>
-                <!-- MONTH VIEW -->
-                <table class="calendar-table">
-                <thead>
-                    <tr>
-                        <th>Sun</th>
-                        <th>Mon</th>
-                        <th>Tue</th>
-                        <th>Wed</th>
-                        <th>Thu</th>
-                        <th>Fri</th>
-                        <th>Sat</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php
-                    $dayCounter = 1;
-                    $prevMonthDays = date('t', mktime(0, 0, 0, $currentMonth - 1, 1, $currentYear));
-                    
-                    for ($week = 0; $week < 6; $week++) {
-                        echo '<tr>';
-                        for ($day = 0; $day < 7; $day++) {
-                            $cellNum = $week * 7 + $day;
-                            
-                            if ($cellNum < $startingDayOfWeek) {
-                                // Previous month
-                                $date = $prevMonthDays - ($startingDayOfWeek - $cellNum - 1);
-                                echo '<td class="other-month"><div class="day-number">' . $date . '</div></td>';
-                            } elseif ($dayCounter > $daysInMonth) {
-                                // Next month
-                                echo '<td class="other-month"><div class="day-number">' . ($dayCounter - $daysInMonth) . '</div></td>';
-                                $dayCounter++;
-                            } else {
-                                // Current month
-                                $date = sprintf('%04d-%02d-%02d', $currentYear, $currentMonth, $dayCounter);
-                                echo '<td>';
-                                echo '<div class="day-number">' . $dayCounter . '</div>';
-                                
-                                // Show only booked rooms for this day
-                                $dayBookings = array_filter($bookings, function($booking) use ($date) {
-                                    return $booking['booking_date'] === $date;
-                                });
-                                
-                                foreach ($dayBookings as $booking) {
-                                    $location = findById($locations, $booking['location_id']);
-                                    if ($location) {
-                                        $hardwareList = json_decode($booking['hardware_ids'] ?? '[]', true);
-                                        $hardwareName = '';
-                                        if (!empty($hardwareList)) {
-                                            $hardwareItems = [];
-                                            foreach ($hardwareList as $hid) {
-                                                $hw = findById($hardware, $hid);
-                                                if ($hw) {
-                                                    $hardwareItems[] = $hw['name'];
-                                                }
-                                            }
-                                            $hardwareName = ' (' . implode(', ', $hardwareItems) . ')';
-                                        }
-                                        echo '<div class="room-slot" style="background-color: ' . htmlspecialchars($location['color']) . '"><strong>' . htmlspecialchars($location['name']) . '</strong>' . htmlspecialchars($hardwareName) . '</div>';
-                                    }
-                                }
-                                
-                                echo '</td>';
-                                $dayCounter++;
-                            }
-                        }
-                        echo '</tr>';
-                        if ($dayCounter > $daysInMonth) break;
-                    }
-                    ?>
-                </tbody>
-            </table>
-            <?php elseif ($view === 'week'): ?>
+            <?php if ($view === 'week'): ?>
                 <!-- WEEK VIEW -->
                 <div class="week-view">
                     <div class="week-header">
                         <div class="time-slot-header"></div>
+                        <?php for ($hour = 8; $hour < 18; $hour++): ?>
+                            <div class="week-time-header" style="grid-column: span 2;"><?php echo str_pad($hour, 2, '0', STR_PAD_LEFT) . ':00'; ?></div>
+                        <?php endfor; ?>
+                    </div>
+                    
+                    <div class="week-body">
                         <?php for ($d = 0; $d < 7; $d++): ?>
                             <?php 
                             $dayObj = (clone $weekStart)->modify("+$d days");
@@ -447,62 +383,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             $dayName = $dayObj->format('l');
                             $dayNum = $dayObj->format('d');
                             ?>
-                            <div class="week-day-header" data-date="<?php echo $dateStr; ?>" onclick="window.location.href='?view=day&date=<?php echo $dateStr; ?>'">
-                                <div class="week-day-name"><?php echo substr($dayName, 0, 3); ?></div>
-                                <div class="week-day-number"><?php echo $dayNum; ?></div>
-                            </div>
-                        <?php endfor; ?>
-                    </div>
-                    
-                    <div class="week-body">
-                        <div class="time-slots">
-                            <?php for ($hour = 8; $hour < 18; $hour++): ?>
-                                <div class="time-slot"><?php echo str_pad($hour, 2, '0', STR_PAD_LEFT) . ':00'; ?></div>
-                            <?php endfor; ?>
-                        </div>
-                        
-                        <?php foreach ($locations as $location): ?>
-                            <div class="week-room">
-                                <div class="room-title" style="background-color: <?php echo htmlspecialchars($location['color']); ?>">
-                                    <?php echo htmlspecialchars($location['name']); ?>
+                            <div class="week-day-row">
+                                <div class="week-day-label" onclick="window.location.href='?view=day&date=<?php echo $dateStr; ?>'">
+                                    <div class="week-day-name"><?php echo substr($dayName, 0, 3); ?></div>
+                                    <div class="week-day-number"><?php echo $dayNum; ?></div>
                                 </div>
-                                <div class="room-slots">
-                                    <?php for ($d = 0; $d < 7; $d++): ?>
+                                
+                                <?php for ($hour = 8; $hour < 18; $hour++): ?>
+                                    <?php foreach ($locations as $location): ?>
                                         <?php 
-                                        $dayObj = (clone $weekStart)->modify("+$d days");
-                                        $dateStr = $dayObj->format('Y-m-d');
-                                        $dayBookings = array_filter($bookings, function($booking) use ($dateStr, $location) {
-                                            return $booking['booking_date'] === $dateStr && $booking['location_id'] === $location['id'];
+                                        $currentTimeStart = str_pad($hour, 2, '0', STR_PAD_LEFT) . ':00';
+                                        $currentTimeEnd = str_pad($hour + 1, 2, '0', STR_PAD_LEFT) . ':00';
+                                        $dayBookings = array_filter($bookings, function($booking) use ($dateStr, $location, $currentTimeStart, $currentTimeEnd) {
+                                            if ($booking['booking_date'] !== $dateStr || $booking['location_id'] !== $location['id']) {
+                                                return false;
+                                            }
+                                            // Check if booking overlaps with this hour
+                                            $startTime = $booking['start_time'] ?? '';
+                                            $endTime = $booking['end_time'] ?? '';
+                                            if (!$startTime || !$endTime) return false;
+                                            
+                                            return $startTime < $currentTimeEnd && $endTime > $currentTimeStart;
                                         });
                                         ?>
-                                        <div class="room-slot-column">
+                                        <div class="week-time-slot">
                                             <?php if (!empty($dayBookings)): ?>
                                                 <?php foreach ($dayBookings as $booking): ?>
                                                     <div class="booked-slot" style="background-color: <?php echo htmlspecialchars($location['color']); ?>">
-                                                        <small>Geboekt</small>
                                                         <?php
-                                                        $hardwareList = json_decode($booking['hardware_ids'] ?? '[]', true);
-                                                        if (!empty($hardwareList)) {
-                                                            $hardwareItems = [];
-                                                            foreach ($hardwareList as $hw_id) {
-                                                                $hw = findById($hardware, $hw_id);
-                                                                if ($hw) $hardwareItems[] = $hw['name'];
+                                                            $hardwareList = json_decode($booking['hardware_ids'] ?? '[]', true);
+                                                            if (!empty($hardwareList)) {
+                                                                $hardwareItems = [];
+                                                                foreach ($hardwareList as $hw_id) {
+                                                                    $hw = findById($hardware, $hw_id);
+                                                                    if ($hw) $hardwareItems[] = $hw['name'];
+                                                                }
+                                                                if (!empty($hardwareItems)) {
+                                                                    echo '<small>' . htmlspecialchars(implode(', ', $hardwareItems)) . '</small>';
+                                                                }
                                                             }
-                                                            if (!empty($hardwareItems)) {
-                                                                echo '<small>' . htmlspecialchars(implode(', ', $hardwareItems)) . '</small>';
-                                                            }
-                                                        }
-                                                        ?>
+                                                            ?>
                                                     </div>
                                                 <?php endforeach; ?>
                                             <?php else: ?>
                                                 <div class="empty-slot"></div>
                                             <?php endif; ?>
                                         </div>
-                                    <?php endfor; ?>
-                                </div>
+                                    <?php endforeach; ?>
+                                <?php endfor; ?>
                             </div>
-                        <?php endforeach; ?>
+                        <?php endfor; ?>
                     </div>
                 </div>
             <?php elseif ($view === 'day'): ?>
@@ -571,7 +501,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 </div>
                 
                 <div class="form-group">
-                    <label>Hardware:</label>
+                    <label for="start_time">Start Tijd:</label>
+                    <input type="time" id="start_time" name="start_time" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="end_time">Eind Tijd:</label>
+                    <input type="time" id="end_time" name="end_time" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Hardware (Optioneel):</label>
                     <div class="hardware-checkboxes">
                         <?php foreach ($hardware as $item): ?>
                             <label class="checkbox-label">
