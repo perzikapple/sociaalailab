@@ -1,3 +1,9 @@
+/* Sidebar toggle button alleen tonen op mobiel */
+@media (min-width: 1024px) {
+    .sidebar-toggle-btn {
+        display: none !important;
+    }
+}
 @import url('https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap');
 
 /* Consistent image size and spacing for wie-zijn-we page diubjjhyrhyrjji */
