@@ -3480,12 +3480,8 @@ section {
     }
 
 
-<<<<<<< HEAD
-    #watdoenwe-switch>div {
-=======
 
     #watdoenwe-switch > div {
->>>>>>> origin/main
         background-color: #ffffff;
         border-radius: 12px;
         box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
@@ -4168,19 +4164,3 @@ section {
     }
 }
 
-<<<<<<< HEAD
-@media (max-width: 768px) {
-    .mobile-hide-no-image {
-        display: none;
-    }
-}
-
-.text-padding[style*="flex-direction: row"] {
-    align-items: center !important;
-}
-
-.text-padding[style*="flex-direction: row"]>div {
-    align-self: center;
-}
-=======
->>>>>>> origin/main
