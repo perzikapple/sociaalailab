@@ -76,8 +76,8 @@ if ($event) {
 
         .event-gallery-image {
             width: 100%;
-            height: 18rem;
-            object-fit: cover;
+            height: auto;
+            object-fit: contain;
             display: block;
         }
 
@@ -176,7 +176,7 @@ include __DIR__ . '/navbar.php';
 
                 <?php if (!empty($event['image'])): ?>
                     <div class="flex-shrink-0" style="width: 100%; max-width: 640px;">
-                        <img src="uploads/<?php echo htmlspecialchars($event['image']); ?>" alt="<?php echo htmlspecialchars((string)$event['title']); ?>" class="w-full h-auto object-cover shadow-md rounded" style="aspect-ratio: 16/9;">
+                        <img src="uploads/<?php echo htmlspecialchars($event['image']); ?>" alt="<?php echo htmlspecialchars((string)$event['title']); ?>" class="w-full h-auto shadow-md rounded" style="max-width:100%;height:auto;object-fit:contain;">
                     </div>
                 <?php endif; ?>
             </div>
