@@ -147,7 +147,7 @@ include __DIR__ . '/navbar.php';
             $sectionStyle .= " gap: 1.5rem;";
         }
     ?>
-        <section class="bg-white shadow-lg px-3 sm:px-8 py-6 sm:py-8 max-w-6xl mx-auto mt-8 sm:mt-12 mb-6 sm:mb-12" style="<?php echo $sectionStyle; ?>">
+        <section class="bg-white shadow-lg px-3 sm:px-8 py-6 sm:py-8 max-w-6xl mx-auto mt-8 sm:mt-12 mb-6 sm:mb-12" tabindex="0" style="<?php echo $sectionStyle; ?>">
             <?php if ($hasImage && $imagePosition === 'left'): ?>
                 <?php
                 $imageStyle = 'flex: 0 0 auto; max-width: 280px; width: 100%;';
@@ -205,7 +205,7 @@ include __DIR__ . '/navbar.php';
     <?php endforeach; ?>
 
     <?php if (empty($events)): ?>
-        <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12 text-center">
+        <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12 text-center" tabindex="0">
             <p class="text-gray-700">Er zijn nog geen voorbije evenementen.</p>
         </section>
     <?php else: ?>
@@ -221,7 +221,7 @@ include __DIR__ . '/navbar.php';
     $eventImageName = trim((string)($event['image'] ?? ''));
     $hasValidImage = $eventImageName !== '' && file_exists(__DIR__ . '/uploads/' . $eventImageName);
     ?>
-    <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
+    <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" tabindex="0">
         <div class="flex-1">
             <span class="inline-block text-white text-sm font-medium px-4 py-1 mb-4" style="background-color:#ce0245;">Evenement</span>
             <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900"><?php echo renderEditorInline($event['title']); ?></h2>

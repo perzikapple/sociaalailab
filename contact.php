@@ -83,7 +83,7 @@ include __DIR__ . '/navbar.php';
             $divStyle = 'display: flex; flex-direction: ' . $flexDir . '; align-items: flex-start; gap: 2rem;';
         }
     ?>
-        <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
+        <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" tabindex="0">
             <div style="<?php echo $divStyle; ?>">
                 <?php if ($hasImage && $imagePosition === 'left' && $hasText): ?>
                     <div style="flex: 0 0 50%; min-width: 0; max-width: 600px;">
@@ -133,7 +133,7 @@ include __DIR__ . '/navbar.php';
         </section>
     <?php endforeach; ?>
 
-    <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
+    <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" tabindex="0">
         <div class="container sociaalai-contact-wrap">
             <?php
             $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';

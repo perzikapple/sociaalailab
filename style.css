@@ -1461,3 +1461,38 @@ section{
         top: 38%;
     }
 }
+
+
+@media (max-width: 768px) {
+    .mobile-hide-no-image {
+        display: none;
+    }
+}
+
+.text-padding[style*="flex-direction: row"] {
+    align-items: center !important;
+}
+
+.text-padding[style*="flex-direction: row"] > div {
+    align-self: center;
+}
+
+
+.navbar a.nav-active,
+.navbar .nav-active {
+    color: #00811F !important;
+    font-weight: 700;
+    border-bottom: 2px solid #00811F;
+}
+
+/* Visible focus ring for all tabbable blocks */
+section:focus-visible,
+[tabindex="0"]:focus-visible {
+    outline: 3px solid #00811F;
+    outline-offset: 2px;
+}
+
+.watdoenwe-page .grid > .bg-white:focus {
+    outline: 3px solid #00811F;
+    outline-offset: 2px;
+}

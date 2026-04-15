@@ -145,7 +145,7 @@ include __DIR__ . '/navbar.php';
 ?>
 
 <main>
-    <section class="bg-white shadow-lg p-8 max-w-4xl mx-auto my-12">
+    <section class="bg-white shadow-lg p-8 max-w-4xl mx-auto my-12" tabindex="0">
         <?php if (!$event): ?>
             <h1 class="text-2xl font-semibold mb-3 text-gray-900">Evenement niet gevonden</h1>
             <p class="text-gray-700 mb-6">Dit evenement bestaat niet meer of de link is onjuist.</p>

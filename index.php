@@ -92,7 +92,7 @@ include __DIR__ . '/navbar.php';
     $welcomeGreenTextPosition = $welcomeMeta['green_text_position'] ?? 'above';
     if (!in_array($welcomeGreenTextPosition, ['above', 'below'], true)) $welcomeGreenTextPosition = 'above';
     ?>
-    <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg mt- p-8 max-w-6xl mx-auto my-12">
+    <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg mt- p-8 max-w-6xl mx-auto my-12" tabindex="0">
         <div class="flex-1">
             <?php if ($welcomeGreenText !== '' && $welcomeGreenTextPosition === 'above'): ?>
                 <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($welcomeGreenText)); ?></div>
@@ -119,7 +119,7 @@ include __DIR__ . '/navbar.php';
         if (!in_array($cardGreenTextPosition, ['above', 'below'], true)) $cardGreenTextPosition = 'above';
         ?>
         <div class="space-y-6">
-            <div class="bg-white shadow-lg pt-0 pb-6 mb-4 min-h-[220px] max-w-sm mx-auto">
+            <div class="bg-white shadow-lg pt-0 pb-6 mb-4 min-h-[220px] max-w-sm mx-auto" tabindex="0">
                 <div class="flex flex-1 items-center justify-center">   
                     <?php if (!empty($block['image'])): ?>
                         <?php
@@ -163,7 +163,7 @@ include __DIR__ . '/navbar.php';
     $infoGreenTextPosition = $infoMeta['green_text_position'] ?? 'above';
     if (!in_array($infoGreenTextPosition, ['above', 'below'], true)) $infoGreenTextPosition = 'above';
     ?>
-    <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
+    <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" tabindex="0">
         <div class="flex-1">
             <?php if ($infoGreenText !== '' && $infoGreenTextPosition === 'above'): ?>
                 <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($infoGreenText)); ?></div>
@@ -208,7 +208,7 @@ include __DIR__ . '/navbar.php';
             $sectionStyle .= " gap: 1.5rem;";
         }
     ?>
-        <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" style="<?php echo $sectionStyle; ?>">
+        <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" tabindex="0" style="<?php echo $sectionStyle; ?>">
             <?php if ($hasImage && $imagePosition === 'left'): ?>
                 <?php
                 $imageStyle = '';
@@ -298,7 +298,7 @@ foreach ($events as $event):
     $eventImageName = trim((string)($event['image'] ?? ''));
     $hasValidImage = $eventImageName !== '' && file_exists(__DIR__ . '/uploads/' . $eventImageName);
 ?>
-<section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
+<section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" tabindex="0">
     <div class="flex-1">
         <span class="inline-block bg-[#00811F] text-white text-sm font-medium px-4 py-1 mb-4">Evenement</span>
         <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($event['title']); ?></h2>
