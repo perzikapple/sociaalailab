@@ -2363,6 +2363,27 @@ if ($page === 'users') {
         </div>
     </div>
 </main>
+    <script>
+    // Tijdelijke test: einddatum/eindtijd tonen/verbergen
+    function toggleField(checkboxId, containerId) {
+        var checkbox = document.getElementById(checkboxId);
+        var container = document.getElementById(containerId);
+        if (!checkbox || !container) return;
+        function update() {
+            if (checkbox.checked) {
+                container.classList.remove('admin-hidden');
+            } else {
+                container.classList.add('admin-hidden');
+            }
+        }
+        checkbox.addEventListener('change', update);
+        update();
+    }
+    toggleField('add-end-date-edit', 'end-date-container-edit');
+    toggleField('add-end-time-edit', 'end-time-container-edit');
+    toggleField('add-end-date-create', 'end-date-container-create');
+    toggleField('add-end-time-create', 'end-time-container-create');
+    </script>
 
 <div id="content-preview-modal" class="hidden" style="position: fixed; inset: 0; z-index: 9999; background: rgba(17,24,39,.6); padding: 1rem;">
     <div style="max-width: 860px; margin: 0 auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,.25); max-height: calc(100vh - 2rem); display: flex; flex-direction: column;">
