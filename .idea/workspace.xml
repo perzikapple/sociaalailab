@@ -4,10 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="303eae4d-7ca5-4634-9557-4de1cdbec390" name="Changes" comment="Admin page mobile en tablet ui verbeterd">
+    <list default="true" id="303eae4d-7ca5-4634-9557-4de1cdbec390" name="Changes" comment="Admin page mobile en tablet ui verbeterd 2">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/admin-styles.css" beforeDir="false" afterPath="$PROJECT_DIR$/admin-styles.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/admin.php" beforeDir="false" afterPath="$PROJECT_DIR$/admin.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db.php" beforeDir="false" afterPath="$PROJECT_DIR$/db.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/programma/actie.php" beforeDir="false" afterPath="$PROJECT_DIR$/programma/actie.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/programma/faciliteit.php" beforeDir="false" afterPath="$PROJECT_DIR$/programma/faciliteit.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/programma/kennis.php" beforeDir="false" afterPath="$PROJECT_DIR$/programma/kennis.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/style.css" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,8 +28,14 @@
   <component name="CopilotUserSelectedChatMode">
     <option name="chatModeId" value="Agent" />
   </component>
+  <component name="CopilotUserSelectedModel">
+    <selectedModels>
+      <entry key="chat-panel" value="GPT-4.1" />
+      <entry key="agent-panel" value="GPT-4.1" />
+    </selectedModels>
+  </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="237" />
+    <option name="cachedIndexableFilesCount" value="241" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="Git.Pull.Settings">
@@ -147,7 +156,11 @@
       <workItem from="1776081311705" duration="5540000" />
       <workItem from="1776086981561" duration="3755000" />
       <workItem from="1776161216021" duration="10820000" />
-      <workItem from="1776251201537" duration="612000" />
+      <workItem from="1776251201537" duration="1108000" />
+      <workItem from="1776252368894" duration="4394000" />
+      <workItem from="1776256815822" duration="3185000" />
+      <workItem from="1776266216199" duration="104000" />
+      <workItem from="1776331661663" duration="1683000" />
     </task>
     <task id="LOCAL-00001" summary="Padding toegevoegd aan terugblik text-blok">
       <option name="closed" value="true" />
@@ -485,7 +498,15 @@
       <option name="project" value="LOCAL" />
       <updated>1776168125920</updated>
     </task>
-    <option name="localTasksCounter" value="43" />
+    <task id="LOCAL-00043" summary="Admin page mobile en tablet ui verbeterd 2">
+      <option name="closed" value="true" />
+      <created>1776252146699</created>
+      <option name="number" value="00043" />
+      <option name="presentableId" value="LOCAL-00043" />
+      <option name="project" value="LOCAL" />
+      <updated>1776252146699</updated>
+    </task>
+    <option name="localTasksCounter" value="44" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -520,7 +541,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="navbar ui verbeteringen" />
     <MESSAGE value="navbar ui verbeteringen 2" />
     <MESSAGE value="Navbar mobile ui font-size gelijk gemaakt" />
     <MESSAGE value="tablet en desktop mobile query" />
@@ -545,7 +565,8 @@
     <MESSAGE value="fotos actie pagina's verbeterd" />
     <MESSAGE value="nieuwe mce" />
     <MESSAGE value="Admin page mobile en tablet ui verbeterd" />
-    <option name="LAST_COMMIT_MESSAGE" value="Admin page mobile en tablet ui verbeterd" />
+    <MESSAGE value="Admin page mobile en tablet ui verbeterd 2" />
+    <option name="LAST_COMMIT_MESSAGE" value="Admin page mobile en tablet ui verbeterd 2" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

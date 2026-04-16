@@ -152,7 +152,7 @@ include __DIR__ . '/../navbar.php';
                     ?>
                 <!-- Styling images -->
                     <div style="<?php echo $hasText ? 'margin-top: auto; width: 100%; max-width: 560px;' : 'width: 100%;'; ?>">
-                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; <?php echo $hasText ? 'height: 360px; object-fit: cover; object-position:cover;' : 'height: auto;'; ?>">
+                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="watdoenwe-image-normal">
                     </div>
                 <?php endif; ?>
             </div>

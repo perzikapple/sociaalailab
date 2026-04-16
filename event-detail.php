@@ -176,8 +176,9 @@ include __DIR__ . '/navbar.php';
 
                 <?php if (!empty($event['image'])): ?>
                     <div class="flex-shrink-0" style="width: 100%; max-width: 640px;">
-                        <img src="uploads/<?php echo htmlspecialchars($event['image']); ?>" alt="<?php echo htmlspecialchars((string)$event['title']); ?>" class="w-full h-auto shadow-md rounded" style="max-width:400px;max-height:300px;width:100%;height:auto;object-fit:contain;display:block;margin-left:auto;margin-right:auto;">
-                    </div>
+                        <img src="uploads/<?php echo htmlspecialchars($event['image']); ?>"
+                             class="shadow-md rounded"
+                             style="max-width:400px;max-height:300px;width:100%;height:auto;object-fit:contain;display:block;margin-left:0;">                    </div>
                 <?php endif; ?>
             </div>
 
