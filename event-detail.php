@@ -191,6 +191,13 @@ include __DIR__ . '/navbar.php';
                 </div>
             <?php endif; ?>
 
+            <?php if (!empty($event['meer_info'])): ?>
+                <div class="bg-gray-50 border border-gray-200 rounded-md p-6 mb-6">
+                    <h2 class="text-2xl font-semibold mb-3 text-gray-900">Meer info</h2>
+                    <div class="text-gray-700 leading-relaxed"><?php echo renderEditorBlock($event['meer_info']); ?></div>
+                </div>
+            <?php endif; ?>
+
             <div class="bg-gray-50 border border-gray-200 rounded-md p-6 mb-6">
                 <h2 class="text-2xl font-semibold mb-3 text-gray-900">Samenvatting</h2>
                 <?php if ($eventSummary !== ''): ?>

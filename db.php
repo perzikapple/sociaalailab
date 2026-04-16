@@ -1,13 +1,13 @@
 <?php
-$host = "localhost";
-$db   = "sociaalai";
- $user = "root";
- $pass = "";
+// $host = "localhost";
+// $db   = "sociaalai";
+//  $user = "root";
+//  $pass = "";
 
-//$host = "sociju-sociaalailab.db.transip.me";
-//$db   = "sociju_sociaalailab";
-//$user = "sociju_Sociaalailab";
-//$pass = "Techniekcollege12345#";
+$host = "sociju-sociaalailab.db.transip.me";
+$db   = "sociju_sociaalailab";
+$user = "sociju_Sociaalailab";
+$pass = "Techniekcollege12345#";
 try {
     $pdo = new PDO(
         "mysql:host=$host;dbname=$db;charset=utf8mb4",
@@ -91,6 +91,9 @@ try {
     }
     if (!in_array('event_gallery', $columns)) {
         $pdo->exec("ALTER TABLE events ADD COLUMN event_gallery TEXT DEFAULT NULL");
+    }
+    if (!in_array('meer_info', $columns)) {
+        $pdo->exec("ALTER TABLE events ADD COLUMN meer_info TEXT DEFAULT NULL");
     }
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS settings (
