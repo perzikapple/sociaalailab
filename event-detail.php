@@ -74,6 +74,19 @@ if ($event) {
             cursor: zoom-in;
         }
 
+        .event-main-image {
+            max-width: 400px;
+            max-height: 300px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            display: block;
+            margin-left: 0;
+            border: none;
+            box-shadow: none;
+            border-radius: 0;
+        }
+
         .event-gallery-image {
             width: 100%;
             height: auto;
@@ -175,25 +188,14 @@ include __DIR__ . '/navbar.php';
                 </div>
 
                 <?php if (!empty($event['image'])): ?>
-                    <div class="flex-shrink-0" style="width: 100%; max-width: 640px;">
+                    <div class="flex-shrink-0" style="width: 100%; max-width: 1500px; text-align: left;">
                         <img src="uploads/<?php echo htmlspecialchars($event['image']); ?>"
-                             class="shadow-md rounded"
-                             style="max-width:400px;max-height:300px;width:100%;height:auto;object-fit:contain;display:block;margin-left:0;">                    </div>
+                             class="event-main-image"
+                             alt="Event afbeelding">
+                    </div>
                 <?php endif; ?>
             </div>
-
-            <div class="text-gray-700 mb-8 leading-relaxed">
-                <?php echo renderEditorBlock($event['description']); ?>
-            </div>
-
-            <?php if (!empty($event['show_signup_button'])): ?>
-                <div class="mb-6">
-                    <a href="inschrijven.php?event_id=<?php echo (int)$event['id']; ?>" class="inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">Inschrijven</a>
-                </div>
-            <?php endif; ?>
-
-
-            <div class="bg-gray-50 border border-gray-200 rounded-md p-6 mb-6">
+                <div class="bg-gray-50 border border-gray-200 rounded-md p-6 mb-6">
                 <h2 class="text-2xl font-semibold mb-3 text-gray-900"><?php echo $isPastEvent ? 'Samenvatting' : 'Meer info'; ?></h2>
                 <div class="text-gray-700 leading-relaxed">
                 <?php if ($isPastEvent): ?>
@@ -280,7 +282,7 @@ include __DIR__ . '/navbar.php';
             lightbox.classList.remove('is-open');
             lightbox.setAttribute('aria-hidden', 'true');
             lightboxImage.setAttribute('src', '');
-            document.body.classList.remove('event-lightbox-open');
+                                                    document.body.classList.remove('event-lightbox-open');
         }
 
         triggers.forEach((trigger) => {
