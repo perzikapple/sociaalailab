@@ -425,7 +425,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                                     // Calculate grid column position (8:00 is column 1, so hour 8 = column 1)
                                                     $colStart = $startHour - 8 + 1;
                                                 ?>
-                                                    <div class="booked-slot-container" style="grid-column: <?php echo $colStart; ?> / span <?php echo $hoursSpan; ?>; background-color: #2D9EE4;">
+                                                    <div class="booked-slot-container" style="grid-column: <?php echo $colStart; ?> / span <?php echo $hoursSpan; ?>; background-color: #00811f;">
                                                         <div class="booked-slot">
                                                             <div class="booking-time">
                                                                 <?php echo htmlspecialchars($startTime); ?> - <?php echo htmlspecialchars($endTime); ?>
