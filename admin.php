@@ -249,7 +249,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
         $signupEmbed = trim((string)($_POST['signup_embed'] ?? ''));
         $showOnHomepage = isset($_POST['show_on_homepage']) ? 1 : 0;
-        $infoLink = $_POST['info_link'] ?? '';
+        // $infoLink verwijderd
 
         if ($date === '') {
             $message = 'Datum is verplicht.';
@@ -274,8 +274,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         : null;
 
                     // voeg updated_at en updated_by toe bij insert
-                    $stmt = $pdo->prepare('INSERT INTO events (title, date, end_date, time, time_end, description, event_summary, meer_info, image, event_gallery, location, show_signup_button, signup_embed, show_on_homepage, info_link, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)');
-                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $location ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $infoLink, $currentUser]);
+                    $stmt = $pdo->prepare('INSERT INTO events (title, date, end_date, time, time_end, description, event_summary, meer_info, image, event_gallery, location, show_signup_button, signup_embed, show_on_homepage, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)');
+                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $location ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser]);
                     $eventId = $pdo->lastInsertId();
                     // Audit log: event created
                     audit_log($pdo, 'create', 'events', $eventId, 'title: ' . $title, $currentUser);
@@ -299,7 +299,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
         $signupEmbed = trim((string)($_POST['signup_embed'] ?? ''));
         $showOnHomepage = isset($_POST['show_on_homepage']) ? 1 : 0;
-        $infoLink = $_POST['info_link'] ?? '';
+        // $infoLink verwijderd
         $removeImage = isset($_POST['remove_image']) ? 1 : 0;
 
         if ($date === '') {
@@ -345,8 +345,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         : null;
 
                     // update nu ook updated_at en updated_by
-                    $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, end_date=?, time=?, time_end=?, description=?, event_summary=?, meer_info=?, image=?, event_gallery=?, location=?, show_signup_button=?, signup_embed=?, show_on_homepage=?, info_link=?, updated_at=NOW(), updated_by=? WHERE id=?');
-                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $location ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $infoLink, $currentUser, $id]);
+                    $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, end_date=?, time=?, time_end=?, description=?, event_summary=?, meer_info=?, image=?, event_gallery=?, location=?, show_signup_button=?, signup_embed=?, show_on_homepage=?, updated_at=NOW(), updated_by=? WHERE id=?');
+                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $location ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser, $id]);
                     // Audit log: event updated
                     audit_log($pdo, 'update', 'events', $id, 'title: ' . $title, $currentUser);
 
@@ -1430,22 +1430,7 @@ if ($page === 'users') {
                                     </div>
                                 <?php endif; ?>
                             </div>
-                            <div>
-                                <label class="form-label" for="info_link">Meer info link (optioneel):</label>
-                                <input
-                                    type="url"
-                                    name="info_link"
-                                    id="info_link"
-                                    class="form-input admin-input-surface"
-                                    value="<?php echo htmlspecialchars($editEvent['info_link'] ?? ''); ?>"
-                                    placeholder="https://voorbeeld.nl"
-                                />
-                                <?php if (!empty($editEvent['info_link'])): ?>
-                                    <a href="<?php echo htmlspecialchars($editEvent['info_link']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-info bg-[#00811F] text-white px-3 py-1 rounded shadow hover:bg-[#00691A] transition mt-2 inline-block">
-                                        <i class="fa-solid fa-circle-info mr-1"></i> Meer info
-                                    </a>
-                                <?php endif; ?>
-                            </div>
+                            <!-- Meer info link veld verwijderd -->
 
                             <div>
                                 <label class="form-label" for="signup_embed">Aanmelder.nl link (optioneel):</label>
@@ -1558,17 +1543,7 @@ if ($page === 'users') {
                                 <label class="form-label">Foto's tijdens event (optioneel, meerdere bestanden)</label>
                                 <input type="file" name="gallery_images[]" accept="image/*" multiple class="form-input" />
                             </div>
-                            <div>
-                                <label class="form-label" for="info_link">Meer info link (optioneel):</label>
-                                <input
-                                    type="url"
-                                    name="info_link"
-                                    id="info_link"
-                                    class="form-input admin-input-surface"
-                                    value=""
-                                    placeholder="https://voorbeeld.nl"
-                                />
-                            </div>
+                            <!-- Meer info link veld verwijderd -->
 
                             <div>
                                 <label class="form-label" for="signup_embed">Aanmelder.nl link (optioneel):</label>
@@ -1653,11 +1628,7 @@ if ($page === 'users') {
                                             <?php if ($eventGalleryCount > 0): ?>
                                                 <p class="text-sm text-gray-600 mt-1"><strong>Eventfoto's:</strong> <?php echo (int)$eventGalleryCount; ?></p>
                                             <?php endif; ?>
-                                            <?php if (!empty($event['info_link'])): ?>
-                                                <a href="<?php echo htmlspecialchars($event['info_link']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-info bg-[#00811F] text-white px-3 py-1 rounded shadow hover:bg-[#00691A] transition mt-2 inline-block">
-                                                    <i class="fa-solid fa-circle-info mr-1"></i> Meer info
-                                                </a>
-                                            <?php endif; ?>
+                                            <!-- Meer info link verwijderd uit event overzicht -->
                                         </div>
                                         <div class="admin-row-actions flex gap-2 flex-shrink-0">
                                             <?php if (!empty($event['image'])): ?>
