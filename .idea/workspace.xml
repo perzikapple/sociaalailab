@@ -4,16 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="303eae4d-7ca5-4634-9557-4de1cdbec390" name="Changes" comment="meer info image naar links">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/admin-styles.css" beforeDir="false" afterPath="$PROJECT_DIR$/admin-styles.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/admin.php" beforeDir="false" afterPath="$PROJECT_DIR$/admin.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/programma/actie.php" beforeDir="false" afterPath="$PROJECT_DIR$/programma/actie.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/programma/faciliteit.php" beforeDir="false" afterPath="$PROJECT_DIR$/programma/faciliteit.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/programma/kennis.php" beforeDir="false" afterPath="$PROJECT_DIR$/programma/kennis.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/style.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/style/booking.css" beforeDir="false" afterPath="$PROJECT_DIR$/style/booking.css" afterDir="false" />
-    </list>
+    <list default="true" id="303eae4d-7ca5-4634-9557-4de1cdbec390" name="Changes" comment="booking update" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -163,7 +154,7 @@
       <workItem from="1776256815822" duration="3185000" />
       <workItem from="1776266216199" duration="104000" />
       <workItem from="1776331661663" duration="1885000" />
-      <workItem from="1776411994466" duration="6913000" />
+      <workItem from="1776411994466" duration="7407000" />
     </task>
     <task id="LOCAL-00001" summary="Padding toegevoegd aan terugblik text-blok">
       <option name="closed" value="true" />
@@ -517,7 +508,23 @@
       <option name="project" value="LOCAL" />
       <updated>1776333535789</updated>
     </task>
-    <option name="localTasksCounter" value="45" />
+    <task id="LOCAL-00045" summary="booking update">
+      <option name="closed" value="true" />
+      <created>1776424784352</created>
+      <option name="number" value="00045" />
+      <option name="presentableId" value="LOCAL-00045" />
+      <option name="project" value="LOCAL" />
+      <updated>1776424784352</updated>
+    </task>
+    <task id="LOCAL-00046" summary="booking update">
+      <option name="closed" value="true" />
+      <created>1776424851861</created>
+      <option name="number" value="00046" />
+      <option name="presentableId" value="LOCAL-00046" />
+      <option name="project" value="LOCAL" />
+      <updated>1776424851861</updated>
+    </task>
+    <option name="localTasksCounter" value="47" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -552,7 +559,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Navbar mobile ui font-size gelijk gemaakt" />
     <MESSAGE value="tablet en desktop mobile query" />
     <MESSAGE value="Tablet ui verbeterd" />
     <MESSAGE value="Tablet ui Foto's op wat doen we page verbeterd" />
@@ -577,7 +583,8 @@
     <MESSAGE value="Admin page mobile en tablet ui verbeterd" />
     <MESSAGE value="Admin page mobile en tablet ui verbeterd 2" />
     <MESSAGE value="meer info image naar links" />
-    <option name="LAST_COMMIT_MESSAGE" value="meer info image naar links" />
+    <MESSAGE value="booking update" />
+    <option name="LAST_COMMIT_MESSAGE" value="booking update" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
