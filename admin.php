@@ -2481,23 +2481,27 @@ if ($page === 'users') {
     }
 
     function resolveImageSrc(form) {
+        // 1. Als er een nieuwe afbeelding gekozen is, toon die
         const imageInput = getFieldInput(form, 'image');
-        if (imageInput && imageInput.files && imageInput.files.length) {
+        if (imageInput && imageInput.files && imageInput.files.length > 0) {
             clearImagePreview();
             currentImageUrl = URL.createObjectURL(imageInput.files[0]);
             return currentImageUrl;
         }
 
+        // 2. Als "verwijder afbeelding" is aangevinkt, geen afbeelding tonen
         const removeImage = getFieldInput(form, 'remove_image');
         if (removeImage && removeImage.checked) {
             return '';
         }
 
+        // 3. Bij bewerken: bestaande afbeelding tonen als die er is
         const existingImage = getFieldValue(form, 'existing_image').trim();
         if (existingImage) {
             return 'uploads/' + existingImage;
         }
 
+        // 4. Geen afbeelding
         return '';
     }
 
@@ -2545,11 +2549,12 @@ if ($page === 'users') {
                             '<i class="fa-regular fa-calendar text-[#00811F] ml-[2px] text-3xl"></i>' +
                             '<p class="text-gray-700"><strong> Wanneer:</strong> ' + escapeHtml(dateDisplay || startDate) + (endDateDisplay ? ' t/m ' + escapeHtml(endDateDisplay) : '') + '</p>' +
                         '</div>' +
-                        ((startTime || endTime) ?
-                        '<div class="flex items-center space-x-3">' +
-                            '<i class="fa-solid fa-clock text-[#00811F] ml-[2px] text-3xl"></i>' +
-                            '<p class="text-gray-700"><strong>Hoelaat:</strong> ' + escapeHtml(startTime) + (endTime ? ' - ' + escapeHtml(endTime) : '') + '</p>' +
-                        </div> : '') +
+                        ((startTime || endTime)
+                            ? ('<div class="flex items-center space-x-3">' +
+                                '<i class="fa-solid fa-clock text-[#00811F] ml-[2px] text-3xl"></i>' +
+                                '<p class="text-gray-700"><strong>Hoelaat:</strong> ' + escapeHtml(startTime) + (endTime ? ' - ' + escapeHtml(endTime) : '') + '</p>' +
+                            '</div>')
+                            : '') +
                         '<div class="flex items-center space-x-3">' +
                             '<i class="fa-solid fa-location-dot text-[#00811F] ml-1 text-3xl"></i>' +
                             '<p class="text-gray-700 ml-1"><strong>Waar:</strong> <a href="' + escapeHtml(mapUrl) + '" target="_blank" rel="noopener noreferrer" class="underline hover:text-[#00811F]">' + escapeHtml(location) + '</a></p>' +
@@ -2557,10 +2562,18 @@ if ($page === 'users') {
                         '<div class="flex mb-6 space-x-3">' +
                             '<i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>' +
                             '<div class="text-gray-700 pb-3"><strong> Wat:</strong><div class="mt-1">' + descriptionHtml + '</div></div>' +
-                        </div>' +
-                    </div>' +
-                    (hasEmbed ? '<div class="mt-4 rounded-md border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-600">Aanmelder.nl embed wordt na opslaan getoond.</div>' : (hasSignup ? '<a href="#" onclick="return false;" class="mt-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">Inschrijven</a>' : '')) +
-                    (infoLink ? '<a href="' + escapeHtml(infoLink) + '" target="_blank" rel="noopener noreferrer" class="mt-4 ml-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">Meer info</a>' : '') +
+                        '</div>' +
+                    '</div>' +
+                    (hasEmbed
+                        ? '<div class="mt-4 rounded-md border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-600">Aanmelder.nl embed wordt na opslaan getoond.</div>'
+                        : (hasSignup
+                            ? '<a href="#" onclick="return false;" class="mt-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">Inschrijven</a>'
+                            : '')
+                    ) +
+                    (infoLink
+                        ? '<a href="' + escapeHtml(infoLink) + '" target="_blank" rel="noopener noreferrer" class="mt-4 ml-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">Meer info</a>'
+                        : ''
+                    ) +
                 '</div>' +
                 (imageSrc ? '<div class="flex-1"><img src="' + escapeHtml(imageSrc) + '" alt="" class="w-full h-auto object-cover shadow-md"></div>' : '') +
             '</section>';
@@ -2642,23 +2655,32 @@ if ($page === 'users') {
 
     previewButtons.forEach(function (button) {
         button.addEventListener('click', function () {
-            const form = button.closest('form.js-content-preview-form');
-            if (!form) return;
+            try {
+                console.log('[Preview] Preview-knop geklikt');
+                const form = button.closest('form.js-content-preview-form');
+                if (!form) {
+                    console.warn('[Preview] Geen formulier gevonden voor preview');
+                    return;
+                }
 
-            // Sync TinyMCE editors back to their textarea values before reading fields.
-            if (window.tinymce && typeof window.tinymce.triggerSave === 'function') {
-                window.tinymce.triggerSave();
+                // Sync TinyMCE editors back naar textarea values
+                if (window.tinymce && typeof window.tinymce.triggerSave === 'function') {
+                    window.tinymce.triggerSave();
+                }
+
+                renderPreview(form);
+
+                if (renderedEl && renderedEl.textContent.trim() !== '') {
+                    emptyEl.classList.add('hidden');
+                } else {
+                    emptyEl.classList.remove('hidden');
+                }
+
+                openModal();
+            } catch (e) {
+                console.error('[Preview] Fout bij tonen preview:', e);
+                alert('Er is een fout opgetreden bij het tonen van de preview. Zie de console voor details.');
             }
-
-            renderPreview(form);
-
-            if (renderedEl && renderedEl.textContent.trim() !== '') {
-                emptyEl.classList.add('hidden');
-            } else {
-                emptyEl.classList.remove('hidden');
-            }
-
-            openModal();
         });
     });
 })();
