@@ -11,7 +11,7 @@
     inset: -3px;
     z-index: 0;
     border-radius: inherit;
-    background: linear-gradient(120deg, #2D9EE4, #3BBFDA, #eaf6fd, #2D9EE4);
+    background: linear-gradient(120deg, #00811F, #00811f, #eaf6fd, #00811F);
     background-size: 300% 300%;
     filter: blur(6px) brightness(1.2);
     opacity: 0.55;
@@ -58,7 +58,7 @@
     height: 4px;
     border-radius: 2px;
     margin-top: 0.18em;
-    background: linear-gradient(90deg, #2D9EE4 0%, #3BBFDA 100%);
+    background: linear-gradient(90deg, #00811F 0%, #00811f 100%);
     opacity: 0.7;
     width: 0;
     transition: width 0.5s cubic-bezier(.4, 2, .6, 1);
@@ -117,7 +117,7 @@
 
 /* Gradient text for headings */
 .gradient-text {
-    background: linear-gradient(90deg, #2D9EE4 0%, #3BBFDA 100%);
+    background: linear-gradient(90deg, #00811F 0%, #00811f 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -127,16 +127,16 @@
 /* Premium subtitle */
 .subtitle-premium {
     font-size: 1.13rem;
-    color: #2d9ee4;
+    color: #00811f;
     font-weight: 500;
     letter-spacing: 0.01em;
     margin-bottom: 0.5rem;
-    text-shadow: 0 1px 8px #2d9ee41a;
+    text-shadow: 0 1px 8px #00811f1a;
 }
 
 /* Premium pill buttons */
 .btn-premium {
-    background: linear-gradient(90deg, #2D9EE4 0%, #3BBFDA 100%);
+    background: linear-gradient(90deg, #00811F 0%, #00811f 100%);
     color: #fff !important;
     border: none;
     padding: 0.8rem 2.1rem;
@@ -225,7 +225,7 @@
 ========================= */
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: linear-gradient(135deg, #eaf6fd 0%, #dbeafe 100%);
+    background: linear-gradient(135deg, #eaf6fd 0%, #dbeafe 100%, #00811F 100%);
     min-height: 100vh;
     padding: 2rem;
     color: #111827;
@@ -241,7 +241,7 @@ body {
     margin: 0 auto;
     padding-left: 2vw;
     padding-right: 2vw;
-    background: linear-gradient(120deg, #eaf6fd 0%, #dbeafe 60%, #3bbfda 100%);
+    background: linear-gradient(120deg, #eaf6fd 0%, #dbeafe 60%, #00811f 100%);
     border-radius: 2.5rem;
     box-shadow: 0 8px 64px 0 #2d9ee41a, 0 1.5px 6px #3bbfda14;
     position: relative;
@@ -250,7 +250,7 @@ body {
 
 .booking-message {
     background: white;
-    border-left: 5px solid #667eea;
+    border-left: 5px solid #00811f;
     padding: 1rem 1.5rem;
     border-radius: 6px;
     margin-bottom: 2rem;
@@ -261,7 +261,7 @@ body {
 }
 
 .booking-message.success {
-    border-left-color: #00811F;
+    border-left-color: #00811f;
     color: #00811F;
 }
 
@@ -328,9 +328,9 @@ body {
 }
 
 .view-btn.active {
-    background: #667eea;
+    background: #00811f;
     color: white;
-    border-color: #667eea;
+    border-color: #00811f;
 }
 
 /* Day Preview */
@@ -353,7 +353,7 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #00811f 0%, #00811f 100%);
     color: white;
     padding: 1.5rem;
     border-radius: 8px;
@@ -419,7 +419,7 @@ body {
 }
 
 .week-time-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #00811f 0%, #00811f 100%);
     color: white;
     padding: 0.5rem 0.15rem;
     text-align: center;
@@ -446,7 +446,7 @@ body {
 }
 
 .week-day-label-wrapper {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #00811f 0%, #00811f 100%);
     color: white;
     padding: 0.75rem 0.5rem;
     text-align: center;
@@ -505,6 +505,7 @@ body {
     border-radius: 6px;
     min-height: 60px;
     margin: 1px;
+
 }
 
 .booked-slot {
@@ -515,14 +516,25 @@ body {
     align-items: center;
     justify-content: center;
     padding: 0.3rem;
-    color: black;
+    color: #fff !important;
     text-align: center;
     font-size: 0.65rem;
     font-weight: 500;
     gap: 0.2rem;
     overflow: hidden;
+    background: #00811F !important;
+    border: 1.5px solid #00811F !important;
+    box-shadow: 0 2px 8px #00811f44;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
 }
 
+.booked-slot:hover {
+    background: #006319 !important;
+    color: #fff !important;
+    box-shadow: 0 4px 16px #00811f66;
+}
+
+/* Booking time text styles */
 .booking-time {
     font-weight: 700;
     font-size: 0.7rem;
@@ -592,17 +604,17 @@ body {
 /* Make time input fields more readable by changing background and text color */
 input[type="time"] {
     background: #eaf6fd;
-    color: #256080;
-    border: 1.5px solid #2D9EE4;
+    color: #00811F;
+    border: 1.5px solid #00811f;
     border-radius: 1.2rem;
     font-size: 1.08rem;
     padding: 0.6rem 1.2rem;
-    box-shadow: 0 2px 8px #2d9ee41a;
+    box-shadow: 0 2px 8px #00811f1a;
     transition: border 0.2s, box-shadow 0.2s;
 }
 
 input[type="time"]:focus {
-    border: 1.5px solid #3BBFDA;
+    border: 1.5px solid #006319;
     outline: none;
     background: #dbeafe;
 }
@@ -794,7 +806,7 @@ input[type="time"]:focus {
     color: #1e293b;
     margin-bottom: 0.5rem;
     text-shadow: 0 2px 16px rgba(45, 158, 228, 0.10);
-    background: linear-gradient(90deg, #2D9EE4 0%, #3BBFDA 100%);
+    background: linear-gradient(90deg, #00811F 0%, #00811f 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -802,10 +814,10 @@ input[type="time"]:focus {
 
 
 .booking-header p {
-    color: #3bbfda;
+    color: #00811f;
     font-size: 1.13rem;
     font-weight: 500;
-    text-shadow: 0 1px 8px rgba(45, 158, 228, 0.08);
+    text-shadow: 0 1px 8px rgba(0, 129, 31, 0.08);
 }
 
 
@@ -834,7 +846,7 @@ input[type="time"]:focus {
     position: absolute;
     inset: -4px;
     border-radius: inherit;
-    background: linear-gradient(120deg, #2D9EE4, #3BBFDA, #eaf6fd, #2D9EE4);
+    background: linear-gradient(120deg, #00811F, #00811F, #eaf6fd, #00811F);
     background-size: 300% 300%;
     filter: blur(8px) brightness(1.15);
     opacity: 0.45;
@@ -864,7 +876,7 @@ input[type="time"]:focus {
 }
 
 .calendar-nav button {
-    background: linear-gradient(90deg, #2D9EE4 0%, #3BBFDA 100%);
+    background: linear-gradient(90deg, #00811F 0%, #00811f 100%);
     color: #fff;
     border: none;
     padding: 0.8rem 1.7rem;
@@ -886,15 +898,15 @@ input[type="time"]:focus {
     right: 0;
     bottom: 0;
     pointer-events: none;
-    background: linear-gradient(120deg, rgba(255, 255, 255, 0.13) 0%, #3BBFDA 100%);
+    background: linear-gradient(120deg, rgba(255, 255, 255, 0.13) 0%, #00811f 100%);
     opacity: 0.5;
     filter: blur(2px);
     z-index: 1;
 }
 
 .calendar-nav button:hover {
-    background: linear-gradient(90deg, #3BBFDA 0%, #2D9EE4 100%);
-    box-shadow: 0 8px 28px rgba(45, 158, 228, 0.22), 0 0 12px #3BBFDA88;
+    background: linear-gradient(90deg, #00811f 0%, #00811F 100%);
+    box-shadow: 0 8px 28px rgba(45, 158, 228, 0.22), 0 0 12px #00811f88;
     filter: brightness(1.08) saturate(1.2);
     transform: translateY(-2px) scale(1.04);
 }
@@ -957,7 +969,7 @@ input[type="time"]:focus {
 .calendar-table tbody td:hover {
     background: #eaf6fd;
     transform: scale(1.025);
-    box-shadow: 0 4px 18px #2d9ee41a, 0 0 0 2px #2D9EE4;
+    box-shadow: 0 4px 18px #00811F33, 0 0 0 2px #00811F;
 }
 
 .calendar-table tbody td.other-month {
@@ -972,9 +984,9 @@ input[type="time"]:focus {
 .day-number {
     font-weight: 700;
     font-size: 1.05rem;
-    color: #2D9EE4;
+    color: #00811f;
     margin-bottom: 0.6rem;
-    text-shadow: 0 1px 8px #3BBFDA33;
+    text-shadow: 0 1px 8px #00811f33;
 }
 
 /* =========================
@@ -990,21 +1002,21 @@ input[type="time"]:focus {
     text-align: center;
     letter-spacing: 0.3px;
     cursor: pointer;
-    box-shadow: 0 2px 8px #2d9ee41a;
+    box-shadow: 0 2px 8px #00811f1a;
     border: 1.5px solid #e0eaff;
-    background: linear-gradient(90deg, #2D9EE4 0%, #3BBFDA 100%);
+    background: linear-gradient(90deg, #00811F 0%, #00811f 100%);
     transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
 }
 
 .room-slot:hover {
-    background: linear-gradient(90deg, #3BBFDA 0%, #2D9EE4 100%);
+    background: linear-gradient(90deg, #006319 0%, #00811F 100%);
     box-shadow: 0 4px 16px #3BBFDA33;
     transform: scale(1.08);
 }
 
 .room-slot.available {
-    background: linear-gradient(90deg, #2D9EE4 0%, #3BBFDA 100%);
-    border: 1.5px solid #2D9EE4;
+    background: linear-gradient(90deg, #00811F 0%, #00811f 100%);
+    border: 1.5px solid #00811F;
 }
 
 .room-slot.unavailable {
@@ -1048,10 +1060,10 @@ input[type="time"]:focus {
     margin-bottom: 1.1rem;
     padding-bottom: 0.8rem;
     border-bottom: 1.5px solid #e0eaff;
-    color: #2D9EE4;
+    color: #00811f;
     letter-spacing: 0.02em;
-    text-shadow: 0 2px 12px #3BBFDA33;
-    background: linear-gradient(90deg, #2D9EE4 0%, #3BBFDA 100%);
+    text-shadow: 0 2px 12px #00811f33;
+    background: linear-gradient(90deg, #00811F 0%, #00811f 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -1070,12 +1082,16 @@ input[type="time"]:focus {
 }
 
 .legend-item .color-box {
-    width: 28px;
-    height: 28px;
-    border-radius: 10px;
-    border: 1.5px solid #3BBFDA88;
-    background: linear-gradient(135deg, #2D9EE4 0%, #3BBFDA 100%);
-    box-shadow: 0 2px 8px #2d9ee41a;
+    display: none !important;
+}
+
+.legend-item .fa-house,
+.legend-item .fa-briefcase {
+    display: inline-block;
+    color: #00811F;
+    font-size: 1.3em;
+    margin-right: 0.5em;
+    vertical-align: middle;
 }
 
 /* =========================
@@ -1098,7 +1114,7 @@ input[type="time"]:focus {
 }
 
 .hardware-list li strong {
-    color: #2D9EE4;
+    color: #00811F;
     font-weight: 800;
     font-size: 1.08em;
     margin-right: 0.3em;
@@ -1106,7 +1122,7 @@ input[type="time"]:focus {
 
 .hardware-list li:hover {
     background: #eaf6fd;
-    color: #2D9EE4;
+    color: #00811f;
 }
 
 .hardware-list li:last-child {
@@ -1114,19 +1130,19 @@ input[type="time"]:focus {
 }
 
 .hardware-list strong {
-    color: #2D9EE4;
+    color: #00811f;
     font-weight: 700;
 }
 
 
 .today {
-    border: 2.5px solid #2D9EE4 !important;
+    border: 2.5px solid #00811f !important;
     background: #eaf6fd !important;
 }
 
 /* Booking Form Styles */
 .booking-form-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #00811f 0%, #00811f 100%);
     color: white;
 }
 
@@ -1157,7 +1173,7 @@ input[type="time"]:focus {
     position: absolute;
     inset: -3px;
     border-radius: inherit;
-    background: linear-gradient(120deg, #2D9EE4, #3BBFDA, #eaf6fd, #2D9EE4);
+    background: linear-gradient(120deg, #00811F, #00811f, #eaf6fd, #00811F);
     background-size: 300% 300%;
     filter: blur(7px) brightness(1.13);
     opacity: 0.25;
@@ -1177,8 +1193,8 @@ input[type="time"]:focus {
     font-size: 1.4rem;
     font-weight: 800;
     margin-bottom: 1.2rem;
-    color: #2D9EE4;
-    background: linear-gradient(90deg, #2D9EE4 0%, #3BBFDA 100%);
+    color: #00811f;
+    background: linear-gradient(90deg, #00811F 0%, #00811f 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -1186,7 +1202,7 @@ input[type="time"]:focus {
 
 .booking-form-below label {
     font-weight: 600;
-    color: #256080;
+    color: #00811f;
     margin-bottom: 0.4rem;
     display: block;
 }
@@ -1199,15 +1215,15 @@ input[type="time"]:focus {
     border: 1.5px solid #e0eaff;
     background: #f9fafb;
     font-size: 1.05rem;
-    color: #256080;
+    color: #00811f;
     margin-bottom: 1.2rem;
     transition: border 0.2s, box-shadow 0.2s;
 }
 
 .booking-form-below input[type="date"]:focus,
 .booking-form-below select:focus {
-    border: 1.5px solid #2D9EE4;
-    box-shadow: 0 0 0 2px #3BBFDA33;
+    border: 1.5px solid #00811F;
+    box-shadow: 0 0 0 2px #00811F33;
     outline: none;
 }
 
@@ -1234,20 +1250,20 @@ input[type="time"]:focus {
 }
 
 .checkbox-label input[type="checkbox"] {
-    accent-color: #2D9EE4;
+    accent-color: #00811f;
     width: 18px;
     height: 18px;
 }
 
 .checkbox-label:hover {
     background: #dbeafe;
-    color: #2D9EE4;
+    color: #00811f;
 }
 
 .btn-submit {
     width: 100%;
     padding: 0.9rem;
-    background: linear-gradient(90deg, #2D9EE4 0%, #3BBFDA 100%);
+    background: linear-gradient(90deg, #00811F 0%, #00811f 100%);
     color: white;
     border: none;
     border-radius: 1.2rem;
@@ -1259,7 +1275,7 @@ input[type="time"]:focus {
 }
 
 .btn-submit:hover {
-    background: linear-gradient(90deg, #3BBFDA 0%, #2D9EE4 100%);
+    background: linear-gradient(90deg, #3ab60c 0%, #00811F 100%);
     box-shadow: 0 0 0 6px #2D9EE433, 0 12px 32px #2d9ee433, 0 0 32px 4px #3BBFDA77;
     filter: brightness(1.08) saturate(1.2);
     transform: translateY(-2px) scale(1.03);
