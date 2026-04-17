@@ -541,9 +541,19 @@ body {
 }
 
 .booking-location {
-    font-weight: 600;
-    font-size: 0.6rem;
-    opacity: 1;
+    display: inline-block;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #00811f;
+    background: #eaf6fd;
+    padding: 0.18em 0.85em;
+    border-radius: 999px;
+    letter-spacing: 0.01em;
+    box-shadow: 0 1px 6px #00811f22;
+    margin-top: 0.2em;
+    margin-bottom: 0.2em;
+    border: 1.5px solid #00811f;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
 }
 
 .booking-hardware-info {
@@ -731,11 +741,16 @@ input[type="time"]:focus {
 
     .booked-slot-container {
         min-height: 45px;
+        position: relative;
+        z-index: 1;
     }
 
     .booked-slot {
         font-size: 0.55rem;
         padding: 0.2rem;
+        position: relative;
+        z-index: 2;
+
     }
 
     .booking-time {
