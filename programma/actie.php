@@ -125,10 +125,10 @@ include __DIR__ . '/../navbar.php';
                     <div style="<?php echo $hasText ? 'flex-shrink: 0; width: 120px; min-width: 120px; max-width: 120px;' : 'width: 100%;'; ?>">
                         <?php if ($imageLink !== ''): ?>
                             <a href="<?php echo htmlspecialchars($imageLink); ?>"<?php echo $isExternalImageLink ? ' target="_blank" rel="noopener noreferrer"' : ''; ?> class="block">
-                                <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; <?php echo $hasText ? 'height: 112px; object-fit: cover;' : 'height: auto;'; ?>">
+                                <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="watdoenwe-image-side">
                             </a>
                         <?php else: ?>
-                            <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; <?php echo $hasText ? 'height: 112px; object-fit: cover;' : 'height: auto;'; ?>">
+                            <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="watdoenwe-image-side">
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>
@@ -162,10 +162,10 @@ include __DIR__ . '/../navbar.php';
                     <div style="<?php echo $hasText ? 'flex-shrink: 0; width: 120px; min-width: 120px; max-width: 120px;' : 'width: 100%;'; ?>">
                         <?php if ($imageLink !== ''): ?>
                             <a href="<?php echo htmlspecialchars($imageLink); ?>"<?php echo $isExternalImageLink ? ' target="_blank" rel="noopener noreferrer"' : ''; ?> class="block">
-                                <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; <?php echo $hasText ? 'height: 112px; object-fit: cover;' : 'height: auto;'; ?>">
+                                <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="watdoenwe-image-side">
                             </a>
                         <?php else: ?>
-                            <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; <?php echo $hasText ? 'height: 112px; object-fit: cover;' : 'height: auto;'; ?>">
+                            <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="watdoenwe-image-side">
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>
@@ -184,10 +184,10 @@ include __DIR__ . '/../navbar.php';
                     <div style="<?php echo $hasText ? 'margin-top: auto; width: 100%; max-width: 560px;' : 'width: 100%;'; ?>">
                         <?php if ($imageLink !== ''): ?>
                             <a href="<?php echo htmlspecialchars($imageLink); ?>"<?php echo $isExternalImageLink ? ' target="_blank" rel="noopener noreferrer"' : ''; ?> class="block">
-                                <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; <?php echo $hasText ? 'height: 360px; object-fit: cover;' : 'height: auto;'; ?>">
+                                <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="watdoenwe-image-normal">
                             </a>
                         <?php else: ?>
-                            <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; <?php echo $hasText ? 'height: 360px; object-fit: cover;' : 'height: auto;'; ?>">
+                            <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="watdoenwe-image-normal">
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>

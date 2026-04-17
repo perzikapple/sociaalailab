@@ -121,7 +121,7 @@ include __DIR__ . '/../navbar.php';
                     }
                     ?>
                     <div style="<?php echo $hasText ? 'flex-shrink: 0; width: 120px; min-width: 120px; max-width: 120px;' : 'width: 100%;'; ?>">
-                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; <?php echo $hasText ? 'height: 112px; object-fit: cover;' : 'height: auto;'; ?>">
+                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="watdoenwe-image-side">
                     </div>
                 <?php endif; ?>
 
@@ -152,7 +152,7 @@ include __DIR__ . '/../navbar.php';
                     }
                     ?>
                     <div style="<?php echo $hasText ? 'flex-shrink: 0; width: 120px; min-width: 120px; max-width: 120px;' : 'width: 100%;'; ?>">
-                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; <?php echo $hasText ? 'height: 112px; object-fit: cover;' : 'height: auto;'; ?>">
+                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="watdoenwe-image-side">
                     </div>
                 <?php endif; ?>
 
@@ -168,7 +168,7 @@ include __DIR__ . '/../navbar.php';
                     }
                     ?>
                     <div style="<?php echo $hasText ? 'margin-top: auto; width: 100%; max-width: 560px;' : 'width: 100%;' ; ?>">
-                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" style="width: 100%; <?php echo $hasText ? 'height: 360px; object-fit: cover; object-position:cover;' : 'height: auto;'; ?>">
+                        <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title'] ?? ''); ?>" class="watdoenwe-image-normal">
                     </div>
                 <?php endif; ?>
             </div>
