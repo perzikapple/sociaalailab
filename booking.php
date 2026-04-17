@@ -444,14 +444,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                                         ?>
                                                 </div>
                                             </div>
-                                        <?php }
-                                        
-                                        // Then render empty slots for non-booked hours
-                                        for ($hour = 8; $hour < 18; $hour++): ?>
-                                            <?php if (!isset($renderedHours[$hour])): ?>
-                                                <div class="week-time-slot empty-slot"></div>
-                                            <?php endif; ?>
-                                        <?php endfor; ?>
+                                        <?php } ?>
                                     </div>
                                 <?php endforeach; ?>
 
