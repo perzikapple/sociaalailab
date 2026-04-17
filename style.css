@@ -1,9 +1,3 @@
-/* Sidebar toggle button alleen tonen op mobiel */
-@media (min-width: 1024px) {
-    .sidebar-toggle-btn {
-        display: none !important;
-    }
-}
 @import url('https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap');
 
 /* Consistent image size and spacing for wie-zijn-we page diubjjhyrhyrjji */
@@ -1406,12 +1400,9 @@ section{
 
 .image-template-photo {
     width: 100%;
-    height: 100%;
+    aspect-ratio: 16 / 9;
     object-fit: cover;
     border-radius: 0;
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
@@ -1488,37 +1479,3 @@ section{
 }
 
 
-
-@media (max-width: 768px) {
-    .mobile-hide-no-image {
-        display: none;
-    }
-}
-
-.text-padding[style*="flex-direction: row"] {
-    align-items: center !important;
-}
-
-.text-padding[style*="flex-direction: row"] > div {
-    align-self: center;
-}
-
-
-.navbar a.nav-active,
-.navbar .nav-active {
-    color: #00811F !important;
-    font-weight: 700;
-    border-bottom: 2px solid #00811F;
-}
-
-/* Visible focus ring for all tabbable blocks */
-section:focus-visible,
-[tabindex="0"]:focus-visible {
-    outline: 3px solid #00811F;
-    outline-offset: 2px;
-}
-
-.watdoenwe-page .grid > .bg-white:focus {
-    outline: 3px solid #00811F;
-    outline-offset: 2px;
-}

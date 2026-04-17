@@ -47,7 +47,10 @@ function handleUpload($fileField) {
     if (!move_uploaded_file($_FILES[$fileField]['tmp_name'], $dest)) {
         return ['error' => 'Kon afbeelding niet opslaan.'];
     }
-    return ['name' => $imageName];
+    // Optimize after upload
+    $optResult = optimizeImage($dest, 85);
+    $optimized = isset($optResult['success']) && $optResult['success'];
+    return ['name' => $imageName, 'optimized' => $optimized];
 }
 
 function handleMultiUpload($fileField) {
@@ -107,13 +110,16 @@ function handleMultiUpload($fileField) {
             return ['error' => 'Kon een galerijafbeelding niet opslaan.'];
         }
 
+        // Optimize after upload
+        $optResult = optimizeImage($dest, 85);
+        // Optionally, you could track which images were optimized
         $saved[] = $imageName;
     }
 
     return ['names' => $saved];
 }
 
-// Image optimizer function
+// Image optimizer function with Imagick support
 function optimizeImage($imagePath, $quality = 85) {
     if (!file_exists($imagePath)) {
         return ['error' => 'Afbeelding niet gevonden.'];
@@ -126,15 +132,49 @@ function optimizeImage($imagePath, $quality = 85) {
 
     $ext = strtolower(pathinfo($imagePath, PATHINFO_EXTENSION));
 
-    // Check if GD library is available
+    // Prefer Imagick if available
+    if (extension_loaded('imagick')) {
+        try {
+            $img = new Imagick($imagePath);
+            // Convert to WebP if supported, else JPEG
+            $formats = array_map('strtolower', Imagick::queryFormats());
+            $targetFormat = in_array('webp', $formats) ? 'webp' : 'jpeg';
+            $optimizedPath = preg_replace('/\.[a-z0-9]+$/i', '_optimized.' . $targetFormat, $imagePath);
+            $img->setImageFormat($targetFormat);
+            if ($targetFormat === 'webp') {
+                $img->setImageCompressionQuality($quality);
+            } else {
+                $img->setImageCompression(Imagick::COMPRESSION_JPEG);
+                $img->setImageCompressionQuality($quality);
+            }
+            $img->stripImage(); // Remove metadata
+            $img->writeImage($optimizedPath);
+            $img->destroy();
+            $newSize = filesize($optimizedPath);
+            $saved = $originalSize - $newSize;
+            $savedPercent = $originalSize > 0 ? round(($saved / $originalSize) * 100, 1) : 0;
+            // Replace original with optimized
+            @unlink($imagePath);
+            rename($optimizedPath, $imagePath);
+            return [
+                'success' => true,
+                'size_original' => $originalSize,
+                'size_optimized' => $newSize,
+                'saved_bytes' => $saved,
+                'saved_percent' => $savedPercent,
+                'format' => strtoupper($targetFormat)
+            ];
+        } catch (Exception $e) {
+            // Fallback to GD if Imagick fails
+        }
+    }
+
+    // Fallback to GD
     if (!extension_loaded('gd')) {
         return ['error' => 'GD-bibliotheek niet geïnstalleerd op server.', 'size_original' => $originalSize];
     }
-
     try {
         $image = null;
-
-        // Load image based on type
         if (in_array($mimeType, ['image/jpeg', 'image/jpg'])) {
             $image = imagecreatefromjpeg($imagePath);
         } elseif ($mimeType === 'image/png') {
@@ -144,24 +184,17 @@ function optimizeImage($imagePath, $quality = 85) {
         } elseif ($mimeType === 'image/webp') {
             $image = imagecreatefromwebp($imagePath);
         }
-
         if (!$image) {
             return ['error' => 'Kon afbeelding niet laden.', 'size_original' => $originalSize];
         }
-
-        // Save optimized JPEG (best compatibility)
         $optimizedPath = str_replace('.' . $ext, '_optimized.jpg', $imagePath);
         imagejpeg($image, $optimizedPath, $quality);
         imagedestroy($image);
-
         $newSize = filesize($optimizedPath);
         $saved = $originalSize - $newSize;
         $savedPercent = $originalSize > 0 ? round(($saved / $originalSize) * 100, 1) : 0;
-
-        // Replace original with optimized
         @unlink($imagePath);
         rename($optimizedPath, $imagePath);
-
         return [
             'success' => true,
             'size_original' => $originalSize,
@@ -244,12 +277,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $time_end = isset($_POST['add_end_time']) && !empty($_POST['time_end']) ? $_POST['time_end'] : null;
         $description = sanitizeEditorBlockInput($_POST['description'] ?? '');
         $eventSummary = sanitizeEditorBlockInput($_POST['event_summary'] ?? '');
-        $meerInfo = sanitizeEditorBlockInput($_POST['meer_info'] ?? '');
         $location = sanitizeEditorPlainText($_POST['location'] ?? '');
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
         $signupEmbed = trim((string)($_POST['signup_embed'] ?? ''));
         $showOnHomepage = isset($_POST['show_on_homepage']) ? 1 : 0;
-        // $infoLink verwijderd
+        $infoLink = $_POST['info_link'] ?? '';
 
         if ($date === '') {
             $message = 'Datum is verplicht.';
@@ -274,8 +306,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         : null;
 
                     // voeg updated_at en updated_by toe bij insert
-                    $stmt = $pdo->prepare('INSERT INTO events (title, date, end_date, time, time_end, description, event_summary, meer_info, image, event_gallery, location, show_signup_button, signup_embed, show_on_homepage, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)');
-                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $location ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser]);
+                    $stmt = $pdo->prepare('INSERT INTO events (title, date, end_date, time, time_end, description, event_summary, image, event_gallery, location, show_signup_button, signup_embed, show_on_homepage, info_link, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)');
+                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $imageName, $galleryJson, $location ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $infoLink, $currentUser]);
                     $eventId = $pdo->lastInsertId();
                     // Audit log: event created
                     audit_log($pdo, 'create', 'events', $eventId, 'title: ' . $title, $currentUser);
@@ -294,12 +326,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $time_end = isset($_POST['add_end_time']) && !empty($_POST['time_end']) ? $_POST['time_end'] : null;
         $description = sanitizeEditorBlockInput($_POST['description'] ?? '');
         $eventSummary = sanitizeEditorBlockInput($_POST['event_summary'] ?? '');
-        $meerInfo = sanitizeEditorBlockInput($_POST['meer_info'] ?? '');
         $location = sanitizeEditorPlainText($_POST['location'] ?? '');
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
         $signupEmbed = trim((string)($_POST['signup_embed'] ?? ''));
         $showOnHomepage = isset($_POST['show_on_homepage']) ? 1 : 0;
-        // $infoLink verwijderd
+        $infoLink = $_POST['info_link'] ?? '';
         $removeImage = isset($_POST['remove_image']) ? 1 : 0;
 
         if ($date === '') {
@@ -345,8 +376,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         : null;
 
                     // update nu ook updated_at en updated_by
-                    $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, end_date=?, time=?, time_end=?, description=?, event_summary=?, meer_info=?, image=?, event_gallery=?, location=?, show_signup_button=?, signup_embed=?, show_on_homepage=?, updated_at=NOW(), updated_by=? WHERE id=?');
-                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $location ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser, $id]);
+                    $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, end_date=?, time=?, time_end=?, description=?, event_summary=?, image=?, event_gallery=?, location=?, show_signup_button=?, signup_embed=?, show_on_homepage=?, info_link=?, updated_at=NOW(), updated_by=? WHERE id=?');
+                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $imageName, $galleryJson, $location ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $infoLink, $currentUser, $id]);
                     // Audit log: event updated
                     audit_log($pdo, 'update', 'events', $id, 'title: ' . $title, $currentUser);
 
@@ -1388,15 +1419,9 @@ if ($page === 'users') {
                             </div>
 
                             <div>
-                                <label class="form-label">Meer info tekst (optioneel)</label>
-                                <textarea name="meer_info" rows="5" class="form-textarea"><?php echo htmlspecialchars($editEvent['meer_info'] ?? ''); ?></textarea>
-                                <p class="text-xs text-gray-500 mt-2">Deze tekst wordt op de evenement detailpagina getoond boven de samenvatting.</p>
-                            </div>
-
-                            <div>
                                 <label class="form-label">Samenvatting na afloop (optioneel)</label>
                                 <textarea name="event_summary" rows="5" class="form-textarea"><?php echo htmlspecialchars($editEvent['event_summary'] ?? ''); ?></textarea>
-                                <p class="text-xs text-gray-500 mt-2">Deze samenvatting wordt op de evenement detailpagina getoond zodra deze is ingevuld en het evenement voorbij is.</p>
+                                <p class="text-xs text-gray-500 mt-2">Deze samenvatting wordt op de evenement detailpagina getoond zodra deze is ingevuld.</p>
                             </div>
 
                             <div>
@@ -1430,7 +1455,22 @@ if ($page === 'users') {
                                     </div>
                                 <?php endif; ?>
                             </div>
-                            <!-- Meer info link veld verwijderd -->
+                            <div>
+                                <label class="form-label" for="info_link">Meer info link (optioneel):</label>
+                                <input
+                                    type="url"
+                                    name="info_link"
+                                    id="info_link"
+                                    class="form-input admin-input-surface"
+                                    value="<?php echo htmlspecialchars($editEvent['info_link'] ?? ''); ?>"
+                                    placeholder="https://voorbeeld.nl"
+                                />
+                                <?php if (!empty($editEvent['info_link'])): ?>
+                                    <a href="<?php echo htmlspecialchars($editEvent['info_link']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-info bg-[#00811F] text-white px-3 py-1 rounded shadow hover:bg-[#00691A] transition mt-2 inline-block">
+                                        <i class="fa-solid fa-circle-info mr-1"></i> Meer info
+                                    </a>
+                                <?php endif; ?>
+                            </div>
 
                             <div>
                                 <label class="form-label" for="signup_embed">Aanmelder.nl link (optioneel):</label>
@@ -1523,12 +1563,6 @@ if ($page === 'users') {
                             </div>
 
                             <div>
-                                <label class="form-label">Meer info tekst (optioneel)</label>
-                                <textarea name="meer_info" rows="5" class="form-textarea"><?php echo htmlspecialchars($_POST['meer_info'] ?? ''); ?></textarea>
-                                <p class="text-xs text-gray-500 mt-2">Deze tekst wordt op de evenement detailpagina getoond boven de samenvatting.</p>
-                            </div>
-
-                            <div>
                                 <label class="form-label">Samenvatting na afloop (optioneel)</label>
                                 <textarea name="event_summary" rows="5" class="form-textarea"><?php echo htmlspecialchars($_POST['event_summary'] ?? ''); ?></textarea>
                                 <p class="text-xs text-gray-500 mt-2">Deze samenvatting wordt op de evenement detailpagina getoond zodra deze is ingevuld.</p>
@@ -1543,7 +1577,17 @@ if ($page === 'users') {
                                 <label class="form-label">Foto's tijdens event (optioneel, meerdere bestanden)</label>
                                 <input type="file" name="gallery_images[]" accept="image/*" multiple class="form-input" />
                             </div>
-                            <!-- Meer info link veld verwijderd -->
+                            <div>
+                                <label class="form-label" for="info_link">Meer info link (optioneel):</label>
+                                <input
+                                    type="url"
+                                    name="info_link"
+                                    id="info_link"
+                                    class="form-input admin-input-surface"
+                                    value=""
+                                    placeholder="https://voorbeeld.nl"
+                                />
+                            </div>
 
                             <div>
                                 <label class="form-label" for="signup_embed">Aanmelder.nl link (optioneel):</label>
@@ -1628,7 +1672,11 @@ if ($page === 'users') {
                                             <?php if ($eventGalleryCount > 0): ?>
                                                 <p class="text-sm text-gray-600 mt-1"><strong>Eventfoto's:</strong> <?php echo (int)$eventGalleryCount; ?></p>
                                             <?php endif; ?>
-                                            <!-- Meer info link verwijderd uit event overzicht -->
+                                            <?php if (!empty($event['info_link'])): ?>
+                                                <a href="<?php echo htmlspecialchars($event['info_link']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-info bg-[#00811F] text-white px-3 py-1 rounded shadow hover:bg-[#00691A] transition mt-2 inline-block">
+                                                    <i class="fa-solid fa-circle-info mr-1"></i> Meer info
+                                                </a>
+                                            <?php endif; ?>
                                         </div>
                                         <div class="admin-row-actions flex gap-2 flex-shrink-0">
                                             <?php if (!empty($event['image'])): ?>
@@ -2452,27 +2500,23 @@ if ($page === 'users') {
     }
 
     function resolveImageSrc(form) {
-        // 1. Als er een nieuwe afbeelding gekozen is, toon die
         const imageInput = getFieldInput(form, 'image');
-        if (imageInput && imageInput.files && imageInput.files.length > 0) {
+        if (imageInput && imageInput.files && imageInput.files.length) {
             clearImagePreview();
             currentImageUrl = URL.createObjectURL(imageInput.files[0]);
             return currentImageUrl;
         }
 
-        // 2. Als "verwijder afbeelding" is aangevinkt, geen afbeelding tonen
         const removeImage = getFieldInput(form, 'remove_image');
         if (removeImage && removeImage.checked) {
             return '';
         }
 
-        // 3. Bij bewerken: bestaande afbeelding tonen als die er is
         const existingImage = getFieldValue(form, 'existing_image').trim();
         if (existingImage) {
             return 'uploads/' + existingImage;
         }
 
-        // 4. Geen afbeelding
         return '';
     }
 
@@ -2520,12 +2564,11 @@ if ($page === 'users') {
                             '<i class="fa-regular fa-calendar text-[#00811F] ml-[2px] text-3xl"></i>' +
                             '<p class="text-gray-700"><strong> Wanneer:</strong> ' + escapeHtml(dateDisplay || startDate) + (endDateDisplay ? ' t/m ' + escapeHtml(endDateDisplay) : '') + '</p>' +
                         '</div>' +
-                        ((startTime || endTime)
-                            ? ('<div class="flex items-center space-x-3">' +
-                                '<i class="fa-solid fa-clock text-[#00811F] ml-[2px] text-3xl"></i>' +
-                                '<p class="text-gray-700"><strong>Hoelaat:</strong> ' + escapeHtml(startTime) + (endTime ? ' - ' + escapeHtml(endTime) : '') + '</p>' +
-                            '</div>')
-                            : '') +
+                        ((startTime || endTime) ?
+                        '<div class="flex items-center space-x-3">' +
+                            '<i class="fa-solid fa-clock text-[#00811F] ml-[2px] text-3xl"></i>' +
+                            '<p class="text-gray-700"><strong>Hoelaat:</strong> ' + escapeHtml(startTime) + (endTime ? ' - ' + escapeHtml(endTime) : '') + '</p>' +
+                        </div> : '') +
                         '<div class="flex items-center space-x-3">' +
                             '<i class="fa-solid fa-location-dot text-[#00811F] ml-1 text-3xl"></i>' +
                             '<p class="text-gray-700 ml-1"><strong>Waar:</strong> <a href="' + escapeHtml(mapUrl) + '" target="_blank" rel="noopener noreferrer" class="underline hover:text-[#00811F]">' + escapeHtml(location) + '</a></p>' +
@@ -2533,18 +2576,10 @@ if ($page === 'users') {
                         '<div class="flex mb-6 space-x-3">' +
                             '<i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>' +
                             '<div class="text-gray-700 pb-3"><strong> Wat:</strong><div class="mt-1">' + descriptionHtml + '</div></div>' +
-                        '</div>' +
-                    '</div>' +
-                    (hasEmbed
-                        ? '<div class="mt-4 rounded-md border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-600">Aanmelder.nl embed wordt na opslaan getoond.</div>'
-                        : (hasSignup
-                            ? '<a href="#" onclick="return false;" class="mt-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">Inschrijven</a>'
-                            : '')
-                    ) +
-                    (infoLink
-                        ? '<a href="' + escapeHtml(infoLink) + '" target="_blank" rel="noopener noreferrer" class="mt-4 ml-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">Meer info</a>'
-                        : ''
-                    ) +
+                        </div>' +
+                    </div>' +
+                    (hasEmbed ? '<div class="mt-4 rounded-md border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-600">Aanmelder.nl embed wordt na opslaan getoond.</div>' : (hasSignup ? '<a href="#" onclick="return false;" class="mt-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">Inschrijven</a>' : '')) +
+                    (infoLink ? '<a href="' + escapeHtml(infoLink) + '" target="_blank" rel="noopener noreferrer" class="mt-4 ml-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">Meer info</a>' : '') +
                 '</div>' +
                 (imageSrc ? '<div class="flex-1"><img src="' + escapeHtml(imageSrc) + '" alt="" class="w-full h-auto object-cover shadow-md"></div>' : '') +
             '</section>';
@@ -2626,32 +2661,23 @@ if ($page === 'users') {
 
     previewButtons.forEach(function (button) {
         button.addEventListener('click', function () {
-            try {
-                console.log('[Preview] Preview-knop geklikt');
-                const form = button.closest('form.js-content-preview-form');
-                if (!form) {
-                    console.warn('[Preview] Geen formulier gevonden voor preview');
-                    return;
-                }
+            const form = button.closest('form.js-content-preview-form');
+            if (!form) return;
 
-                // Sync TinyMCE editors back naar textarea values
-                if (window.tinymce && typeof window.tinymce.triggerSave === 'function') {
-                    window.tinymce.triggerSave();
-                }
-
-                renderPreview(form);
-
-                if (renderedEl && renderedEl.textContent.trim() !== '') {
-                    emptyEl.classList.add('hidden');
-                } else {
-                    emptyEl.classList.remove('hidden');
-                }
-
-                openModal();
-            } catch (e) {
-                console.error('[Preview] Fout bij tonen preview:', e);
-                alert('Er is een fout opgetreden bij het tonen van de preview. Zie de console voor details.');
+            // Sync TinyMCE editors back to their textarea values before reading fields.
+            if (window.tinymce && typeof window.tinymce.triggerSave === 'function') {
+                window.tinymce.triggerSave();
             }
+
+            renderPreview(form);
+
+            if (renderedEl && renderedEl.textContent.trim() !== '') {
+                emptyEl.classList.add('hidden');
+            } else {
+                emptyEl.classList.remove('hidden');
+            }
+
+            openModal();
         });
     });
 })();

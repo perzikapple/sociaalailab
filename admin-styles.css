@@ -64,11 +64,11 @@ body.admin-page::before {
     padding: 1.5rem 0;
     border-bottom: 1px solid rgba(46, 125, 50, 0.15);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 2001;
 }
 
 body.admin-page main {
     margin-top: 10px; /* minimal gap between header and page content */
-    z-index: auto;
 }
 
 .admin-header > div {
@@ -1057,11 +1057,6 @@ main {
         top: 110px;
         height: calc(100vh - 140px);
     }
-
-    /* Hide mobile toggle button on desktop */
-    .sidebar-toggle-btn {
-        display: none;
-    }
 }
 
 
@@ -1265,11 +1260,26 @@ main {
         top: auto;
         width: 48px;
         height: 48px;
-        z-index: 2100;  /* ← was 1101, must be > sidebar's z-index: 2000 */
+        z-index: 1101;
     }
 
     .admin-layout-grid {
         grid-template-columns: 1fr;
+    }
+
+    /* Ensure navbar stays above sidebar on mobile */
+    .admin-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        z-index: 2001;
+    }
+
+    /* Add top padding to main content to account for fixed header */
+    body.admin-page main {
+        margin-top: 80px;
     }
 }
 
