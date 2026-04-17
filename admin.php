@@ -1396,7 +1396,7 @@ if ($page === 'users') {
                             <div>
                                 <label class="form-label">Samenvatting na afloop (optioneel)</label>
                                 <textarea name="event_summary" rows="5" class="form-textarea"><?php echo htmlspecialchars($editEvent['event_summary'] ?? ''); ?></textarea>
-                                <p class="text-xs text-gray-500 mt-2">Deze samenvatting wordt op de evenement detailpagina getoond zodra deze is ingevuld.</p>
+                                <p class="text-xs text-gray-500 mt-2">Deze samenvatting wordt op de evenement detailpagina getoond zodra deze is ingevuld en het evenement voorbij is.</p>
                             </div>
 
                             <div>
