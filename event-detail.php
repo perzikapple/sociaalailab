@@ -192,22 +192,24 @@ include __DIR__ . '/navbar.php';
                 </div>
             <?php endif; ?>
 
-            <?php if (!empty($event['meer_info'])): ?>
-                <div class="bg-gray-50 border border-gray-200 rounded-md p-6 mb-6">
-                    <h2 class="text-2xl font-semibold mb-3 text-gray-900">Meer info</h2>
-                    <div class="text-gray-700 leading-relaxed"><?php echo renderEditorBlock($event['meer_info']); ?></div>
-                </div>
-            <?php endif; ?>
 
             <div class="bg-gray-50 border border-gray-200 rounded-md p-6 mb-6">
-                <h2 class="text-2xl font-semibold mb-3 text-gray-900">Samenvatting</h2>
-                <?php if ($eventSummary !== ''): ?>
-                    <div class="text-gray-700 leading-relaxed"><?php echo renderEditorBlock($eventSummary); ?></div>
-                <?php elseif ($isPastEvent): ?>
-                    <p class="text-gray-700 leading-relaxed">Samenvatting volgt binnenkort.</p>
+                <h2 class="text-2xl font-semibold mb-3 text-gray-900"><?php echo $isPastEvent ? 'Samenvatting' : 'Meer info'; ?></h2>
+                <div class="text-gray-700 leading-relaxed">
+                <?php if ($isPastEvent): ?>
+                    <?php if ($eventSummary !== ''): ?>
+                        <?php echo renderEditorBlock($eventSummary); ?>
+                    <?php else: ?>
+                        <p>Samenvatting volgt binnenkort.</p>
+                    <?php endif; ?>
                 <?php else: ?>
-                    <p class="text-gray-700 leading-relaxed">Na afloop van dit evenement verschijnt hier een samenvatting.</p>
+                    <?php if (!empty($event['meer_info'])): ?>
+                        <?php echo renderEditorBlock($event['meer_info']); ?>
+                    <?php else: ?>
+                        <p>Meer informatie over dit evenement volgt binnenkort.</p>
+                    <?php endif; ?>
                 <?php endif; ?>
+                </div>
             </div>
 
             <?php if (!empty($galleryImages)): ?>
