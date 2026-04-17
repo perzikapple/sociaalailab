@@ -371,7 +371,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     <div class="week-header">
                         <div class="time-slot-header"></div>
                         <?php for ($hour = 8; $hour < 18; $hour++): ?>
-                            <div class="week-time-header" style="grid-column: span 2;"><?php echo str_pad($hour, 2, '0', STR_PAD_LEFT) . ':00'; ?></div>
+                            <div class="week-time-header" style="grid-column: span 1;"><?php echo str_pad($hour, 2, '0', STR_PAD_LEFT) . ':00'; ?></div>
                         <?php endfor; ?>
                     </div>
                     
@@ -383,54 +383,78 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             $dayName = $dayObj->format('l');
                             $dayNum = $dayObj->format('d');
                             ?>
-                            <div class="week-day-row">
-                                <div class="week-day-label" onclick="window.location.href='?view=day&date=<?php echo $dateStr; ?>'">
+                            <div class="week-day-container">
+                                <div class="week-day-label-wrapper" onclick="window.location.href='?view=day&date=<?php echo $dateStr; ?>'">
                                     <div class="week-day-name"><?php echo substr($dayName, 0, 3); ?></div>
                                     <div class="week-day-number"><?php echo $dayNum; ?></div>
                                 </div>
                                 
-                                <?php for ($hour = 8; $hour < 18; $hour++): ?>
-                                    <?php foreach ($locations as $location): ?>
+                                <?php foreach ($locations as $location): ?>
+                                    <div class="week-day-row">
                                         <?php 
-                                        $currentTimeStart = str_pad($hour, 2, '0', STR_PAD_LEFT) . ':00';
-                                        $currentTimeEnd = str_pad($hour + 1, 2, '0', STR_PAD_LEFT) . ':00';
-                                        $dayBookings = array_filter($bookings, function($booking) use ($dateStr, $location, $currentTimeStart, $currentTimeEnd) {
-                                            if ($booking['booking_date'] !== $dateStr || $booking['location_id'] !== $location['id']) {
-                                                return false;
-                                            }
-                                            // Check if booking overlaps with this hour
+                                        // Get all bookings for this day and location
+                                        $dayLocationBookings = array_filter($bookings, function($booking) use ($dateStr, $location) {
+                                            return $booking['booking_date'] === $dateStr && $booking['location_id'] === $location['id'];
+                                        });
+                                        
+                                        // Track which hours are already rendered
+                                        $renderedHours = [];
+                                        
+                                        // First, render all bookings
+                                        foreach ($dayLocationBookings as $booking) {
                                             $startTime = $booking['start_time'] ?? '';
                                             $endTime = $booking['end_time'] ?? '';
-                                            if (!$startTime || !$endTime) return false;
+                                            if (!$startTime || !$endTime) continue;
                                             
-                                            return $startTime < $currentTimeEnd && $endTime > $currentTimeStart;
-                                        });
-                                        ?>
-                                        <div class="week-time-slot">
-                                            <?php if (!empty($dayBookings)): ?>
-                                                <?php foreach ($dayBookings as $booking): ?>
-                                                    <div class="booked-slot" style="background-color: <?php echo htmlspecialchars($location['color']); ?>">
-                                                        <?php
-                                                            $hardwareList = json_decode($booking['hardware_ids'] ?? '[]', true);
-                                                            if (!empty($hardwareList)) {
-                                                                $hardwareItems = [];
-                                                                foreach ($hardwareList as $hw_id) {
-                                                                    $hw = findById($hardware, $hw_id);
-                                                                    if ($hw) $hardwareItems[] = $hw['name'];
-                                                                }
-                                                                if (!empty($hardwareItems)) {
-                                                                    echo '<small>' . htmlspecialchars(implode(', ', $hardwareItems)) . '</small>';
-                                                                }
-                                                            }
-                                                            ?>
+                                            // Parse hours
+                                            $startHour = (int)substr($startTime, 0, 2);
+                                            $endHour = (int)substr($endTime, 0, 2);
+                                            
+                                            // Calculate span (number of hours)
+                                            $hoursSpan = max(1, $endHour - $startHour);
+                                            
+                                            // Mark hours as rendered
+                                            for ($h = $startHour; $h < $endHour && $h < 18; $h++) {
+                                                $renderedHours[$h] = true;
+                                            }
+                                            
+                                            // Calculate grid column position (8:00 is column 1, so hour 8 = column 1)
+                                            $colStart = $startHour - 8 + 1;
+                                            ?>
+                                            <div class="booked-slot-container" style="grid-column: <?php echo $colStart; ?> / span <?php echo $hoursSpan; ?>; background-color: #2D9EE4;">
+                                                <div class="booked-slot">
+                                                    <div class="booking-time">
+                                                        <?php echo htmlspecialchars($startTime); ?> - <?php echo htmlspecialchars($endTime); ?>
                                                     </div>
-                                                <?php endforeach; ?>
-                                            <?php else: ?>
-                                                <div class="empty-slot"></div>
+                                                    <div class="booking-location">
+                                                        <?php echo htmlspecialchars($location['name']); ?>
+                                                    </div>
+                                                    <?php
+                                                        $hardwareList = json_decode($booking['hardware_ids'] ?? '[]', true);
+                                                        if (!empty($hardwareList)) {
+                                                            $hardwareItems = [];
+                                                            foreach ($hardwareList as $hw_id) {
+                                                                $hw = findById($hardware, $hw_id);
+                                                                if ($hw) $hardwareItems[] = $hw['name'];
+                                                            }
+                                                            if (!empty($hardwareItems)) {
+                                                                echo '<div class="booking-hardware-info"><small>' . htmlspecialchars(implode(', ', $hardwareItems)) . '</small></div>';
+                                                            }
+                                                        }
+                                                        ?>
+                                                </div>
+                                            </div>
+                                        <?php }
+                                        
+                                        // Then render empty slots for non-booked hours
+                                        for ($hour = 8; $hour < 18; $hour++): ?>
+                                            <?php if (!isset($renderedHours[$hour])): ?>
+                                                <div class="week-time-slot empty-slot"></div>
                                             <?php endif; ?>
-                                        </div>
-                                    <?php endforeach; ?>
-                                <?php endfor; ?>
+                                        <?php endfor; ?>
+                                    </div>
+                                <?php endforeach; ?>
+
                             </div>
                         <?php endfor; ?>
                     </div>
