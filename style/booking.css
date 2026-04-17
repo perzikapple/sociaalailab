@@ -589,6 +589,24 @@ body {
     color: #666;
 }
 
+/* Make time input fields more readable by changing background and text color */
+input[type="time"] {
+    background: #eaf6fd;
+    color: #256080;
+    border: 1.5px solid #2D9EE4;
+    border-radius: 1.2rem;
+    font-size: 1.08rem;
+    padding: 0.6rem 1.2rem;
+    box-shadow: 0 2px 8px #2d9ee41a;
+    transition: border 0.2s, box-shadow 0.2s;
+}
+
+input[type="time"]:focus {
+    border: 1.5px solid #3BBFDA;
+    outline: none;
+    background: #dbeafe;
+}
+
 /* Responsive adjustments */
 @media (max-width: 1200px) {
 
@@ -632,6 +650,24 @@ body {
 
     .empty-slot {
         min-height: 80px;
+    }
+
+    /* Calendar cell premium style fix for better proportions */
+    .calendar-table tbody td {
+        max-width: 140px;
+        min-width: 100px;
+        width: 12vw;
+        height: 90px;
+        background: rgba(255, 255, 255, 0.92);
+        border: 1.5px solid #e0eaff;
+        border-radius: 18px;
+        padding: 0.7rem 0.3rem;
+        vertical-align: top;
+        cursor: pointer;
+        position: relative;
+        box-shadow: 0 2px 8px rgba(45, 158, 228, 0.06);
+        transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
+        overflow: hidden;
     }
 }
 
@@ -704,6 +740,15 @@ body {
 
     .empty-slot {
         min-height: 70px;
+    }
+
+    /* Calendar cell premium style fix for better proportions */
+    .calendar-table tbody td {
+        max-width: 50px;
+        min-width: 36px;
+        width: 8vw;
+        height: 40px;
+        font-size: 0.7rem;
     }
 }
 
@@ -893,11 +938,14 @@ body {
    DAYS
 ========================= */
 .calendar-table tbody td {
+    max-width: 140px;
+    min-width: 100px;
+    width: 12vw;
+    height: 90px;
     background: rgba(255, 255, 255, 0.92);
     border: 1.5px solid #e0eaff;
     border-radius: 18px;
-    padding: 0.85rem;
-    height: 130px;
+    padding: 0.7rem 0.3rem;
     vertical-align: top;
     cursor: pointer;
     position: relative;
