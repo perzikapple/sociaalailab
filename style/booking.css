@@ -607,12 +607,11 @@ input::placeholder {
 
 .day-cell.today {
     background: linear-gradient(135deg, #e8f2ff 0%, #eef6ff 100%);
-    border: 2px solid #00811F;
 }
 
 .day-cell.today .day-number {
     font-weight: 700;
-    color: #006f19;
+    color: #00811F;
 }
 
 .day-cell.selected {

@@ -12,7 +12,7 @@ $currentMonth = $_GET['month'] ?? date('n');
 $currentYear = $_GET['year'] ?? date('Y');
 $view = $_GET['view'] ?? 'week';
 $selectedDate = $_GET['date'] ?? date('Y-m-d');
-$selectedDay = $_GET['selected_day'] ?? null;
+$selectedDay = $_GET['selected_day'] ?? date('Y-m-d');
 
 $selectedDateTime = new DateTime($selectedDate);
 $weekStart = (clone $selectedDateTime)->modify('monday this week');
@@ -73,44 +73,40 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <header class="topbar">
     <div class="logo"><i class="fa fa-calendar"></i> Booking</div>
     <div class="nav">
-        <a href="?view=week&date=<?= $selectedDate ?>">Week</a>
-        <a href="?view=day&date=<?= $selectedDate ?>">Dag</a>
+        <a href="index.php">Terug naar site</a>
+        <a href="admin.php">Terug naar admin</a>
+        <a href="logout.php">Uitloggen</a>
     </div>
 </header>
 
 <div class="container">
 
-    <!-- CALENDAR -->
-    <section class="card">
-        <h2>Planning</h2>
-
-        <div class="calendar">
-            <?php for ($i=0;$i<7;$i++):
-                $d = (clone $weekStart)->modify("+$i day");
-                $date = $d->format('Y-m-d');
-                ?>
-                <a class="day" href="?view=day&date=<?= $date ?>">
-                    <span><?= $d->format('D') ?></span>
-                    <strong><?= $d->format('d') ?></strong>
-                </a>
-            <?php endfor; ?>
-        </div>
-    </section>
-
     <!-- BOOKINGS -->
     <section class="card">
-        <h2>Boekingen</h2>
+        <h2>Boekingen <?php if ($selectedDay): ?> - <?= date('d F Y', strtotime($selectedDay)) ?><?php endif; ?></h2>
 
-        <?php foreach ($bookings as $b): ?>
-            <?php $loc = findById($locations, $b['location_id']); ?>
-            <div class="booking">
-                <div class="bar" style="background:<?= $loc['color'] ?>"></div>
-                <div>
-                    <strong><?= $loc['name'] ?></strong><br>
-                    <?= $b['booking_date'] ?> | <?= $b['start_time'] ?> - <?= $b['end_time'] ?>
+        <?php 
+        $dayBookings = array_filter($bookings, function($b) use ($selectedDay) {
+            return $selectedDay && $b['booking_date'] === $selectedDay;
+        });
+        
+        if ($selectedDay && empty($dayBookings)): 
+        ?>
+            <p style="color: #999; text-align: center; padding: 2rem;">Geen boekingen op deze dag</p>
+        <?php elseif (!$selectedDay): ?>
+            <p style="color: #999; text-align: center; padding: 2rem;">Selecteer een dag om boekingen te zien</p>
+        <?php else: ?>
+            <?php foreach ($dayBookings as $b): ?>
+                <?php $loc = findById($locations, $b['location_id']); ?>
+                <div class="booking">
+                    <div class="bar" style="background:<?= $loc['color'] ?>"></div>
+                    <div>
+                        <strong><?= $loc['name'] ?></strong><br>
+                        <?= $b['start_time'] ?> - <?= $b['end_time'] ?>
+                    </div>
                 </div>
-            </div>
-        <?php endforeach; ?>
+            <?php endforeach; ?>
+        <?php endif; ?>
     </section>
 
     <!-- MONTH CALENDAR -->
@@ -118,9 +114,16 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <div class="calendar-header">
             <h2>Kalender <?= date('F Y', mktime(0, 0, 0, $currentMonth, 1, $currentYear)) ?></h2>
             <div class="nav-buttons">
-                <a href="?month=<?= ($currentMonth - 1 ?: 12) ?>&year=<?= ($currentMonth - 1 ? $currentYear : $currentYear - 1) ?>" class="btn-nav"><i class="fa fa-chevron-left"></i></a>
+                <?php 
+                $prevMonth = $currentMonth - 1 ?: 12;
+                $prevYear = $currentMonth - 1 ? $currentYear : $currentYear - 1;
+                $nextMonth = ($currentMonth % 12) + 1;
+                $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
+                $selectedDayParam = $selectedDay ? "&selected_day=$selectedDay" : '';
+                ?>
+                <a href="?month=<?= $prevMonth ?>&year=<?= $prevYear ?><?= $selectedDayParam ?>" class="btn-nav"><i class="fa fa-chevron-left"></i></a>
                 <a href="?month=<?= date('n') ?>&year=<?= date('Y') ?>" class="btn-nav">Vandaag</a>
-                <a href="?month=<?= ($currentMonth % 12) + 1 ?>&year=<?= ($currentMonth == 12 ? $currentYear + 1 : $currentYear) ?>" class="btn-nav"><i class="fa fa-chevron-right"></i></a>
+                <a href="?month=<?= $nextMonth ?>&year=<?= $nextYear ?><?= $selectedDayParam ?>" class="btn-nav"><i class="fa fa-chevron-right"></i></a>
             </div>
         </div>
 
@@ -160,7 +163,7 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             $isToday = $dateStr === date('Y-m-d') ? 'today' : '';
                             $isSelected = $dateStr === $selectedDay ? 'selected' : '';
                             $hasBooking = in_array($dateStr, $daysWithBookings) ? 'has-booking' : '';
-                            echo "<td class=\"day-cell $isToday $isSelected $hasBooking\" onclick=\"showDayDetails('$dateStr')\" style=\"cursor: pointer;\">";
+                            echo "<td class=\"day-cell $isToday $isSelected $hasBooking\" onclick=\"selectDay('$dateStr', $currentMonth, $currentYear)\" style=\"cursor: pointer;\">";
                             echo "<span class=\"day-number\">$day</span>";
                             if ($hasBooking) {
                                 echo "<div class=\"booking-indicator\"></div>";
@@ -284,6 +287,11 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <script>
 let currentOpenDay = null;
 
+function selectDay(dateStr, month, year) {
+    // Update URL to include selected_day parameter
+    window.location.href = `?month=${month}&year=${year}&selected_day=${dateStr}`;
+}
+
 function showDayDetails(dateStr) {
     // Close any previously open day details
     if (currentOpenDay) {
@@ -341,6 +349,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const selectedDay = '<?= $selectedDay ?>';
     if (selectedDay) {
         document.getElementById('booking_date').value = selectedDay;
+        
+        // Also open the day details automatically
+        showDayDetails(selectedDay);
     }
 });
 </script>
