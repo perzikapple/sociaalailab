@@ -42,6 +42,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $bookingStartTime = $_POST['start_time'];
     $bookingEndTime = $_POST['end_time'];
     $locationId = $_POST['location_id'];
+
+    // Alleen boekingen tussen 08:00 en 18:00 toestaan
+    if ($bookingStartTime < '08:00' || $bookingEndTime > '18:00') {
+        $message = "Boeken is alleen mogelijk tussen 08:00 en 18:00.";
+    } else {
     
     // Check for conflicting bookings
     $conflict = false;
@@ -61,19 +66,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
-    if (!$conflict) {
-        $stmt = $pdo->prepare("INSERT INTO bookings (location_id, booking_date, start_time, end_time, hardware_ids)
-        VALUES (?, ?, ?, ?, ?)");
-        $stmt->execute([
-                $locationId,
-                $bookingDate,
-                $bookingStartTime,
-                $bookingEndTime,
-                json_encode($_POST['hardware'] ?? [])
-        ]);
+        if (!$conflict) {
+            $stmt = $pdo->prepare("INSERT INTO bookings (location_id, booking_date, start_time, end_time, hardware_ids)
+            VALUES (?, ?, ?, ?, ?)");
+            $stmt->execute([
+                    $locationId,
+                    $bookingDate,
+                    $bookingStartTime,
+                    $bookingEndTime,
+                    json_encode($_POST['hardware'] ?? [])
+            ]);
 
-        header("Location: booking.php?view=$view&date=$selectedDate");
-        exit;
+            header("Location: booking.php?view=$view&date=$selectedDate");
+            exit;
+        }
     }
 }
 
@@ -317,8 +323,8 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
             </select>
 
             <div class="row">
-                <input type="time" name="start_time" id="start_time" required>
-                <input type="time" name="end_time" id="end_time" required>
+                <input type="time" name="start_time" id="start_time" required min="08:00" max="18:00">
+                <input type="time" name="end_time" id="end_time" required min="08:00" max="18:00">
             </div>
 
             <div class="chips">
