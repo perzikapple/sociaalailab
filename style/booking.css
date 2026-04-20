@@ -440,5 +440,337 @@ input::placeholder {
         bottom: 1rem;
         right: 1rem;
     }
+
+    /* Month Calendar Responsive */
+    .month-calendar {
+        font-size: 0.8rem;
+    }
+
+    .month-calendar th {
+        padding: 0.5rem;
+    }
+
+    .month-calendar td {
+        padding: 0.5rem;
+    }
+
+    .day-number {
+        font-size: 0.9rem;
+    }
+
+    /* Time Schedule Responsive */
+    .time-slot {
+        padding: 0.8rem;
+        font-size: 0.85rem;
+    }
+
+    .time-slot .time {
+        font-size: 0.8rem;
+    }
+
+    .time-slot .status {
+        font-size: 0.7rem;
+    }
+}
+
+/* MONTH CALENDAR */
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.calendar-header h2 {
+    margin: 0;
+    color: #00811F;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.nav-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-nav {
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, #f0f5ff 0%, #eef6ff 100%);
+    border: 2px solid #dfe8f3;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #00811F;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-nav:hover {
+    background: linear-gradient(135deg, #e8f2ff 0%, #eef6ff 100%);
+    border-color: #00811F;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 129, 31, 0.15);
+}
+
+.month-calendar {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.month-calendar th {
+    background: linear-gradient(135deg, #f0f5ff 0%, #eef6ff 100%);
+    color: #00811F;
+    padding: 1rem;
+    font-weight: 700;
+    text-align: center;
+    border: 2px solid #dfe8f3;
+    font-size: 0.9rem;
+}
+
+.month-calendar td {
+    border: 2px solid #dfe8f3;
+    padding: 1rem;
+    height: 100px;
+    vertical-align: top;
+    background: white;
+    transition: all 0.3s ease;
+}
+
+.month-calendar td.empty {
+    background: #f9fafb;
+}
+
+.day-cell {
+    position: relative;
+}
+
+.day-number {
+    display: block;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #999;
+    cursor: pointer;
+    padding: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+    color: #00811F;
+}
+
+.day-details {
+    margin-top: 2rem;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.day-details-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.day-number {
+    display: block;
+    font-weight: 700;
+    color: #00811F;
+    text-decoration: none;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.day-cell:hover {
+    background: linear-gradient(135deg, #f5f9ff 0%, #f0f5ff 100%);
+    box-shadow: 0 4px 12px rgba(0, 129, 31, 0.1);
+    cursor: pointer;
+}
+
+.day-cell.today {
+    background: linear-gradient(135deg, #e8f2ff 0%, #eef6ff 100%);
+    border: 2px solid #00811F;
+}
+
+.day-cell.today .day-number {
+    font-weight: 700;
+    color: #006f19;
+}
+
+.day-cell.selected {
+    background: linear-gradient(135deg, #d4e8ff 0%, #d4e8ff 100%);
+    border: 2px solid #00811F;
+    box-shadow: inset 0 0 0 1px #00811F;
+}
+
+.day-cell.selected .day-number {
+    color: #006f19;
+    font-weight: 700;
+}
+
+.booking-indicator {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 8px;
+    height: 8px;
+    background: #00811F;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 129, 31, 0.3);
+}
+
+
+
+/* TIME SCHEDULE */
+.time-schedule {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    margin-top: 1rem;
+}
+
+.time-header {
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    gap: 1rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, #f0f5ff 0%, #eef6ff 100%);
+    border-radius: 10px;
+    font-weight: 700;
+    color: #00811F;
+    font-size: 0.9rem;
+}
+
+.time-slot {
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    gap: 1rem;
+    padding: 1rem;
+    border: 2px solid #dfe8f3;
+    border-radius: 10px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    align-items: center;
+}
+
+.time-slot:hover:not(.weekend):not(.booked) {
+    background: linear-gradient(135deg, #f0f5ff 0%, #eef6ff 100%);
+    border-color: #00811F;
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(0, 129, 31, 0.15);
+}
+
+.time-slot .time {
+    font-weight: 700;
+    color: #00811F;
+    font-size: 0.95rem;
+}
+
+.time-slot .status {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.time-slot.available {
+    background: linear-gradient(135deg, #f9fafb 0%, #f0f5ff 100%);
+    border-color: #dfe8f3;
+}
+
+.time-slot.available .status {
+    color: #00811F;
+    font-weight: 600;
+}
+
+.time-slot.booked {
+    background: linear-gradient(135deg, #fff3f3 0%, #fff0f0 100%);
+    border-color: #f0d4d4;
+    cursor: not-allowed;
+}
+
+.time-slot.booked .time,
+.time-slot.booked .status {
+    color: #999;
+}
+
+.time-slot.weekend {
+    background: linear-gradient(135deg, #f9fafb 0%, #f5f7fb 100%);
+    border-color: #dfe8f3;
+    cursor: not-allowed;
+}
+
+.time-slot.weekend .time,
+.time-slot.weekend .status {
+    color: #999;
+}
+
+.time-slot.selected {
+    background: linear-gradient(135deg, #d4e8ff 0%, #d4e8ff 100%);
+    border: 2px solid #00811F;
+    box-shadow: 0 4px 12px rgba(0, 129, 31, 0.2);
+}
+
+.time-slot.selected .time {
+    color: #006f19;
+    font-weight: 700;
+}
+
+.time-slot.selected .status {
+    color: #006f19;
+    font-weight: 700;
+}
+
+/* Responsive Month Calendar */
+@media (max-width: 768px) {
+    .calendar-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+
+    .month-calendar th,
+    .month-calendar td {
+        padding: 0.8rem 0.5rem;
+        height: auto;
+        min-height: 80px;
+    }
+
+    .day-cell a {
+        font-size: 1rem;
+    }
+
+    .time-header,
+    .time-slot {
+        grid-template-columns: 80px 1fr;
+        gap: 0.8rem;
+        padding: 0.8rem;
+    }
+
+    .time-slot .time {
+        font-size: 0.88rem;
+    }
+
+    .time-slot .status {
+        font-size: 0.85rem;
+    }
 }
 

@@ -12,6 +12,7 @@ $currentMonth = $_GET['month'] ?? date('n');
 $currentYear = $_GET['year'] ?? date('Y');
 $view = $_GET['view'] ?? 'week';
 $selectedDate = $_GET['date'] ?? date('Y-m-d');
+$selectedDay = $_GET['selected_day'] ?? null;
 
 $selectedDateTime = new DateTime($selectedDate);
 $weekStart = (clone $selectedDateTime)->modify('monday this week');
@@ -112,12 +113,142 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <?php endforeach; ?>
     </section>
 
+    <!-- MONTH CALENDAR -->
+    <section class="card">
+        <div class="calendar-header">
+            <h2>Kalender <?= date('F Y', mktime(0, 0, 0, $currentMonth, 1, $currentYear)) ?></h2>
+            <div class="nav-buttons">
+                <a href="?month=<?= ($currentMonth - 1 ?: 12) ?>&year=<?= ($currentMonth - 1 ? $currentYear : $currentYear - 1) ?>" class="btn-nav"><i class="fa fa-chevron-left"></i></a>
+                <a href="?month=<?= date('n') ?>&year=<?= date('Y') ?>" class="btn-nav">Vandaag</a>
+                <a href="?month=<?= ($currentMonth % 12) + 1 ?>&year=<?= ($currentMonth == 12 ? $currentYear + 1 : $currentYear) ?>" class="btn-nav"><i class="fa fa-chevron-right"></i></a>
+            </div>
+        </div>
+
+        <table class="month-calendar">
+            <thead>
+                <tr>
+                    <th>Ma</th>
+                    <th>Di</th>
+                    <th>Wo</th>
+                    <th>Do</th>
+                    <th>Vr</th>
+                    <th>Za</th>
+                    <th>Zo</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
+                $firstDay = mktime(0, 0, 0, $currentMonth, 1, $currentYear);
+                $lastDay = mktime(0, 0, 0, $currentMonth + 1, 0, $currentYear);
+                $daysInMonth = date('d', $lastDay);
+                $startWeekday = date('N', $firstDay) - 1;
+                
+                // Create array of dates with bookings
+                $daysWithBookings = [];
+                foreach ($bookings as $b) {
+                    $daysWithBookings[] = $b['booking_date'];
+                }
+                
+                $day = 1;
+                for ($i = 0; $i < 6; $i++) {
+                    echo "<tr>";
+                    for ($j = 0; $j < 7; $j++) {
+                        if (($i == 0 && $j < $startWeekday) || $day > $daysInMonth) {
+                            echo "<td class=\"empty\"></td>";
+                        } else {
+                            $dateStr = sprintf('%04d-%02d-%02d', $currentYear, $currentMonth, $day);
+                            $isToday = $dateStr === date('Y-m-d') ? 'today' : '';
+                            $isSelected = $dateStr === $selectedDay ? 'selected' : '';
+                            $hasBooking = in_array($dateStr, $daysWithBookings) ? 'has-booking' : '';
+                            echo "<td class=\"day-cell $isToday $isSelected $hasBooking\" onclick=\"showDayDetails('$dateStr')\" style=\"cursor: pointer;\">";
+                            echo "<span class=\"day-number\">$day</span>";
+                            if ($hasBooking) {
+                                echo "<div class=\"booking-indicator\"></div>";
+                            }
+                            echo "</td>";
+                            $day++;
+                        }
+                    }
+                    echo "</tr>";
+                    if ($day > $daysInMonth) break;
+                }
+                ?>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- TIME SCHEDULES FOR ALL DAYS (Hidden by default) -->
+    <?php
+    $firstDay = mktime(0, 0, 0, $currentMonth, 1, $currentYear);
+    $lastDay = mktime(0, 0, 0, $currentMonth + 1, 0, $currentYear);
+    $daysInMonth = date('d', $lastDay);
+    $startWeekday = date('N', $firstDay) - 1;
+    
+    $day = 1;
+    for ($i = 0; $i < 6; $i++) {
+        for ($j = 0; $j < 7; $j++) {
+            if (($i == 0 && $j < $startWeekday) || $day > $daysInMonth) {
+                // empty cells
+            } else {
+                $dateStr = sprintf('%04d-%02d-%02d', $currentYear, $currentMonth, $day);
+                $selectedDateObj = new DateTime($dateStr);
+                $dayOfWeek = $selectedDateObj->format('N');
+                $isWeekend = ($dayOfWeek >= 6);
+                ?>
+    <section class="card day-details" id="details-<?= $dateStr ?>" style="display: none;">
+        <div class="day-details-header">
+            <h2>Beschikbare uren - <?= date('d F Y', strtotime($dateStr)) ?></h2>
+            <button class="close-btn" onclick="closeDayDetails()"><i class="fa fa-times"></i></button>
+        </div>
+        
+        <div class="time-schedule">
+            <div class="time-header">
+                <span>Tijd</span>
+                <span>Beschikbaarheid</span>
+            </div>
+            
+            <?php
+            for ($hour = 8; $hour < 18; $hour++) {
+                $timeStart = sprintf('%02d:00', $hour);
+                $timeEnd = sprintf('%02d:00', $hour + 1);
+                
+                // Check if there's already a booking for this timeslot
+                $isBooked = false;
+                foreach ($bookings as $b) {
+                    if ($b['booking_date'] === $dateStr) {
+                        $bStart = (int)substr($b['start_time'], 0, 2);
+                        $bEnd = (int)substr($b['end_time'], 0, 2);
+                        if ($hour >= $bStart && $hour < $bEnd) {
+                            $isBooked = true;
+                            break;
+                        }
+                    }
+                }
+                
+                $statusClass = $isWeekend ? 'weekend' : ($isBooked ? 'booked' : 'available');
+                $statusText = $isWeekend ? 'Weekend gesloten' : ($isBooked ? 'Geboekt' : 'Beschikbaar');
+                
+                echo "<div class=\"time-slot $statusClass\" onclick=\"selectTime(this, '$timeStart', '$timeEnd', '$dateStr')\">";
+                echo "<span class=\"time\">$timeStart - $timeEnd</span>";
+                echo "<span class=\"status\">$statusText</span>";
+                echo "</div>";
+            }
+            ?>
+        </div>
+    </section>
+                <?php
+                $day++;
+            }
+        }
+    }
+    ?>
+
     <!-- FORM -->
     <section class="card form-card">
         <h2>Nieuwe booking</h2>
 
-        <form method="POST">
-            <input type="date" name="booking_date" required>
+        <form method="POST" id="bookingForm">
+            <input type="date" name="booking_date" id="booking_date" required>
 
             <select name="location_id">
                 <?php foreach ($locations as $l): ?>
@@ -126,8 +257,8 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
             </select>
 
             <div class="row">
-                <input type="time" name="start_time" required>
-                <input type="time" name="end_time" required>
+                <input type="time" name="start_time" id="start_time" required>
+                <input type="time" name="end_time" id="end_time" required>
             </div>
 
             <div class="chips">
@@ -139,7 +270,7 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <?php endforeach; ?>
             </div>
 
-            <button class="btn">Boek nu</button>
+            <button type="submit" class="btn">Boek nu</button>
         </form>
     </section>
 
@@ -149,6 +280,70 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <button class="fab" onclick="document.querySelector('.form-card').scrollIntoView()">
     <i class="fa fa-plus"></i>
 </button>
+
+<script>
+let currentOpenDay = null;
+
+function showDayDetails(dateStr) {
+    // Close any previously open day details
+    if (currentOpenDay) {
+        document.getElementById('details-' + currentOpenDay).style.display = 'none';
+    }
+    
+    // Show the details for the clicked day
+    const detailsElement = document.getElementById('details-' + dateStr);
+    if (detailsElement) {
+        detailsElement.style.display = 'block';
+        currentOpenDay = dateStr;
+        
+        // Smooth scroll to the details section
+        setTimeout(() => {
+            detailsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+    }
+}
+
+function closeDayDetails() {
+    if (currentOpenDay) {
+        document.getElementById('details-' + currentOpenDay).style.display = 'none';
+        currentOpenDay = null;
+    }
+}
+
+function selectTime(element, startTime, endTime, selectedDay) {
+    // Don't allow selecting if weekend or already booked
+    if (element.classList.contains('weekend') || element.classList.contains('booked')) {
+        return;
+    }
+    
+    // Get the parent section to remove selections only from that day's slots
+    const parentSection = element.closest('.day-details');
+    if (parentSection) {
+        parentSection.querySelectorAll('.time-slot').forEach(el => el.classList.remove('selected'));
+    }
+    
+    // Add selection to clicked element
+    element.classList.add('selected');
+    
+    // Update form fields
+    document.getElementById('booking_date').value = selectedDay;
+    document.getElementById('start_time').value = startTime;
+    document.getElementById('end_time').value = endTime;
+    
+    // Scroll to form
+    setTimeout(() => {
+        document.querySelector('.form-card').scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+}
+
+// Initialize form with selected day if present
+document.addEventListener('DOMContentLoaded', function() {
+    const selectedDay = '<?= $selectedDay ?>';
+    if (selectedDay) {
+        document.getElementById('booking_date').value = selectedDay;
+    }
+});
+</script>
 
 </body>
 </html>
