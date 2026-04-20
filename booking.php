@@ -38,18 +38,43 @@ $message = "";
 
 /* BOOKING INSERT */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $stmt = $pdo->prepare("INSERT INTO bookings (location_id, booking_date, start_time, end_time, hardware_ids)
-    VALUES (?, ?, ?, ?, ?)");
-    $stmt->execute([
-            $_POST['location_id'],
-            $_POST['booking_date'],
-            $_POST['start_time'],
-            $_POST['end_time'],
-            json_encode($_POST['hardware'] ?? [])
-    ]);
+    $bookingDate = $_POST['booking_date'];
+    $bookingStartTime = $_POST['start_time'];
+    $bookingEndTime = $_POST['end_time'];
+    $locationId = $_POST['location_id'];
+    
+    // Check for conflicting bookings
+    $conflict = false;
+    foreach ($bookings as $b) {
+        if ($b['booking_date'] === $bookingDate && $b['location_id'] == $locationId) {
+            $bStart = (int)substr($b['start_time'], 0, 2);
+            $bEnd = (int)substr($b['end_time'], 0, 2);
+            $newStart = (int)substr($bookingStartTime, 0, 2);
+            $newEnd = (int)substr($bookingEndTime, 0, 2);
+            
+            // Check if times overlap
+            if ($newStart < $bEnd && $newEnd > $bStart) {
+                $conflict = true;
+                $message = "Deze ruimte is al geboekt in dit tijdsgewijd!";
+                break;
+            }
+        }
+    }
+    
+    if (!$conflict) {
+        $stmt = $pdo->prepare("INSERT INTO bookings (location_id, booking_date, start_time, end_time, hardware_ids)
+        VALUES (?, ?, ?, ?, ?)");
+        $stmt->execute([
+                $locationId,
+                $bookingDate,
+                $bookingStartTime,
+                $bookingEndTime,
+                json_encode($_POST['hardware'] ?? [])
+        ]);
 
-    header("Location: booking.php?view=$view&date=$selectedDate");
-    exit;
+        header("Location: booking.php?view=$view&date=$selectedDate");
+        exit;
+    }
 }
 
 /* BOOKINGS */
@@ -119,11 +144,22 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 $prevYear = $currentMonth - 1 ? $currentYear : $currentYear - 1;
                 $nextMonth = ($currentMonth % 12) + 1;
                 $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
-                $selectedDayParam = $selectedDay ? "&selected_day=$selectedDay" : '';
+                
+                // Extract day from selected date and adjust for prev/next month
+                $selectedDateForNav = $selectedDay ? $selectedDay : date('Y-m-d');
+                $dayOfMonth = (int)date('d', strtotime($selectedDateForNav));
+                
+                // Ensure the day exists in the target month
+                $prevMonthDate = date('Y-m-d', mktime(0, 0, 0, $prevMonth, min($dayOfMonth, cal_days_in_month(CAL_GREGORIAN, $prevMonth, $prevYear)), $prevYear));
+                $nextMonthDate = date('Y-m-d', mktime(0, 0, 0, $nextMonth, min($dayOfMonth, cal_days_in_month(CAL_GREGORIAN, $nextMonth, $nextYear)), $nextYear));
+                
+                // Format selected date for display
+                $selectedDateDisplay = date('d M', strtotime($selectedDateForNav));
+                $isToday = $selectedDateForNav === date('Y-m-d');
                 ?>
-                <a href="?month=<?= $prevMonth ?>&year=<?= $prevYear ?><?= $selectedDayParam ?>" class="btn-nav"><i class="fa fa-chevron-left"></i></a>
-                <a href="?month=<?= date('n') ?>&year=<?= date('Y') ?>" class="btn-nav">Vandaag</a>
-                <a href="?month=<?= $nextMonth ?>&year=<?= $nextYear ?><?= $selectedDayParam ?>" class="btn-nav"><i class="fa fa-chevron-right"></i></a>
+                <a href="?month=<?= $prevMonth ?>&year=<?= $prevYear ?>&selected_day=<?= $prevMonthDate ?>" class="btn-nav"><i class="fa fa-chevron-left"></i></a>
+                <a href="?month=<?= date('n') ?>&year=<?= date('Y') ?>&selected_day=<?= date('Y-m-d') ?>" class="btn-nav"><?= $isToday ? 'Vandaag' : $selectedDateDisplay ?></a>
+                <a href="?month=<?= $nextMonth ?>&year=<?= $nextYear ?>&selected_day=<?= $nextMonthDate ?>" class="btn-nav"><i class="fa fa-chevron-right"></i></a>
             </div>
         </div>
 
@@ -160,10 +196,13 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             echo "<td class=\"empty\"></td>";
                         } else {
                             $dateStr = sprintf('%04d-%02d-%02d', $currentYear, $currentMonth, $day);
+                            $today = date('Y-m-d');
+                            $isPast = $dateStr < $today ? 'past' : '';
                             $isToday = $dateStr === date('Y-m-d') ? 'today' : '';
                             $isSelected = $dateStr === $selectedDay ? 'selected' : '';
                             $hasBooking = in_array($dateStr, $daysWithBookings) ? 'has-booking' : '';
-                            echo "<td class=\"day-cell $isToday $isSelected $hasBooking\" onclick=\"selectDay('$dateStr', $currentMonth, $currentYear)\" style=\"cursor: pointer;\">";
+                            $clickable = $isPast ? '' : 'onclick="selectDay(\'' . $dateStr . '\', ' . $currentMonth . ', ' . $currentYear . ')" style="cursor: pointer;"';
+                            echo "<td class=\"day-cell $isToday $isSelected $hasBooking $isPast\" $clickable>";
                             echo "<span class=\"day-number\">$day</span>";
                             if ($hasBooking) {
                                 echo "<div class=\"booking-indicator\"></div>";
@@ -211,25 +250,37 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
             </div>
             
             <?php
+            $today = date('Y-m-d');
+            $isPastDate = $dateStr < $today;
+            
             for ($hour = 8; $hour < 18; $hour++) {
                 $timeStart = sprintf('%02d:00', $hour);
                 $timeEnd = sprintf('%02d:00', $hour + 1);
                 
-                // Check if there's already a booking for this timeslot
+                // Check all bookings for this timeslot and collect all booked locations
                 $isBooked = false;
+                $bookedLocations = [];
                 foreach ($bookings as $b) {
                     if ($b['booking_date'] === $dateStr) {
                         $bStart = (int)substr($b['start_time'], 0, 2);
                         $bEnd = (int)substr($b['end_time'], 0, 2);
                         if ($hour >= $bStart && $hour < $bEnd) {
                             $isBooked = true;
-                            break;
+                            $loc = findById($locations, $b['location_id']);
+                            if ($loc) {
+                                $bookedLocations[] = $loc['name'];
+                            }
                         }
                     }
                 }
                 
                 $statusClass = $isWeekend ? 'weekend' : ($isBooked ? 'booked' : 'available');
-                $statusText = $isWeekend ? 'Weekend gesloten' : ($isBooked ? 'Geboekt' : 'Beschikbaar');
+                $bookedText = !empty($bookedLocations) ? 'Geboekt - ' . implode(', ', $bookedLocations) : '';
+                $statusText = $isWeekend ? 'Weekend gesloten' : ($isBooked ? $bookedText : 'Beschikbaar');
+                
+                if ($isPastDate) {
+                    $statusClass .= ' past';
+                }
                 
                 echo "<div class=\"time-slot $statusClass\" onclick=\"selectTime(this, '$timeStart', '$timeEnd', '$dateStr')\">";
                 echo "<span class=\"time\">$timeStart - $timeEnd</span>";
@@ -249,6 +300,12 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <!-- FORM -->
     <section class="card form-card">
         <h2>Nieuwe booking</h2>
+
+        <?php if ($message): ?>
+            <div class="message error-message">
+                <i class="fa fa-exclamation-circle"></i> <?= $message ?>
+            </div>
+        <?php endif; ?>
 
         <form method="POST" id="bookingForm">
             <input type="date" name="booking_date" id="booking_date" required>
@@ -319,8 +376,8 @@ function closeDayDetails() {
 }
 
 function selectTime(element, startTime, endTime, selectedDay) {
-    // Don't allow selecting if weekend or already booked
-    if (element.classList.contains('weekend') || element.classList.contains('booked')) {
+    // Don't allow selecting if weekend, already booked, or past date
+    if (element.classList.contains('weekend') || element.classList.contains('booked') || element.classList.contains('past')) {
         return;
     }
     
@@ -352,6 +409,37 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Also open the day details automatically
         showDayDetails(selectedDay);
+    }
+    
+    // Add form validation on submit
+    const bookingForm = document.getElementById('bookingForm');
+    if (bookingForm) {
+        bookingForm.addEventListener('submit', function(e) {
+            const startTime = document.getElementById('start_time').value;
+            const endTime = document.getElementById('end_time').value;
+            
+            // Check if end time is after start time
+            if (startTime && endTime && startTime >= endTime) {
+                e.preventDefault();
+                alert('De eindtijd moet na de begintijd liggen!');
+                return false;
+            }
+        });
+        
+        // Update end_time minimum when start_time changes
+        const startTimeInput = document.getElementById('start_time');
+        if (startTimeInput) {
+            startTimeInput.addEventListener('change', function() {
+                const startTime = this.value;
+                if (startTime) {
+                    // Set end time to 1 hour after start time
+                    const [hours, minutes] = startTime.split(':');
+                    const nextHour = String(parseInt(hours) + 1).padStart(2, '0');
+                    document.getElementById('end_time').value = nextHour + ':00';
+                    document.getElementById('end_time').min = startTime;
+                }
+            });
+        }
     }
 });
 </script>

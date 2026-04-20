@@ -205,6 +205,27 @@ input::placeholder {
     color: #999;
 }
 
+/* MESSAGES */
+.message {
+    padding: 1rem;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 500;
+}
+
+.error-message {
+    background: #fff3f3;
+    border: 2px solid #ffcccc;
+    color: #cc3333;
+}
+
+.error-message i {
+    font-size: 1.2rem;
+}
+
 .row {
     display: flex;
     gap: 1rem;
@@ -599,7 +620,7 @@ input::placeholder {
     transition: all 0.3s ease;
 }
 
-.day-cell:hover {
+.day-cell:hover:not(.past) {
     background: linear-gradient(135deg, #f5f9ff 0%, #f0f5ff 100%);
     box-shadow: 0 4px 12px rgba(0, 129, 31, 0.1);
     cursor: pointer;
@@ -623,6 +644,16 @@ input::placeholder {
 .day-cell.selected .day-number {
     color: #006f19;
     font-weight: 700;
+}
+
+.day-cell.past {
+    background: #f0f0f0;
+    border-color: #d0d0d0;
+    cursor: not-allowed;
+}
+
+.day-cell.past .day-number {
+    color: #999;
 }
 
 .booking-indicator {
@@ -672,7 +703,7 @@ input::placeholder {
     align-items: center;
 }
 
-.time-slot:hover:not(.weekend):not(.booked) {
+.time-slot:hover:not(.weekend):not(.booked):not(.past) {
     background: linear-gradient(135deg, #f0f5ff 0%, #eef6ff 100%);
     border-color: #00811F;
     transform: translateX(4px);
@@ -720,6 +751,14 @@ input::placeholder {
 .time-slot.weekend .time,
 .time-slot.weekend .status {
     color: #999;
+}
+
+.time-slot.past {
+    cursor: not-allowed;
+}
+
+.time-slot.past .time,
+.time-slot.past .status {
 }
 
 .time-slot.selected {
