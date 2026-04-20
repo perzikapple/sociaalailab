@@ -4,9 +4,15 @@ RewriteEngine On
 # /agenda verwijst naar agenda.php
 RewriteRule ^agenda$ agenda.php [L]
 
+<<<<<<< HEAD
 # Alle .php-bestanden bereikbaar maken zonder .php-extensie, ook in submappen
 RewriteCond %{REQUEST_FILENAME}.php -f
 RewriteRule ^([a-zA-Z0-9_\-/]+)$ $1.php [L]
+=======
+# Alle .php-bestanden bereikbaar maken zonder .php-extensie
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^([a-zA-Z0-9_-]+)$ $1.php [L]
+>>>>>>> origin/main
 
 # Redirect /index.php naar root /
 RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s/index\.php[\s?]
