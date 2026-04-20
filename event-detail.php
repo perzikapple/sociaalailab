@@ -179,11 +179,11 @@ include __DIR__ . '/navbar.php';
                     <h1 class="text-3xl md:text-4xl font-semibold mb-4 text-gray-900"><?php echo renderEditorInline($event['title']); ?></h1>
 
                     <div class="space-y-3">
-                        <p class="text-gray-700"><strong>Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?><?php if ($endDateDisplay) { echo ' t/m ' . htmlspecialchars($endDateDisplay); } ?></p>
+                        <p class="text-gray-700"><strong><i class="fa fa-calendar-alt" aria-hidden="true"></i> Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?><?php if ($endDateDisplay) { echo ' t/m ' . htmlspecialchars($endDateDisplay); } ?></p>
                         <?php if ($timeDisplay || $timeEndDisplay): ?>
-                            <p class="text-gray-700"><strong>Tijd:</strong> <?php echo htmlspecialchars($timeDisplay); ?><?php if ($timeEndDisplay) { echo ' - ' . htmlspecialchars($timeEndDisplay); } ?></p>
+                            <p class="text-gray-700"><strong><i class="fa fa-clock" aria-hidden="true"></i> Tijd:</strong> <?php echo htmlspecialchars($timeDisplay); ?><?php if ($timeEndDisplay) { echo ' - ' . htmlspecialchars($timeEndDisplay); } ?></p>
                         <?php endif; ?>
-                        <p class="text-gray-700"><strong>Locatie:</strong> <?php echo htmlspecialchars($location); ?></p>
+                        <p class="text-gray-700"><strong><i class="fa fa-map-marker-alt" aria-hidden="true"></i> Locatie:</strong> <?php echo htmlspecialchars($location); ?></p>
                     </div>
                 </div>
 
