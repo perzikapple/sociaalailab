@@ -11,3 +11,8 @@ RewriteRule ^([a-zA-Z0-9_\-/]+)$ $1.php [L]
 # Redirect /index.php naar root /
 RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s/index\.php[\s?]
 RewriteRule ^index\.php$ / [R=301,L]
+
+# Fallback: als pad leeg is (sociaalailab.nl/) laad index.php
+DirectoryIndex index.php
+RewriteCond %{REQUEST_URI} ^/$
+RewriteRule ^$ index.php [L]
