@@ -10,7 +10,7 @@ if (!isset($navPrefix)) {
         </button>
 
         <ul id="nav-menu" class="nav-menu ">
-            <li><a href="https://www.sociaalailab.nl">Voorpagina</a></li>
+            <li><a href="">Voorpagina</a></li>
             <li><a href="<?php echo htmlspecialchars($navPrefix); ?>agenda">Agenda</a></li>
 			<li><a href="<?php echo htmlspecialchars($navPrefix); ?>over">Voor wie?</a></li>
 
