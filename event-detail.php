@@ -139,6 +139,21 @@ if ($event) {
         .event-lightbox-open {
             overflow: hidden;
         }
+
+        .event-description p {
+            margin-bottom: 1em;
+        }
+        .event-description p:last-child {
+            margin-bottom: 0;
+        }
+        .event-description ul,
+        .event-description ol {
+            margin-bottom: 1em;
+            padding-left: 1.5em;
+        }
+        .event-description li {
+            margin-bottom: 0.25em;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-[#00811F] to-[#b9eb34]">
@@ -197,7 +212,7 @@ include __DIR__ . '/navbar.php';
             </div>
                 <div class="bg-gray-50 border border-gray-200 rounded-md p-6 mb-6">
                 <h2 class="text-2xl font-semibold mb-3 text-gray-900"><?php echo $isPastEvent ? 'Samenvatting' : 'Meer info'; ?></h2>
-                <div class="text-gray-700 leading-relaxed">
+                <div class="text-gray-700 leading-relaxed event-description">
                 <?php if ($isPastEvent): ?>
                     <?php if ($eventSummary !== ''): ?>
                         <?php echo renderEditorBlock($eventSummary); ?>
