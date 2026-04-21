@@ -235,6 +235,15 @@ include __DIR__ . '/navbar.php';
 
             <div class="flex flex-wrap gap-3">
                 <a href="agenda.php#agenda-terugblik-switch" class="inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">Terug naar agenda</a>
+                <?php
+                // Inschrijfknop tonen indien signup_embed of show_signup_button aanwezig is
+                $signupEmbed = trim((string)($event['signup_embed'] ?? ''));
+                if ($signupEmbed !== '') {
+                    echo renderAanmelderEmbed($signupEmbed);
+                } elseif (!empty($event['show_signup_button'])) {
+                    echo '<a href="inschrijven.php?event_id=' . (int)$event['id'] . '" class="inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">Inschrijven</a>';
+                }
+                ?>
                 <?php if (!empty($event['info_link'])): ?>
                     <a href="<?php echo htmlspecialchars($event['info_link']); ?>" target="_blank" rel="noopener noreferrer" class="inline-flex items-center bg-[#ce0245] text-white font-semibold px-6 py-3 rounded-md shadow hover:opacity-90 transition">Externe info</a>
                 <?php endif; ?>
