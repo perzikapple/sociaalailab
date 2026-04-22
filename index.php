@@ -183,110 +183,14 @@ include __DIR__ . '/navbar.php';
 
     <?php
     foreach ($customBlocks as $block):
-        $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
-        $hasImage = !empty($block['image']);
-        $hasText = !empty($block['title']) || !empty($block['body']);
-        $imagePosition = $metaArr['image_position'] ?? 'normal';
-        if (!in_array($imagePosition, ['normal', 'left', 'right'], true)) $imagePosition = 'normal';
-        $greenText = trim((string)($metaArr['green_text'] ?? ($metaArr['green_heading'] ?? '')));
-        $greenTextPosition = $metaArr['green_text_position'] ?? 'above';
-        if (!in_array($greenTextPosition, ['above', 'below'], true)) $greenTextPosition = 'above';
-        
-        $flexDir = 'column';
-        $flexWrap = 'nowrap';
-        if ($imagePosition === 'left' && $hasText) {
-            $flexDir = 'row';
-            $flexWrap = 'nowrap';
-        } elseif ($imagePosition === 'right' && $hasText) {
-            $flexDir = 'row';
-            $flexWrap = 'nowrap';
-        }
-        $sectionStyle = "display: flex; flex-direction: " . $flexDir . "; flex-wrap: " . $flexWrap . ";";
-        if ($imagePosition !== 'normal' && $hasText) {
-            $sectionStyle .= " gap: 2rem; align-items: flex-start;";
-        } else {
-            $sectionStyle .= " gap: 1.5rem;";
-        }
     ?>
-        <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" tabindex="0" style="<?php echo $sectionStyle; ?>">
-            <?php if ($hasImage && $imagePosition === 'left'): ?>
-                <?php
-                $imageStyle = '';
-                if (!$hasText) {
-                    $imageStyle = 'width: 100%;';
-                } elseif ($imagePosition !== 'normal') {
-                    $imageStyle = 'flex: 0 0 auto; max-width: 280px; width: 100%;';
-                } else {
-                    $imageStyle = 'width: 100%; max-width: 600px;';
-                }
-                ?>
-                <div style="<?php echo $imageStyle; ?>">
-                    <?php
-                    $imagePath = trim((string)$block['image']);
-                    if (strpos($imagePath, 'images/') === 0 || strpos($imagePath, 'uploads/') === 0) {
-                        $imageSrc = $imagePath;
-                    } else {
-                        $imageSrc = 'uploads/' . $imagePath;
-                    }
-                    ?>
-                    <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
+        <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" tabindex="0">
+            <div class="flex-1">
+                <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($block['title']); ?></h2>
+                <div class="text-gray-700 leading-relaxed">
+                    <?php echo renderEditorBlock($block['body']); ?>
                 </div>
-            <?php endif; ?>
-            <?php if ($hasText): ?>
-                <div style="<?php echo ($imagePosition !== 'normal' && $hasImage) ? 'flex: 1 1 auto; min-width: 0;' : ''; ?>">
-                    <?php if ($greenText !== '' && $greenTextPosition === 'above'): ?>
-                        <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($greenText)); ?></div>
-                    <?php endif; ?>
-                    <?php if (!empty($block['title'])): ?>
-                        <h3 class="text-2xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($block['title']); ?></h3>
-                    <?php endif; ?>
-                    <?php if (!empty($block['body'])): ?>
-                        <div class="text-gray-700 leading-relaxed"><?php echo renderEditorBlock($block['body']); ?></div>
-                    <?php endif; ?>
-                    <?php if ($greenText !== '' && $greenTextPosition === 'below'): ?>
-                        <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($greenText)); ?></div>
-                    <?php endif; ?>
-                </div>
-            <?php endif; ?>
-            <?php if ($hasImage && $imagePosition === 'right'): ?>
-                <?php
-                $imageStyle = '';
-                if (!$hasText) {
-                    $imageStyle = 'width: 100%;';
-                } elseif ($imagePosition !== 'normal') {
-                    $imageStyle = 'flex: 0 0 auto; max-width: 280px; width: 100%;';
-                } else {
-                    $imageStyle = 'width: 100%; max-width: 600px;';
-                }
-                ?>
-                <div style="<?php echo $imageStyle; ?>">
-                    <?php
-                    $imagePath = trim((string)$block['image']);
-                    if (strpos($imagePath, 'images/') === 0 || strpos($imagePath, 'uploads/') === 0) {
-                        $imageSrc = $imagePath;
-                    } else {
-                        $imageSrc = 'uploads/' . $imagePath;
-                    }
-                    ?>
-                    <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
-                </div>
-            <?php endif; ?>
-            <?php if ($hasImage && $imagePosition === 'normal'): ?>
-                <?php
-                $imageStyle = 'width: 100%; max-width: 600px;';
-                ?>
-                <div style="<?php echo $imageStyle; ?>">
-                    <?php
-                    $imagePath = trim((string)$block['image']);
-                    if (strpos($imagePath, 'images/') === 0 || strpos($imagePath, 'uploads/') === 0) {
-                        $imageSrc = $imagePath;
-                    } else {
-                        $imageSrc = 'uploads/' . $imagePath;
-                    }
-                    ?>
-                    <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
-                </div>
-            <?php endif; ?>
+            </div>
         </section>
     <?php endforeach; ?>
         

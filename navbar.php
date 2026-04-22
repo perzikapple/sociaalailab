@@ -10,7 +10,7 @@ if (!isset($navPrefix)) {
         </button>
 
         <ul id="nav-menu" class="nav-menu ">
-            <li><a href="https://www.sociaalailab.nl">Voorpagina</a></li>
+            <li><a href="/">Voorpagina</a></li>
             <li><a href="<?php echo htmlspecialchars($navPrefix); ?>agenda">Agenda</a></li>
 			<li><a href="<?php echo htmlspecialchars($navPrefix); ?>over">Voor wie?</a></li>
 
@@ -27,8 +27,8 @@ if (!isset($navPrefix)) {
             <li><a href="<?php echo htmlspecialchars($navPrefix); ?>wie-zijn-we">Wie zijn we?</a></li>
             <li><a href="<?php echo htmlspecialchars($navPrefix); ?>contact">Contact</a></li>
            <!-- <li><a href="<?php echo htmlspecialchars($navPrefix); ?>nieuws.php">Nieuws</a></li> -->
-            <?php if (!empty($_SESSION['can_access_admin']) || (isset($_SESSION['admin']) && (int)$_SESSION['admin'] === 1)): ?>
-                <li><a href="<?php echo htmlspecialchars($navPrefix); ?>admin">Admin</a></li>
+            <?php if (!empty($_SESSION['can_access_admin']) || (isset($_SESSION['admin.php']) && (int)$_SESSION['admin'] === 1)): ?>
+                <li><a href="<?php echo htmlspecialchars($navPrefix); ?>admin.php">Admin</a></li>
             <?php endif; ?>
         </ul>
     </div>

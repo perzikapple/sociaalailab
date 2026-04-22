@@ -1191,7 +1191,9 @@ if ($page === 'users') {
             toolbar_mode: isCompactEditor ? 'scrolling' : 'wrap',
             branding: false,
             height: isCompactEditor ? 42 : 50,
-            resize: true
+            resize: true,
+            force_br_newlines: true,
+            forced_root_block: false
         });
         
         // TinyMCE for content fields - larger
@@ -1204,7 +1206,9 @@ if ($page === 'users') {
             toolbar_mode: isCompactEditor ? 'scrolling' : 'wrap',
             branding: false,
             height: isCompactEditor ? 220 : 300,
-            resize: true
+            resize: true,
+            force_br_newlines: true,
+            forced_root_block: false
         });
     });
 </script>
