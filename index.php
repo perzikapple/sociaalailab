@@ -219,7 +219,7 @@ foreach ($events as $event):
             </div>
             <div class="flex mb-6 space-x-3">
                 <i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>
-                <p class="text-gray-700 pb-3"><strong> Wat:</strong> <?php echo nl2br(htmlspecialchars($event['description'])); ?></p>
+                <p class="text-gray-700 pb-3"><strong> Wat:</strong> <?php echo renderEditorBlock($event['description']); ?></p>
             </div>
         </div>
         <div class="mt-6 flex flex-wrap gap-3">
