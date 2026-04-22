@@ -112,7 +112,7 @@ include __DIR__ . '/navbar.php';
         <?php if (!$hasText && $hasImage && !$shouldShowNumber): ?>
             <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100vw !important; max-width: 100vw !important; height: auto; display: block; margin-left: calc(-50vw + 50%); position: relative; margin-top: 3rem; margin-bottom: 3rem;">
         <?php else: ?>
-        <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" tabindex="0" style="<?php echo $sectionStyle; ?>">
+        <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" style="<?php echo $sectionStyle; ?>">
             <!-- Nummer links (als van toepassing) -->
             <?php if ($shouldShowNumber && $numberPosition === 'left' && $hasText): ?>
                 <div style="flex: 0 0 auto; width: 280px;">
