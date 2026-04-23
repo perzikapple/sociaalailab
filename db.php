@@ -1,13 +1,13 @@
 <?php
 $host = "localhost";
 $db   = "sociaalai";
-$user = "root";
-$pass = "";
+ $user = "root";
+ $pass = "";
 
-// $host = "localhost";
-// $db   = "sociaalai";
-// $user = "root";
-// $pass = "";
+// $host = "sociju-sociaalailab.db.transip.me";
+// $db   = "sociju_sociaalailab";
+// $user = "sociju_Sociaalailab";
+// $pass = "Techniekcollege12345#";
 try {
     $pdo = new PDO(
         "mysql:host=$host;dbname=$db;charset=utf8mb4",

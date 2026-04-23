@@ -72,14 +72,15 @@ include __DIR__ . '/navbar.php';
         }
         $index++;
     ?>
-        <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12 text-padding" tabindex="0" style="<?php echo $sectionStyle; ?>">
+        <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12 text-padding" style="<?php echo $sectionStyle; ?>">
             <?php if ($imagePosition === 'left' && $hasImage): ?>
                 <?php
                 $imageStyle = '';
                 if (!$hasText) {
                     $imageStyle = 'width: 100%;';
                 } else {
-                    $imageStyle = 'display: flex; justify-content: center; align-items: center;';                }
+                    $imageStyle = 'display: flex; flex-direction: column; gap: 1.5rem;';
+                }
                 ?>
                 <div style="<?php echo $imageStyle; ?>">
                     <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
@@ -94,10 +95,9 @@ include __DIR__ . '/navbar.php';
                 <?php if (!empty($block['body'])): ?>
                     <div class="text-gray-700 text-base leading-relaxed"><?php echo renderEditorBlock($block['body']); ?></div>
                 <?php endif; ?>
+                <?php endif; ?>
             </div>
-            <?php endif; ?>
-            
-            <?php if ($imagePosition === 'right' && $hasImage): ?>
+           <?php if ($imagePosition === 'right' && $hasImage): ?>
                 <?php
                 $imageStyle = '';
                 if (!$hasText) {

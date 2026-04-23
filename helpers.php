@@ -103,8 +103,13 @@ if (!function_exists('sanitizeEditorHtml')) {
 
         // Remove attributes from all non-link tags.
         $value = preg_replace('/<(?!\/?a\b)([a-z0-9]+)\b[^>]*>/i', '<$1>', $value);
-        // Only remove empty paragraphs
+        
+        // Convert <p> tags with content into proper spacing (preserve <br> from TinyMCE)
+        $value = preg_replace('~<p[^>]*>(.*?)</p>~is', '$1<br>', $value);
+        // Remove empty paragraphs
         $value = preg_replace('~<p>\s*</p>~i', '', $value);
+        // Remove excessive consecutive br tags (more than 2)
+        $value = preg_replace('~(<br\s*/?>\s*){3,}~i', '<br><br>', $value);
 
         return trim($value);
     }
@@ -128,11 +133,28 @@ if (!function_exists('renderEditorInline')) {
             return '';
         }
 
-        if (!editorContainsHtmlTag($value)) {
-            return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        // Normalize line endings
+        $value = preg_replace('/\r\n?/', "\n", $value);
+        
+        // First, replace entity-escaped br tags with actual newlines
+        $value = str_replace('&lt;br&gt;', "\n", $value);
+        $value = str_replace('&lt;br/&gt;', "\n", $value);
+        $value = str_replace('&lt;br /&gt;', "\n", $value);
+        $value = str_replace('&lt;BR&gt;', "\n", $value);
+        
+        // Decode any remaining entity-escaped HTML
+        $value = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        
+        // Check if it has HTML tags now
+        $hasHtmlTags = editorContainsHtmlTag($value);
+        
+        // If it has HTML (like <br> or <strong> from TinyMCE), sanitize it
+        if ($hasHtmlTags) {
+            return sanitizeEditorHtml($value, 'inline');
         }
 
-        return sanitizeEditorHtml($value, 'inline');
+        // If it's plain text, just escape it (don't convert newlines to <br> for inline)
+        return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
 }
 
@@ -143,11 +165,35 @@ if (!function_exists('renderEditorBlock')) {
             return '';
         }
 
-        if (!editorContainsHtmlTag($value)) {
-            return nl2br(htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
+        // Normalize line endings
+        $value = preg_replace('/\r\n?/', "\n", $value);
+        
+        // Replace entity-escaped br tags with actual newlines
+        // This converts &lt;br&gt; to \n so nl2br() can handle it properly
+        $value = str_replace('&lt;br&gt;', "\n", $value);
+        $value = str_replace('&lt;br/&gt;', "\n", $value);
+        $value = str_replace('&lt;br /&gt;', "\n", $value);
+        $value = str_replace('&lt;BR&gt;', "\n", $value);
+        
+        // Decode any remaining entity-escaped content
+        $decoded = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        
+        // If it still has entities after first decode, decode again (double-escaped)
+        if (strpos($decoded, '&lt;') !== false) {
+            $decoded = html_entity_decode($decoded, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        }
+        
+        // Now check if we have HTML tags
+        $hasHtmlTags = editorContainsHtmlTag($decoded);
+        
+        // If it has HTML tags (like <br> or <p>), sanitize them
+        if ($hasHtmlTags) {
+            return sanitizeEditorHtml($decoded, 'block');
         }
 
-        return sanitizeEditorHtml($value, 'block');
+        // Plain text: escape it and convert newlines to <br>
+        $escaped = htmlspecialchars($decoded, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        return nl2br($escaped);
     }
 }
 
