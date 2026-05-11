@@ -5,6 +5,27 @@ require 'db.php';
 $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: 'images/banner_website_01.jpg';
 $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: 'images/banner_website_02.jpg';
 
+$rolePermissions = [
+    'superadmin' => ['create_users', 'edit_users', 'delete_users', 'view_audit', 'access_booking', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images'],
+    'content_manager' => ['access_booking', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images'],
+    'editor' => ['manage_events'],
+    'viewer' => [],
+];
+
+function normalizeAccountPermissions($value)
+{
+    if (!is_string($value) || trim($value) === '') {
+        return null;
+    }
+
+    $decoded = json_decode($value, true);
+    if (!is_array($decoded)) {
+        return null;
+    }
+
+    return array_values(array_unique(array_filter(array_map('strval', $decoded))));
+}
+
 $message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email']);
@@ -14,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = 'Invalid email format.';
     } else {
         // Look up user in database
-        $stmt = $pdo->prepare("SELECT email, wachtwoord, admin, role FROM accounts WHERE email = ?");
+        $stmt = $pdo->prepare("SELECT email, wachtwoord, admin, role, permissions FROM accounts WHERE email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
 
@@ -31,8 +52,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($role === '') {
                 $role = ((int)($user['admin'] ?? 0) === 1) ? 'superadmin' : 'viewer';
             }
+            $permissions = normalizeAccountPermissions($user['permissions'] ?? null);
+            if ($permissions === null) {
+                $permissions = $rolePermissions[$role] ?? [];
+            }
             $_SESSION['role'] = $role;
-            $_SESSION['can_access_admin'] = ((int)($user['admin'] ?? 0) === 1) || in_array($role, ['superadmin', 'content_manager', 'editor'], true);
+            $_SESSION['permissions'] = json_encode($permissions, JSON_UNESCAPED_SLASHES);
+            $_SESSION['can_access_admin'] = !empty($permissions);
             header('Location: admin.php');
             exit;
         }

@@ -3,33 +3,87 @@ session_start();
 require 'db.php';
 require 'helpers.php';
 
+$rolePermissions = [
+    'superadmin' => ['create_users', 'edit_users', 'delete_users', 'view_audit', 'access_booking', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images'],
+    'content_manager' => ['access_booking', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images'],
+    'editor' => ['manage_events'],
+    'viewer' => [],
+];
+
+function normalizeAccountPermissions($value)
+{
+    if (!is_string($value) || trim($value) === '') {
+        return null;
+    }
+
+    $decoded = json_decode($value, true);
+    if (!is_array($decoded)) {
+        return null;
+    }
+
+    return array_values(array_unique(array_filter(array_map('strval', $decoded))));
+}
+
+function permissionsForRole($role, $rolePermissions)
+{
+    return $rolePermissions[$role] ?? [];
+}
+
 $sessionRole = trim((string)($_SESSION['role'] ?? ''));
 if ($sessionRole === '') {
     $sessionRole = (isset($_SESSION['admin']) && (int)$_SESSION['admin'] === 1) ? 'superadmin' : 'viewer';
     $_SESSION['role'] = $sessionRole;
 }
-$canAccessAdmin = (bool)($_SESSION['can_access_admin'] ?? false);
-if (!$canAccessAdmin) {
-    $canAccessAdmin = (isset($_SESSION['admin']) && (int)$_SESSION['admin'] === 1)
-        || in_array($sessionRole, ['superadmin', 'content_manager', 'editor'], true);
-    $_SESSION['can_access_admin'] = $canAccessAdmin;
+
+$sessionPermissions = normalizeAccountPermissions($_SESSION['permissions'] ?? null);
+if ($sessionPermissions === null) {
+    $sessionPermissions = permissionsForRole($sessionRole, $rolePermissions);
+    $_SESSION['permissions'] = json_encode($sessionPermissions, JSON_UNESCAPED_SLASHES);
 }
+
+$canAccessAdmin = !empty($sessionPermissions);
+$_SESSION['can_access_admin'] = $canAccessAdmin;
 
 if (!$canAccessAdmin) {
     header('Location: login.php');
     exit;
 }
 
-$rolePermissions = [
-    'superadmin' => ['manage_users', 'view_audit', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images'],
-    'content_manager' => ['manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images'],
-    'editor' => ['manage_events'],
-    'viewer' => [],
-];
+$hasPermission = function ($permission) use (&$sessionPermissions) {
+    return in_array($permission, $sessionPermissions, true);
+};
 
-$hasPermission = function ($permission) use (&$sessionRole, &$rolePermissions) {
-    $permissions = $rolePermissions[$sessionRole] ?? [];
-    return in_array($permission, $permissions, true);
+$hasAnyPermission = function ($permissions) use (&$hasPermission) {
+    foreach ($permissions as $permission) {
+        if ($hasPermission($permission)) {
+            return true;
+        }
+    }
+    return false;
+};
+
+$adminPermissionOptions = [
+    'manage_banners' => 'Banners aanpassen',
+    'manage_events' => 'Agenda maken en bewerken',
+    'delete_events' => 'Agenda-items verwijderen',
+    'manage_pages' => 'Pagina categorieen maken en bewerken',
+    'delete_pages' => 'Pagina categorieen verwijderen',
+    'create_users' => 'Gebruikers maken',
+    'edit_users' => 'Gebruikers bewerken',
+    'delete_users' => 'Gebruikers verwijderen',
+    'access_booking' => 'Booking pagina gebruiken',
+    'view_audit' => 'Logboek bekijken',
+    'optimize_images' => 'Afbeeldingen optimaliseren',
+];
+$allowedPermissionKeys = array_keys($adminPermissionOptions);
+
+$collectPostedPermissions = function ($field) use (&$allowedPermissionKeys) {
+    $posted = $_POST[$field] ?? [];
+    if (!is_array($posted)) {
+        $posted = [];
+    }
+
+    return array_values(array_intersect($allowedPermissionKeys, array_map('strval', $posted)));
 };
 
 $message = '';
@@ -233,8 +287,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'delete_bulk_pages' => 'delete_pages',
         'update_banner' => 'manage_banners',
         'reset_banners' => 'manage_banners',
-        'create_user' => 'manage_users',
-        'update_user_role' => 'manage_users',
+        'create_user' => 'create_users',
+        'update_user_permissions' => 'edit_users',
+        'delete_user' => 'delete_users',
         'optimize_image' => 'optimize_images',
     ];
 
@@ -586,6 +641,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $newLastName = trim((string)($_POST['new_last_name'] ?? ''));
         $newRole = trim((string)($_POST['new_role'] ?? 'viewer'));
         $allowedRoles = ['superadmin', 'content_manager', 'editor', 'viewer'];
+        $newPermissions = $collectPostedPermissions('new_permissions');
 
         if ($newEmail === '' || !filter_var($newEmail, FILTER_VALIDATE_EMAIL)) {
             $message = 'Vul een geldig e-mailadres in.';
@@ -600,8 +656,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message = 'Er bestaat al een gebruiker met dit e-mailadres.';
             } else {
                 $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-                $adminFlag = in_array($newRole, ['superadmin', 'content_manager', 'editor'], true) ? 1 : 0;
-                $insertStmt = $pdo->prepare('INSERT INTO accounts (email, wachtwoord, first_name, last_name, admin, role) VALUES (?, ?, ?, ?, ?, ?)');
+                $adminFlag = !empty($newPermissions) ? 1 : 0;
+                $permissionsJson = json_encode($newPermissions, JSON_UNESCAPED_SLASHES);
+                $insertStmt = $pdo->prepare('INSERT INTO accounts (email, wachtwoord, first_name, last_name, admin, role, permissions) VALUES (?, ?, ?, ?, ?, ?, ?)');
                 $insertStmt->execute([
                     $newEmail,
                     $hashedPassword,
@@ -609,34 +666,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $newLastName !== '' ? $newLastName : null,
                     $adminFlag,
                     $newRole,
+                    $permissionsJson,
                 ]);
 
-                audit_log($pdo, 'create', 'accounts', $newEmail, 'new user with role ' . $newRole, $currentUser);
+                audit_log($pdo, 'create', 'accounts', $newEmail, 'new user with permissions ' . implode(', ', $newPermissions), $currentUser);
                 $message = 'Nieuwe gebruiker toegevoegd.';
             }
         }
-    } elseif ($action === 'update_user_role') {
+    } elseif ($action === 'update_user_permissions') {
         $targetEmail = trim((string)($_POST['target_email'] ?? ''));
         $newRole = trim((string)($_POST['role'] ?? 'viewer'));
         $allowedRoles = ['superadmin', 'content_manager', 'editor', 'viewer'];
+        $newPermissions = $collectPostedPermissions('permissions');
 
         if ($targetEmail === '' || !filter_var($targetEmail, FILTER_VALIDATE_EMAIL)) {
             $message = 'Ongeldig e-mailadres.';
         } elseif (!in_array($newRole, $allowedRoles, true)) {
             $message = 'Ongeldige rol gekozen.';
         } else {
-            $adminFlag = in_array($newRole, ['superadmin', 'content_manager', 'editor'], true) ? 1 : 0;
-            $stmt = $pdo->prepare('UPDATE accounts SET role = ?, admin = ? WHERE email = ?');
-            $stmt->execute([$newRole, $adminFlag, $targetEmail]);
+            $adminFlag = !empty($newPermissions) ? 1 : 0;
+            $permissionsJson = json_encode($newPermissions, JSON_UNESCAPED_SLASHES);
+            $stmt = $pdo->prepare('UPDATE accounts SET role = ?, admin = ?, permissions = ? WHERE email = ?');
+            $stmt->execute([$newRole, $adminFlag, $permissionsJson, $targetEmail]);
 
             if ($targetEmail === ($_SESSION['email'] ?? '')) {
                 $_SESSION['role'] = $newRole;
                 $_SESSION['admin'] = $adminFlag;
-                $_SESSION['can_access_admin'] = ($adminFlag === 1) || in_array($newRole, ['superadmin', 'content_manager', 'editor'], true);
+                $_SESSION['permissions'] = $permissionsJson;
+                $_SESSION['can_access_admin'] = !empty($newPermissions);
             }
 
-            audit_log($pdo, 'update', 'accounts', $targetEmail, 'role set to ' . $newRole, $currentUser);
-            $message = 'Gebruikersrol bijgewerkt.';
+            audit_log($pdo, 'update', 'accounts', $targetEmail, 'permissions set to ' . implode(', ', $newPermissions), $currentUser);
+            $message = 'Gebruikersrechten bijgewerkt.';
+        }
+    } elseif ($action === 'delete_user') {
+        $targetEmail = trim((string)($_POST['target_email'] ?? ''));
+
+        if ($targetEmail === '' || !filter_var($targetEmail, FILTER_VALIDATE_EMAIL)) {
+            $message = 'Ongeldig e-mailadres.';
+        } elseif ($targetEmail === ($_SESSION['email'] ?? '')) {
+            $message = 'Je kunt je eigen account niet verwijderen.';
+        } else {
+            $stmt = $pdo->prepare('DELETE FROM accounts WHERE email = ?');
+            $stmt->execute([$targetEmail]);
+            audit_log($pdo, 'delete', 'accounts', $targetEmail, null, $currentUser);
+            $message = 'Gebruiker verwijderd.';
         }
     } elseif ($action === 'optimize_image') {
         $imagePath = trim((string)($_POST['image_path'] ?? ''));
@@ -982,47 +1056,30 @@ $events = $stmt->fetchAll();
 // Welke admin pagina tonen (standaard index)
 $page = $_GET['page'] ?? 'index';
 
-$editorViewOnlyPages = [
-    'banner',
-    'index',
-    'evenementen',
-    'terugblikken',
-    'over',
-    'wie-zijn-we',
-    'verantwoord-ai',
-    'contact',
-    'programma-kennis',
-    'programma-actie',
-    'programma-faciliteit',
-];
-
 $allowedPagesByPermission = [
     'banner' => 'manage_banners',
-    'agenda' => 'manage_events',
+    'agenda' => ['manage_events', 'delete_events'],
     'audit' => 'view_audit',
-    'users' => 'manage_users',
-    'index' => 'manage_pages',
-    'evenementen' => 'manage_pages',
-    'terugblikken' => 'manage_pages',
-    'over' => 'manage_pages',
-    'wie-zijn-we' => 'manage_pages',
-    'verantwoord-ai' => 'manage_pages',
-    'contact' => 'manage_pages',
-    'programma-kennis' => 'manage_pages',
-    'programma-actie' => 'manage_pages',
-    'programma-faciliteit' => 'manage_pages',
+    'users' => ['create_users', 'edit_users', 'delete_users'],
+    'index' => ['manage_pages', 'delete_pages'],
+    'evenementen' => ['manage_pages', 'delete_pages'],
+    'terugblikken' => ['manage_pages', 'delete_pages'],
+    'over' => ['manage_pages', 'delete_pages'],
+    'wie-zijn-we' => ['manage_pages', 'delete_pages'],
+    'verantwoord-ai' => ['manage_pages', 'delete_pages'],
+    'contact' => ['manage_pages', 'delete_pages'],
+    'programma-kennis' => ['manage_pages', 'delete_pages'],
+    'programma-actie' => ['manage_pages', 'delete_pages'],
+    'programma-faciliteit' => ['manage_pages', 'delete_pages'],
 ];
 
-$canViewPage = function ($candidatePage) use (&$allowedPagesByPermission, &$hasPermission, &$sessionRole, &$editorViewOnlyPages) {
+$canViewPage = function ($candidatePage) use (&$allowedPagesByPermission, &$hasPermission, &$hasAnyPermission) {
     if (!isset($allowedPagesByPermission[$candidatePage])) {
         return true;
     }
 
-    if ($hasPermission($allowedPagesByPermission[$candidatePage])) {
-        return true;
-    }
-
-    if ($sessionRole === 'editor' && in_array($candidatePage, $editorViewOnlyPages, true)) {
+    $candidatePermission = $allowedPagesByPermission[$candidatePage];
+    if (is_array($candidatePermission) ? $hasAnyPermission($candidatePermission) : $hasPermission($candidatePermission)) {
         return true;
     }
 
@@ -1048,7 +1105,9 @@ if (!$canViewPage($page)) {
 
 $canDeleteEvents = $hasPermission('delete_events');
 $canDeletePages = $hasPermission('delete_pages');
-$isEditorReadOnlyPage = ($sessionRole === 'editor' && $page !== 'agenda');
+$canManageEvents = $hasPermission('manage_events');
+$canManagePages = $hasPermission('manage_pages');
+$isEditorReadOnlyPage = false;
 
 $pageItems = [];
 if ($page !== 'banner' && $page !== 'agenda' && $page !== 'audit' && $page !== 'users') {
@@ -1118,7 +1177,7 @@ if ($page === 'audit') {
 
 if ($page === 'users') {
     try {
-        $stmt = $pdo->query('SELECT email, first_name, last_name, admin, role FROM accounts ORDER BY email ASC');
+        $stmt = $pdo->query('SELECT email, first_name, last_name, admin, role, permissions FROM accounts ORDER BY email ASC');
         $userAccounts = $stmt->fetchAll();
     } catch (Exception $e) {
         $message = 'Gebruikers konden niet worden geladen.';
@@ -1241,9 +1300,11 @@ if ($page === 'users') {
                         <i class="fa-solid fa-clipboard-list"></i> Auditlogboek
                     </a>
                 <?php endif; ?>
-                <a href="booking.php" class="btn btn-secondary text-sm">
-                    <i class="fa-solid fa-calendar-check"></i> Booking
-                </a>
+                <?php if ($hasPermission('access_booking')): ?>
+                    <a href="booking.php" class="btn btn-secondary text-sm">
+                        <i class="fa-solid fa-calendar-check"></i> Booking
+                    </a>
+                <?php endif; ?>
                 <a href="index.php" class="btn btn-secondary text-sm">
                     <i class="fa-solid fa-arrow-left"></i> Terug naar site
                 </a>
@@ -1269,19 +1330,19 @@ if ($page === 'users') {
                 </div>
                 <nav class="divide-y">
                     <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Beheer</div>
-                    <?php if ($hasPermission('manage_banners') || $sessionRole === 'editor'): ?>
+                    <?php if ($hasPermission('manage_banners')): ?>
                         <a href="admin.php?page=banner" class="sidebar-link <?php echo $page === 'banner' ? 'active' : ''; ?>">
                             <i class="fa-solid fa-image"></i> Banners
                         </a>
                     <?php endif; ?>
-                    <?php if ($hasPermission('manage_events')): ?>
+                    <?php if ($hasAnyPermission(['manage_events', 'delete_events'])): ?>
                         <a href="admin.php?page=agenda" class="sidebar-link <?php echo $page === 'agenda' ? 'active' : ''; ?>">
                             <i class="fa-solid fa-calendar"></i> Agenda
                         </a>
                     <?php endif; ?>
-                    <?php if ($hasPermission('manage_users')): ?>
+                    <?php if ($hasAnyPermission(['create_users', 'edit_users', 'delete_users'])): ?>
                         <a href="admin.php?page=users" class="sidebar-link <?php echo $page === 'users' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-users"></i> Gebruikers & Rollen
+                            <i class="fa-solid fa-users"></i> Gebruikers & Rechten
                         </a>
                     <?php endif; ?>
                     <?php if ($hasPermission('optimize_images')): ?>
@@ -1290,7 +1351,7 @@ if ($page === 'users') {
                         </a>
                     <?php endif; ?>
 
-                    <?php if ($hasPermission('manage_pages') || $sessionRole === 'editor'): ?>
+                    <?php if ($hasAnyPermission(['manage_pages', 'delete_pages'])): ?>
                         <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Pagina's</div>
                         <a href="admin.php?page=index" class="sidebar-link <?php echo $page === 'index' ? 'active' : ''; ?>">
                             <i class="fa-solid fa-house"></i> Homepage
@@ -1343,7 +1404,7 @@ if ($page === 'users') {
                             <h2 class="text-2xl font-bold">Agenda Beheer</h2>
                         </div>
 
-                        <?php if ($editEvent): ?>
+                        <?php if ($editEvent && $canManageEvents): ?>
                             <a href="admin.php?page=agenda" class="btn btn-secondary mb-6">
                                 <i class="fa-solid fa-arrow-left"></i> Terug
                             </a>
@@ -1486,7 +1547,7 @@ if ($page === 'users') {
                                     </button>
                                 </div>
                             </form>
-                        <?php else: ?>
+                        <?php elseif ($canManageEvents): ?>
                             <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6 js-content-preview-form">
                                 <h3 class="font-semibold text-lg">Nieuw Evenement</h3>
                                 <input type="hidden" name="action" value="create">
@@ -1654,9 +1715,11 @@ if ($page === 'users') {
                                                             </a>
                                                         <?php endif; ?>
                                                         <div class="admin-row-actions-stack flex flex-col gap-1">
-                                                            <a href="admin.php?page=agenda&edit=<?php echo (int)$event['id']; ?>" class="btn btn-secondary btn-sm">
-                                                                <i class="fa-solid fa-pencil"></i> Bewerk
-                                                            </a>
+                                                            <?php if ($canManageEvents): ?>
+                                                                <a href="admin.php?page=agenda&edit=<?php echo (int)$event['id']; ?>" class="btn btn-secondary btn-sm">
+                                                                    <i class="fa-solid fa-pencil"></i> Bewerk
+                                                                </a>
+                                                            <?php endif; ?>
                                                             <?php if ($canDeleteEvents): ?>
                                                                 <form method="POST" onsubmit="return confirm('Verwijder dit evenement?');" class="admin-inline-form">
                                                                     <input type="hidden" name="action" value="delete">
@@ -1681,49 +1744,75 @@ if ($page === 'users') {
                     <div class="card p-6">
                         <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
                             <i class="fa-solid fa-users text-2xl text-[#00811F]"></i>
-                            <h2 class="text-2xl font-bold">Gebruikers & Rollen</h2>
+                            <h2 class="text-2xl font-bold">Gebruikers & Rechten</h2>
                         </div>
-                        <p class="text-sm text-gray-600 mb-4">Wijs per gebruiker een rol toe. Rollen bepalen welke onderdelen van het adminpaneel zichtbaar en bewerkbaar zijn.</p>
+                        <p class="text-sm text-gray-600 mb-4">Zet per gebruiker aan wat die persoon wel of niet mag aanpassen, bekijken of verwijderen.</p>
 
-                        <form method="POST" class="bg-white p-6 shadow-md space-y-4 mb-6 border border-gray-200 rounded">
-                            <h3 class="font-semibold text-lg">Gebruiker toevoegen</h3>
-                            <input type="hidden" name="action" value="create_user">
+                        <?php if ($hasPermission('create_users')): ?>
+                            <form method="POST" class="bg-white p-6 shadow-md space-y-4 mb-6 border border-gray-200 rounded">
+                                <h3 class="font-semibold text-lg">Gebruiker toevoegen</h3>
+                                <input type="hidden" name="action" value="create_user">
 
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="form-label" for="new_first_name">Voornaam</label>
+                                        <input id="new_first_name" type="text" name="new_first_name" class="form-input" maxlength="120" placeholder="Voornaam">
+                                    </div>
+                                    <div>
+                                        <label class="form-label" for="new_last_name">Achternaam</label>
+                                        <input id="new_last_name" type="text" name="new_last_name" class="form-input" maxlength="120" placeholder="Achternaam">
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="md:col-span-2">
+                                        <label class="form-label" for="new_email">E-mailadres</label>
+                                        <input id="new_email" type="email" name="new_email" class="form-input" required placeholder="naam@voorbeeld.nl">
+                                    </div>
+                                    <div>
+                                        <label class="form-label" for="new_role">Basisrol</label>
+                                        <select id="new_role" name="new_role" class="form-input">
+                                            <option value="viewer">Geen vaste rol</option>
+                                            <option value="editor">Bewerker</option>
+                                            <option value="content_manager">Content Manager</option>
+                                            <option value="superadmin">Administrator</option>
+                                        </select>
+                                    </div>
+                                </div>
+
                                 <div>
-                                    <label class="form-label" for="new_first_name">Voornaam</label>
-                                    <input id="new_first_name" type="text" name="new_first_name" class="form-input" maxlength="120" placeholder="Voornaam">
+                                    <label class="form-label" for="new_password">Wachtwoord</label>
+                                    <input id="new_password" type="text" name="new_password" class="form-input" required placeholder="Voer wachtwoord in">
                                 </div>
-                                <div>
-                                    <label class="form-label" for="new_last_name">Achternaam</label>
-                                    <input id="new_last_name" type="text" name="new_last_name" class="form-input" maxlength="120" placeholder="Achternaam">
-                                </div>
-                            </div>
 
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div class="md:col-span-2">
-                                    <label class="form-label" for="new_email">E-mailadres</label>
-                                    <input id="new_email" type="email" name="new_email" class="form-input" required placeholder="naam@voorbeeld.nl">
-                                </div>
-                                <div>
-                                    <label class="form-label" for="new_role">Rol</label>
-                                    <select id="new_role" name="new_role" class="form-input">
-                                        <option value="editor">Bewerker</option>
-                                        <option value="content_manager">Content Manager</option>
-                                        <option value="superadmin">Administrator</option>
-                                    </select>
-                                </div>
-                            </div>
+                                <details>
+                                    <summary class="btn btn-secondary cursor-pointer list-none inline-flex">
+                                        <i class="fa-solid fa-sliders"></i> Rechten instellen
+                                    </summary>
+                                    <div class="mt-4 border border-gray-200 rounded p-4 bg-gray-50">
+                                        <div class="flex items-center justify-between gap-3 mb-3">
+                                            <p class="form-label mb-0">Rechten voor nieuwe gebruiker</p>
+                                            <label class="inline-flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+                                                <span>Selecteer alle</span>
+                                                <input type="checkbox" class="js-permission-select-all w-5 h-5 cursor-pointer">
+                                            </label>
+                                        </div>
+                                        <div class="js-permission-group grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <?php foreach ($adminPermissionOptions as $permissionKey => $permissionLabel): ?>
+                                                <label class="flex items-center justify-between gap-3 border border-gray-200 rounded bg-white px-4 py-3 cursor-pointer hover:border-[#00811F] hover:shadow-sm transition">
+                                                    <span class="font-medium text-gray-800"><?php echo htmlspecialchars($permissionLabel); ?></span>
+                                                    <input type="checkbox" name="new_permissions[]" value="<?php echo htmlspecialchars($permissionKey); ?>" class="w-5 h-5 flex-shrink-0 cursor-pointer">
+                                                </label>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
+                                </details>
 
-                            <div>
-                                <label class="form-label" for="new_password">Wachtwoord</label>
-                                <input id="new_password" type="text" name="new_password" class="form-input" required placeholder="Voer wachtwoord in">
-                            </div>
-
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fa-solid fa-user-plus"></i> Gebruiker toevoegen
-                            </button>
-                        </form>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa-solid fa-user-plus"></i> Gebruiker toevoegen
+                                </button>
+                            </form>
+                        <?php endif; ?>
 
                         <?php if (empty($userAccounts)): ?>
                             <div class="text-center py-8 text-gray-500">
@@ -1739,35 +1828,80 @@ if ($page === 'users') {
                                     $accLastName = trim((string)($acc['last_name'] ?? ''));
                                     $accFullName = trim($accFirstName . ' ' . $accLastName);
                                     $accRole = trim((string)($acc['role'] ?? ''));
-                                    if ($accRole === '') {
-                                        $accRole = ((int)($acc['admin'] ?? 0) === 1) ? 'superadmin' : 'viewer';
-                                    }
-                                    ?>
-                                    <form method="POST" class="border border-gray-200 rounded p-4 bg-white flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
-                                        <input type="hidden" name="action" value="update_user_role">
-                                        <input type="hidden" name="target_email" value="<?php echo htmlspecialchars($accEmail); ?>">
+                                     if ($accRole === '') {
+                                         $accRole = ((int)($acc['admin'] ?? 0) === 1) ? 'superadmin' : 'viewer';
+                                     }
+                                     $accPermissions = normalizeAccountPermissions($acc['permissions'] ?? null);
+                                     if ($accPermissions === null) {
+                                         $accPermissions = permissionsForRole($accRole, $rolePermissions);
+                                     }
+                                     ?>
+                                    <div class="border border-gray-200 rounded p-4 bg-white space-y-4">
+                                        <div class="flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
+                                            <div>
+                                                <?php if ($accFullName !== ''): ?>
+                                                    <p class="font-semibold text-gray-900"><?php echo htmlspecialchars($accFullName); ?></p>
+                                                <?php endif; ?>
+                                                <p class="font-semibold text-gray-900"><?php echo htmlspecialchars($accEmail); ?></p>
+                                                <p class="text-xs text-gray-500">Basisrol: <?php echo htmlspecialchars($accRole); ?></p>
+                                            </div>
 
-                                        <div>
-                                            <?php if ($accFullName !== ''): ?>
-                                                <p class="font-semibold text-gray-900"><?php echo htmlspecialchars($accFullName); ?></p>
-                                            <?php endif; ?>
-                                            <p class="font-semibold text-gray-900"><?php echo htmlspecialchars($accEmail); ?></p>
-                                            <p class="text-xs text-gray-500">Huidige rol: <?php echo htmlspecialchars($accRole); ?></p>
+                                            <div class="flex flex-wrap gap-2">
+                                                <?php if ($hasPermission('edit_users')): ?>
+                                                    <details class="relative">
+                                                        <summary class="btn btn-secondary btn-sm cursor-pointer list-none">
+                                                            <i class="fa-solid fa-user-pen"></i> Gebruiker bewerken
+                                                        </summary>
+                                                        <form method="POST" class="mt-4 border border-gray-200 rounded p-4 space-y-4 bg-gray-50 md:min-w-[640px]">
+                                                            <input type="hidden" name="action" value="update_user_permissions">
+                                                            <input type="hidden" name="target_email" value="<?php echo htmlspecialchars($accEmail); ?>">
+
+                                                            <div class="flex flex-col md:flex-row md:items-center gap-2">
+                                                                <label class="text-sm text-gray-700" for="role_<?php echo md5($accEmail); ?>">Basisrol</label>
+                                                                <select id="role_<?php echo md5($accEmail); ?>" name="role" class="form-input">
+                                                                    <option value="viewer" <?php echo $accRole === 'viewer' ? 'selected' : ''; ?>>Geen vaste rol</option>
+                                                                    <option value="superadmin" <?php echo $accRole === 'superadmin' ? 'selected' : ''; ?>>Administrator</option>
+                                                                    <option value="content_manager" <?php echo $accRole === 'content_manager' ? 'selected' : ''; ?>>Content Manager</option>
+                                                                    <option value="editor" <?php echo $accRole === 'editor' ? 'selected' : ''; ?>>Bewerker</option>
+                                                                </select>
+                                                            </div>
+
+                                                            <div class="flex items-center justify-between gap-3">
+                                                                <p class="form-label mb-0">Rechten</p>
+                                                                <label class="inline-flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+                                                                    <span>Selecteer alle</span>
+                                                                    <input type="checkbox" class="js-permission-select-all w-5 h-5 cursor-pointer">
+                                                                </label>
+                                                            </div>
+
+                                                            <div class="js-permission-group grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                <?php foreach ($adminPermissionOptions as $permissionKey => $permissionLabel): ?>
+                                                                    <?php $permissionChecked = in_array($permissionKey, $accPermissions, true); ?>
+                                                                    <label class="flex items-center justify-between gap-3 border border-gray-200 rounded bg-white px-4 py-3 cursor-pointer hover:border-[#00811F] hover:shadow-sm transition">
+                                                                        <span class="font-medium text-gray-800"><?php echo htmlspecialchars($permissionLabel); ?></span>
+                                                                        <input type="checkbox" name="permissions[]" value="<?php echo htmlspecialchars($permissionKey); ?>" <?php echo $permissionChecked ? 'checked' : ''; ?> class="w-5 h-5 flex-shrink-0 cursor-pointer">
+                                                                    </label>
+                                                                <?php endforeach; ?>
+                                                            </div>
+
+                                                            <button type="submit" class="btn btn-primary btn-sm">
+                                                                <i class="fa-solid fa-save"></i> Rechten opslaan
+                                                            </button>
+                                                        </form>
+                                                    </details>
+                                                <?php endif; ?>
+
+                                                <?php if ($hasPermission('delete_users') && $accEmail !== ($_SESSION['email'] ?? '')): ?>
+                                                    <form method="POST" class="admin-inline-form">
+                                                        <input type="hidden" name="target_email" value="<?php echo htmlspecialchars($accEmail); ?>">
+                                                        <button type="submit" name="action" value="delete_user" class="btn btn-danger btn-sm" onclick="return confirm('Verwijder deze gebruiker?');">
+                                                            <i class="fa-solid fa-trash"></i> Gebruiker verwijderen
+                                                        </button>
+                                                    </form>
+                                                <?php endif; ?>
+                                            </div>
                                         </div>
-
-                                        <div class="flex items-center gap-2">
-                                            <label class="text-sm text-gray-700" for="role_<?php echo md5($accEmail); ?>">Rol</label>
-                                            <select id="role_<?php echo md5($accEmail); ?>" name="role" class="form-input">
-                                                <option value="superadmin" <?php echo $accRole === 'superadmin' ? 'selected' : ''; ?>>Administrator</option>
-                                                <option value="content_manager" <?php echo $accRole === 'content_manager' ? 'selected' : ''; ?>>Content Manager</option>
-                                                <option value="editor" <?php echo $accRole === 'editor' ? 'selected' : ''; ?>>Bewerker</option>
-
-                                            </select>
-                                            <button type="submit" class="btn btn-primary btn-sm">
-                                                <i class="fa-solid fa-save"></i> Opslaan
-                                            </button>
-                                        </div>
-                                    </form>
+                                    </div>
                                 <?php endforeach; ?>
                             </div>
                         <?php endif; ?>
@@ -2037,7 +2171,7 @@ if ($page === 'users') {
                             <p class="text-sm text-gray-600 mb-4">Hier kun je kaarten toevoegen, wijzigen en verwijderen voor de pagina onder de tab "Wat doen we". De eerste kaart wordt als brede intro bovenaan getoond; de rest komt in de rij met kaarten.</p>
                         <?php endif; ?>
 
-                        <?php if ($editPage): ?>
+                        <?php if ($editPage && $canManagePages): ?>
                             <a href="admin.php?page=<?php echo urlencode($pageKey); ?>" class="btn btn-secondary mb-6">
                                 <i class="fa-solid fa-arrow-left"></i> Terug
                             </a>
@@ -2129,7 +2263,7 @@ if ($page === 'users') {
                                     </button>
                                 </div>
                             </form>
-                        <?php else: ?>
+                        <?php elseif ($canManagePages): ?>
                             <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6 js-content-preview-form">
                                 <h3 class="font-semibold text-lg">Nieuw <?php echo htmlspecialchars($itemLabel); ?></h3>
                                 <input type="hidden" name="page_action" value="create_page">
@@ -2262,29 +2396,31 @@ if ($page === 'users') {
                                                             </a>
                                                         <?php endif; ?>
                                                         <div class="admin-row-actions-stack flex flex-col gap-1">
-                                                            <div class="flex gap-1">
-                                                                <form method="POST">
-                                                                    <input type="hidden" name="page_action" value="reorder_page">
-                                                                    <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
-                                                                    <input type="hidden" name="id" value="<?php echo (int)$it['id']; ?>">
-                                                                    <input type="hidden" name="direction" value="up">
-                                                                    <button type="submit" class="btn btn-secondary btn-sm" <?php echo $isFirst ? 'disabled' : ''; ?> title="Omhoog">
-                                                                        <i class="fa-solid fa-arrow-up"></i>
-                                                                    </button>
-                                                                </form>
-                                                                <form method="POST">
-                                                                    <input type="hidden" name="page_action" value="reorder_page">
-                                                                    <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
-                                                                    <input type="hidden" name="id" value="<?php echo (int)$it['id']; ?>">
-                                                                    <input type="hidden" name="direction" value="down">
-                                                                    <button type="submit" class="btn btn-secondary btn-sm" <?php echo $isLast ? 'disabled' : ''; ?> title="Omlaag">
-                                                                        <i class="fa-solid fa-arrow-down"></i>
-                                                                    </button>
-                                                                </form>
-                                                            </div>
-                                                            <a href="admin.php?edit_page=<?php echo (int)$it['id']; ?>&page=<?php echo urlencode($pageKey); ?>" class="btn btn-secondary btn-sm">
-                                                                <i class="fa-solid fa-pencil"></i> Bewerk
-                                                            </a>
+                                                            <?php if ($canManagePages): ?>
+                                                                <div class="flex gap-1">
+                                                                    <form method="POST">
+                                                                        <input type="hidden" name="page_action" value="reorder_page">
+                                                                        <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
+                                                                        <input type="hidden" name="id" value="<?php echo (int)$it['id']; ?>">
+                                                                        <input type="hidden" name="direction" value="up">
+                                                                        <button type="submit" class="btn btn-secondary btn-sm" <?php echo $isFirst ? 'disabled' : ''; ?> title="Omhoog">
+                                                                            <i class="fa-solid fa-arrow-up"></i>
+                                                                        </button>
+                                                                    </form>
+                                                                    <form method="POST">
+                                                                        <input type="hidden" name="page_action" value="reorder_page">
+                                                                        <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
+                                                                        <input type="hidden" name="id" value="<?php echo (int)$it['id']; ?>">
+                                                                        <input type="hidden" name="direction" value="down">
+                                                                        <button type="submit" class="btn btn-secondary btn-sm" <?php echo $isLast ? 'disabled' : ''; ?> title="Omlaag">
+                                                                            <i class="fa-solid fa-arrow-down"></i>
+                                                                        </button>
+                                                                    </form>
+                                                                </div>
+                                                                <a href="admin.php?edit_page=<?php echo (int)$it['id']; ?>&page=<?php echo urlencode($pageKey); ?>" class="btn btn-secondary btn-sm">
+                                                                    <i class="fa-solid fa-pencil"></i> Bewerk
+                                                                </a>
+                                                            <?php endif; ?>
                                                             <?php if ($canDeletePages): ?>
                                                                 <form method="POST" onsubmit="return confirm('Verwijder dit item?');" class="admin-inline-form">
                                                                     <input type="hidden" name="page_action" value="delete_page">
@@ -2677,6 +2813,49 @@ if ($page === 'users') {
                         alert('Er is een fout opgetreden bij het tonen van de preview. Zie de console voor details.');
                     }
                 });
+            });
+        })();
+
+        (function() {
+            const selectAllBoxes = document.querySelectorAll('.js-permission-select-all');
+            if (!selectAllBoxes.length) return;
+
+            function findPermissionGroup(selectAllBox) {
+                const parent = selectAllBox.closest('.bg-gray-50, form');
+                return parent ? parent.querySelector('.js-permission-group') : null;
+            }
+
+            function syncSelectAll(selectAllBox) {
+                const group = findPermissionGroup(selectAllBox);
+                if (!group) return;
+
+                const boxes = group.querySelectorAll('input[type="checkbox"]');
+                const checkedCount = Array.from(boxes).filter(function(box) {
+                    return box.checked;
+                }).length;
+
+                selectAllBox.checked = boxes.length > 0 && checkedCount === boxes.length;
+                selectAllBox.indeterminate = checkedCount > 0 && checkedCount < boxes.length;
+            }
+
+            selectAllBoxes.forEach(function(selectAllBox) {
+                const group = findPermissionGroup(selectAllBox);
+                if (!group) return;
+
+                selectAllBox.addEventListener('change', function() {
+                    group.querySelectorAll('input[type="checkbox"]').forEach(function(box) {
+                        box.checked = selectAllBox.checked;
+                    });
+                    selectAllBox.indeterminate = false;
+                });
+
+                group.addEventListener('change', function(event) {
+                    if ((event.target.type || '').toLowerCase() === 'checkbox') {
+                        syncSelectAll(selectAllBox);
+                    }
+                });
+
+                syncSelectAll(selectAllBox);
             });
         })();
 
