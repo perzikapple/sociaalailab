@@ -181,7 +181,13 @@
             <div class="upload-area" id="uploadArea">
                 <label class="upload-label" for="imageInput">Klik of sleep een afbeelding hierheen (PNG/JPG, max
                     10MB)</label>
-                <input type="file" id="imageInput" name="image" accept="image/png, image/jpeg">
+                <input type="file" id="imageInput" name="image" accept="image/*">
+                <div id="info10mb"
+                    style="background:#fffbe6;color:#856404;border:1px solid #ffe58f;padding:8px 14px;border-radius:7px;font-size:0.98em;font-weight:500;max-width:340px;margin:16px auto 0 16px;text-align:center;box-shadow:0 1px 6px rgba(255,193,7,0.06);line-height:1.5;">
+                    <span style="font-size:1.15em;vertical-align:middle;margin-right:6px;">ℹ️</span>
+                    Afbeeldingen groter dan 10MB worden automatisch verkleind na jouw toestemming.
+                </div>
+                <!-- max 10MB enforced in JS -->
             </div>
             <div class="preview" id="preview"></div>
             <div class="actions">
@@ -189,6 +195,15 @@
                     <option value="jpg">Naar JPG</option>
                     <option value="png">Naar PNG</option>
                 </select>
+            </div>
+            <div id="consentWrap" style="margin:18px 0 0 0;text-align:left;max-width:340px;display:none;">
+                <label style="display:flex;align-items:flex-start;gap:8px;font-size:0.98em;">
+                    <input type="checkbox" id="consentCheckbox" style="margin-top:3px;">
+                    <span>Ik geef toestemming dat afbeeldingen groter dan 10MB automatisch worden verkleind op deze
+                        website.</span>
+                </label>
+            </div>
+            <div class="actions">
                 <button type="submit" id="convertBtn" disabled>Converteren</button>
             </div>
             <div class="error" id="error"></div>
@@ -203,6 +218,8 @@
         const errorDiv = document.getElementById('error');
         const resultDiv = document.getElementById('result');
         let selectedFile = null;
+        const consentCheckbox = document.getElementById('consentCheckbox');
+        const consentWrap = document.getElementById('consentWrap');
 
         uploadArea.addEventListener('click', () => imageInput.click());
         uploadArea.addEventListener('dragover', e => {
@@ -227,17 +244,26 @@
             errorDiv.textContent = '';
             resultDiv.innerHTML = '';
             if (!file) return;
-            if (!['image/png', 'image/jpeg'].includes(file.type)) {
-                errorDiv.textContent = 'Alleen PNG of JPG toegestaan.';
-                convertBtn.disabled = true;
-                preview.innerHTML = '';
-                return;
-            }
             if (file.size > 10 * 1024 * 1024) {
-                errorDiv.textContent = 'Bestand is groter dan 10MB.';
+                errorDiv.innerHTML = '<div style="background:#fffbe6;color:#856404;border:1px solid #ffe58f;padding:10px 16px;border-radius:8px;font-size:1.08em;font-weight:600;max-width:360px;margin:16px auto 0;text-align:center;box-shadow:0 2px 8px rgba(255,193,7,0.10);line-height:1.5;">'
+                    + '<span style=\"font-size:1.35em;vertical-align:middle;margin-right:6px;\">⚠️</span>'
+                    + 'Deze afbeelding is groter dan 10MB.<br>'
+                    + '<span style=\"font-size:0.98em;font-weight:400;\">Je moet toestemming geven voor automatische verkleining.</span>'
+                    + '</div>';
+                consentWrap.style.display = 'block';
+                consentCheckbox.checked = false;
+                consentCheckbox.disabled = false;
                 convertBtn.disabled = true;
                 preview.innerHTML = '';
+                consentCheckbox.onchange = () => {
+                    convertBtn.disabled = !consentCheckbox.checked;
+                };
                 return;
+            } else {
+                errorDiv.textContent = '';
+                consentWrap.style.display = 'none';
+                consentCheckbox.checked = false;
+                consentCheckbox.disabled = true;
             }
             selectedFile = file;
             convertBtn.disabled = false;
@@ -247,6 +273,12 @@
             };
             reader.readAsDataURL(file);
         }
+        consentCheckbox.addEventListener('change', () => {
+            if (selectedFile && selectedFile.size > 10 * 1024 * 1024) {
+                convertBtn.disabled = !consentCheckbox.checked;
+            }
+        });
+
         document.getElementById('convertForm').addEventListener('submit', async function (e) {
             e.preventDefault();
             errorDiv.textContent = '';

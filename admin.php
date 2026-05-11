@@ -38,8 +38,14 @@ function handleUpload($fileField)
 {
     if (empty($_FILES[$fileField]['name'])) return null;
     $allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    if (!in_array($_FILES[$fileField]['type'], $allowed) || $_FILES[$fileField]['size'] > 50 * 1024 * 1024) {
-        return ['error' => 'Ongeldig afbeeldingsbestand (jpg/png/gif/webp, max 50MB).'];
+    // Max 10MB voor uploads in het hele admin panel
+    if (!in_array($_FILES[$fileField]['type'], $allowed) || $_FILES[$fileField]['size'] > 10 * 1024 * 1024) {
+        return ['error' => '<div style="background:#fff3cd;color:#856404;border:1.5px solid #ffeeba;padding:18px 20px;border-radius:10px;font-size:1.13rem;font-weight:600;max-width:480px;margin:18px auto;text-align:center;box-shadow:0 2px 12px rgba(255,193,7,0.08);">
+        <span style="font-size:1.5em;vertical-align:middle;">⚠️</span><br>
+        Je afbeelding is groter dan 10MB.<br>
+        Maak je afbeelding kleiner met de <a href=\'admin.php?page=image-converter\' style=\'color:#00811F;font-weight:bold;text-decoration:underline;\'>Image Converter</a>.<br>
+        <span style=\'font-size:0.97em;font-weight:400;\'>(Alleen JPG/PNG tot 10MB toegestaan)</span>
+        </div>'];
     }
     if (!is_dir(__DIR__ . '/uploads')) mkdir(__DIR__ . '/uploads', 0755, true);
     $ext = pathinfo($_FILES[$fileField]['name'], PATHINFO_EXTENSION);
@@ -86,14 +92,20 @@ function handleMultiUpload($fileField)
             return ['error' => 'Een van de galerijfoto\'s kon niet worden geupload.'];
         }
 
-        if (!in_array($type, $allowed, true) || $size > 50 * 1024 * 1024) {
+        // Max 10MB per foto, zelfde melding als enkele upload
+        if (!in_array($type, $allowed, true) || $size > 10 * 1024 * 1024) {
             foreach ($saved as $fileName) {
                 $path = __DIR__ . '/uploads/' . $fileName;
                 if (file_exists($path)) {
                     @unlink($path);
                 }
             }
-            return ['error' => 'Ongeldig galerijbestand (jpg/png/gif/webp, max 50MB per foto).'];
+            return ['error' => '<div style="background:#fff3cd;color:#856404;border:1.5px solid #ffeeba;padding:18px 20px;border-radius:10px;font-size:1.13rem;font-weight:600;max-width:480px;margin:18px auto;text-align:center;box-shadow:0 2px 12px rgba(255,193,7,0.08);">
+            <span style="font-size:1.5em;vertical-align:middle;">⚠️</span><br>
+            Je afbeelding is groter dan 10MB.<br>
+            Maak je afbeelding kleiner met de <a href=\'admin.php?page=image-converter\' style=\'color:#00811F;font-weight:bold;text-decoration:underline;\'>Image Converter</a>.<br>
+            <span style=\'font-size:0.97em;font-weight:400;\'>(Alleen JPG/PNG tot 10MB toegestaan)</span>
+            </div>'];
         }
 
         $ext = pathinfo($name, PATHINFO_EXTENSION);

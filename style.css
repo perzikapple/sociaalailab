@@ -1,10 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap');
 /* Sidebar toggle button alleen tonen op mobiel */
 @media (min-width: 1024px) {
     .sidebar-toggle-btn {
         display: none !important;
     }
 }
-@import url('https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap');
 
 /* Consistent image size and spacing for wie-zijn-we page diubjjhyrhyrjji */
 #homepage-cards-container {
@@ -3456,6 +3456,7 @@ button,
 section {
     width: 95%;
 }
+
 @media (max-width: 490px) {
 
     .watdoenwe-page .card.row {
@@ -3474,6 +3475,7 @@ section {
     }
 
 }
+
 @media (max-width: 571px) {
 
     /* Container voor de items */
@@ -3487,7 +3489,7 @@ section {
 
 
 
-    #watdoenwe-switch > div {
+    #watdoenwe-switch>div {
         background-color: #ffffff;
         border-radius: 12px;
         box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
@@ -3671,7 +3673,7 @@ section {
     align-items: center !important;
 }
 
-.text-padding[style*="flex-direction: row"] > div {
+.text-padding[style*="flex-direction: row"]>div {
     align-self: center;
 }
 
@@ -4185,7 +4187,7 @@ section {
     align-items: center !important;
 }
 
-.text-padding[style*="flex-direction: row"] > div {
+.text-padding[style*="flex-direction: row"]>div {
     align-self: center;
 }
 
@@ -4204,7 +4206,7 @@ section:focus-visible,
     outline-offset: 2px;
 }
 
-.watdoenwe-page .grid > .bg-white:focus {
+.watdoenwe-page .grid>.bg-white:focus {
     outline: 3px solid #00811F;
     outline-offset: 2px;
 }
