@@ -1233,12 +1233,12 @@ if ($page === 'users') {
                 },
             ],
             tinymceai_token_provider: async () => {
-                await fetch(`https://demo.api.tiny.cloud/1/qnkn0kjik1i39qbzy3vn798sz5jjf0brz2sp43v420o1rnqx/auth/random`, {
+                await fetch(`https://demo.api.tiny.cloud/1/zhfej4gun2kkdtkfw0i12yb9xy75tqsryjrcauyjepes7qli/auth/random`, {
                     method: "POST",
                     credentials: "include"
                 });
                 return {
-                    token: await fetch(`https://demo.api.tiny.cloud/1/qnkn0kjik1i39qbzy3vn798sz5jjf0brz2sp43v420o1rnqx/jwt/tinymceai`, {
+                    token: await fetch(`https://demo.api.tiny.cloud/1/zhfej4gun2kkdtkfw0i12yb9xy75tqsryjrcauyjepes7qli/jwt/tinymceai`, {
                         credentials: "include"
                     }).then(r => r.text())
                 };
