@@ -256,7 +256,19 @@
                 convertBtn.disabled = true;
                 preview.innerHTML = '';
                 consentCheckbox.onchange = () => {
-                    convertBtn.disabled = !consentCheckbox.checked;
+                    if (consentCheckbox.checked) {
+                        selectedFile = file;
+                        convertBtn.disabled = false;
+                        const reader = new FileReader();
+                        reader.onload = e => {
+                            preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+                        };
+                        reader.readAsDataURL(file);
+                    } else {
+                        selectedFile = null;
+                        convertBtn.disabled = true;
+                        preview.innerHTML = '';
+                    }
                 };
                 return;
             } else {
@@ -264,14 +276,14 @@
                 consentWrap.style.display = 'none';
                 consentCheckbox.checked = false;
                 consentCheckbox.disabled = true;
+                selectedFile = file;
+                convertBtn.disabled = false;
+                const reader = new FileReader();
+                reader.onload = e => {
+                    preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+                };
+                reader.readAsDataURL(file);
             }
-            selectedFile = file;
-            convertBtn.disabled = false;
-            const reader = new FileReader();
-            reader.onload = e => {
-                preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
-            };
-            reader.readAsDataURL(file);
         }
         consentCheckbox.addEventListener('change', () => {
             if (selectedFile && selectedFile.size > 10 * 1024 * 1024) {
@@ -285,6 +297,15 @@
             resultDiv.innerHTML = '';
             if (!selectedFile) {
                 errorDiv.textContent = 'Geen afbeelding geselecteerd.';
+                return;
+            }
+            // Als bestand gekozen maar geen toestemming bij >10MB, toon alleen die melding
+            if (selectedFile.size > 10 * 1024 * 1024 && !consentCheckbox.checked) {
+                errorDiv.innerHTML = '<div style="background:#fffbe6;color:#856404;border:1px solid #ffe58f;padding:10px 16px;border-radius:8px;font-size:1.08em;font-weight:600;max-width:360px;margin:16px auto 0;text-align:center;box-shadow:0 2px 8px rgba(255,193,7,0.10);line-height:1.5;">'
+                    + '<span style=\"font-size:1.35em;vertical-align:middle;margin-right:6px;\">⚠️</span>'
+                    + 'Deze afbeelding is groter dan 10MB.<br>'
+                    + '<span style=\"font-size:0.98em;font-weight:400;\">Je moet toestemming geven voor automatische verkleining.</span>'
+                    + '</div>';
                 return;
             }
             const formData = new FormData();

@@ -1150,7 +1150,7 @@ if ($page === 'users') {
     <link rel="icon" type="image/png" href="images/Pixels_icon.png">
     <script src="custom.js"></script>
     <!-- TinyMCE toevoegen met API key -->
-    <script src="https://cdn.tiny.cloud/1/qnkn0kjik1i39qbzy3vn798sz5jjf0brz2sp43v420o1rnqx/tinymce/8/tinymce.min.js" referrerpolicy="origin" crossorigin="anonymous"></script>
+    <script src="https://cdn.tiny.cloud/1/zhfej4gun2kkdtkfw0i12yb9xy75tqsryjrcauyjepes7qli/tinymce/6/tinymce.min.js" referrerpolicy="origin" crossorigin="anonymous"></script>
     <script>
         tinymce.init({
             selector: 'textarea',
