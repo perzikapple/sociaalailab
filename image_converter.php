@@ -16,12 +16,13 @@ if (!isset($_FILES['image']) || !isset($_POST['format'])) {
 
 $file = $_FILES['image'];
 $format = $_POST['format'] === 'png' ? 'png' : 'jpg';
-$allowedTypes = ['image/png', 'image/jpeg'];
 $maxSize = 10 * 1024 * 1024; // 10MB
-
-if (!in_array($file['type'], $allowedTypes) || $file['size'] > $maxSize) {
+if ($file['size'] > $maxSize) {
     http_response_code(400);
-    echo 'Alleen PNG/JPG tot 10MB toegestaan.';
+    echo '<div style="background:#fffbe6;color:#856404;border:1px solid #ffe58f;padding:8px 14px;border-radius:7px;font-size:1em;font-weight:500;max-width:340px;margin:18px auto 0;text-align:center;box-shadow:0 1px 6px rgba(255,193,7,0.06);">'
+        . '⚠️ Bestand is groter dan 10MB.<br>'
+        . '<span style="font-size:0.97em;font-weight:400;">Kies een kleinere afbeelding.</span>'
+        . '</div>';
     exit;
 }
 
