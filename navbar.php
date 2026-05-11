@@ -27,7 +27,7 @@ if (!isset($navPrefix)) {
             <li><a href="<?php echo htmlspecialchars($navPrefix); ?>wie-zijn-we">Wie zijn we?</a></li>
             <li><a href="<?php echo htmlspecialchars($navPrefix); ?>contact">Contact</a></li>
            <!-- <li><a href="<?php echo htmlspecialchars($navPrefix); ?>nieuws.php">Nieuws</a></li> -->
-            <?php if (!empty($_SESSION['can_access_admin']) || (isset($_SESSION['admin.php']) && (int)$_SESSION['admin'] === 1)): ?>
+            <?php if (!empty($_SESSION['can_access_admin'])): ?>
                 <li><a href="<?php echo htmlspecialchars($navPrefix); ?>admin.php">Admin</a></li>
             <?php endif; ?>
         </ul>

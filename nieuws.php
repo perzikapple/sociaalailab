@@ -21,7 +21,7 @@ $linkedinProfileUrl = 'https://www.linkedin.com/company/sociaal-ai-lab-rotterdam
 // LINKEDIN_ACCESS_TOKEN requires access to organization social content.
 $linkedinOrgId = getenv('LINKEDIN_ORG_ID') ?: '';
 $linkedinAccessToken = getenv('LINKEDIN_ACCESS_TOKEN') ?: '';
-$isAdminViewer = !empty($_SESSION['can_access_admin']) || (isset($_SESSION['admin']) && (int) $_SESSION['admin'] === 1);
+$isAdminViewer = !empty($_SESSION['can_access_admin']);
 
 // Optional mock mode to test UI/flow without LinkedIn API credentials.
 // Enable with LINKEDIN_MOCK_MODE=1 or with ?linkedin_mock=1 (admin only).

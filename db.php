@@ -114,6 +114,7 @@ try {
             last_name VARCHAR(120) DEFAULT NULL,
             admin TINYINT(1) NOT NULL DEFAULT 0,
             role VARCHAR(30) NOT NULL DEFAULT 'viewer',
+            permissions TEXT DEFAULT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ");
@@ -125,15 +126,18 @@ try {
     if (!in_array('role', $accountColumns, true)) {
         $pdo->exec("ALTER TABLE accounts ADD COLUMN role VARCHAR(30) NOT NULL DEFAULT 'viewer'");
     }
+    if (!in_array('permissions', $accountColumns, true)) {
+        $pdo->exec("ALTER TABLE accounts ADD COLUMN permissions TEXT DEFAULT NULL");
+    }
     if (!in_array('first_name', $accountColumns, true)) {
         $pdo->exec("ALTER TABLE accounts ADD COLUMN first_name VARCHAR(120) DEFAULT NULL");
     }
     if (!in_array('last_name', $accountColumns, true)) {
         $pdo->exec("ALTER TABLE accounts ADD COLUMN last_name VARCHAR(120) DEFAULT NULL");
     }
-    $pdo->exec("UPDATE accounts SET role = 'superadmin' WHERE admin = 1 AND (role IS NULL OR role = '' OR role = 'viewer')");
-    $pdo->exec("UPDATE accounts SET admin = 1 WHERE role IN ('superadmin', 'content_manager', 'editor')");
-    $pdo->exec("UPDATE accounts SET admin = 0 WHERE role = 'viewer'");
+    $pdo->exec("UPDATE accounts SET role = 'superadmin' WHERE admin = 1 AND (role IS NULL OR role = '' OR role = 'viewer') AND (permissions IS NULL OR permissions = '')");
+    $pdo->exec("UPDATE accounts SET admin = 1 WHERE role IN ('superadmin', 'content_manager', 'editor') AND (permissions IS NULL OR permissions = '')");
+    $pdo->exec("UPDATE accounts SET admin = 0 WHERE role = 'viewer' AND (permissions IS NULL OR permissions = '' OR permissions = '[]')");
     
     $pdo->exec("CREATE TABLE IF NOT EXISTS audit_logs (
             id INT AUTO_INCREMENT PRIMARY KEY,
