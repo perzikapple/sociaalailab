@@ -14,6 +14,7 @@ $stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE COALESCE(end_date, date
 $stmt->execute();
 $totalPast = $stmt->fetchColumn();
 
+
 $itemsPerPage = 6;
 $currentPage = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 if ($currentPage < 1) {
@@ -24,6 +25,9 @@ if ($currentPage > $totalPages) {
     $currentPage = $totalPages;
 }
 $offset = ($currentPage - 1) * $itemsPerPage;
+
+// Sorteervolgorde ophalen
+$sortOrder = isset($_GET['sort']) && $_GET['sort'] === 'asc' ? 'ASC' : 'DESC';
 
 
 $banner1 = 'images/banner_website_01.jpg';
@@ -47,7 +51,7 @@ try {
         }
     }
 
-    $stmt = $pdo->prepare("SELECT * FROM events WHERE COALESCE(end_date, date) < CURDATE() ORDER BY date DESC, time DESC LIMIT :limit OFFSET :offset");
+    $stmt = $pdo->prepare("SELECT * FROM events WHERE COALESCE(end_date, date) < CURDATE() ORDER BY date $sortOrder, time $sortOrder LIMIT :limit OFFSET :offset");
     $stmt->bindValue(':limit', $itemsPerPage, PDO::PARAM_INT);
     $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
     $stmt->execute();
@@ -203,6 +207,20 @@ include __DIR__ . '/navbar.php';
             <?php endif; ?>
         </section>
     <?php endforeach; ?>
+
+
+    <div class="max-w-6xl mx-auto mb-4 flex">
+        <div class="ml-auto bg-white rounded-lg shadow px-4 py-2">
+            <form method="get" action="terugblikken.php#agenda-terugblik-switch" class="flex flex-row gap-2 items-center m-0">
+                <input type="hidden" name="page" value="<?php echo $currentPage; ?>">
+                <label for="sort" class="font-semibold">Sorteer:</label>
+                <select name="sort" id="sort" class="border rounded px-2 py-1" onchange="this.form.submit()">
+                    <option value="desc" <?php if ($sortOrder === 'DESC') echo 'selected'; ?>>Nieuw naar oud</option>
+                    <option value="asc" <?php if ($sortOrder === 'ASC') echo 'selected'; ?>>Oud naar nieuw</option>
+                </select>
+            </form>
+        </div>
+    </div>
 
     <?php if (empty($events)): ?>
         <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12 text-center">
