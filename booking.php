@@ -8,6 +8,17 @@ if (!($_SESSION['can_access_admin'] ?? false)) {
     exit;
 }
 
+$sessionPermissions = [];
+$decodedPermissions = json_decode((string)($_SESSION['permissions'] ?? ''), true);
+if (is_array($decodedPermissions)) {
+    $sessionPermissions = array_map('strval', $decodedPermissions);
+}
+
+if (!in_array('access_booking', $sessionPermissions, true)) {
+    header('Location: admin.php');
+    exit;
+}
+
 $currentMonth = $_GET['month'] ?? date('n');
 $currentYear = $_GET['year'] ?? date('Y');
 $view = $_GET['view'] ?? 'week';
