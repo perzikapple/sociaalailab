@@ -1208,44 +1208,8 @@ if ($page === 'users') {
     <link rel="stylesheet" href="ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/Pixels_icon.png">
     <script src="custom.js"></script>
-    <!-- TinyMCE toevoegen met API key -->
-    <script src="https://cdn.tiny.cloud/1/zhfej4gun2kkdtkfw0i12yb9xy75tqsryjrcauyjepes7qli/tinymce/6/tinymce.min.js" referrerpolicy="origin" crossorigin="anonymous"></script>
-    <script>
-        tinymce.init({
-            selector: 'textarea',
-            plugins: [
-                // Core editing features
-                'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'link', 'lists', 'media', 'searchreplace', 'table', 'visualblocks', 'wordcount',
-                // Your account includes a free trial of TinyMCE premium features
-                // Try the most popular premium features until Apr 27, 2026:
-                'checklist', 'mediaembed', 'casechange', 'formatpainter', 'pageembed', 'a11ychecker', 'tinymcespellchecker', 'permanentpen', 'powerpaste', 'advtable', 'advcode', 'advtemplate', 'tinymceai', 'uploadcare', 'mentions', 'tinycomments', 'tableofcontents', 'footnotes', 'mergetags', 'autocorrect', 'typography', 'inlinecss', 'markdown', 'importword', 'exportword', 'exportpdf'
-            ],
-            toolbar: 'undo redo | tinymceai-chat tinymceai-quickactions tinymceai-review | blocks fontfamily fontsize | bold italic underline strikethrough | link media table mergetags | addcomment showcomments | spellcheckdialog a11ycheck typography uploadcare | align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat',
-            tinycomments_mode: 'embedded',
-            tinycomments_author: 'Author name',
-            mergetags_list: [{
-                    value: 'First.Name',
-                    title: 'First Name'
-                },
-                {
-                    value: 'Email',
-                    title: 'Email'
-                },
-            ],
-            tinymceai_token_provider: async () => {
-                await fetch(`https://demo.api.tiny.cloud/1/zhfej4gun2kkdtkfw0i12yb9xy75tqsryjrcauyjepes7qli/auth/random`, {
-                    method: "POST",
-                    credentials: "include"
-                });
-                return {
-                    token: await fetch(`https://demo.api.tiny.cloud/1/zhfej4gun2kkdtkfw0i12yb9xy75tqsryjrcauyjepes7qli/jwt/tinymceai`, {
-                        credentials: "include"
-                    }).then(r => r.text())
-                };
-            },
-            uploadcare_public_key: '7802a2584c2144503210',
-        });
-    </script>
+    <!-- CKEditor 5 CDN (FREE, UNLIMITED) -->
+    <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
     <style>
         .btn-readonly-disabled {
             opacity: 0.55;
@@ -1253,43 +1217,40 @@ if ($page === 'users') {
             pointer-events: none !important;
             filter: grayscale(0.2);
         }
+        .ck-editor__editable {
+            min-height: 100px;
+        }
     </style>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const isCompactEditor = window.matchMedia('(max-width: 1023.98px)').matches;
-            const compactToolbar = 'undo redo | bold italic | bullist numlist | link';
-            const fullToolbar = 'undo redo | bold italic underline | bullist numlist | link image | table';
-            const compactPlugins = 'lists link';
-            const fullPlugins = 'lists link image table';
+            // CKEditor 5 base configuration
+            const ckConfig = {
+                toolbar: {
+                    items: ['undo', 'redo', '|', 'bold', 'italic', 'underline', '|', 'bulletedList', 'numberedList', '|', 'link']
+                },
+                link: {
+                    addTargetToExternalLinks: true
+                }
+            };
 
-            // TinyMCE for title fields - compact
-            tinymce.init({
-                selector: 'textarea[name="title"]',
-                plugins: isCompactEditor ? compactPlugins : fullPlugins,
-                toolbar: isCompactEditor ? compactToolbar : fullToolbar,
-                menubar: false,
-                statusbar: !isCompactEditor,
-                toolbar_mode: isCompactEditor ? 'scrolling' : 'wrap',
-                branding: false,
-                height: isCompactEditor ? 42 : 50,
-                resize: true,
-                force_br_newlines: true,
-                forced_root_block: false
+            // CKEditor for title fields - compact
+            document.querySelectorAll('textarea[name="title"]').forEach(textarea => {
+                ClassicEditor.create(textarea, {
+                    toolbar: {
+                        items: ['undo', 'redo', '|', 'bold', 'italic'],
+                        shouldNotGroupWhenFull: true
+                    }
+                }).catch(error => console.error('CKEditor error:', error));
             });
 
-            // TinyMCE for content fields - larger
-            tinymce.init({
-                selector: 'textarea:not([name="title"])',
-                plugins: isCompactEditor ? compactPlugins : fullPlugins,
-                toolbar: isCompactEditor ? compactToolbar : fullToolbar,
-                menubar: false,
-                statusbar: !isCompactEditor,
-                toolbar_mode: isCompactEditor ? 'scrolling' : 'wrap',
-                branding: false,
-                height: isCompactEditor ? 220 : 300,
-                resize: true,
-                force_br_newlines: true,
-                forced_root_block: false
+            // CKEditor for content fields - larger with more options
+            document.querySelectorAll('textarea:not([name="title"])').forEach(textarea => {
+                ClassicEditor.create(textarea, {
+                    ...ckConfig,
+                    toolbar: {
+                        items: ['undo', 'redo', '|', 'bold', 'italic', 'underline', '|', 'bulletedList', 'numberedList', '|', 'link', 'insertTable', '|', 'blockQuote']
+                    }
+                }).catch(error => console.error('CKEditor error:', error));
             });
         });
     </script>
