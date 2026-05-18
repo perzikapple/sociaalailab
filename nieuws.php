@@ -287,7 +287,7 @@ include __DIR__ . '/navbar.php';
 
             <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-8 text-center">
                 <p class="text-gray-700 mb-6 text-lg">
-                    Ontdek de meest recente nieuws en activiteiten van SociaalAI Lab
+                    Ontdek het meest recente nieuws en activiteiten van SociaalAI Lab
                 </p>
                 
                 <div class="mb-8 relative group">
