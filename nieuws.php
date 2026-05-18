@@ -196,22 +196,28 @@ function fetchAllPostsFromRss(string $url, int $limit = 1000): array
         
         $text = strip_tags($description);
         $date = (string)$item->pubDate;
+        $timestamp = strtotime($date) ?: 0;
         
         $posts[] = [
             'url' => (string)$item->link,
             'text' => trim($text),
             'title' => (string)$item->title,
             'image' => $imageUrl,
-            'date' => date('d-m-Y', strtotime($date))
+            'date' => $timestamp > 0 ? date('d-m-Y', $timestamp) : '',
+            'timestamp' => $timestamp
         ];
         $count++;
     }
     
+    usort($posts, function ($a, $b) {
+        return ($b['timestamp'] ?? 0) <=> ($a['timestamp'] ?? 0);
+    });
+
     return $posts;
 }
 
 // 1. Haal meerdere posts op via de RSS methode
-$rssPosts = array_reverse(fetchAllPostsFromRss($linkedinRssUrl, 50));
+$rssPosts = fetchAllPostsFromRss($linkedinRssUrl, 50);
 $hasRssPosts = !empty($rssPosts);
 
 $latestLinkedInPost = null;
