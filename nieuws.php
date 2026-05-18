@@ -154,7 +154,7 @@ $linkedinApiDebug = [];
 /**
  * Haal alle posts op via een externe RSS feed (zoals RSS.app)
  */
-function fetchAllPostsFromRss(string $url, int $limit = 9): array
+function fetchAllPostsFromRss(string $url, int $limit = 1000): array
 {
     if (empty($url)) {
         return [];
@@ -211,7 +211,7 @@ function fetchAllPostsFromRss(string $url, int $limit = 9): array
 }
 
 // 1. Haal meerdere posts op via de RSS methode
-$rssPosts = array_reverse(fetchAllPostsFromRss($linkedinRssUrl, 9));
+$rssPosts = array_reverse(fetchAllPostsFromRss($linkedinRssUrl, 50));
 $hasRssPosts = !empty($rssPosts);
 
 $latestLinkedInPost = null;
@@ -287,7 +287,7 @@ include __DIR__ . '/navbar.php';
 
             <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-8 text-center">
                 <p class="text-gray-700 mb-6 text-lg">
-                    Ontdek de meest recente nieuws en activiteiten van SociaalAI Lab
+                    Ontdek het meest recente nieuws en activiteiten van SociaalAI Lab
                 </p>
                 
                 <div class="mb-8 relative group">
