@@ -52,7 +52,7 @@ function sendEmail($to, $subject, $body, $isHtml = false) {
         $mail->Password   = $emailConfig['password'];
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = $emailConfig['port'];
-        $mail->SMTPDebug  = 0; // Set to 2 for debugging
+        $mail->SMTPDebug  = 2; // Enable debug output
         
         // Recipients
         $mail->setFrom($emailConfig['from'], $emailConfig['from_name']);
