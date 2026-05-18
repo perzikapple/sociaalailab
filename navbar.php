@@ -12,6 +12,7 @@ if (!isset($navPrefix)) {
         <ul id="nav-menu" class="nav-menu ">
             <li><a href="index.php">Voorpagina</a></li>
             <li><a href="<?php echo htmlspecialchars($navPrefix); ?>agenda">Agenda</a></li>
+            <li><a href="<?php echo htmlspecialchars($navPrefix); ?>nieuws.php">Nieuws</a></li>
 			<li><a href="<?php echo htmlspecialchars($navPrefix); ?>over">Voor wie?</a></li>
 
             <li class="dropdown">
@@ -26,7 +27,6 @@ if (!isset($navPrefix)) {
             <li><a href="<?php echo htmlspecialchars($navPrefix); ?>verantwoord-ai">Verantwoorde AI</a></li>
             <li><a href="<?php echo htmlspecialchars($navPrefix); ?>wie-zijn-we">Wie zijn we?</a></li>
             <li><a href="<?php echo htmlspecialchars($navPrefix); ?>contact">Contact</a></li>
-           <li><a href="<?php echo htmlspecialchars($navPrefix); ?>nieuws.php">Nieuws</a></li>
             <?php if (!empty($_SESSION['can_access_admin'])): ?>
                 <li><a href="<?php echo htmlspecialchars($navPrefix); ?>admin.php">Admin</a></li>
             <?php endif; ?>
