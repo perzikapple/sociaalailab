@@ -2998,6 +2998,38 @@ main>div.grid>div:hover {
 .watdoenwe-page .text-gray-700,
 .watdoenwe-page .leading-relaxed {
     overflow-wrap: anywhere;
+}
+
+/* Link styling - make links visible and styled */
+a {
+    color: #0066cc;
+    text-decoration: underline;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+a:hover {
+    color: #0052a3;
+    text-decoration: none;
+}
+
+a:visited {
+    color: #6b21a8;
+}
+
+/* CKEditor rendered content links */
+.event-description a,
+.text-gray-700 a,
+.leading-relaxed a {
+    color: #0066cc !important;
+    text-decoration: underline !important;
+}
+
+.event-description a:hover,
+.text-gray-700 a:hover,
+.leading-relaxed a:hover {
+    color: #0052a3 !important;
+}
     word-break: break-word;
 }
 

@@ -1,0 +1,26 @@
+# Environment variables (NEVER commit with real passwords!)
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build/Cache
+node_modules/
+build/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
