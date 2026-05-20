@@ -7,6 +7,21 @@
  * Falls back to native mail() if not available
  */
 
+// Load .env file manually if it exists
+if (file_exists(__DIR__ . '/.env')) {
+    $envFile = file(__DIR__ . '/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($envFile as $line) {
+        if (strpos($line, '#') === 0) continue; // Skip comments
+        if (strpos($line, '=') === false) continue; // Skip invalid lines
+        [$key, $value] = explode('=', $line, 2);
+        $key = trim($key);
+        $value = trim($value);
+        if (!getenv($key)) { // Only set if not already set
+            putenv("$key=$value");
+        }
+    }
+}
+
 // Try to include PHPMailer classes if they exist
 $mailerAvailable = false;
 if (file_exists('vendor/phpmailer/src/Exception.php')) {
