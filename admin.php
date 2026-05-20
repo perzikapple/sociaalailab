@@ -1066,7 +1066,7 @@ $events = $stmt->fetchAll();
 ?>
 <?php
 // Welke admin pagina tonen (standaard index)
-$page = $_GET['page'] ?? 'index';
+$page = $_GET['page'] ?? 'agenda';
 
 $allowedPagesByPermission = [
     'banner' => 'manage_banners',
