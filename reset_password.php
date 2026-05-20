@@ -9,10 +9,14 @@ $email = '';
 if (isset($_GET['token'])) {
     $token = $_GET['token'];
 
-    // Check if token matches session
-    if (isset($_SESSION['reset_token']) && $_SESSION['reset_token'] === $token) {
+    // Check if token exists in database and is not expired
+    $stmt = $pdo->prepare("SELECT email FROM password_resets WHERE token = ? AND expires_at > NOW()");
+    $stmt->execute([$token]);
+    $resetRecord = $stmt->fetch();
+    
+    if ($resetRecord) {
         $validToken = true;
-        $email = $_SESSION['reset_email'];
+        $email = $resetRecord['email'];
     } else {
         $message = 'Ongeldige of verlopen reset link.';
     }
@@ -32,9 +36,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $validToken) {
         $stmt = $pdo->prepare("UPDATE accounts SET wachtwoord = ? WHERE email = ?");
         $stmt->execute([$hashedPassword, $email]);
 
-        // Clear session
-        unset($_SESSION['reset_token']);
-        unset($_SESSION['reset_email']);
+        // Delete used token from database
+        $stmt = $pdo->prepare("DELETE FROM password_resets WHERE email = ?");
+        $stmt->execute([$email]);
 
         $message = 'Wachtwoord succesvol gewijzigd. <a href="login.php" class="text-[#00811F] hover:underline">Log in</a>';
         $validToken = false; // Hide form

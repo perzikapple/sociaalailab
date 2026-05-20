@@ -3,20 +3,18 @@
  * Email Configuration for Brevo (FormMail)
  * Free tier: 300 emails/day
  * 
- * INSTRUCTIONS:
- * 1. Create account at https://www.brevo.com/
- * 2. Go to SMTP & API settings
- * 3. Copy your SMTP credentials (username and password/API key)
- * 4. Update the values below (or use environment variables for production)
+ * Uses PHPMailer if available (vendor folder uploaded)
+ * Falls back to native mail() if not available
  */
 
-// Include PHPMailer classes first
-require_once 'vendor/phpmailer/src/Exception.php';
-require_once 'vendor/phpmailer/src/PHPMailer.php';
-require_once 'vendor/phpmailer/src/SMTP.php';
-
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
+// Try to include PHPMailer classes if they exist
+$mailerAvailable = false;
+if (file_exists('vendor/phpmailer/src/Exception.php')) {
+    require_once 'vendor/phpmailer/src/Exception.php';
+    require_once 'vendor/phpmailer/src/PHPMailer.php';
+    require_once 'vendor/phpmailer/src/SMTP.php';
+    $mailerAvailable = true;
+}
 
 // Get email config from environment variables (more secure for production)
 // If not set, use defaults (update these values)
@@ -30,7 +28,7 @@ $emailConfig = [
 ];
 
 /**
- * Send email using PHPMailer with Brevo SMTP
+ * Send email using PHPMailer with Brevo SMTP (fallback to manual SMTP if no PHPMailer)
  * 
  * @param string $to Recipient email address
  * @param string $subject Email subject
@@ -39,41 +37,54 @@ $emailConfig = [
  * @return array ['success' => bool, 'message' => string]
  */
 function sendEmail($to, $subject, $body, $isHtml = false) {
-    global $emailConfig;
+    global $emailConfig, $mailerAvailable;
     
-    $mail = new PHPMailer(true);
+    // Try PHPMailer if available
+    if ($mailerAvailable) {
+        try {
+            $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+            $mail->isSMTP();
+            $mail->Host       = $emailConfig['host'];
+            $mail->SMTPAuth   = true;
+            $mail->Username   = $emailConfig['username'];
+            $mail->Password   = $emailConfig['password'];
+            $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port       = $emailConfig['port'];
+            $mail->SMTPDebug  = 0;
+            $mail->setFrom($emailConfig['from'], $emailConfig['from_name']);
+            $mail->addAddress($to);
+            $mail->isHTML($isHtml);
+            $mail->Subject = $subject;
+            $mail->Body    = $body;
+            $mail->send();
+            
+            return [
+                'success' => true,
+                'message' => 'Email sent successfully'
+            ];
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'PHPMailer error: ' . $e->getMessage()
+            ];
+        }
+    }
     
-    try {
-        // Server settings
-        $mail->isSMTP();
-        $mail->Host       = $emailConfig['host'];
-        $mail->SMTPAuth   = true;
-        $mail->Username   = $emailConfig['username'];
-        $mail->Password   = $emailConfig['password'];
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port       = $emailConfig['port'];
-        $mail->SMTPDebug  = 2; // Enable debug output
-        
-        // Recipients
-        $mail->setFrom($emailConfig['from'], $emailConfig['from_name']);
-        $mail->addAddress($to);
-        
-        // Content
-        $mail->isHTML($isHtml);
-        $mail->Subject = $subject;
-        $mail->Body    = $body;
-        
-        // Send
-        $mail->send();
-        
+    // Fallback: Use PHP mail() with proper headers for Brevo (if PHP SMTP is configured)
+    // Or use manual SMTP connection
+    $headers = "From: " . $emailConfig['from_name'] . " <" . $emailConfig['from'] . ">\r\n";
+    $headers .= "Reply-To: " . $emailConfig['from'] . "\r\n";
+    $headers .= "Content-Type: " . ($isHtml ? "text/html" : "text/plain") . "; charset=UTF-8\r\n";
+    
+    if (@mail($to, $subject, $body, $headers)) {
         return [
             'success' => true,
-            'message' => 'Email sent successfully'
+            'message' => 'Email sent via fallback method'
         ];
-    } catch (Exception $e) {
+    } else {
         return [
             'success' => false,
-            'message' => 'Error sending email: ' . $mail->ErrorInfo
+            'message' => 'Failed to send email: mail() function error'
         ];
     }
 }

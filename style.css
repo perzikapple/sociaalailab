@@ -3000,33 +3000,41 @@ main>div.grid>div:hover {
     overflow-wrap: anywhere;
 }
 
-/* Link styling - make links visible and styled */
-a {
-    color: #0066cc;
-    text-decoration: underline;
+/* Link styling - ONLY for editor-rendered content (title, description, content fields) */
+
+/* Blue styling ONLY for links in rendered editor content */
+/* Event description and summary content */
+.event-description a {
+    color: #0066cc !important;
+    text-decoration: underline !important;
     cursor: pointer;
     transition: color 0.2s ease;
 }
 
-a:hover {
-    color: #0052a3;
-    text-decoration: none;
+.event-description a:hover {
+    color: #0052a3 !important;
 }
 
-a:visited {
-    color: #6b21a8;
+.event-description a:visited {
+    color: #6b21a8 !important;
 }
 
-/* CKEditor rendered content links */
-.event-description a,
-.text-gray-700 a,
+/* Links in text-gray-700 context (rendered content only) */
+.text-gray-700 a {
+    color: #0066cc !important;
+    text-decoration: underline !important;
+}
+
+.text-gray-700 a:hover {
+    color: #0052a3 !important;
+}
+
+/* Links in leading-relaxed sections (main content) */
 .leading-relaxed a {
     color: #0066cc !important;
     text-decoration: underline !important;
 }
 
-.event-description a:hover,
-.text-gray-700 a:hover,
 .leading-relaxed a:hover {
     color: #0052a3 !important;
 }
