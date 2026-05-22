@@ -760,9 +760,13 @@ input::placeholder {
     cursor: pointer;
 }
 
-.time-slot.booked .time,
+.time-slot.booked .time {
+    color: #666 !important;
+    font-weight: 600;
+}
+
 .time-slot.booked .status {
-    color: #333;
+    color: #666 !important;
 }
 
 .time-slot.weekend {
