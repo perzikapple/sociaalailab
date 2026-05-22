@@ -32,6 +32,7 @@ $weekEnd = (clone $weekStart)->modify('+6 days');
 $locations = [
         ['id' => 1, 'name' => 'Grote Zaal', 'color' => '#00811F'],
         ['id' => 2, 'name' => 'Workshop', 'color' => '#0066CC'],
+        ['id' => 999, 'name' => 'Extern', 'color' => '#FF9500'],
 ];
 
 $hardware = [
@@ -53,11 +54,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $bookingStartTime = $_POST['start_time'];
     $bookingEndTime = $_POST['end_time'];
     $locationId = $_POST['location_id'];
+    $locationDescription = $locationId == 999 ? ($_POST['location_description'] ?? '') : null;
     
     // Check for conflicting bookings
     $conflict = false;
     foreach ($bookings as $b) {
         if ($b['booking_date'] === $bookingDate && $b['location_id'] == $locationId) {
+            // Externe bookings (999) conflicteren niet met elkaar
+            if ($locationId == 999) {
+                continue;
+            }
+            
             $bStart = (int)substr($b['start_time'], 0, 2);
             $bEnd = (int)substr($b['end_time'], 0, 2);
             $newStart = (int)substr($bookingStartTime, 0, 2);
@@ -73,10 +80,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     if (!$conflict) {
-        $stmt = $pdo->prepare("INSERT INTO bookings (location_id, booking_date, start_time, end_time, hardware_ids)
-        VALUES (?, ?, ?, ?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO bookings (location_id, location_description, booking_date, start_time, end_time, hardware_ids)
+        VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->execute([
                 $locationId,
+                $locationDescription,
                 $bookingDate,
                 $bookingStartTime,
                 $bookingEndTime,
@@ -137,7 +145,7 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <div class="booking">
                     <div class="bar" style="background:<?= $loc['color'] ?>"></div>
                     <div>
-                        <strong><?= $loc['name'] ?></strong><br>
+                        <strong><?= $b['location_id'] == 999 ? ($b['location_description'] ?? 'Extern') : $loc['name'] ?></strong><br>
                         <?= $b['start_time'] ?> - <?= $b['end_time'] ?>
                     </div>
                 </div>
@@ -278,10 +286,8 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         $bEnd = (int)substr($b['end_time'], 0, 2);
                         if ($hour >= $bStart && $hour < $bEnd) {
                             $isBooked = true;
-                            $loc = findById($locations, $b['location_id']);
-                            if ($loc) {
-                                $bookedLocations[] = $loc['name'];
-                            }
+                            $displayName = $b['location_id'] == 999 ? ($b['location_description'] ?? 'Extern') : findById($locations, $b['location_id'])['name'];
+                            $bookedLocations[] = $displayName;
                         }
                     }
                 }
@@ -322,11 +328,13 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <form method="POST" id="bookingForm">
             <input type="date" name="booking_date" id="booking_date" required>
 
-            <select name="location_id">
+            <select name="location_id" id="location_id" onchange="toggleLocationDescription()">
                 <?php foreach ($locations as $l): ?>
                     <option value="<?= $l['id'] ?>"><?= $l['name'] ?></option>
                 <?php endforeach; ?>
             </select>
+
+            <input type="text" name="location_description" id="location_description" placeholder="Waar/wat is de externe locatie?" style="display:none;">
 
             <div class="row">
                 <input type="time" name="start_time" id="start_time" required>
@@ -442,6 +450,21 @@ function checkIfPastDate(dateStr) {
     }
 }
 
+// Toggle location description field based on selected location
+function toggleLocationDescription() {
+    const locationId = document.getElementById('location_id').value;
+    const descriptionField = document.getElementById('location_description');
+    
+    if (locationId === '999') {
+        descriptionField.style.display = 'block';
+        descriptionField.required = true;
+    } else {
+        descriptionField.style.display = 'none';
+        descriptionField.required = false;
+        descriptionField.value = '';
+    }
+}
+
 // Initialize form with selected day if present
 document.addEventListener('DOMContentLoaded', function() {
     const selectedDay = '<?= $selectedDay ?>';
@@ -454,6 +477,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Check if date is in past and disable booking if so
         checkIfPastDate(selectedDay);
     }
+    
+    // Initialize location description field visibility
+    toggleLocationDescription();
     
     // Listen for date field changes to enable/disable submit button
     const dateInput = document.getElementById('booking_date');

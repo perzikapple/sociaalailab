@@ -171,6 +171,24 @@ try {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ");
 
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS bookings (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            location_id INT NOT NULL,
+            location_description VARCHAR(255) DEFAULT NULL,
+            booking_date DATE NOT NULL,
+            start_time TIME NOT NULL,
+            end_time TIME NOT NULL,
+            hardware_ids JSON DEFAULT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    ");
+
+    $bookingColumns = $pdo->query("SHOW COLUMNS FROM bookings")->fetchAll(PDO::FETCH_COLUMN);
+    if (!in_array('location_description', $bookingColumns)) {
+        $pdo->exec("ALTER TABLE bookings ADD COLUMN location_description VARCHAR(255) DEFAULT NULL");
+    }
+
     if (!function_exists('audit_log')) {
         function audit_log($pdo, $action, $table_name, $record_id = null, $details = null, $performed_by = null) {
             try {
