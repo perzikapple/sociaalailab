@@ -761,12 +761,14 @@ input::placeholder {
 }
 
 .time-slot.booked .time {
-    color: #666 !important;
-    font-weight: 600;
+    font-weight: 700;
+    color: #00811F;
+    font-size: 0.95rem;
 }
 
 .time-slot.booked .status {
-    color: #666 !important;
+    color: #00811F;
+    font-weight: 600;
 }
 
 .time-slot.weekend {
