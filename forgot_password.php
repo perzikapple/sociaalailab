@@ -21,17 +21,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$user) {
             $message = 'Deze email is niet geregistreerd.';
         } else {
-            // Generate a reset token (simple random string)
+            // Generate a reset token
             $token = bin2hex(random_bytes(32));
+            
+            // Store token in database with 1-hour expiration
+            $expiresAt = date('Y-m-d H:i:s', strtotime('+1 hour'));
+            $stmt = $pdo->prepare("INSERT INTO password_resets (email, token, expires_at) VALUES (?, ?, ?)");
+            $stmt->execute([$email, $token, $expiresAt]);
 
-            // For simplicity, store token in session with email (in production, use database)
-            $_SESSION['reset_token'] = $token;
-            $_SESSION['reset_email'] = $email;
-
-            // Send email using Brevo SMTP
-            $resetLink = "https://sociaalailab.nl/reset_password.php?token=" . $token;
+            // Send email using Brevo SMTP - use production URL for live server, localhost for dev
+            $isLocalhost = strpos($_SERVER['HTTP_HOST'], 'localhost') !== false || strpos($_SERVER['HTTP_HOST'], '127.0.0.1') !== false;
+            if ($isLocalhost) {
+                $resetLink = "http://" . $_SERVER['HTTP_HOST'] . "/reset_password.php?token=" . $token;
+            } else {
+                $resetLink = "https://sociaalailab.nl/reset_password.php?token=" . $token;
+            }
             $emailSubject = 'Wachtwoord reset - SociaalAI Lab';
-            $emailBody = "Klik op deze link om je wachtwoord te resetten:\n\n" . $resetLink . "\n\nAls je dit niet hebt aangevraagd, negeer deze email.";
+            $emailBody = "Klik op deze link om je wachtwoord te resetten:\n\n" . $resetLink . "\n\nDeze link is 1 uur geldig.\n\nAls je dit niet hebt aangevraagd, negeer deze email.";
             
             $emailResult = sendEmail($email, $emailSubject, $emailBody, false);
             
