@@ -190,6 +190,11 @@
                 <!-- max 10MB enforced in JS -->
             </div>
             <div class="preview" id="preview"></div>
+            <div style="text-align:center;margin-bottom:0;">
+                <button type="button" id="cancelImageBtn"
+                    style="display:none;margin:8px auto 0 auto;padding:7px 18px;font-size:0.98em;border-radius:7px;background:#f8f8f8;border:1.5px solid #b6e2c6;color:#00811F;font-weight:600;cursor:pointer;">Annuleer
+                    afbeelding</button>
+            </div>
             <div class="actions">
                 <select id="format" name="format">
                     <option value="jpg">Naar JPG</option>
@@ -218,6 +223,7 @@
         const errorDiv = document.getElementById('error');
         const resultDiv = document.getElementById('result');
         let selectedFile = null;
+        const cancelImageBtn = document.getElementById('cancelImageBtn');
         const consentCheckbox = document.getElementById('consentCheckbox');
         const consentWrap = document.getElementById('consentWrap');
 
@@ -243,7 +249,19 @@
         function handleFile(file) {
             errorDiv.textContent = '';
             resultDiv.innerHTML = '';
-            if (!file) return;
+            // Reset consentCheckbox event handler
+            consentCheckbox.onchange = null;
+            if (!file) {
+                cancelImageBtn.style.display = 'none';
+                preview.innerHTML = '';
+                selectedFile = null;
+                consentWrap.style.display = 'none';
+                consentCheckbox.checked = false;
+                consentCheckbox.disabled = true;
+                convertBtn.disabled = true;
+                return;
+            }
+            cancelImageBtn.style.display = 'inline-block';
             if (file.size > 10 * 1024 * 1024) {
                 errorDiv.innerHTML = '<div style="background:#fffbe6;color:#856404;border:1px solid #ffe58f;padding:10px 16px;border-radius:8px;font-size:1.08em;font-weight:600;max-width:360px;margin:16px auto 0;text-align:center;box-shadow:0 2px 8px rgba(255,193,7,0.10);line-height:1.5;">'
                     + '<span style=\"font-size:1.35em;vertical-align:middle;margin-right:6px;\">⚠️</span>'
@@ -255,6 +273,7 @@
                 consentCheckbox.disabled = false;
                 convertBtn.disabled = true;
                 preview.innerHTML = '';
+                selectedFile = null;
                 consentCheckbox.onchange = () => {
                     if (consentCheckbox.checked) {
                         selectedFile = file;
@@ -285,6 +304,20 @@
                 reader.readAsDataURL(file);
             }
         }
+        cancelImageBtn.addEventListener('click', () => {
+            // Reset alles
+            imageInput.value = '';
+            selectedFile = null;
+            preview.innerHTML = '';
+            errorDiv.textContent = '';
+            resultDiv.innerHTML = '';
+            consentCheckbox.checked = false;
+            consentCheckbox.disabled = true;
+            consentWrap.style.display = 'none';
+            convertBtn.disabled = true;
+            cancelImageBtn.style.display = 'none';
+            consentCheckbox.onchange = null;
+        });
         consentCheckbox.addEventListener('change', () => {
             if (selectedFile && selectedFile.size > 10 * 1024 * 1024) {
                 convertBtn.disabled = !consentCheckbox.checked;

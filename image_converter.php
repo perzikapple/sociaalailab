@@ -62,29 +62,66 @@ if (!extension_loaded('gd')) {
     exit;
 }
 
-$src = null;
-if ($file['type'] === 'image/png') {
-    $src = imagecreatefrompng($tmpPath);
-} elseif ($file['type'] === 'image/jpeg') {
-    $src = imagecreatefromjpeg($tmpPath);
-}
-if (!$src) {
-    http_response_code(500);
-    echo 'Kon afbeelding niet laden.';
-    exit;
+<?php
+
+function upload_error_message($code) {
+    $errors = [
+        UPLOAD_ERR_OK => 'Geen fout',
+        UPLOAD_ERR_INI_SIZE => 'Bestand is groter dan upload_max_filesize in php.ini',
+        UPLOAD_ERR_FORM_SIZE => 'Bestand is groter dan MAX_FILE_SIZE in het formulier',
+        UPLOAD_ERR_PARTIAL => 'Bestand is gedeeltelijk geüpload',
+        UPLOAD_ERR_NO_FILE => 'Geen bestand geüpload',
+        UPLOAD_ERR_NO_TMP_DIR => 'Geen tijdelijke map op server',
+        UPLOAD_ERR_CANT_WRITE => 'Kan bestand niet opslaan op schijf',
+        UPLOAD_ERR_EXTENSION => 'Upload gestopt door PHP extensie',
+    ];
+    return $errors[$code] ?? 'Onbekende fout (' . $code . ')';
 }
 
-ob_start();
-if ($format === 'jpg') {
-    imagejpeg($src, null, 90);
-    header('Content-Type: image/jpeg');
-    header('Content-Disposition: attachment; filename="converted.jpg"');
-} else {
-    imagepng($src, null, 9);
-    header('Content-Type: image/png');
-    header('Content-Disposition: attachment; filename="converted.png"');
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    echo "<pre>";
+    print_r($_FILES);
+    echo "</pre>";
+
+    if (!isset($_FILES['image'])) {
+        die("Geen bestand ontvangen");
+    }
+
+    if ($_FILES['image']['error'] !== 0) {
+        $err = upload_error_message($_FILES['image']['error']);
+        echo '<div style="color:#b71c1c;background:#fff3f3;border:1px solid #ffcdd2;padding:12px 18px;border-radius:7px;font-size:1.1em;font-weight:600;max-width:420px;margin:18px auto;text-align:center;box-shadow:0 1px 6px rgba(183,28,28,0.06);">';
+        echo 'Upload fout: ' . $err . ' (code: ' . $_FILES['image']['error'] . ')<br>';
+        echo 'upload_max_filesize: ' . ini_get('upload_max_filesize') . '<br>';
+        echo 'post_max_size: ' . ini_get('post_max_size') . '<br>';
+        echo 'memory_limit: ' . ini_get('memory_limit') . '<br>';
+        echo 'max_execution_time: ' . ini_get('max_execution_time') . '<br>';
+        echo '</div>';
+        exit;
+    }
+
+    $uploadDir = "uploads/";
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0777, true);
+    }
+    $target = $uploadDir . basename($_FILES['image']['name']);
+
+    if (move_uploaded_file($_FILES['image']['tmp_name'], $target)) {
+        echo "Upload gelukt!";
+    } else {
+        echo '<div style="color:#b71c1c;background:#fff3f3;border:1px solid #ffcdd2;padding:12px 18px;border-radius:7px;font-size:1.1em;font-weight:600;max-width:420px;margin:18px auto;text-align:center;box-shadow:0 1px 6px rgba(183,28,28,0.06);">';
+        echo "Fout bij uploaden naar uploads/.<br>";
+        echo 'upload_max_filesize: ' . ini_get('upload_max_filesize') . '<br>';
+        echo 'post_max_size: ' . ini_get('post_max_size') . '<br>';
+        echo 'memory_limit: ' . ini_get('memory_limit') . '<br>';
+        echo 'max_execution_time: ' . ini_get('max_execution_time') . '<br>';
+        echo '</div>';
+    }
 }
-$imgData = ob_get_clean();
-imagedestroy($src);
-echo $imgData;
-exit;
+?>
+
+<form method="POST" enctype="multipart/form-data">
+    <input type="file" name="image">
+    <button type="submit">Upload</button>
+    <input type="file" name="image">
+    <button type="submit">Upload</button>
+</form>

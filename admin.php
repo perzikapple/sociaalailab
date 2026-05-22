@@ -1200,6 +1200,7 @@ if ($page === 'users') {
 <html lang="nl">
 
 <head>
+    <script src="admin-upload-widget.js"></script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Admin - SociaalAI Lab</title>
@@ -1451,7 +1452,18 @@ if ($page === 'users') {
                                 <div>
                                     <label class="form-label">Afbeelding (optioneel)</label>
                                     <input type="hidden" name="existing_image" value="<?php echo htmlspecialchars($editEvent['image'] ?? ''); ?>" />
-                                    <input type="file" name="image" accept="image/*" class="form-input" />
+                                    <div id="upload-image-widget"></div>
+                                    <script>
+                                        document.addEventListener('DOMContentLoaded', function() {
+                                            createImageUploadWidget({
+                                                containerId: 'upload-image-widget',
+                                                inputName: 'image',
+                                                label: 'Kies een afbeelding (PNG/JPG, max 10MB)',
+                                                imageConverterUrl: 'admin.php?page=image-converter',
+                                                preview: true
+                                            });
+                                        });
+                                    </script>
                                     <?php if (!empty($editEvent['image'])): ?>
                                         <p class="text-sm mt-2 text-gray-600">Huidige: <?php echo htmlspecialchars($editEvent['image']); ?></p>
                                         <label class="form-checkbox mt-2 inline-flex items-center gap-2">
@@ -1463,7 +1475,7 @@ if ($page === 'users') {
 
                                 <div>
                                     <label class="form-label">Foto's tijdens event (optioneel, meerdere bestanden)</label>
-                                    <input type="file" name="gallery_images[]" accept="image/*" multiple class="form-input" />
+                                    <div class="admin-upload-widget" data-name="gallery_images[]" data-accept="image/*" data-multiple="true"></div>
                                     <?php $editGallery = decodeEventGallery($editEvent['event_gallery'] ?? null); ?>
                                     <?php if (!empty($editGallery)): ?>
                                         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
@@ -1584,12 +1596,12 @@ if ($page === 'users') {
 
                                 <div>
                                     <label class="form-label">Afbeelding (optioneel)</label>
-                                    <input type="file" name="image" accept="image/*" class="form-input" />
+                                    <div class="admin-upload-widget" data-name="image" data-accept="image/*"></div>
                                 </div>
 
                                 <div>
                                     <label class="form-label">Foto's tijdens event (optioneel, meerdere bestanden)</label>
-                                    <input type="file" name="gallery_images[]" accept="image/*" multiple class="form-input" />
+                                    <div class="admin-upload-widget" data-name="gallery_images[]" data-accept="image/*" data-multiple="true"></div>
                                 </div>
                                 <!-- Meer info link veld verwijderd -->
 
@@ -1801,14 +1813,14 @@ if ($page === 'users') {
                                     $accLastName = trim((string)($acc['last_name'] ?? ''));
                                     $accFullName = trim($accFirstName . ' ' . $accLastName);
                                     $accRole = trim((string)($acc['role'] ?? ''));
-                                     if ($accRole === '') {
-                                         $accRole = ((int)($acc['admin'] ?? 0) === 1) ? 'superadmin' : 'viewer';
-                                     }
-                                     $accPermissions = normalizeAccountPermissions($acc['permissions'] ?? null);
-                                     if ($accPermissions === null) {
-                                         $accPermissions = permissionsForRole($accRole, $rolePermissions);
-                                     }
-                                     ?>
+                                    if ($accRole === '') {
+                                        $accRole = ((int)($acc['admin'] ?? 0) === 1) ? 'superadmin' : 'viewer';
+                                    }
+                                    $accPermissions = normalizeAccountPermissions($acc['permissions'] ?? null);
+                                    if ($accPermissions === null) {
+                                        $accPermissions = permissionsForRole($accRole, $rolePermissions);
+                                    }
+                                    ?>
                                     <div class="border border-gray-200 rounded p-4 bg-white space-y-4">
                                         <div class="flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
                                             <div>
@@ -2194,7 +2206,7 @@ if ($page === 'users') {
                                 <div>
                                     <label class="form-label">Afbeelding (optioneel)</label>
                                     <input type="hidden" name="existing_image" value="<?php echo htmlspecialchars($editPage['image'] ?? ''); ?>" />
-                                    <input type="file" name="image" accept="image/*" class="form-input" />
+                                    <div class="admin-upload-widget" data-name="image" data-accept="image/*"></div>
                                     <?php if (!empty($editPage['image'])): ?>
                                         <p class="text-sm mt-2 text-gray-600">Huidige afbeelding: <?php echo htmlspecialchars($editPage['image']); ?></p>
                                         <label class="form-checkbox mt-2 inline-flex items-center gap-2">
@@ -2278,7 +2290,7 @@ if ($page === 'users') {
 
                                 <div>
                                     <label class="form-label">Afbeelding (optioneel)</label>
-                                    <input type="file" name="image" accept="image/*" class="form-input" />
+                                    <div class="admin-upload-widget" data-name="image" data-accept="image/*"></div>
                                 </div>
 
 
@@ -2439,7 +2451,7 @@ if ($page === 'users') {
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div class="form-group">
                                     <label class="form-label">Vervang Banner 1</label>
-                                    <input type="file" name="banner1" accept="image/*" class="form-input" />
+                                    <div class="admin-upload-widget" data-name="banner1" data-accept="image/*"></div>
                                     <label class="form-checkbox mt-2 inline-flex items-center gap-2">
                                         <input type="checkbox" name="remove_banner1" value="1">
                                         Verwijder huidige banner 1
@@ -2448,7 +2460,7 @@ if ($page === 'users') {
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">Vervang Banner 2</label>
-                                    <input type="file" name="banner2" accept="image/*" class="form-input" />
+                                    <div class="admin-upload-widget" data-name="banner2" data-accept="image/*"></div>
                                     <label class="form-checkbox mt-2 inline-flex items-center gap-2">
                                         <input type="checkbox" name="remove_banner2" value="1">
                                         Verwijder huidige banner 2
