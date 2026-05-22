@@ -1,13 +1,22 @@
 <?php
-$host = "localhost";
-$db   = "sociaalai";
- $user = "root";
- $pass = "";
+// Auto-detect if we're on localhost or production
+$isLocalhost = strpos($_SERVER['HTTP_HOST'] ?? 'localhost', 'localhost') !== false || 
+               strpos($_SERVER['HTTP_HOST'] ?? 'localhost', '127.0.0.1') !== false;
 
-// $host = "sociju-sociaalailab.db.transip.me";
-// $db   = "sociju_sociaalailab";
-// $user = "sociju_Sociaalailab";
-// $pass = "Techniekcollege12345#";
+if ($isLocalhost) {
+    // Local development
+    $host = "localhost";
+    $db   = "sociaalai";
+    $user = "root";
+    $pass = "";
+} else {
+    // Production (TransIP)
+    $host = "sociju-sociaalailab.db.transip.me";
+    $db   = "sociju_sociaalailab";
+    $user = "sociju_Sociaalailab";
+    $pass = "Techniekcollege12345#";
+}
+
 try {
     $pdo = new PDO(
         "mysql:host=$host;dbname=$db;charset=utf8mb4",
