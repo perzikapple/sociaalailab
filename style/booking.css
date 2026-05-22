@@ -755,14 +755,14 @@ input::placeholder {
 }
 
 .time-slot.booked {
-    background: linear-gradient(135deg, #fff3f3 0%, #fff0f0 100%);
-    border-color: #f0d4d4;
-    cursor: not-allowed;
+    background: linear-gradient(135deg, #f9fafb 0%, #f0f5ff 100%);
+    border-color: #dfe8f3;
+    cursor: pointer;
 }
 
 .time-slot.booked .time,
 .time-slot.booked .status {
-    color: #999;
+    color: #333;
 }
 
 .time-slot.weekend {
