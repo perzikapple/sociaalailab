@@ -7,6 +7,7 @@ $rolePermissions = [
     'superadmin' => ['create_users', 'edit_users', 'delete_users', 'view_audit', 'access_booking', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images'],
     'content_manager' => ['access_booking', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images'],
     'editor' => ['manage_events'],
+    'booking_only' => ['access_booking'],
     'viewer' => [],
 ];
 
@@ -46,6 +47,12 @@ $_SESSION['can_access_admin'] = $canAccessAdmin;
 
 if (!$canAccessAdmin) {
     header('Location: login.php');
+    exit;
+}
+
+// If user is booking_only, redirect directly to booking page
+if ($sessionRole === 'booking_only') {
+    header('Location: booking.php');
     exit;
 }
 
@@ -652,8 +659,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $newFirstName = trim((string)($_POST['new_first_name'] ?? ''));
         $newLastName = trim((string)($_POST['new_last_name'] ?? ''));
         $newRole = trim((string)($_POST['new_role'] ?? 'viewer'));
-        $allowedRoles = ['superadmin', 'content_manager', 'editor', 'viewer'];
-        $newPermissions = $collectPostedPermissions('new_permissions');
+        $allowedRoles = ['superadmin', 'content_manager', 'editor', 'booking_only', 'viewer'];
+        
+        // Auto-set permissions based on role (no manual selection anymore)
+        $newPermissions = permissionsForRole($newRole, $rolePermissions);
 
         if ($newEmail === '' || !filter_var($newEmail, FILTER_VALIDATE_EMAIL)) {
             $message = 'Vul een geldig e-mailadres in.';
@@ -681,15 +690,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $permissionsJson,
                 ]);
 
-                audit_log($pdo, 'create', 'accounts', $newEmail, 'new user with permissions ' . implode(', ', $newPermissions), $currentUser);
+                audit_log($pdo, 'create', 'accounts', $newEmail, 'new user with role ' . $newRole . ' and permissions ' . implode(', ', $newPermissions), $currentUser);
                 $message = 'Nieuwe gebruiker toegevoegd.';
             }
         }
     } elseif ($action === 'update_user_permissions') {
         $targetEmail = trim((string)($_POST['target_email'] ?? ''));
         $newRole = trim((string)($_POST['role'] ?? 'viewer'));
-        $allowedRoles = ['superadmin', 'content_manager', 'editor', 'viewer'];
-        $newPermissions = $collectPostedPermissions('permissions');
+        $allowedRoles = ['superadmin', 'content_manager', 'editor', 'booking_only', 'viewer'];
+        
+        // Auto-set permissions based on role (no manual selection anymore)
+        $newPermissions = permissionsForRole($newRole, $rolePermissions);
 
         if ($targetEmail === '' || !filter_var($targetEmail, FILTER_VALIDATE_EMAIL)) {
             $message = 'Ongeldig e-mailadres.';
@@ -708,8 +719,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['can_access_admin'] = !empty($newPermissions);
             }
 
-            audit_log($pdo, 'update', 'accounts', $targetEmail, 'permissions set to ' . implode(', ', $newPermissions), $currentUser);
-            $message = 'Gebruikersrechten bijgewerkt.';
+            audit_log($pdo, 'update', 'accounts', $targetEmail, 'role set to ' . $newRole . ' with permissions ' . implode(', ', $newPermissions), $currentUser);
+            $message = 'Gebruikersrol bijgewerkt.';
         }
     } elseif ($action === 'delete_user') {
         $targetEmail = trim((string)($_POST['target_email'] ?? ''));
@@ -1758,6 +1769,7 @@ if ($page === 'users') {
                                         <label class="form-label" for="new_role">Basisrol</label>
                                         <select id="new_role" name="new_role" class="form-input">
                                             <option value="viewer">Geen vaste rol</option>
+                                            <option value="booking_only">Alleen Booking</option>
                                             <option value="editor">Bewerker</option>
                                             <option value="content_manager">Content Manager</option>
                                             <option value="superadmin">Administrator</option>
@@ -1769,29 +1781,6 @@ if ($page === 'users') {
                                     <label class="form-label" for="new_password">Wachtwoord</label>
                                     <input id="new_password" type="text" name="new_password" class="form-input" required placeholder="Voer wachtwoord in">
                                 </div>
-
-                                <details>
-                                    <summary class="btn btn-secondary cursor-pointer list-none inline-flex">
-                                        <i class="fa-solid fa-sliders"></i> Rechten instellen
-                                    </summary>
-                                    <div class="mt-4 border border-gray-200 rounded p-4 bg-gray-50">
-                                        <div class="flex items-center justify-between gap-3 mb-3">
-                                            <p class="form-label mb-0">Rechten voor nieuwe gebruiker</p>
-                                            <label class="inline-flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
-                                                <span>Selecteer alle</span>
-                                                <input type="checkbox" class="js-permission-select-all w-5 h-5 cursor-pointer">
-                                            </label>
-                                        </div>
-                                        <div class="js-permission-group grid grid-cols-1 md:grid-cols-2 gap-3">
-                                            <?php foreach ($adminPermissionOptions as $permissionKey => $permissionLabel): ?>
-                                                <label class="flex items-center justify-between gap-3 border border-gray-200 rounded bg-white px-4 py-3 cursor-pointer hover:border-[#00811F] hover:shadow-sm transition">
-                                                    <span class="font-medium text-gray-800"><?php echo htmlspecialchars($permissionLabel); ?></span>
-                                                    <input type="checkbox" name="new_permissions[]" value="<?php echo htmlspecialchars($permissionKey); ?>" class="w-5 h-5 flex-shrink-0 cursor-pointer">
-                                                </label>
-                                            <?php endforeach; ?>
-                                        </div>
-                                    </div>
-                                </details>
 
                                 <button type="submit" class="btn btn-primary">
                                     <i class="fa-solid fa-user-plus"></i> Gebruiker toevoegen
@@ -1837,7 +1826,7 @@ if ($page === 'users') {
                                                         <summary class="btn btn-secondary btn-sm cursor-pointer list-none">
                                                             <i class="fa-solid fa-user-pen"></i> Gebruiker bewerken
                                                         </summary>
-                                                        <form method="POST" class="mt-4 border border-gray-200 rounded p-4 space-y-4 bg-gray-50 md:min-w-[640px]">
+                                                        <form method="POST" class="mt-4 border border-gray-200 rounded p-4 space-y-4 bg-gray-50 md:min-w-[400px]">
                                                             <input type="hidden" name="action" value="update_user_permissions">
                                                             <input type="hidden" name="target_email" value="<?php echo htmlspecialchars($accEmail); ?>">
 
@@ -1845,32 +1834,15 @@ if ($page === 'users') {
                                                                 <label class="text-sm text-gray-700" for="role_<?php echo md5($accEmail); ?>">Basisrol</label>
                                                                 <select id="role_<?php echo md5($accEmail); ?>" name="role" class="form-input">
                                                                     <option value="viewer" <?php echo $accRole === 'viewer' ? 'selected' : ''; ?>>Geen vaste rol</option>
-                                                                    <option value="superadmin" <?php echo $accRole === 'superadmin' ? 'selected' : ''; ?>>Administrator</option>
-                                                                    <option value="content_manager" <?php echo $accRole === 'content_manager' ? 'selected' : ''; ?>>Content Manager</option>
+                                                                    <option value="booking_only" <?php echo $accRole === 'booking_only' ? 'selected' : ''; ?>>Alleen Booking</option>
                                                                     <option value="editor" <?php echo $accRole === 'editor' ? 'selected' : ''; ?>>Bewerker</option>
+                                                                    <option value="content_manager" <?php echo $accRole === 'content_manager' ? 'selected' : ''; ?>>Content Manager</option>
+                                                                    <option value="superadmin" <?php echo $accRole === 'superadmin' ? 'selected' : ''; ?>>Administrator</option>
                                                                 </select>
                                                             </div>
 
-                                                            <div class="flex items-center justify-between gap-3">
-                                                                <p class="form-label mb-0">Rechten</p>
-                                                                <label class="inline-flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
-                                                                    <span>Selecteer alle</span>
-                                                                    <input type="checkbox" class="js-permission-select-all w-5 h-5 cursor-pointer">
-                                                                </label>
-                                                            </div>
-
-                                                            <div class="js-permission-group grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                                <?php foreach ($adminPermissionOptions as $permissionKey => $permissionLabel): ?>
-                                                                    <?php $permissionChecked = in_array($permissionKey, $accPermissions, true); ?>
-                                                                    <label class="flex items-center justify-between gap-3 border border-gray-200 rounded bg-white px-4 py-3 cursor-pointer hover:border-[#00811F] hover:shadow-sm transition">
-                                                                        <span class="font-medium text-gray-800"><?php echo htmlspecialchars($permissionLabel); ?></span>
-                                                                        <input type="checkbox" name="permissions[]" value="<?php echo htmlspecialchars($permissionKey); ?>" <?php echo $permissionChecked ? 'checked' : ''; ?> class="w-5 h-5 flex-shrink-0 cursor-pointer">
-                                                                    </label>
-                                                                <?php endforeach; ?>
-                                                            </div>
-
                                                             <button type="submit" class="btn btn-primary btn-sm">
-                                                                <i class="fa-solid fa-save"></i> Rechten opslaan
+                                                                <i class="fa-solid fa-save"></i> Rol opslaan
                                                             </button>
                                                         </form>
                                                     </details>
