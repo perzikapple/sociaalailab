@@ -198,6 +198,18 @@ try {
         $pdo->exec("ALTER TABLE bookings ADD COLUMN location_description VARCHAR(255) DEFAULT NULL");
     }
 
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS location_staff (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            staff_date DATE NOT NULL,
+            location_id INT NOT NULL,
+            staff_name VARCHAR(255) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY unique_staff_per_location_date (staff_date, location_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    ");
+
     if (!function_exists('audit_log')) {
         function audit_log($pdo, $action, $table_name, $record_id = null, $details = null, $performed_by = null) {
             try {

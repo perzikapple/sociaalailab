@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = 'Invalid email format.';
     } else {
         // Look up user in database
-        $stmt = $pdo->prepare("SELECT email, wachtwoord, admin, role, permissions FROM accounts WHERE email = ?");
+        $stmt = $pdo->prepare("SELECT email, wachtwoord, admin, role, permissions, first_name FROM accounts WHERE email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
 
@@ -48,6 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['user'] = $user['email'];
             $_SESSION['email'] = $user['email'];
             $_SESSION['admin'] = $user['admin'];
+            $_SESSION['first_name'] = $user['first_name'] ?? '';
             $role = trim((string)($user['role'] ?? ''));
             if ($role === '') {
                 $role = ((int)($user['admin'] ?? 0) === 1) ? 'superadmin' : 'viewer';
