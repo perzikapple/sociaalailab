@@ -503,7 +503,7 @@ $daysWithStaff = array_keys($staffByDate);
     }
     ?>
 
-    <!-- FORM -->
+    <!-- FORM 2 -->
     <section class="card form-card">
         <h2>Nieuwe booking</h2>
 
