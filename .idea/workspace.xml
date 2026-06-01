@@ -4,7 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="303eae4d-7ca5-4634-9557-4de1cdbec390" name="Changes" comment="booking update" />
+    <list default="true" id="40eddd61-eef5-4b26-93ed-e0e08ad9a623" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/booking.php" beforeDir="false" afterPath="$PROJECT_DIR$/booking.php" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -13,42 +16,41 @@
   <component name="ComposerSettings">
     <execution />
   </component>
+  <component name="CopilotChats">
+    <option name="panelChat">
+      <chat>
+        <option name="activeSessionId" value="4df84cc8-60f7-4be3-83f7-690260871084" />
+        <option name="sessions">
+          <session>
+            <option name="chatType" value="PANEL" />
+            <option name="id" value="4df84cc8-60f7-4be3-83f7-690260871084" />
+            <option name="modeId" value="Agent" />
+            <option name="modelType" value="builtin_family" />
+            <option name="modelValue" value="auto" />
+            <option name="targetType" value="LOCAL" />
+          </session>
+        </option>
+        <option name="type" value="PANEL" />
+      </chat>
+    </option>
+  </component>
   <component name="CopilotPersistence">
     <persistenceIdMap>
-      <entry key="_/Applications/XAMPP/xamppfiles/htdocs/sociaalailab" value="3ATlr19zWRxsFvUrutfsKJPqnAR" />
+      <entry key="_/Applications/XAMPP/xamppfiles/htdocs/sociaalailab" value="3DZfTBFygkRFNtcrdJkAfGP1Ufy" />
     </persistenceIdMap>
-  </component>
-  <component name="CopilotUserSelectedChatMode">
-    <option name="chatModeId" value="Agent" />
-  </component>
-  <component name="CopilotUserSelectedModel">
-    <selectedModels>
-      <entry key="chat-panel" value="GPT-4.1" />
-      <entry key="agent-panel" value="GPT-4.1" />
-    </selectedModels>
   </component>
   <component name="EmbeddingIndexingInfo">
     <option name="cachedIndexableFilesCount" value="241" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
-  <component name="Git.Pull.Settings">
-    <option name="OPTIONS">
-      <set>
-        <option value="REBASE" />
-      </set>
-    </option>
-  </component>
   <component name="Git.Settings">
-    <option name="RECENT_BRANCH_BY_REPOSITORY">
-      <map>
-        <entry key="$PROJECT_DIR$" value="main" />
-      </map>
-    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
-    <option name="RESET_MODE" value="HARD" />
   </component>
   <component name="GitHubPullRequestSearchHistory">{
-  &quot;lastFilter&quot;: {}
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;jaivyyy&quot;
+  }
 }</component>
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
@@ -60,535 +62,71 @@
     <commands />
     <urls />
   </component>
-  <component name="ProblemsViewState">
-    <option name="selectedTabId" value="CurrentFile" />
-  </component>
+  <component name="PhpDebugGeneral" listening_started="true" />
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 2
 }</component>
-  <component name="ProjectId" id="3ATlr19zWRxsFvUrutfsKJPqnAR" />
+  <component name="ProjectId" id="3DZfTBFygkRFNtcrdJkAfGP1Ufy" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
-    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
-    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/Applications/XAMPP/xamppfiles/htdocs/sociaalailab&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.github.copilot.settings.chat.ChatConfigurable&quot;,
-    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "main",
+    "junie.onboarding.icon.badge.shown": "true",
+    "last_opened_file_path": "/Applications/XAMPP/xamppfiles/htdocs/sociaalailab",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "preferences.general",
+    "to.speed.mode.migration.done": "true",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
-  <component name="RunManager">
-    <configuration name="index.php" type="PhpLocalRunConfigurationType" factoryName="PHP Console" path="$PROJECT_DIR$/index.php">
-      <method v="2" />
-    </configuration>
-  </component>
+}]]></component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-3bd3a6803838-JavaScript-PS-261.22158.283" />
-        <option value="bundled-php-predefined-a98d8de5180a-a9a4ea3ee0f4-com.jetbrains.php.sharedIndexes-PS-261.22158.283" />
+        <option value="bundled-js-predefined-d6986cc7102b-31caf2ab9e3c-JavaScript-PS-261.23567.149" />
+        <option value="bundled-php-predefined-a98d8de5180a-022fa7b8ab75-com.jetbrains.php.sharedIndexes-PS-261.23567.149" />
       </set>
     </attachedChunks>
   </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="303eae4d-7ca5-4634-9557-4de1cdbec390" name="Changes" comment="" />
+      <changelist id="40eddd61-eef5-4b26-93ed-e0e08ad9a623" name="Changes" comment="" />
       <created>1759407061151</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1759407061151</updated>
       <workItem from="1759407062208" duration="158000" />
-      <workItem from="1772624636844" duration="224000" />
-      <workItem from="1772626051946" duration="1232000" />
-      <workItem from="1772782714482" duration="11739000" />
-      <workItem from="1773217791334" duration="4003000" />
-      <workItem from="1773224388880" duration="2239000" />
-      <workItem from="1773232685956" duration="3641000" />
-      <workItem from="1773388037683" duration="12471000" />
-      <workItem from="1773753840947" duration="2641000" />
-      <workItem from="1773827822828" duration="5953000" />
-      <workItem from="1773994269245" duration="4254000" />
-      <workItem from="1774007201631" duration="6616000" />
-      <workItem from="1774350745345" duration="2680000" />
-      <workItem from="1774353966979" duration="2032000" />
-      <workItem from="1774356105321" duration="8164000" />
-      <workItem from="1774423901049" duration="2574000" />
-      <workItem from="1774598516506" duration="13001000" />
-      <workItem from="1774614510998" duration="772000" />
-      <workItem from="1774615304496" duration="1976000" />
-      <workItem from="1775560279136" duration="3297000" />
-      <workItem from="1775569687473" duration="801000" />
-      <workItem from="1775642087716" duration="247000" />
-      <workItem from="1775642916839" duration="5971000" />
-      <workItem from="1775648937944" duration="242000" />
-      <workItem from="1775654585678" duration="602000" />
-      <workItem from="1775655218095" duration="47000" />
-      <workItem from="1775744294653" duration="922000" />
-      <workItem from="1775745253095" duration="2473000" />
-      <workItem from="1775803862091" duration="7903000" />
-      <workItem from="1775820884359" duration="4206000" />
-      <workItem from="1775825115352" duration="633000" />
-      <workItem from="1775825774551" duration="607000" />
-      <workItem from="1776081311705" duration="5540000" />
-      <workItem from="1776086981561" duration="3755000" />
-      <workItem from="1776161216021" duration="10820000" />
-      <workItem from="1776251201537" duration="1108000" />
-      <workItem from="1776252368894" duration="4394000" />
-      <workItem from="1776256815822" duration="3185000" />
-      <workItem from="1776266216199" duration="104000" />
-      <workItem from="1776331661663" duration="1885000" />
-      <workItem from="1776411994466" duration="7407000" />
+      <workItem from="1778494518486" duration="203000" />
+      <workItem from="1778494745037" duration="64000" />
+      <workItem from="1778499711841" duration="1342000" />
+      <workItem from="1778509600879" duration="2000" />
+      <workItem from="1779091820476" duration="928000" />
+      <workItem from="1779093310339" duration="1728000" />
+      <workItem from="1779103912469" duration="1100000" />
+      <workItem from="1779113621323" duration="1308000" />
+      <workItem from="1779276283238" duration="1221000" />
+      <workItem from="1779438301136" duration="1928000" />
+      <workItem from="1780298130812" duration="4167000" />
+      <workItem from="1780314477790" duration="636000" />
     </task>
-    <task id="LOCAL-00001" summary="Padding toegevoegd aan terugblik text-blok">
-      <option name="closed" value="true" />
-      <created>1772787184543</created>
-      <option name="number" value="00001" />
-      <option name="presentableId" value="LOCAL-00001" />
-      <option name="project" value="LOCAL" />
-      <updated>1772787184543</updated>
-    </task>
-    <task id="LOCAL-00002" summary="Actie page column foto's max-width en height gegeven.">
-      <option name="closed" value="true" />
-      <created>1772792730162</created>
-      <option name="number" value="00002" />
-      <option name="presentableId" value="LOCAL-00002" />
-      <option name="project" value="LOCAL" />
-      <updated>1772792730162</updated>
-    </task>
-    <task id="LOCAL-00003" summary="kennis page column foto's max-width en height gegeven.">
-      <option name="closed" value="true" />
-      <created>1772796185275</created>
-      <option name="number" value="00003" />
-      <option name="presentableId" value="LOCAL-00003" />
-      <option name="project" value="LOCAL" />
-      <updated>1772796185275</updated>
-    </task>
-    <task id="LOCAL-00004" summary="Padding terugblik blok toegevoegd">
-      <option name="closed" value="true" />
-      <created>1773217952056</created>
-      <option name="number" value="00004" />
-      <option name="presentableId" value="LOCAL-00004" />
-      <option name="project" value="LOCAL" />
-      <updated>1773217952056</updated>
-    </task>
-    <task id="LOCAL-00005" summary="update branch">
-      <option name="closed" value="true" />
-      <created>1773220195091</created>
-      <option name="number" value="00005" />
-      <option name="presentableId" value="LOCAL-00005" />
-      <option name="project" value="LOCAL" />
-      <updated>1773220195091</updated>
-    </task>
-    <task id="LOCAL-00006" summary="Foto breedte en hoogte veranderd kennis en actie page.">
-      <option name="closed" value="true" />
-      <created>1773390619547</created>
-      <option name="number" value="00006" />
-      <option name="presentableId" value="LOCAL-00006" />
-      <option name="project" value="LOCAL" />
-      <updated>1773390619547</updated>
-    </task>
-    <task id="LOCAL-00007" summary="Foto's breedte faciliteit page geupdate">
-      <option name="closed" value="true" />
-      <created>1773393975008</created>
-      <option name="number" value="00007" />
-      <option name="presentableId" value="LOCAL-00007" />
-      <option name="project" value="LOCAL" />
-      <updated>1773393975008</updated>
-    </task>
-    <task id="LOCAL-00008" summary="padding toegevoegd">
-      <option name="closed" value="true" />
-      <created>1773396291995</created>
-      <option name="number" value="00008" />
-      <option name="presentableId" value="LOCAL-00008" />
-      <option name="project" value="LOCAL" />
-      <updated>1773396291995</updated>
-    </task>
-    <task id="LOCAL-00009" summary="Images homepage verkleind. Footer gap tussen samenwerkingen vergroot. Padding toegevoegd &quot;wie zijn we&quot; Page.">
-      <option name="closed" value="true" />
-      <created>1773756347029</created>
-      <option name="number" value="00009" />
-      <option name="presentableId" value="LOCAL-00009" />
-      <option name="project" value="LOCAL" />
-      <updated>1773756347029</updated>
-    </task>
-    <task id="LOCAL-00010" summary="Navbar mobile UI verbeterd.">
-      <option name="closed" value="true" />
-      <created>1773830645384</created>
-      <option name="number" value="00010" />
-      <option name="presentableId" value="LOCAL-00010" />
-      <option name="project" value="LOCAL" />
-      <updated>1773830645384</updated>
-    </task>
-    <task id="LOCAL-00011" summary="Footer navbar Desktop en Mobile ui verbeterd">
-      <option name="closed" value="true" />
-      <created>1773831342248</created>
-      <option name="number" value="00011" />
-      <option name="presentableId" value="LOCAL-00011" />
-      <option name="project" value="LOCAL" />
-      <updated>1773831342248</updated>
-    </task>
-    <task id="LOCAL-00012" summary="ruimte tussen terugblik en footer verbeterd">
-      <option name="closed" value="true" />
-      <created>1773831501311</created>
-      <option name="number" value="00012" />
-      <option name="presentableId" value="LOCAL-00012" />
-      <option name="project" value="LOCAL" />
-      <updated>1773831501311</updated>
-    </task>
-    <task id="LOCAL-00013" summary="styling navbar">
-      <option name="closed" value="true" />
-      <created>1773838504665</created>
-      <option name="number" value="00013" />
-      <option name="presentableId" value="LOCAL-00013" />
-      <option name="project" value="LOCAL" />
-      <updated>1773838504665</updated>
-    </task>
-    <task id="LOCAL-00014" summary="Navbar ui verbeteringen">
-      <option name="closed" value="true" />
-      <created>1773997851683</created>
-      <option name="number" value="00014" />
-      <option name="presentableId" value="LOCAL-00014" />
-      <option name="project" value="LOCAL" />
-      <updated>1773997851683</updated>
-    </task>
-    <task id="LOCAL-00015" summary="Navbar ui verbeteringen">
-      <option name="closed" value="true" />
-      <created>1773997881433</created>
-      <option name="number" value="00015" />
-      <option name="presentableId" value="LOCAL-00015" />
-      <option name="project" value="LOCAL" />
-      <updated>1773997881433</updated>
-    </task>
-    <task id="LOCAL-00016" summary="navbar ui verbeteringen">
-      <option name="closed" value="true" />
-      <created>1773997898272</created>
-      <option name="number" value="00016" />
-      <option name="presentableId" value="LOCAL-00016" />
-      <option name="project" value="LOCAL" />
-      <updated>1773997898272</updated>
-    </task>
-    <task id="LOCAL-00017" summary="navbar ui verbeteringen 2">
-      <option name="closed" value="true" />
-      <created>1773998063839</created>
-      <option name="number" value="00017" />
-      <option name="presentableId" value="LOCAL-00017" />
-      <option name="project" value="LOCAL" />
-      <updated>1773998063839</updated>
-    </task>
-    <task id="LOCAL-00018" summary="Navbar mobile ui font-size gelijk gemaakt">
-      <option name="closed" value="true" />
-      <created>1773998248139</created>
-      <option name="number" value="00018" />
-      <option name="presentableId" value="LOCAL-00018" />
-      <option name="project" value="LOCAL" />
-      <updated>1773998248139</updated>
-    </task>
-    <task id="LOCAL-00019" summary="tablet en desktop mobile query">
-      <option name="closed" value="true" />
-      <created>1774007267645</created>
-      <option name="number" value="00019" />
-      <option name="presentableId" value="LOCAL-00019" />
-      <option name="project" value="LOCAL" />
-      <updated>1774007267645</updated>
-    </task>
-    <task id="LOCAL-00020" summary="Tablet ui verbeterd">
-      <option name="closed" value="true" />
-      <created>1774009085170</created>
-      <option name="number" value="00020" />
-      <option name="presentableId" value="LOCAL-00020" />
-      <option name="project" value="LOCAL" />
-      <updated>1774009085170</updated>
-    </task>
-    <task id="LOCAL-00021" summary="Tablet ui Foto's op wat doen we page verbeterd">
-      <option name="closed" value="true" />
-      <created>1774009898288</created>
-      <option name="number" value="00021" />
-      <option name="presentableId" value="LOCAL-00021" />
-      <option name="project" value="LOCAL" />
-      <updated>1774009898288</updated>
-    </task>
-    <task id="LOCAL-00022" summary="terugblik en agenda class toegevoegd en width 95% gegeven">
-      <option name="closed" value="true" />
-      <created>1774011447217</created>
-      <option name="number" value="00022" />
-      <option name="presentableId" value="LOCAL-00022" />
-      <option name="project" value="LOCAL" />
-      <updated>1774011447217</updated>
-    </task>
-    <task id="LOCAL-00023" summary="Navbar sticky verwijderd">
-      <option name="closed" value="true" />
-      <created>1774013202727</created>
-      <option name="number" value="00023" />
-      <option name="presentableId" value="LOCAL-00023" />
-      <option name="project" value="LOCAL" />
-      <updated>1774013202727</updated>
-    </task>
-    <task id="LOCAL-00024" summary="Mobile en tablet Ui fix">
-      <option name="closed" value="true" />
-      <created>1774359279188</created>
-      <option name="number" value="00024" />
-      <option name="presentableId" value="LOCAL-00024" />
-      <option name="project" value="LOCAL" />
-      <updated>1774359279188</updated>
-    </task>
-    <task id="LOCAL-00025" summary="Mobile en tablet Ui fixes van row-&gt;column">
-      <option name="closed" value="true" />
-      <created>1774366894559</created>
-      <option name="number" value="00025" />
-      <option name="presentableId" value="LOCAL-00025" />
-      <option name="project" value="LOCAL" />
-      <updated>1774366894559</updated>
-    </task>
-    <task id="LOCAL-00026" summary="Mobile en tablet Ui fixes van row-&gt;column">
-      <option name="closed" value="true" />
-      <created>1774366986303</created>
-      <option name="number" value="00026" />
-      <option name="presentableId" value="LOCAL-00026" />
-      <option name="project" value="LOCAL" />
-      <updated>1774366986303</updated>
-    </task>
-    <task id="LOCAL-00027" summary="agenda en terublik knoppen verbeterd op mobile en tablet">
-      <option name="closed" value="true" />
-      <created>1774424506618</created>
-      <option name="number" value="00027" />
-      <option name="presentableId" value="LOCAL-00027" />
-      <option name="project" value="LOCAL" />
-      <updated>1774424506618</updated>
-    </task>
-    <task id="LOCAL-00028" summary="foto's mobile kleiner homepage">
-      <option name="closed" value="true" />
-      <created>1774610799601</created>
-      <option name="number" value="00028" />
-      <option name="presentableId" value="LOCAL-00028" />
-      <option name="project" value="LOCAL" />
-      <updated>1774610799601</updated>
-    </task>
-    <task id="LOCAL-00029" summary="witte balk terugblik verwijderd">
-      <option name="closed" value="true" />
-      <created>1774611793932</created>
-      <option name="number" value="00029" />
-      <option name="presentableId" value="LOCAL-00029" />
-      <option name="project" value="LOCAL" />
-      <updated>1774611793932</updated>
-    </task>
-    <task id="LOCAL-00030" summary="Event + past events counter">
-      <option name="closed" value="true" />
-      <created>1774612373144</created>
-      <option name="number" value="00030" />
-      <option name="presentableId" value="LOCAL-00030" />
-      <option name="project" value="LOCAL" />
-      <updated>1774612373144</updated>
-    </task>
-    <task id="LOCAL-00031" summary="database naam change">
-      <option name="closed" value="true" />
-      <created>1775569401722</created>
-      <option name="number" value="00031" />
-      <option name="presentableId" value="LOCAL-00031" />
-      <option name="project" value="LOCAL" />
-      <updated>1775569401722</updated>
-    </task>
-    <task id="LOCAL-00032" summary="database naam change">
-      <option name="closed" value="true" />
-      <created>1775569576133</created>
-      <option name="number" value="00032" />
-      <option name="presentableId" value="LOCAL-00032" />
-      <option name="project" value="LOCAL" />
-      <updated>1775569576133</updated>
-    </task>
-    <task id="LOCAL-00033" summary="Wat doen we page link en hover veranderd">
-      <option name="closed" value="true" />
-      <created>1775645722892</created>
-      <option name="number" value="00033" />
-      <option name="presentableId" value="LOCAL-00033" />
-      <option name="project" value="LOCAL" />
-      <updated>1775645722892</updated>
-    </task>
-    <task id="LOCAL-00034" summary="Wat doen we page link en hover veranderd">
-      <option name="closed" value="true" />
-      <created>1775647935338</created>
-      <option name="number" value="00034" />
-      <option name="presentableId" value="LOCAL-00034" />
-      <option name="project" value="LOCAL" />
-      <updated>1775647935338</updated>
-    </task>
-    <task id="LOCAL-00035" summary="ipad navbar gefixed">
-      <option name="closed" value="true" />
-      <created>1775655047550</created>
-      <option name="number" value="00035" />
-      <option name="presentableId" value="LOCAL-00035" />
-      <option name="project" value="LOCAL" />
-      <updated>1775655047550</updated>
-    </task>
-    <task id="LOCAL-00036" summary="ipad navbar gefixed 2">
-      <option name="closed" value="true" />
-      <created>1775655077143</created>
-      <option name="number" value="00036" />
-      <option name="presentableId" value="LOCAL-00036" />
-      <option name="project" value="LOCAL" />
-      <updated>1775655077143</updated>
-    </task>
-    <task id="LOCAL-00037" summary="foto wie zijn we page gecentreerd">
-      <option name="closed" value="true" />
-      <created>1775744527190</created>
-      <option name="number" value="00037" />
-      <option name="presentableId" value="LOCAL-00037" />
-      <option name="project" value="LOCAL" />
-      <updated>1775744527190</updated>
-    </task>
-    <task id="LOCAL-00038" summary="fotos actie pagina's verkleind (mobile)">
-      <option name="closed" value="true" />
-      <created>1775822051489</created>
-      <option name="number" value="00038" />
-      <option name="presentableId" value="LOCAL-00038" />
-      <option name="project" value="LOCAL" />
-      <updated>1775822051489</updated>
-    </task>
-    <task id="LOCAL-00039" summary="fotos actie pagina's verkleind (mobile) 2">
-      <option name="closed" value="true" />
-      <created>1775823529348</created>
-      <option name="number" value="00039" />
-      <option name="presentableId" value="LOCAL-00039" />
-      <option name="project" value="LOCAL" />
-      <updated>1775823529348</updated>
-    </task>
-    <task id="LOCAL-00040" summary="fotos actie pagina's verbeterd">
-      <option name="closed" value="true" />
-      <created>1775824383088</created>
-      <option name="number" value="00040" />
-      <option name="presentableId" value="LOCAL-00040" />
-      <option name="project" value="LOCAL" />
-      <updated>1775824383088</updated>
-    </task>
-    <task id="LOCAL-00041" summary="nieuwe mce">
-      <option name="closed" value="true" />
-      <created>1776084768415</created>
-      <option name="number" value="00041" />
-      <option name="presentableId" value="LOCAL-00041" />
-      <option name="project" value="LOCAL" />
-      <updated>1776084768415</updated>
-    </task>
-    <task id="LOCAL-00042" summary="Admin page mobile en tablet ui verbeterd">
-      <option name="closed" value="true" />
-      <created>1776168125920</created>
-      <option name="number" value="00042" />
-      <option name="presentableId" value="LOCAL-00042" />
-      <option name="project" value="LOCAL" />
-      <updated>1776168125920</updated>
-    </task>
-    <task id="LOCAL-00043" summary="Admin page mobile en tablet ui verbeterd 2">
-      <option name="closed" value="true" />
-      <created>1776252146699</created>
-      <option name="number" value="00043" />
-      <option name="presentableId" value="LOCAL-00043" />
-      <option name="project" value="LOCAL" />
-      <updated>1776252146699</updated>
-    </task>
-    <task id="LOCAL-00044" summary="meer info image naar links">
-      <option name="closed" value="true" />
-      <created>1776333535789</created>
-      <option name="number" value="00044" />
-      <option name="presentableId" value="LOCAL-00044" />
-      <option name="project" value="LOCAL" />
-      <updated>1776333535789</updated>
-    </task>
-    <task id="LOCAL-00045" summary="booking update">
-      <option name="closed" value="true" />
-      <created>1776424784352</created>
-      <option name="number" value="00045" />
-      <option name="presentableId" value="LOCAL-00045" />
-      <option name="project" value="LOCAL" />
-      <updated>1776424784352</updated>
-    </task>
-    <task id="LOCAL-00046" summary="booking update">
-      <option name="closed" value="true" />
-      <created>1776424851861</created>
-      <option name="number" value="00046" />
-      <option name="presentableId" value="LOCAL-00046" />
-      <option name="project" value="LOCAL" />
-      <updated>1776424851861</updated>
-    </task>
-    <option name="localTasksCounter" value="47" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
-  </component>
-  <component name="Vcs.Log.Tabs.Properties">
-    <option name="TAB_STATES">
-      <map>
-        <entry key="MAIN">
-          <value>
-            <State>
-              <option name="CUSTOM_BOOLEAN_PROPERTIES">
-                <map>
-                  <entry key="Show.Git.Branches" value="true" />
-                </map>
-              </option>
-              <option name="FILTERS">
-                <map>
-                  <entry key="branch">
-                    <value>
-                      <list>
-                        <option value="main" />
-                      </list>
-                    </value>
-                  </entry>
-                </map>
-              </option>
-            </State>
-          </value>
-        </entry>
-      </map>
-    </option>
-  </component>
-  <component name="VcsManagerConfiguration">
-    <MESSAGE value="tablet en desktop mobile query" />
-    <MESSAGE value="Tablet ui verbeterd" />
-    <MESSAGE value="Tablet ui Foto's op wat doen we page verbeterd" />
-    <MESSAGE value="terugblik en agenda class toegevoegd en width 95% gegeven" />
-    <MESSAGE value="Navbar sticky verwijderd" />
-    <MESSAGE value="Mobile en tablet Ui fix" />
-    <MESSAGE value="Mobile ui Row-&gt;Column fixes" />
-    <MESSAGE value="Mobile en tablet Ui fixes van row-&gt;column" />
-    <MESSAGE value="agenda en terublik knoppen verbeterd op mobile en tablet" />
-    <MESSAGE value="foto's mobile kleiner homepage" />
-    <MESSAGE value="witte balk terugblik verwijderd" />
-    <MESSAGE value="Event + past events counter" />
-    <MESSAGE value="database naam change" />
-    <MESSAGE value="Wat doen we page link en hover veranderd" />
-    <MESSAGE value="ipad navbar gefixed" />
-    <MESSAGE value="ipad navbar gefixed 2" />
-    <MESSAGE value="foto wie zijn we page gecentreerd" />
-    <MESSAGE value="fotos actie pagina's verkleind (mobile)" />
-    <MESSAGE value="fotos actie pagina's verkleind (mobile) 2" />
-    <MESSAGE value="fotos actie pagina's verbeterd" />
-    <MESSAGE value="nieuwe mce" />
-    <MESSAGE value="Admin page mobile en tablet ui verbeterd" />
-    <MESSAGE value="Admin page mobile en tablet ui verbeterd 2" />
-    <MESSAGE value="meer info image naar links" />
-    <MESSAGE value="booking update" />
-    <option name="LAST_COMMIT_MESSAGE" value="booking update" />
-  </component>
-  <component name="XSLT-Support.FileAssociations.UIState">
-    <expand />
-    <select />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>

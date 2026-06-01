@@ -30,8 +30,13 @@ $weekStart = (clone $selectedDateTime)->modify('monday this week');
 $weekEnd = (clone $weekStart)->modify('+6 days');
 
 $locations = [
-        ['id' => 1, 'name' => 'Grote Zaal', 'color' => '#00811F'],
-        ['id' => 2, 'name' => 'Workshop', 'color' => '#0066CC'],
+        ['id' => 1, 'name' => 'Grote Zaal 1', 'color' => '#00811F'],
+        ['id' => 2, 'name' => 'Grote Zaal 2', 'color' => '#00811F'],
+        ['id' => 3, 'name' => 'Grote Zaal 3', 'color' => '#00811F'],
+
+        ['id' => 4, 'name' => 'Workshop 1', 'color' => '#0066CC'],
+        ['id' => 5, 'name' => 'Workshop 2', 'color' => '#0066CC'],
+
         ['id' => 999, 'name' => 'Extern', 'color' => '#FF9500'],
 ];
 
@@ -52,6 +57,11 @@ $stmt->execute();
 $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $message = "";
+// Support flash messages from booking POST handling
+if (!empty($_SESSION['booking_message'])) {
+    $message = $_SESSION['booking_message'];
+    unset($_SESSION['booking_message']);
+}
 
 /* STAFF ASSIGNMENT HANDLING - CHECK FIRST */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['staff_dates'])) {
@@ -92,54 +102,90 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['staff_dates'])) {
     exit;
 }
 
-/* BOOKING INSERT */
+/* BOOKING INSERT - support multiple locations selection */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['booking_date'])) {
     $bookingDate = $_POST['booking_date'] ?? null;
     $bookingStartTime = $_POST['start_time'] ?? null;
     $bookingEndTime = $_POST['end_time'] ?? null;
-    $locationId = $_POST['location_id'] ?? null;
-    
-    if (!empty($bookingDate) && !empty($bookingStartTime) && !empty($bookingEndTime) && !empty($locationId)) {
-        $locationDescription = $locationId == 999 ? ($_POST['location_description'] ?? '') : null;
-        
-        // Check for conflicting bookings
-        $conflict = false;
-        foreach ($bookings as $b) {
-            if ($b['booking_date'] === $bookingDate && $b['location_id'] == $locationId) {
-                // Externe bookings (999) conflicteren niet met elkaar
-                if ($locationId == 999) {
-                    continue;
-                }
-                
-                $bStart = (int)substr($b['start_time'], 0, 2);
-                $bEnd = (int)substr($b['end_time'], 0, 2);
-                $newStart = (int)substr($bookingStartTime, 0, 2);
-                $newEnd = (int)substr($bookingEndTime, 0, 2);
-                
-                // Check if times overlap
-                if ($newStart < $bEnd && $newEnd > $bStart) {
-                    $conflict = true;
-                    $message = "Deze ruimte is al geboekt in dit tijdsgewijd!";
-                    break;
+    $locationIds = $_POST['location_ids'] ?? [];
+    // allow single location submitted as scalar for backwards compatibility
+    if (!is_array($locationIds) && !empty($locationIds)) {
+        $locationIds = [$locationIds];
+    }
+
+    if (!empty($bookingDate) && !empty($bookingStartTime) && !empty($bookingEndTime) && !empty($locationIds)) {
+        $hardwareJson = json_encode($_POST['hardware'] ?? []);
+        $inserted = [];
+        $skipped = [];
+
+        foreach ($locationIds as $locId) {
+            $locId = intval($locId);
+            if ($locId === 0) continue;
+
+            $locationDescription = $locId == 999 ? ($_POST['location_description'] ?? '') : null;
+
+            // Check for conflicting bookings for this location
+            $conflict = false;
+            foreach ($bookings as $b) {
+                if ($b['booking_date'] === $bookingDate && $b['location_id'] == $locId) {
+                    // Externe bookings (999) conflicteren niet met elkaar
+                    if ($locId == 999) continue;
+
+                    $bStart = (int)substr($b['start_time'], 0, 2);
+                    $bEnd = (int)substr($b['end_time'], 0, 2);
+                    $newStart = (int)substr($bookingStartTime, 0, 2);
+                    $newEnd = (int)substr($bookingEndTime, 0, 2);
+
+                    if ($newStart < $bEnd && $newEnd > $bStart) {
+                        $conflict = true;
+                        break;
+                    }
                 }
             }
-        }
-        
-        if (!$conflict) {
-            $stmt = $pdo->prepare("INSERT INTO bookings (location_id, location_description, booking_date, start_time, end_time, hardware_ids)
-            VALUES (?, ?, ?, ?, ?, ?)");
+
+            if ($conflict) {
+                $skipped[] = $locId;
+                continue;
+            }
+
+            $stmt = $pdo->prepare("INSERT INTO bookings (location_id, location_description, booking_date, start_time, end_time, hardware_ids) VALUES (?, ?, ?, ?, ?, ?)");
             $stmt->execute([
-                    $locationId,
-                    $locationDescription,
-                    $bookingDate,
-                    $bookingStartTime,
-                    $bookingEndTime,
-                    json_encode($_POST['hardware'] ?? [])
+                $locId,
+                $locationDescription,
+                $bookingDate,
+                $bookingStartTime,
+                $bookingEndTime,
+                $hardwareJson
             ]);
 
-            header("Location: booking.php?view=$view&date=$selectedDate");
-            exit;
+            $inserted[] = $locId;
         }
+
+        // prepare a user-friendly message and store in session so it survives the redirect
+        $msgParts = [];
+        if (!empty($inserted)) {
+            $names = [];
+            foreach ($inserted as $id) {
+                $loc = findById($locations, $id);
+                $names[] = $loc ? $loc['name'] : "#{$id}";
+            }
+            $msgParts[] = "Geboekt: " . implode(', ', $names);
+        }
+        if (!empty($skipped)) {
+            $names = [];
+            foreach ($skipped as $id) {
+                $loc = findById($locations, $id);
+                $names[] = $loc ? $loc['name'] : "#{$id}";
+            }
+            $msgParts[] = "Kon niet boeken (conflict): " . implode(', ', $names);
+        }
+
+        if (!empty($msgParts)) {
+            $_SESSION['booking_message'] = implode(' | ', $msgParts);
+        }
+
+        header("Location: booking.php?view=$view&date=$selectedDate");
+        exit;
     }
 }
 
@@ -350,11 +396,15 @@ $daysWithStaff = $stmt->fetchAll(PDO::FETCH_COLUMN);
         <form method="POST" id="bookingForm">
             <input type="date" name="booking_date" id="booking_date" required>
 
-            <select name="location_id" id="location_id" onchange="toggleLocationDescription()">
+            <fieldset class="locations">
+                <legend>Kies één of meerdere ruimtes</legend>
                 <?php foreach ($locations as $l): ?>
-                    <option value="<?= $l['id'] ?>"><?= $l['name'] ?></option>
+                    <label style="display: inline-block; margin-right: 0.75rem;">
+                        <input type="checkbox" name="location_ids[]" value="<?= $l['id'] ?>" onchange="toggleLocationDescription()">
+                        <?= htmlspecialchars($l['name']) ?>
+                    </label>
                 <?php endforeach; ?>
-            </select>
+            </fieldset>
 
             <input type="text" name="location_description" id="location_description" placeholder="Waar/wat is de externe locatie?" style="display:none;">
 
@@ -412,12 +462,16 @@ function checkIfPastDate(dateStr) {
     }
 }
 
-// Toggle location description field based on selected location
+// Toggle location description field based on whether extern (999) is selected
 function toggleLocationDescription() {
-    const locationId = document.getElementById('location_id').value;
+    const checkboxes = document.querySelectorAll('input[name="location_ids[]"]');
     const descriptionField = document.getElementById('location_description');
-    
-    if (locationId === '999') {
+    let externSelected = false;
+    checkboxes.forEach(cb => {
+        if (cb.checked && cb.value === '999') externSelected = true;
+    });
+
+    if (externSelected) {
         descriptionField.style.display = 'block';
         descriptionField.required = true;
     } else {
