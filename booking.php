@@ -397,7 +397,7 @@ $daysWithStaff = $stmt->fetchAll(PDO::FETCH_COLUMN);
     }
     ?>
 
-    <!-- FORM 1 -->
+    <!-- FORM 2 -->
     <section class="card form-card">
         <h2>Nieuwe booking</h2>
 
