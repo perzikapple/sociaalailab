@@ -318,8 +318,15 @@ $daysWithStaff = $stmt->fetchAll(PDO::FETCH_COLUMN);
                 
                 // Create array of dates with bookings
                 $daysWithBookings = [];
+                $bookingTitlesByDate = [];
                 foreach ($bookings as $b) {
                     $daysWithBookings[] = $b['booking_date'];
+                    if (!isset($bookingTitlesByDate[$b['booking_date']])) {
+                        $bookingTitlesByDate[$b['booking_date']] = [];
+                    }
+                    if (!empty($b['title'])) {
+                        $bookingTitlesByDate[$b['booking_date']][] = $b['title'];
+                    }
                 }
                 
                 $day = 1;
@@ -345,6 +352,13 @@ $daysWithStaff = $stmt->fetchAll(PDO::FETCH_COLUMN);
                             }
                             if ($hasBooking) {
                                 echo "<div class=\"booking-indicator\"></div>";
+                                if (!empty($bookingTitlesByDate[$dateStr])) {
+                                    echo "<div class=\"booking-titles\">";
+                                    foreach ($bookingTitlesByDate[$dateStr] as $title) {
+                                        echo "<div class=\"booking-title\">" . htmlspecialchars($title) . "</div>";
+                                    }
+                                    echo "</div>";
+                                }
                             }
                             echo "</td>";
                             $day++;
@@ -394,6 +408,8 @@ $daysWithStaff = $stmt->fetchAll(PDO::FETCH_COLUMN);
         <?php endif; ?>
 
         <form method="POST" id="bookingForm">
+            <input type="text" name="booking_title" id="booking_title" placeholder="Titel/naam van de booking (bijv: Team Meeting, Workshop)" required>
+            
             <input type="date" name="booking_date" id="booking_date" required>
 
             <fieldset class="locations">
@@ -412,6 +428,8 @@ $daysWithStaff = $stmt->fetchAll(PDO::FETCH_COLUMN);
                 <input type="time" name="start_time" id="start_time" required>
                 <input type="time" name="end_time" id="end_time" required>
             </div>
+
+            <textarea name="staff_present" placeholder="Wie is/zijn er present bij deze booking?" style="resize: vertical; min-height: 60px;"></textarea>
 
             <div class="chips">
                 <?php foreach ($hardware as $h): ?>
