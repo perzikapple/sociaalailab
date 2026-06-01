@@ -692,14 +692,23 @@ input::placeholder {
 }
 
 .staff-indicator {
+    position: static;
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    display: inline-block;
+}
+
+.staff-indicators {
     position: absolute;
     top: 8px;
     right: 8px;
-    width: 8px;
-    height: 8px;
-    background: #FF9500;
-    border-radius: 50%;
-    box-shadow: 0 2px 4px rgba(255, 149, 0, 0.3);
+    display: flex;
+    gap: 3px;
+    flex-wrap: wrap;
+    width: 50px;
+    justify-content: flex-end;
 }
 
 .booking-title {

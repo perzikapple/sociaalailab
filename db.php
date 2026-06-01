@@ -210,11 +210,31 @@ try {
             staff_date DATE NOT NULL,
             location_id INT NOT NULL,
             staff_name VARCHAR(255) NOT NULL,
+            start_time TIME DEFAULT NULL,
+            end_time TIME DEFAULT NULL,
+            color VARCHAR(7) DEFAULT '#FF9500',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            UNIQUE KEY unique_staff_per_location_date (staff_date, location_id)
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ");
+
+    $staffColumns = $pdo->query("SHOW COLUMNS FROM location_staff")->fetchAll(PDO::FETCH_COLUMN);
+    if (!in_array('color', $staffColumns)) {
+        $pdo->exec("ALTER TABLE location_staff ADD COLUMN color VARCHAR(7) DEFAULT '#FF9500'");
+    }
+    if (!in_array('start_time', $staffColumns)) {
+        $pdo->exec("ALTER TABLE location_staff ADD COLUMN start_time TIME DEFAULT NULL");
+    }
+    if (!in_array('end_time', $staffColumns)) {
+        $pdo->exec("ALTER TABLE location_staff ADD COLUMN end_time TIME DEFAULT NULL");
+    }
+    
+    // Remove old unique constraint if it exists
+    try {
+        $pdo->exec("ALTER TABLE location_staff DROP INDEX IF EXISTS unique_staff_per_location_date");
+    } catch (Exception $e) {
+        // Constraint might not exist
+    }
 
     if (!function_exists('audit_log')) {
         function audit_log($pdo, $action, $table_name, $record_id = null, $details = null, $performed_by = null) {
