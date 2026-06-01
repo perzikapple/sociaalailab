@@ -702,6 +702,30 @@ input::placeholder {
     box-shadow: 0 2px 4px rgba(255, 149, 0, 0.3);
 }
 
+.booking-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #00811F;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 2px 4px;
+    background: rgba(0, 129, 31, 0.08);
+    border-radius: 3px;
+    margin-bottom: 2px;
+}
+
+.booking-titles {
+    position: absolute;
+    bottom: 24px;
+    left: 8px;
+    right: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 50px;
+    overflow: hidden;
+}
 
 
 /* TIME SCHEDULE */
