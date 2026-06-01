@@ -19,6 +19,40 @@ if (!in_array('access_booking', $sessionPermissions, true)) {
     exit;
 }
 
+// Staff color palette (auto-assigned to each unique staff member)
+$staffColorPalette = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8',
+    '#F7DC6F', '#BB8FCE', '#85C1E2', '#F8B88B', '#52C9A8',
+    '#E57373', '#64B5F6', '#81C784', '#FFD54F', '#BA68C8'
+];
+
+function getStaffColor($pdo, $staffName, $palette) {
+    // Check if staff already has a color assigned
+    $stmt = $pdo->prepare("SELECT color FROM location_staff WHERE staff_name = ? LIMIT 1");
+    $stmt->execute([$staffName]);
+    $existing = $stmt->fetchColumn();
+    
+    if ($existing) {
+        return $existing; // Reuse existing color
+    }
+    
+    // Get all colors in use
+    $stmt = $pdo->prepare("SELECT DISTINCT color FROM location_staff WHERE color IS NOT NULL");
+    $stmt->execute();
+    $usedColors = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    $usedColors = array_map('strtoupper', $usedColors);
+    
+    // Find first available color from palette
+    foreach ($palette as $color) {
+        if (!in_array(strtoupper($color), $usedColors)) {
+            return $color;
+        }
+    }
+    
+    // If all colors used, return a random one (shouldn't happen with 15 colors)
+    return $palette[count($usedColors) % count($palette)];
+}
+
 $currentMonth = $_GET['month'] ?? date('n');
 $currentYear = $_GET['year'] ?? date('Y');
 $view = $_GET['view'] ?? 'week';
@@ -58,32 +92,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['staff_dates'])) {
     $staffDates = trim($_POST['staff_dates']);
     $staffLocationId = $_POST['staff_location_id'] ?? 1;
     $staffName = trim($_POST['staff_name']);
+    $startTime = trim($_POST['staff_start_time'] ?? null);
+    $endTime = trim($_POST['staff_end_time'] ?? null);
+    
+    // Auto-assign color based on staff name
+    $staffColor = getStaffColor($pdo, $staffName, $staffColorPalette);
 
     if (!empty($staffDates) && !empty($staffName)) {
         // Split dates by comma, newline, or semicolon
         $dateArray = preg_split('/[,;\n\r]+/', $staffDates, -1, PREG_SPLIT_NO_EMPTY);
-        // Remove duplicates and trim
-        $dateArray = array_unique(array_map('trim', $dateArray));
+        // Trim dates but don't remove duplicates - allow same date multiple times with different times
+        $dateArray = array_map('trim', $dateArray);
         
         foreach ($dateArray as $dateStr) {
             // Validate date format (YYYY-MM-DD)
             if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateStr)) {
-                // Check if this person already exists for this date and location
-                $checkStmt = $pdo->prepare("
-                    SELECT COUNT(*) FROM location_staff 
-                    WHERE staff_date = ? AND location_id = ? AND staff_name = ?
+                $stmt = $pdo->prepare("
+                    INSERT INTO location_staff (staff_date, location_id, staff_name, color, start_time, end_time)
+                    VALUES (?, ?, ?, ?, ?, ?)
                 ");
-                $checkStmt->execute([$dateStr, $staffLocationId, $staffName]);
-                $exists = $checkStmt->fetchColumn();
-                
-                // Only insert if it doesn't already exist
-                if (!$exists) {
-                    $stmt = $pdo->prepare("
-                        INSERT INTO location_staff (staff_date, location_id, staff_name)
-                        VALUES (?, ?, ?)
-                    ");
-                    $stmt->execute([$dateStr, $staffLocationId, $staffName]);
-                }
+                $stmt->execute([$dateStr, $staffLocationId, $staffName, $staffColor, $startTime ?: null, $endTime ?: null]);
             }
         }
     }
@@ -144,23 +172,84 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['booking_date'])) {
 }
 
 /* LOAD ALL STAFF ASSIGNMENTS FOR DISPLAY */
-$stmt = $pdo->prepare("SELECT DISTINCT staff_name, GROUP_CONCAT(DATE_FORMAT(staff_date, '%d-%m-%Y') ORDER BY staff_date SEPARATOR ', ') as dates FROM location_staff WHERE location_id = 1 GROUP BY staff_name ORDER BY staff_name");
+$stmt = $pdo->prepare("SELECT DISTINCT staff_name, color, COUNT(DISTINCT staff_date) as num_dates FROM location_staff WHERE location_id = 1 GROUP BY staff_name, color ORDER BY staff_name");
 $stmt->execute();
 $allStaffAssignments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 /* LOAD STAFF ASSIGNMENTS FOR SELECTED DAY */
 $stmt = $pdo->prepare("SELECT * FROM location_staff WHERE staff_date = ?");
+/* LOAD STAFF DATA FOR SELECTED DAY AND MERGE TIME SLOTS */
+$stmt = $pdo->prepare("SELECT staff_name, start_time, end_time, color FROM location_staff WHERE staff_date = ? AND location_id = 1 ORDER BY start_time");
 $stmt->execute([$selectedDay]);
-$staffAssignments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$staffData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Group by staff_name and merge overlapping/adjacent time slots
 $staffByLocation = [];
-foreach ($staffAssignments as $staff) {
-    $staffByLocation[$staff['location_id']] = $staff['staff_name'];
+$staffGroups = [];
+foreach ($staffData as $staff) {
+    $name = $staff['staff_name'];
+    if (!isset($staffGroups[$name])) {
+        $staffGroups[$name] = ['color' => $staff['color'], 'slots' => []];
+    }
+    $staffGroups[$name]['slots'][] = [
+        'start' => $staff['start_time'],
+        'end' => $staff['end_time']
+    ];
+}
+
+// Merge overlapping and adjacent time slots for each staff member
+foreach ($staffGroups as $name => $group) {
+    $slots = $group['slots'];
+    
+    if (empty($slots)) continue;
+    
+    // Sort by start time
+    usort($slots, function($a, $b) {
+        $aStart = $a['start'] ?? '00:00';
+        $bStart = $b['start'] ?? '00:00';
+        return strcmp($aStart, $bStart);
+    });
+    
+    // Merge overlapping/adjacent slots
+    $merged = [];
+    foreach ($slots as $slot) {
+        $start = $slot['start'];
+        $end = $slot['end'];
+        
+        if (empty($merged)) {
+            $merged[] = $slot;
+        } else {
+            $lastSlot = &$merged[count($merged) - 1];
+            $lastEnd = $lastSlot['end'] ?? '23:59';
+            $currentStart = $start ?? '00:00';
+            
+            // Check if slots overlap or are adjacent (within 1 minute)
+            if (strtotime($currentStart) <= strtotime($lastEnd)) {
+                // Merge: extend the end time if new slot ends later
+                if ($end && (!$lastSlot['end'] || strtotime($end) > strtotime($lastSlot['end']))) {
+                    $lastSlot['end'] = $end;
+                }
+            } else {
+                // No overlap, add as new slot
+                $merged[] = $slot;
+            }
+        }
+    }
+    
+    $staffByLocation[$name] = [
+        'color' => $group['color'],
+        'slots' => $merged
+    ];
 }
 
 /* LOAD ALL DATES WITH STAFF FOR CALENDAR INDICATOR */
-$stmt = $pdo->prepare("SELECT DISTINCT staff_date FROM location_staff WHERE location_id = 1");
+$stmt = $pdo->prepare("SELECT staff_date, GROUP_CONCAT(color SEPARATOR '|') as colors FROM location_staff WHERE location_id = 1 GROUP BY staff_date");
 $stmt->execute();
-$daysWithStaff = $stmt->fetchAll(PDO::FETCH_COLUMN);
+$staffByDate = [];
+foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+    $staffByDate[$row['staff_date']] = explode('|', $row['colors']);
+}
+$daysWithStaff = array_keys($staffByDate);
 ?>
 <!doctype html>
 <html lang="nl">
@@ -212,25 +301,36 @@ $daysWithStaff = $stmt->fetchAll(PDO::FETCH_COLUMN);
             <?php endforeach; ?>
         <?php endif; ?>
         
-        <?php if ($selectedDay && !empty($allStaffAssignments)): ?>
+        <?php if ($selectedDay && !empty($staffByLocation)): ?>
             <div style="margin-top: 2rem; border-top: 2px solid #dfe8f3; padding-top: 1.5rem;">
                 <h3 style="margin-bottom: 1rem; color: #00811F;">Ingedeeld personeel</h3>
-                <table style="width: 100%; border-collapse: collapse; font-size: 0.95rem;">
-                    <thead>
-                        <tr style="background-color: #f9fafb;">
-                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #dfe8f3; font-weight: 600; color: #00811F;">Naam</th>
-                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #dfe8f3; font-weight: 600; color: #00811F;">Datums</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($allStaffAssignments as $staff): ?>
-                            <tr style="border-bottom: 1px solid #dfe8f3;">
-                                <td style="padding: 0.85rem 1rem;"><?= htmlspecialchars($staff['staff_name']) ?></td>
-                                <td style="padding: 0.85rem 1rem;"><?= htmlspecialchars($staff['dates']) ?></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+                <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+                    <?php foreach ($staffByLocation as $name => $info): ?>
+                        <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; background: #f9fafb; border-radius: 10px; border: 2px solid #dfe8f3;">
+                            <div style="width: 20px; height: 20px; border-radius: 4px; background: <?= htmlspecialchars($info['color']) ?>; border: 2px solid #ddd;"></div>
+                            <div>
+                                <span style="font-weight: 600; color: #00811F; display: block;"><?= htmlspecialchars($name) ?></span>
+                                <span style="color: #666; font-size: 0.85rem;">
+                                    <?php 
+                                    if (empty($info['slots'])) {
+                                        echo 'Hele dag';
+                                    } else {
+                                        $timeStrs = [];
+                                        foreach ($info['slots'] as $slot) {
+                                            if ($slot['start'] && $slot['end']) {
+                                                $timeStrs[] = substr($slot['start'], 0, 5) . '-' . substr($slot['end'], 0, 5);
+                                            } else {
+                                                $timeStrs[] = 'Hele dag';
+                                            }
+                                        }
+                                        echo implode(', ', $timeStrs);
+                                    }
+                                    ?>
+                                </span>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
             </div>
         <?php endif; ?>
     </section>
@@ -302,7 +402,13 @@ $daysWithStaff = $stmt->fetchAll(PDO::FETCH_COLUMN);
                             echo "<td class=\"day-cell $isToday $isSelected $hasBooking $hasStaff $isPast\" $clickable>";
                             echo "<span class=\"day-number\">$day</span>";
                             if ($hasStaff) {
-                                echo "<div class=\"staff-indicator\"></div>";
+                                echo "<div class=\"staff-indicators\">";
+                                if (isset($staffByDate[$dateStr])) {
+                                    foreach ($staffByDate[$dateStr] as $color) {
+                                        echo "<div class=\"staff-indicator\" style=\"background-color: " . htmlspecialchars($color) . ";\"></div>";
+                                    }
+                                }
+                                echo "</div>";
                             }
                             if ($hasBooking) {
                                 echo "<div class=\"booking-indicator\"></div>";
@@ -534,6 +640,11 @@ document.addEventListener('DOMContentLoaded', function() {
             required
         >
         
+        <div class="row">
+            <input type="time" name="staff_start_time" id="staff_start_time" placeholder="Start tijd (optioneel)">
+            <input type="time" name="staff_end_time" id="staff_end_time" placeholder="Eind tijd (optioneel)">
+        </div>
+        
         <textarea 
             name="staff_dates" 
             placeholder="2024-01-15&#10;2024-01-16&#10;2024-01-17&#10;&#10;of: 2024-01-15, 2024-01-16, 2024-01-17"
@@ -541,7 +652,7 @@ document.addEventListener('DOMContentLoaded', function() {
             required
         ></textarea>
         
-        <small style="color: #999; margin: -0.6rem 0 0 0; font-size: 0.85rem;">Formaat: YYYY-MM-DD (één per regel of gescheiden door komma)</small>
+        <small style="color: #999; margin: -0.6rem 0 0 0; font-size: 0.85rem;">Formaat: YYYY-MM-DD (één per regel of gescheiden door komma)<br>Kleur wordt automatisch toegewezen!</small>
         
         <button type="submit" class="btn">Opslaan</button>
     </form>
