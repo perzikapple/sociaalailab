@@ -197,6 +197,9 @@ try {
     if (!in_array('location_description', $bookingColumns)) {
         $pdo->exec("ALTER TABLE bookings ADD COLUMN location_description VARCHAR(255) DEFAULT NULL");
     }
+    if (!in_array('hardware_ids', $bookingColumns)) {
+        $pdo->exec("ALTER TABLE bookings ADD COLUMN hardware_ids JSON DEFAULT NULL");
+    }
     if (!in_array('staff_present', $bookingColumns)) {
         $pdo->exec("ALTER TABLE bookings ADD COLUMN staff_present TEXT DEFAULT NULL");
     }

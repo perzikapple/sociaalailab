@@ -75,9 +75,32 @@ $locations = [
 ];
 
 $hardware = [
-        ['id' => 1, 'name' => 'Projector', 'quantity' => 2],
-        ['id' => 2, 'name' => 'Whiteboard', 'quantity' => 3],
-        ['id' => 3, 'name' => 'Microfoon', 'quantity' => 4],
+    ['id' => 1, 'name' => 'PC (Workstation 9950X3D RTX5090 96GB RAM)', 'quantity' => 1],
+    ['id' => 2, 'name' => 'PC (Framework Max+ 395 128GB)', 'quantity' => 4],
+    ['id' => 3, 'name' => 'Robohond Unitree Go2 X', 'quantity' => 1],
+    ['id' => 4, 'name' => 'Robohond Unitree Go2 Pro', 'quantity' => 1],
+    ['id' => 5, 'name' => 'Tablet 8,7" Samsung Galaxy Tab A11', 'quantity' => 1],
+    ['id' => 6, 'name' => 'Tablet 11" Samsung Galaxy Tab A11', 'quantity' => 1],
+    ['id' => 7, 'name' => 'VR bril Oculus Quest 3 512GB', 'quantity' => 2],
+    ['id' => 8, 'name' => 'accu+zonnepaneel', 'quantity' => 1],
+    ['id' => 9, 'name' => 'labkar buiten', 'quantity' => 1],
+    ['id' => 10, 'name' => 'Wijkbot kar + afstandbediening', 'quantity' => 1],
+    ['id' => 11, 'name' => 'labkar binnen', 'quantity' => 3],
+    ['id' => 12, 'name' => 'speaker/microfoon Jabra Speak 2 75', 'quantity' => 1],
+    ['id' => 13, 'name' => 'speaker/microfoon Jabra Speak 2 55', 'quantity' => 2],
+    ['id' => 14, 'name' => 'Draadloze microfoon set van 2', 'quantity' => 1],
+    ['id' => 15, 'name' => 'WiFi Router ASUS TUF BE9400', 'quantity' => 1],
+    ['id' => 16, 'name' => 'laptop + muis + AC adapter', 'quantity' => 10],
+    ['id' => 17, 'name' => 'toetsenbord', 'quantity' => 3],
+    ['id' => 18, 'name' => 'muis', 'quantity' => 3],
+    ['id' => 19, 'name' => 'Raspberry Pi + AC adapter + HDMI kabel', 'quantity' => 6],
+    ['id' => 20, 'name' => 'Scherm 50" TCL 50Q6C', 'quantity' => 4],
+    ['id' => 21, 'name' => 'Scherm 27" Philips 27E2N2500 + beugel', 'quantity' => 6],
+    ['id' => 22, 'name' => 'Kensington Combinatie Ultra Laptop Slot x10', 'quantity' => 10],
+    ['id' => 23, 'name' => 'HDMI 8k kabel 2m', 'quantity' => 6],
+    ['id' => 24, 'name' => 'HDMI 8k kabel 5m', 'quantity' => 1],
+    ['id' => 25, 'name' => 'Banner Sociaalailab', 'quantity' => 1],
+    ['id' => 26, 'name' => 'Verwijsstandaard Sociaalailab', 'quantity' => 2],
 ];
 
 function findById($arr, $id) {
@@ -142,7 +165,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['booking_date'])) {
     }
 
     if (!empty($bookingDate) && !empty($bookingStartTime) && !empty($bookingEndTime) && !empty($locationIds)) {
-        $hardwareJson = json_encode($_POST['hardware'] ?? []);
+        $hardwareJson = $_POST['hardware_json'] ?? '[]';
         $inserted = [];
         $skipped = [];
 
@@ -176,14 +199,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['booking_date'])) {
                 continue;
             }
 
-            $stmt = $pdo->prepare("INSERT INTO bookings (location_id, location_description, booking_date, start_time, end_time, hardware_ids) VALUES (?, ?, ?, ?, ?, ?)");
+            $hardwareJson = $_POST['hardware_json'] ?? '[]';
+            $staffPresent = trim($_POST['staff_present'] ?? '');
+            $bookingTitle = trim($_POST['booking_title'] ?? '');
+            
+            $stmt = $pdo->prepare("INSERT INTO bookings (location_id, location_description, booking_date, start_time, end_time, hardware_ids, staff_present, title) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
             $stmt->execute([
                 $locId,
                 $locationDescription,
                 $bookingDate,
                 $bookingStartTime,
                 $bookingEndTime,
-                $hardwareJson
+                $hardwareJson,
+                !empty($staffPresent) ? $staffPresent : null,
+                !empty($bookingTitle) ? $bookingTitle : null
             ]);
 
             $inserted[] = $locId;
