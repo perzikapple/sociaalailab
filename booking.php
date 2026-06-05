@@ -200,14 +200,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['booking_date'])) {
             }
 
             $hardwareJson = $_POST['hardware_json'] ?? '[]';
-            $stmt = $pdo->prepare("INSERT INTO bookings (location_id, location_description, booking_date, start_time, end_time, hardware_ids) VALUES (?, ?, ?, ?, ?, ?)");
+            $staffPresent = trim($_POST['staff_present'] ?? '');
+            $bookingTitle = trim($_POST['booking_title'] ?? '');
+            
+            $stmt = $pdo->prepare("INSERT INTO bookings (location_id, location_description, booking_date, start_time, end_time, hardware_ids, staff_present, title) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
             $stmt->execute([
                 $locId,
                 $locationDescription,
                 $bookingDate,
                 $bookingStartTime,
                 $bookingEndTime,
-                $hardwareJson
+                $hardwareJson,
+                !empty($staffPresent) ? $staffPresent : null,
+                !empty($bookingTitle) ? $bookingTitle : null
             ]);
 
             $inserted[] = $locId;
