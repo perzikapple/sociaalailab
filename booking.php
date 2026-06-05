@@ -99,6 +99,8 @@ $hardware = [
     ['id' => 22, 'name' => 'Kensington Combinatie Ultra Laptop Slot x10', 'quantity' => 10],
     ['id' => 23, 'name' => 'HDMI 8k kabel 2m', 'quantity' => 6],
     ['id' => 24, 'name' => 'HDMI 8k kabel 5m', 'quantity' => 1],
+    ['id' => 25, 'name' => 'Banner Sociaalailab', 'quantity' => 1],
+    ['id' => 26, 'name' => 'Verwijsstandaard Sociaalailab', 'quantity' => 2],
 ];
 
 function findById($arr, $id) {
@@ -163,7 +165,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['booking_date'])) {
     }
 
     if (!empty($bookingDate) && !empty($bookingStartTime) && !empty($bookingEndTime) && !empty($locationIds)) {
-        $hardwareJson = json_encode($_POST['hardware'] ?? []);
+        $hardwareJson = $_POST['hardware_json'] ?? '[]';
         $inserted = [];
         $skipped = [];
 
