@@ -303,6 +303,13 @@ include __DIR__ . '/navbar.php';
                 <p class="text-gray-700 pb-3"><strong> Wat:</strong> <?php echo renderEditorBlock($event['description']); ?></p>
             </div>
         </div>
+        <?php if ($hasValidImage): ?>
+        <div class="homepage-event-mobile-image">
+            <div class="image-template-wrap">
+                <img src="uploads/<?php echo htmlspecialchars($eventImageName); ?>" alt="<?php echo htmlspecialchars(strip_tags((string)$event['title'])); ?>" class="image-template-photo">
+            </div>
+        </div>
+        <?php endif; ?>
         <div class="mt-6 flex flex-wrap gap-3">
             <?php $signupEmbed = trim((string)($event['signup_embed'] ?? '')); ?>
             <?php if ($signupEmbed !== ''): ?>

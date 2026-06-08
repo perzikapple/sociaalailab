@@ -4388,6 +4388,10 @@ section:focus-visible,
     color: #004099;
 }
 
+.homepage-event-mobile-image {
+    display: none;
+}
+
 @media (max-width: 900px) {
     .homepage-news-grid {
         grid-template-columns: 1fr;
@@ -4403,5 +4407,14 @@ section:focus-visible,
         width: 42px;
         height: 42px;
         font-size: 1rem;
+    }
+
+    .homepage-event-mobile-image {
+        display: block;
+        margin: 1rem 0 1.5rem;
+    }
+
+    .homepage-carousel-slide > .flex-1:last-child {
+        display: none;
     }
 }
