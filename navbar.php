@@ -10,23 +10,23 @@ if (!isset($navPrefix)) {
         </button>
 
         <ul id="nav-menu" class="nav-menu ">
-            <li><a href="index.php">Voorpagina</a></li>
-            <li><a href="<?php echo htmlspecialchars($navPrefix); ?>agenda">Agenda</a></li>
+            <li><a href="<?php echo htmlspecialchars($navPrefix); ?>index.php">Voorpagina</a></li>
+            <li><a href="<?php echo htmlspecialchars($navPrefix); ?>agenda.php">Agenda</a></li>
             <li><a href="<?php echo htmlspecialchars($navPrefix); ?>nieuws.php">Nieuws</a></li>
-			<li><a href="<?php echo htmlspecialchars($navPrefix); ?>over">Voor wie?</a></li>
+			<li><a href="<?php echo htmlspecialchars($navPrefix); ?>over.php">Voor wie?</a></li>
 
             <li class="dropdown">
                 <button class="dropbtn">Wat doen we?<span class="dropdown-caret" aria-hidden="true"></span></button>
                 <ul class="dropdown-content">
-                    <li><a href="<?php echo htmlspecialchars($navPrefix); ?>programma/kennis">Kennis & vaardigheden</a></li>
-                    <li><a href="<?php echo htmlspecialchars($navPrefix); ?>programma/actie">Actie, onderzoek & ontwerp</a></li>
-                    <li><a href="<?php echo htmlspecialchars($navPrefix); ?>programma/faciliteit">Faciliteit van het Lab</a></li>
+                    <li><a href="<?php echo htmlspecialchars($navPrefix); ?>programma/kennis.php">Kennis & vaardigheden</a></li>
+                    <li><a href="<?php echo htmlspecialchars($navPrefix); ?>programma/actie.php">Actie, onderzoek & ontwerp</a></li>
+                    <li><a href="<?php echo htmlspecialchars($navPrefix); ?>programma/faciliteit.php">Faciliteit van het Lab</a></li>
                 </ul>
             </li>
 
-            <li><a href="<?php echo htmlspecialchars($navPrefix); ?>verantwoord-ai">Verantwoorde AI</a></li>
-            <li><a href="<?php echo htmlspecialchars($navPrefix); ?>wie-zijn-we">Wie zijn we?</a></li>
-            <li><a href="<?php echo htmlspecialchars($navPrefix); ?>contact">Contact</a></li>
+            <li><a href="<?php echo htmlspecialchars($navPrefix); ?>verantwoord-ai.php">Verantwoorde AI</a></li>
+            <li><a href="<?php echo htmlspecialchars($navPrefix); ?>wie-zijn-we.php">Wie zijn we?</a></li>
+            <li><a href="<?php echo htmlspecialchars($navPrefix); ?>contact.php">Contact</a></li>
             <?php if (!empty($_SESSION['can_access_admin'])): ?>
                 <li><a href="<?php echo htmlspecialchars($navPrefix); ?>admin.php">Admin</a></li>
             <?php endif; ?>
