@@ -118,6 +118,11 @@ foreach ($events as $event):
                     <div class="text-gray-700 pb-3 "><strong> Wat:</strong><div class="mt-1"><?php echo renderEditorBlock($event['description']); ?></div></div>
                 </div>
             </div>
+            <?php if ($hasValidImage): ?>
+            <div class="mobile-image mb-4">
+                <img src="uploads/<?php echo htmlspecialchars($eventImageName); ?>" alt="<?php echo htmlspecialchars(strip_tags((string)$event['title'])); ?>" class="image-template-photo" style="object-fit: contain;">
+            </div>
+            <?php endif; ?>
             <?php if ($signupEmbed !== ''): ?>
             <?php echo renderAanmelderEmbed($signupEmbed); ?>
             <?php elseif (!empty($event['show_signup_button'])): ?>
@@ -130,7 +135,7 @@ foreach ($events as $event):
             </a>
         </div>
         <?php if ($hasValidImage): ?>
-        <div class="flex-1">
+        <div class="flex-1 desktop-image">
             <div class="image-template-wrap">
                 <img src="uploads/<?php echo htmlspecialchars($eventImageName); ?>" alt="<?php echo htmlspecialchars(strip_tags((string)$event['title'])); ?>" class="image-template-photo" style="object-fit: contain;">
                 <!--

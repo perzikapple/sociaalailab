@@ -256,6 +256,11 @@ include __DIR__ . '/navbar.php';
                     <i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>
                     <div class="text-gray-700 pb-1"><strong>Wat:</strong><div class="mt-1"><?php echo renderEditorBlock($event['description']); ?></div></div>
                 </div>
+                <?php if ($hasValidImage): ?>
+                <div class="mobile-image mb-4">
+                    <img src="uploads/<?php echo htmlspecialchars($eventImageName); ?>" alt="<?php echo htmlspecialchars(strip_tags((string)$event['title'])); ?>" class="image-template-photo" style="object-fit: contain;">
+                </div>
+                <?php endif; ?>
                 <div class="mb-4 flex flex-wrap gap-3">
                     <a href="event-detail.php?id=<?php echo (int)$event['id']; ?>" class="inline-block bg-[#00811F] text-white px-6 py-2 rounded-lg font-semibold hover:bg-[#005c16] transition">Meer info</a>
                     <?php if (!empty($event['info_link'])): ?>
@@ -265,7 +270,7 @@ include __DIR__ . '/navbar.php';
             </div>
         </div>
         <?php if ($hasValidImage): ?>
-        <div class="flex-1">
+        <div class="flex-1 desktop-image">
             <div class="image-template-wrap">
                 <img src="uploads/<?php echo htmlspecialchars($eventImageName); ?>" alt="<?php echo htmlspecialchars(strip_tags((string)$event['title'])); ?>" class="image-template-photo" style="object-fit: contain;">
                 <!--
