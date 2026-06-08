@@ -1070,44 +1070,76 @@ main {
 ========================= */
 @media (max-width: 1023.98px) {
 
-    /* HEADER */
     .admin-header {
-        padding: 0.5rem 0;
+
+        padding: 0.4rem 0;
+
+        position: sticky;
+
+        top: 0;
+
+        z-index: 2000;
+
+        backdrop-filter: blur(10px);
+
+        background: rgba(255, 255, 255, 0.92);
+
     }
 
-    .admin-header > div,
-    .admin-header .max-w-7xl,
     .admin-header-inner {
-        padding-left: 0.75rem;
-        padding-right: 0.75rem;
-    }
 
-    .admin-header-inner {
-        flex-direction: column;
-        align-items: stretch;
+        flex-direction: row;
+
+        align-items: center;
+
+        justify-content: space-between;
+
         gap: 0.5rem;
+
     }
 
     .admin-header-brand {
-        justify-content: center;
+
+        gap: 0.5rem;
+
+    }
+
+    .admin-header-logo {
+
+        height: 30px;
+
     }
 
     .admin-header-brand h1 {
-        font-size: 1.25rem;
+
+        font-size: 1rem;
+
+        letter-spacing: -0.02em;
+
     }
 
     .admin-header-actions {
-        width: 100%;
-        justify-content: center;
-        gap: 0.35rem;
+
+        gap: 0.4rem;
+
+        justify-content: flex-end;
+
         flex-wrap: wrap;
+
     }
 
     .admin-header-actions .btn {
-        flex: 1 1 120px;
-        min-height: 40px;
-        font-size: 0.78rem;
-        padding: 0.5rem 0.7rem;
+
+        width: auto;
+
+        min-height: 36px;
+
+        padding: 0.4rem 0.7rem;
+
+        font-size: 0.7rem;
+
+        border-radius: 8px;
+
     }
 
     /* MAIN */
@@ -1270,6 +1302,57 @@ main {
 
     .admin-layout-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+
+    .admin-header {
+        padding: 0.35rem 0;
+        position: sticky;
+        top: 0;
+        z-index: 2000;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(12px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    .admin-header-inner {
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+    }
+
+    .admin-header-brand {
+        justify-content: center;
+        gap: 0.4rem;
+    }
+
+    .admin-header-logo {
+        height: 26px;
+    }
+
+    .admin-header-brand h1 {
+        font-size: 0.95rem;
+        text-align: center;
+        letter-spacing: -0.02em;
+    }
+
+    .admin-header-actions {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+    }
+
+    .admin-header-actions .btn {
+        flex: 1 1 45%;
+        min-height: 36px;
+        padding: 0.45rem 0.6rem;
+        font-size: 0.7rem;
+        border-radius: 8px;
     }
 }
 
