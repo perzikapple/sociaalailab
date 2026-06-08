@@ -369,33 +369,8 @@ $daysWithStaff = array_keys($staffByDate);
                 <?php $loc = findById($locations, $b['location_id']); ?>
                 <div class="booking">
                     <div>
-                        <strong><?= htmlspecialchars($b['title'] ?? 'Ongetiteld') ?></strong><br>
-                        <?= htmlspecialchars($b['location_id'] == 999 ? ($b['location_description'] ?? 'Extern') : $loc['name']) ?><br>
-                        <span style="font-size: 0.9rem; color: #666;">
-                            <?= substr($b['start_time'], 0, 5) ?> - <?= substr($b['end_time'], 0, 5) ?>
-                            <?php 
-                            if ($b['hardware_ids']): 
-                                $hwList = json_decode($b['hardware_ids'], true);
-                                if (!empty($hwList)):
-                            ?>
-                                <br><span style="font-size: 0.85rem; color: #00811F;"><strong>Hardware:</strong>
-                                <?php 
-                                $hwNames = [];
-                                foreach ((array)$hwList as $hw) {
-                                    if (isset($hw['id']) && isset($hw['quantity'])) {
-                                        foreach ($hardware as $h) {
-                                            if ($h['id'] == $hw['id']) {
-                                                $hwNames[] = $hw['quantity'] . '× ' . $h['name'];
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                                echo implode(', ', $hwNames);
-                                ?>
-                                </span>
-                            <?php endif; endif; ?>
-                        </span>
+                        <strong><?= $b['location_id'] == 999 ? ($b['location_description'] ?? 'Extern') : $loc['name'] ?></strong><br>
+                        <?= substr($b['start_time'], 0, 5) ?> - <?= substr($b['end_time'], 0, 5) ?>
                     </div>
                 </div>
             <?php endforeach; ?>
@@ -572,20 +547,15 @@ $daysWithStaff = array_keys($staffByDate);
             
             <input type="date" name="booking_date" id="booking_date" required>
 
-            <div style="margin-bottom: 1.2rem;">
-                <label style="display: block; margin-bottom: 0.75rem; font-weight: 600; color: #00811F;">Kies één of meerdere ruimtes:</label>
-                <div class="location-buttons">
-                    <?php foreach ($locations as $l): ?>
-                        <label class="location-button" style="cursor: pointer;">
-                            <input type="checkbox" name="location_ids[]" value="<?= $l['id'] ?>" onchange="toggleLocationDescription()">
-                            <span style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; background: #f9fafb; border: 2px solid #dfe8f3; border-radius: 10px; font-weight: 500; color: #333; transition: all 0.3s ease;">
-                                <div style="width: 12px; height: 12px; border-radius: 3px; border: 2px solid #dfe8f3; background: white;"></div>
-                                <?= htmlspecialchars($l['name']) ?>
-                            </span>
-                        </label>
-                    <?php endforeach; ?>
-                </div>
-            </div>
+            <fieldset class="locations">
+                <legend>Kies één of meerdere ruimtes</legend>
+                <?php foreach ($locations as $l): ?>
+                    <label style="display: inline-block; margin-right: 0.75rem;">
+                        <input type="checkbox" name="location_ids[]" value="<?= $l['id'] ?>" onchange="toggleLocationDescription()">
+                        <?= htmlspecialchars($l['name']) ?>
+                    </label>
+                <?php endforeach; ?>
+            </fieldset>
 
             <input type="text" name="location_description" id="location_description" placeholder="Waar/wat is de externe locatie?" style="display:none;">
 
@@ -596,26 +566,14 @@ $daysWithStaff = array_keys($staffByDate);
 
             <textarea name="staff_present" placeholder="Wie is/zijn er present bij deze booking?" style="resize: vertical; min-height: 60px;"></textarea>
 
-            <div style="margin-bottom: 1.2rem;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #00811F;">Hardware toevoegen:</label>
-                <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-                    <select id="hardware_select" style="flex: 1;">
-                        <option value="">-- Kies hardware --</option>
-                        <?php foreach ($hardware as $h): ?>
-                            <option value="<?= $h['id'] ?>" data-max="<?= $h['quantity'] ?>"><?= htmlspecialchars($h['name']) ?> (max: <?= $h['quantity'] ?>)</option>
-                        <?php endforeach; ?>
-                    </select>
-                    <input type="number" id="hardware_qty" min="1" value="1" style="width: 80px;">
-                    <button type="button" class="btn" onclick="addHardware()" style="width: auto; padding: 0.85rem 1.5rem;">Voeg toe</button>
-                </div>
-                
-                <div id="selected_hardware" style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
-                    <!-- Items worden hier toegevoegd -->
-                </div>
+            <div class="chips">
+                <?php foreach ($hardware as $h): ?>
+                    <label>
+                        <input type="checkbox" name="hardware[]" value="<?= $h['id'] ?>">
+                        <?= $h['name'] ?>
+                    </label>
+                <?php endforeach; ?>
             </div>
-
-            <!-- Hidden input voor hardware data -->
-            <input type="hidden" name="hardware_json" id="hardware_json" value="[]">
 
             <button type="submit" class="btn" id="submitBtn">Boek nu</button>
         </form>
@@ -747,79 +705,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         }
-    }
-});
-
-// Hardware selection system
-let selectedHardware = {};
-
-function addHardware() {
-    const select = document.getElementById('hardware_select');
-    const qtyInput = document.getElementById('hardware_qty');
-    const hardwareId = select.value;
-    const qty = parseInt(qtyInput.value) || 1;
-    
-    if (!hardwareId) {
-        alert('Kies eerst een hardware item');
-        return;
-    }
-    
-    const option = select.options[select.selectedIndex];
-    const maxQty = parseInt(option.dataset.max) || 1;
-    const hardwareName = option.text.split(' (max:')[0];
-    
-    if (qty > maxQty) {
-        alert(`Maximaal ${maxQty} beschikbaar van dit item`);
-        return;
-    }
-    
-    selectedHardware[hardwareId] = {
-        name: hardwareName,
-        qty: qty,
-        max: maxQty
-    };
-    
-    updateHardwareDisplay();
-    select.value = '';
-    qtyInput.value = '1';
-}
-
-function removeHardware(hardwareId) {
-    delete selectedHardware[hardwareId];
-    updateHardwareDisplay();
-}
-
-function updateHardwareDisplay() {
-    const container = document.getElementById('selected_hardware');
-    container.innerHTML = '';
-    
-    let hasItems = false;
-    for (const [hwId, hw] of Object.entries(selectedHardware)) {
-        hasItems = true;
-        const chip = document.createElement('div');
-        chip.style.cssText = 'display: flex; align-items: center; gap: 0.5rem; padding: 0.7rem 1rem; background: #f0f5ff; border-radius: 10px; border: 2px solid #dfe8f3;';
-        chip.innerHTML = `
-            <span style="flex: 1; font-weight: 600; color: #00811F;">${hw.name}</span>
-            <span style="background: #00811F; color: white; padding: 0.3rem 0.6rem; border-radius: 6px; font-weight: 600; font-size: 0.85rem;">${hw.qty}x</span>
-            <button type="button" onclick="removeHardware('${hwId}')" style="background: none; border: none; color: #ff6b6b; cursor: pointer; font-size: 1.2rem; padding: 0;">×</button>
-        `;
-        container.appendChild(chip);
-    }
-    
-    // Update hidden JSON field
-    const jsonData = [];
-    for (const [hwId, hw] of Object.entries(selectedHardware)) {
-        jsonData.push({ id: hwId, quantity: hw.qty });
-    }
-    document.getElementById('hardware_json').value = JSON.stringify(jsonData);
-}
-
-// Prevent form submit if no hardware selected
-document.getElementById('bookingForm').addEventListener('submit', function(e) {
-    if (Object.keys(selectedHardware).length === 0) {
-        alert('Voeg minstens één hardware item toe');
-        e.preventDefault();
-        return false;
     }
 });
 </script>

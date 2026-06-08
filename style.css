@@ -1297,6 +1297,33 @@
     .bg-rose-200\! {
         background-color: var(--color-rose-200) !important
     }
+    /* Mobile ordering helper: put element first on small screens, last on md+ */
+    .mobile-order-first {
+        order: -1;
+    }
+
+    @media (min-width: 768px) {
+        .mobile-order-first {
+            order: 1;
+        }
+    }
+
+    /* Show image only on mobile when duplicated inside content */
+    .mobile-image {
+        display: block;
+    }
+    .desktop-image {
+        display: none;
+    }
+
+    @media (min-width: 768px) {
+        .mobile-image {
+            display: none;
+        }
+        .desktop-image {
+            display: block;
+        }
+    }
 
     .bg-rose-500 {
         background-color: var(--color-rose-500)
