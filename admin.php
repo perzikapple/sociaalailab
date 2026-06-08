@@ -4,10 +4,9 @@ require 'db.php';
 require 'helpers.php';
 
 $rolePermissions = [
-    'superadmin' => ['create_users', 'edit_users', 'delete_users', 'view_audit', 'access_booking', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images'],
-    'content_manager' => ['access_booking', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images'],
-    'editor' => ['manage_events'],
-    'booking_only' => ['access_booking'],
+    'administrator' => ['create_users', 'edit_users', 'delete_users', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images', 'approve_content'],
+    'content_manager' => ['manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images', 'approve_content'],
+    'onderzoeker' => ['access_booking', 'create_events', 'view_feedback'],
     'viewer' => [],
 ];
 
@@ -32,7 +31,18 @@ function permissionsForRole($role, $rolePermissions)
 
 $sessionRole = trim((string)($_SESSION['role'] ?? ''));
 if ($sessionRole === '') {
-    $sessionRole = (isset($_SESSION['admin']) && (int)$_SESSION['admin'] === 1) ? 'superadmin' : 'viewer';
+    $sessionRole = (isset($_SESSION['admin']) && (int)$_SESSION['admin'] === 1) ? 'administrator' : 'viewer';
+    $_SESSION['role'] = $sessionRole;
+}
+
+// Migration: map old roles to new roles
+$roleMap = [
+    'superadmin' => 'administrator',
+    'editor' => 'onderzoeker',
+    'booking_only' => 'onderzoeker',
+];
+if (isset($roleMap[$sessionRole])) {
+    $sessionRole = $roleMap[$sessionRole];
     $_SESSION['role'] = $sessionRole;
 }
 
@@ -50,10 +60,13 @@ if (!$canAccessAdmin) {
     exit;
 }
 
-// If user is booking_only, redirect directly to booking page
-if ($sessionRole === 'booking_only') {
-    header('Location: booking.php');
-    exit;
+// Onderzoekers can only view feedback and booking, not full admin panel
+if ($sessionRole === 'onderzoeker') {
+    // They can access booking directly
+    if (!isset($_GET['page']) || !in_array($_GET['page'], ['feedback', 'booking'])) {
+        header('Location: booking.php');
+        exit;
+    }
 }
 
 $hasPermission = function ($permission) use (&$sessionPermissions) {
@@ -71,16 +84,18 @@ $hasAnyPermission = function ($permissions) use (&$hasPermission) {
 
 $adminPermissionOptions = [
     'manage_banners' => 'Banners aanpassen',
-    'manage_events' => 'Agenda maken en bewerken',
+    'manage_events' => 'Agenda beheren',
     'delete_events' => 'Agenda-items verwijderen',
-    'manage_pages' => 'Pagina categorieen maken en bewerken',
-    'delete_pages' => 'Pagina categorieen verwijderen',
+    'manage_pages' => 'Pagina\'s beheren',
+    'delete_pages' => 'Pagina\'s verwijderen',
     'create_users' => 'Gebruikers maken',
     'edit_users' => 'Gebruikers bewerken',
     'delete_users' => 'Gebruikers verwijderen',
-    'access_booking' => 'Booking pagina gebruiken',
-    'view_audit' => 'Logboek bekijken',
+    'access_booking' => 'Booking pagina',
     'optimize_images' => 'Afbeeldingen optimaliseren',
+    'approve_content' => 'Inhoud goedkeuren',
+    'create_events' => 'Agendapunten aanmaken',
+    'view_feedback' => 'Feedback bekijken',
 ];
 $allowedPermissionKeys = array_keys($adminPermissionOptions);
 
