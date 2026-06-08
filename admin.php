@@ -1071,7 +1071,8 @@ if (!empty($_GET['edit_page'])) {
 }
 
 // Haal events voor overzicht (datum-gestuurd)
-$stmt = $pdo->prepare('SELECT * FROM events ORDER BY date ASC, time ASC, created_at ASC, id ASC');
+// Toekomstige events eerst (gesorteerd op datum), daarna voorbije events
+$stmt = $pdo->prepare('SELECT * FROM events ORDER BY CASE WHEN date >= CURDATE() THEN 0 ELSE 1 END, date ASC, time ASC, created_at ASC, id ASC');
 $stmt->execute();
 $events = $stmt->fetchAll();
 ?>
