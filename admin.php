@@ -682,9 +682,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $newFirstName = trim((string)($_POST['new_first_name'] ?? ''));
         $newLastName = trim((string)($_POST['new_last_name'] ?? ''));
         $newRole = trim((string)($_POST['new_role'] ?? 'viewer'));
-        $allowedRoles = ['superadmin', 'content_manager', 'editor', 'booking_only', 'viewer'];
+        $allowedRoles = ['administrator', 'content_manager', 'editor', 'booking_only', 'viewer'];
 
-        // Auto-set permissions based on role (no manual selection anymore)
+        // Auto-set permissions based on role
         $newPermissions = permissionsForRole($newRole, $rolePermissions);
 
         if ($newEmail === '' || !filter_var($newEmail, FILTER_VALIDATE_EMAIL)) {
@@ -720,10 +720,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action === 'update_user_permissions') {
         $targetEmail = trim((string)($_POST['target_email'] ?? ''));
         $newRole = trim((string)($_POST['role'] ?? 'viewer'));
-        $allowedRoles = ['superadmin', 'content_manager', 'editor', 'booking_only', 'viewer'];
+        $allowedRoles = ['administrator', 'content_manager', 'editor', 'booking_only', 'viewer'];
 
-        // Auto-set permissions based on role (no manual selection anymore)
-        $newPermissions = permissionsForRole($newRole, $rolePermissions);
+        // Get permissions from checkbox array if provided
+        $selectedPermissions = isset($_POST['permissions']) && is_array($_POST['permissions']) ? $_POST['permissions'] : [];
+        $selectedPermissions = array_filter(array_map('trim', $selectedPermissions));
+
+        // If individual permissions are selected, use those; otherwise use role-based permissions
+        if (!empty($selectedPermissions)) {
+            $newPermissions = array_values($selectedPermissions);
+        } else {
+            // Auto-set permissions based on role
+            $newPermissions = permissionsForRole($newRole, $rolePermissions);
+        }
 
         if ($targetEmail === '' || !filter_var($targetEmail, FILTER_VALIDATE_EMAIL)) {
             $message = 'Ongeldig e-mailadres.';
@@ -743,7 +752,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             audit_log($pdo, 'update', 'accounts', $targetEmail, 'role set to ' . $newRole . ' with permissions ' . implode(', ', $newPermissions), $currentUser);
-            $message = 'Gebruikersrol bijgewerkt.';
+            $message = 'Gebruikersrechten bijgewerkt.';
         }
     } elseif ($action === 'delete_user') {
         $targetEmail = trim((string)($_POST['target_email'] ?? ''));
@@ -1859,9 +1868,9 @@ if ($page === 'users') {
                                         <select id="new_role" name="new_role" class="form-input">
                                             <option value="viewer">Geen vaste rol</option>
                                             <option value="booking_only">Alleen Booking</option>
-                                            <option value="editor">Bewerker</option>
+                                            <option value="editor">Bewerker / Onderzoeker</option>
                                             <option value="content_manager">Content Manager</option>
-                                            <option value="superadmin">Administrator</option>
+                                            <option value="administrator">Administrator</option>
                                         </select>
                                     </div>
                                 </div>
@@ -1915,24 +1924,57 @@ if ($page === 'users') {
                                                         <summary class="btn btn-secondary btn-sm cursor-pointer list-none">
                                                             <i class="fa-solid fa-user-pen"></i> Gebruiker bewerken
                                                         </summary>
-                                                        <form method="POST" class="mt-4 border border-gray-200 rounded p-4 space-y-4 bg-gray-50 md:min-w-[400px]">
+                                                        <form method="POST" class="mt-4 border border-gray-200 rounded p-4 space-y-4 bg-gray-50 md:min-w-[500px]">
                                                             <input type="hidden" name="action" value="update_user_permissions">
                                                             <input type="hidden" name="target_email" value="<?php echo htmlspecialchars($accEmail); ?>">
 
-                                                            <div class="flex flex-col md:flex-row md:items-center gap-2">
-                                                                <label class="text-sm text-gray-700" for="role_<?php echo md5($accEmail); ?>">Basisrol</label>
-                                                                <select id="role_<?php echo md5($accEmail); ?>" name="role" class="form-input">
-                                                                    <option value="viewer" <?php echo $accRole === 'viewer' ? 'selected' : ''; ?>>Geen vaste rol</option>
-                                                                    <option value="booking_only" <?php echo $accRole === 'booking_only' ? 'selected' : ''; ?>>Alleen Booking</option>
-                                                                    <option value="editor" <?php echo $accRole === 'editor' ? 'selected' : ''; ?>>Bewerker</option>
-                                                                    <option value="content_manager" <?php echo $accRole === 'content_manager' ? 'selected' : ''; ?>>Content Manager</option>
-                                                                    <option value="superadmin" <?php echo $accRole === 'superadmin' ? 'selected' : ''; ?>>Administrator</option>
-                                                                </select>
+                                                            <div class="space-y-3">
+                                                                <div>
+                                                                    <label class="text-sm font-semibold text-gray-700" for="role_<?php echo md5($accEmail); ?>">Basisrol (auto-voegt permissions toe):</label>
+                                                                    <select id="role_<?php echo md5($accEmail); ?>" name="role" class="form-input">
+                                                                        <option value="viewer" <?php echo $accRole === 'viewer' ? 'selected' : ''; ?>>Geen vaste rol</option>
+                                                                        <option value="booking_only" <?php echo $accRole === 'booking_only' ? 'selected' : ''; ?>>Alleen Booking</option>
+                                                                        <option value="editor" <?php echo $accRole === 'editor' ? 'selected' : ''; ?>>Bewerker / Onderzoeker</option>
+                                                                        <option value="content_manager" <?php echo $accRole === 'content_manager' ? 'selected' : ''; ?>>Content Manager</option>
+                                                                        <option value="administrator" <?php echo $accRole === 'administrator' ? 'selected' : ''; ?>>Administrator</option>
+                                                                    </select>
+                                                                </div>
+
+                                                                <div class="border-t pt-3">
+                                                                    <label class="text-sm font-semibold text-gray-700 mb-2 block">Individuele Permissions (extra):</label>
+                                                                    <div class="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
+                                                                        <?php $allPermissions = [
+                                                                            'create_users' => 'Gebruikers aanmaken',
+                                                                            'edit_users' => 'Gebruikers bewerken',
+                                                                            'delete_users' => 'Gebruikers verwijderen',
+                                                                            'manage_banners' => 'Banners beheren',
+                                                                            'manage_events' => 'Evenementen beheren',
+                                                                            'create_events' => 'Evenementen aanmaken',
+                                                                            'delete_events' => 'Evenementen verwijderen',
+                                                                            'manage_pages' => 'Pagina\'s beheren',
+                                                                            'delete_pages' => 'Pagina\'s verwijderen',
+                                                                            'optimize_images' => 'Afbeeldingen optimaliseren',
+                                                                            'approve_content' => 'Inhoud goedkeuren',
+                                                                            'access_booking' => 'Booking service',
+                                                                            'view_audit' => 'Auditlog bekijken',
+                                                                            'view_feedback' => 'Feedback bekijken',
+                                                                        ];
+                                                                        foreach ($allPermissions as $permKey => $permLabel): ?>
+                                                                            <label class="form-checkbox flex items-center gap-2 cursor-pointer">
+                                                                                <input type="checkbox" name="permissions[]" value="<?php echo htmlspecialchars($permKey); ?>" 
+                                                                                    <?php echo in_array($permKey, $accPermissions) ? 'checked' : ''; ?>>
+                                                                                <span class="text-sm"><?php echo htmlspecialchars($permLabel); ?></span>
+                                                                            </label>
+                                                                        <?php endforeach; ?>
+                                                                    </div>
+                                                                </div>
                                                             </div>
 
-                                                            <button type="submit" class="btn btn-primary btn-sm">
-                                                                <i class="fa-solid fa-save"></i> Rol opslaan
-                                                            </button>
+                                                            <div class="flex gap-2">
+                                                                <button type="submit" class="btn btn-primary btn-sm">
+                                                                    <i class="fa-solid fa-save"></i> Opslaan
+                                                                </button>
+                                                            </div>
                                                         </form>
                                                     </details>
                                                 <?php endif; ?>
