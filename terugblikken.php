@@ -209,8 +209,8 @@ include __DIR__ . '/navbar.php';
     <?php endforeach; ?>
 
 
-    <div class="max-w-6xl mx-auto mb-4 flex">
-        <div class="ml-auto bg-white rounded-lg shadow px-4 py-2">
+    <div class="max-w-6xl mx-auto mb-4 flex justify-end px-4 sm:px-0">
+        <div class="bg-white rounded-lg shadow px-4 py-2">
             <form method="get" action="terugblikken.php#agenda-terugblik-switch" class="flex flex-row gap-2 items-center m-0">
                 <input type="hidden" name="page" value="<?php echo $currentPage; ?>">
                 <label for="sort" class="font-semibold">Sorteer:</label>
