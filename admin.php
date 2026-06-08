@@ -313,8 +313,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $currentUser = $_SESSION['user'] ?? null; // email van ingelogde gebruiker (kan null zijn)
 
     $actionPermissionMap = [
-        'create' => 'manage_events',
-        'update' => 'manage_events',
+        'create' => ($sessionRole === 'onderzoeker' ? 'create_events' : 'manage_events'),
+        'update' => 'manage_events',  // Onderzoekers kunnen NIET updaten
         'delete' => 'delete_events',
         'delete_bulk_events' => 'delete_events',
         'reorder_event' => 'manage_events',
@@ -342,10 +342,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $eventSummary = sanitizeEditorBlockInput($_POST['event_summary'] ?? '');
         $meerInfo = sanitizeEditorBlockInput($_POST['meer_info'] ?? '');
         $location = sanitizeEditorPlainText($_POST['location'] ?? '');
+        $targetAudience = sanitizeEditorPlainText($_POST['target_audience'] ?? '');
+        $internalNotes = sanitizeEditorBlockInput($_POST['internal_notes'] ?? '');
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
         $signupEmbed = trim((string)($_POST['signup_embed'] ?? ''));
         $showOnHomepage = isset($_POST['show_on_homepage']) ? 1 : 0;
-        // $infoLink verwijderd
+        
+        // Approval status based on role
+        $approvalStatus = ($sessionRole === 'onderzoeker') ? 'pending' : 'approved';
 
         if ($date === '') {
             $message = 'Datum is verplicht.';
@@ -369,9 +373,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ? json_encode(array_values($galleryUpload['names']), JSON_UNESCAPED_SLASHES)
                         : null;
 
-                    // voeg updated_at en updated_by toe bij insert
-                    $stmt = $pdo->prepare('INSERT INTO events (title, date, end_date, time, time_end, description, event_summary, meer_info, image, event_gallery, location, show_signup_button, signup_embed, show_on_homepage, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)');
-                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $location ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser]);
+                    // voeg updated_at, updated_by, en approval gegevens toe bij insert
+                    $stmt = $pdo->prepare('INSERT INTO events (title, date, end_date, time, time_end, description, event_summary, meer_info, image, event_gallery, location, target_audience, internal_notes, show_signup_button, signup_embed, show_on_homepage, updated_at, updated_by, approval_status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)');
+                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $location ?: null, $targetAudience ?: null, $internalNotes ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser, $approvalStatus, $currentUser]);
                     $eventId = $pdo->lastInsertId();
                     // Audit log: event created
                     audit_log($pdo, 'create', 'events', $eventId, 'title: ' . $title, $currentUser);
@@ -391,6 +395,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $eventSummary = sanitizeEditorBlockInput($_POST['event_summary'] ?? '');
         $meerInfo = sanitizeEditorBlockInput($_POST['meer_info'] ?? '');
         $location = sanitizeEditorPlainText($_POST['location'] ?? '');
+        $targetAudience = sanitizeEditorPlainText($_POST['target_audience'] ?? '');
+        $internalNotes = sanitizeEditorBlockInput($_POST['internal_notes'] ?? '');
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
         $signupEmbed = trim((string)($_POST['signup_embed'] ?? ''));
         $showOnHomepage = isset($_POST['show_on_homepage']) ? 1 : 0;
@@ -439,9 +445,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ? json_encode($galleryNames, JSON_UNESCAPED_SLASHES)
                         : null;
 
-                    // update nu ook updated_at en updated_by
-                    $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, end_date=?, time=?, time_end=?, description=?, event_summary=?, meer_info=?, image=?, event_gallery=?, location=?, show_signup_button=?, signup_embed=?, show_on_homepage=?, updated_at=NOW(), updated_by=? WHERE id=?');
-                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $location ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser, $id]);
+                    // update nu ook updated_at, updated_by, target_audience, en internal_notes
+                    $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, end_date=?, time=?, time_end=?, description=?, event_summary=?, meer_info=?, image=?, event_gallery=?, location=?, target_audience=?, internal_notes=?, show_signup_button=?, signup_embed=?, show_on_homepage=?, updated_at=NOW(), updated_by=? WHERE id=?');
+                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $location ?: null, $targetAudience ?: null, $internalNotes ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser, $id]);
                     // Audit log: event updated
                     audit_log($pdo, 'update', 'events', $id, 'title: ' . $title, $currentUser);
 
@@ -1477,6 +1483,18 @@ if ($page === 'users') {
                                 </div>
 
                                 <div>
+                                    <label class="form-label">Doelgroep (optioneel)</label>
+                                    <input name="target_audience" class="form-input admin-input-surface" value="<?php echo htmlspecialchars($editEvent['target_audience'] ?? ''); ?>" placeholder="bijv. Scholieren, Docenten, Researchers" />
+                                    <p class="text-xs text-gray-500 mt-2">Alleen zichtbaar voor goedkeuring, niet op de publieke pagina.</p>
+                                </div>
+
+                                <div>
+                                    <label class="form-label">Opmerkingen voor goedkeuring (optioneel)</label>
+                                    <textarea name="internal_notes" rows="3" class="form-textarea" placeholder="Bijv. aanvullende informatie voor goedkeuring"><?php echo htmlspecialchars($editEvent['internal_notes'] ?? ''); ?></textarea>
+                                    <p class="text-xs text-gray-500 mt-2">Alleen zichtbaar voor administratoren, niet op de publieke pagina.</p>
+                                </div>
+
+                                <div>
                                     <label class="form-label">Afbeelding (optioneel)</label>
                                     <input type="hidden" name="existing_image" value="<?php echo htmlspecialchars($editEvent['image'] ?? ''); ?>" />
                                     <div id="upload-image-widget"></div>
@@ -1619,6 +1637,18 @@ if ($page === 'users') {
                                     <label class="form-label">Samenvatting na afloop (optioneel)</label>
                                     <textarea name="event_summary" rows="5" class="form-textarea"><?php echo htmlspecialchars($_POST['event_summary'] ?? ''); ?></textarea>
                                     <p class="text-xs text-gray-500 mt-2">Deze samenvatting wordt op de evenement detailpagina getoond zodra deze is ingevuld.</p>
+                                </div>
+
+                                <div>
+                                    <label class="form-label">Doelgroep (optioneel)</label>
+                                    <input name="target_audience" class="form-input admin-input-surface" placeholder="bijv. Scholieren, Docenten, Researchers" />
+                                    <p class="text-xs text-gray-500 mt-2">Alleen zichtbaar voor goedkeuring, niet op de publieke pagina.</p>
+                                </div>
+
+                                <div>
+                                    <label class="form-label">Opmerkingen voor goedkeuring (optioneel)</label>
+                                    <textarea name="internal_notes" rows="3" class="form-textarea" placeholder="Bijv. aanvullende informatie voor goedkeuring"></textarea>
+                                    <p class="text-xs text-gray-500 mt-2">Alleen zichtbaar voor administratoren, niet op de publieke pagina.</p>
                                 </div>
 
                                 <div>
