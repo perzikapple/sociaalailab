@@ -104,7 +104,7 @@ function handleUpload($fileField)
         return ['error' => '<div style="background:#fff3cd;color:#856404;border:1.5px solid #ffeeba;padding:18px 20px;border-radius:10px;font-size:1.13rem;font-weight:600;max-width:480px;margin:18px auto;text-align:center;box-shadow:0 2px 12px rgba(255,193,7,0.08);">
         <span style="font-size:1.5em;vertical-align:middle;">⚠️</span><br>
         Je afbeelding is groter dan 10MB.<br>
-        Maak je afbeelding kleiner met de <a href=\'admin.php?page=image-converter\' style=\'color:#00811F;font-weight:bold;text-decoration:underline;\'>Image Converter</a>.<br>
+        Bestand te groot — maak het kleiner.<br>
         <span style=\'font-size:0.97em;font-weight:400;\'>(Alleen JPG/PNG tot 10MB toegestaan)</span>
         </div>'];
     }
@@ -164,7 +164,7 @@ function handleMultiUpload($fileField)
             return ['error' => '<div style="background:#fff3cd;color:#856404;border:1.5px solid #ffeeba;padding:18px 20px;border-radius:10px;font-size:1.13rem;font-weight:600;max-width:480px;margin:18px auto;text-align:center;box-shadow:0 2px 12px rgba(255,193,7,0.08);">
             <span style="font-size:1.5em;vertical-align:middle;">⚠️</span><br>
             Je afbeelding is groter dan 10MB.<br>
-            Maak je afbeelding kleiner met de <a href=\'admin.php?page=image-converter\' style=\'color:#00811F;font-weight:bold;text-decoration:underline;\'>Image Converter</a>.<br>
+            Bestand te groot — maak het kleiner.<br>
             <span style=\'font-size:0.97em;font-weight:400;\'>(Alleen JPG/PNG tot 10MB toegestaan)</span>
             </div>'];
         }
@@ -660,7 +660,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $newLastName = trim((string)($_POST['new_last_name'] ?? ''));
         $newRole = trim((string)($_POST['new_role'] ?? 'viewer'));
         $allowedRoles = ['superadmin', 'content_manager', 'editor', 'booking_only', 'viewer'];
-        
+
         // Auto-set permissions based on role (no manual selection anymore)
         $newPermissions = permissionsForRole($newRole, $rolePermissions);
 
@@ -698,7 +698,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $targetEmail = trim((string)($_POST['target_email'] ?? ''));
         $newRole = trim((string)($_POST['role'] ?? 'viewer'));
         $allowedRoles = ['superadmin', 'content_manager', 'editor', 'booking_only', 'viewer'];
-        
+
         // Auto-set permissions based on role (no manual selection anymore)
         $newPermissions = permissionsForRole($newRole, $rolePermissions);
 
@@ -1230,6 +1230,7 @@ if ($page === 'users') {
             pointer-events: none !important;
             filter: grayscale(0.2);
         }
+
         .ck-editor__editable {
             min-height: 100px;
         }
@@ -1331,11 +1332,7 @@ if ($page === 'users') {
                             <i class="fa-solid fa-users"></i> Gebruikers & Rechten
                         </a>
                     <?php endif; ?>
-                    <?php if ($hasPermission('optimize_images')): ?>
-                        <a href="admin.php?page=image-converter" class="sidebar-link <?php echo $page === 'image-converter' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-image"></i> Image Converter
-                        </a>
-                    <?php endif; ?>
+                    <!-- Image Converter removed -->
 
                     <?php if ($hasAnyPermission(['manage_pages', 'delete_pages'])): ?>
                         <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Pagina's</div>
@@ -1471,7 +1468,7 @@ if ($page === 'users') {
                                                 containerId: 'upload-image-widget',
                                                 inputName: 'image',
                                                 label: 'Kies een afbeelding (PNG/JPG, max 10MB)',
-                                                imageConverterUrl: 'admin.php?page=image-converter',
+                                                imageConverterUrl: null,
                                                 preview: true
                                             });
                                         });
@@ -2066,7 +2063,10 @@ if ($page === 'users') {
 
                 <?php elseif ($page != 'banner'): ?>
                     <?php if ($page === 'image-converter'): ?>
-                        <iframe src="image_converter.html" style="width:100%;min-height:900px;border:none;background:transparent;" title="Image Converter"></iframe>
+                        <div class="card">
+                            <h2>Image Converter (verwijderd)</h2>
+                            <p>De Image Converter is verwijderd uit deze installatie.</p>
+                        </div>
                         <?php return; ?>
                     <?php endif; ?>
                     <?php
