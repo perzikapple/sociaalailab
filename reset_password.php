@@ -7,7 +7,7 @@ $validToken = false;
 $email = '';
 
 if (isset($_GET['token'])) {
-    $token = $_GET['token'];
+    $token = urldecode($_GET['token']);
 
     // Check if token exists in database and is not expired
     $stmt = $pdo->prepare("SELECT email FROM password_resets WHERE token = ? AND expires_at > NOW()");

@@ -65,12 +65,18 @@ function sendEmail($to, $subject, $body, $isHtml = false) {
             $mail->Password   = $emailConfig['password'];
             $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
             $mail->Port       = $emailConfig['port'];
-            $mail->SMTPDebug  = 0;
+            $mail->SMTPDebug  = 4; // Enhanced debug: 0=off, 1=error/warning, 2=info, 3=SMTP protocol, 4=very verbose
+            $mail->Debugoutput = 'error_log'; // Log to PHP error log instead of screen
             $mail->setFrom($emailConfig['from'], $emailConfig['from_name']);
             $mail->addAddress($to);
             $mail->isHTML($isHtml);
             $mail->Subject = $subject;
             $mail->Body    = $body;
+            
+            // Debug: Log connection details
+            error_log("Email DEBUG: Connecting to " . $emailConfig['host'] . ":" . $emailConfig['port']);
+            error_log("Email DEBUG: Using SMTP auth with user: " . $emailConfig['username']);
+            
             $mail->send();
             
             return [
@@ -78,9 +84,13 @@ function sendEmail($to, $subject, $body, $isHtml = false) {
                 'message' => 'Email sent successfully'
             ];
         } catch (Exception $e) {
+            // Log full error details
+            error_log("Email ERROR: " . $e->getMessage());
+            error_log("Email ERROR: SMTP error code: " . $mail->SMTPError);
+            
             return [
                 'success' => false,
-                'message' => 'PHPMailer error: ' . $e->getMessage()
+                'message' => 'PHPMailer error: ' . $e->getMessage() . ' (Code: ' . $mail->SMTPError . ')'
             ];
         }
     }

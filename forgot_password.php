@@ -32,9 +32,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Send email using Brevo SMTP - use production URL for live server, localhost for dev
             $isLocalhost = strpos($_SERVER['HTTP_HOST'], 'localhost') !== false || strpos($_SERVER['HTTP_HOST'], '127.0.0.1') !== false;
             if ($isLocalhost) {
-                $resetLink = "http://" . $_SERVER['HTTP_HOST'] . "/reset_password.php?token=" . $token;
+                $resetLink = "http://" . $_SERVER['HTTP_HOST'] . "/reset_password.php?token=" . urlencode($token);
             } else {
-                $resetLink = "https://sociaalailab.nl/reset_password.php?token=" . $token;
+                $resetLink = "https://sociaalailab.nl/reset_password.php?token=" . urlencode($token);
             }
             $emailSubject = 'Wachtwoord reset - SociaalAI Lab';
             $emailBody = "Klik op deze link om je wachtwoord te resetten:\n\n" . $resetLink . "\n\nDeze link is 1 uur geldig.\n\nAls je dit niet hebt aangevraagd, negeer deze email.";
