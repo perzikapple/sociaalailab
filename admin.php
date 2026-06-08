@@ -325,6 +325,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'update_user_permissions' => 'edit_users',
         'delete_user' => 'delete_users',
         'optimize_image' => 'optimize_images',
+        'approve_item' => 'approve_content',
+        'reject_item' => 'approve_content',
     ];
 
     if ($action !== '' && isset($actionPermissionMap[$action]) && !$hasPermission($actionPermissionMap[$action])) {
@@ -786,6 +788,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['optimize_data'] = $result;
             }
         }
+    } elseif ($action === 'approve_item' && !empty($_POST['item_id'])) {
+        $itemId = intval($_POST['item_id']);
+        $stmt = $pdo->prepare('SELECT id FROM events WHERE id = ?');
+        $stmt->execute([$itemId]);
+        $event = $stmt->fetch();
+        
+        if ($event) {
+            $stmt = $pdo->prepare(
+                'UPDATE events SET approval_status = ?, approved_by = ?, approval_feedback = NULL 
+                 WHERE id = ?'
+            );
+            $stmt->execute(['approved', $currentUser, $itemId]);
+            audit_log($pdo, 'approve', 'events', $itemId, 'Status changed to approved', $currentUser);
+            header('Location: admin.php?page=goedkeuren&ok=approve');
+            exit;
+        } else {
+            $message = 'Item niet gevonden.';
+        }
+    } elseif ($action === 'reject_item' && !empty($_POST['item_id'])) {
+        $itemId = intval($_POST['item_id']);
+        $feedback = sanitizeEditorBlockInput($_POST['feedback'] ?? '');
+        
+        $stmt = $pdo->prepare('SELECT id FROM events WHERE id = ?');
+        $stmt->execute([$itemId]);
+        $event = $stmt->fetch();
+        
+        if ($event) {
+            $stmt = $pdo->prepare(
+                'UPDATE events SET approval_status = ?, approved_by = ?, approval_feedback = ? 
+                 WHERE id = ?'
+            );
+            $stmt->execute(['rejected', $currentUser, $feedback, $itemId]);
+            audit_log($pdo, 'reject', 'events', $itemId, 'Status changed to rejected. Feedback: ' . substr($feedback, 0, 100), $currentUser);
+            header('Location: admin.php?page=goedkeuren&ok=reject');
+            exit;
+        } else {
+            $message = 'Item niet gevonden.';
+        }
     }
 }
 
@@ -1104,6 +1144,7 @@ $page = $_GET['page'] ?? 'agenda';
 $allowedPagesByPermission = [
     'banner' => 'manage_banners',
     'agenda' => ['manage_events', 'delete_events'],
+    'goedkeuren' => 'approve_content',
     'audit' => 'view_audit',
     'users' => ['create_users', 'edit_users', 'delete_users'],
     'index' => ['manage_pages', 'delete_pages'],
@@ -1155,7 +1196,7 @@ $canManagePages = $hasPermission('manage_pages');
 $isEditorReadOnlyPage = false;
 
 $pageItems = [];
-if ($page !== 'banner' && $page !== 'agenda' && $page !== 'audit' && $page !== 'users') {
+if ($page !== 'banner' && $page !== 'agenda' && $page !== 'goedkeuren' && $page !== 'audit' && $page !== 'users') {
     $stmt = $pdo->prepare(
         'SELECT * FROM pages WHERE page_key = ?
          ORDER BY (sort_order IS NULL OR sort_order = 0) ASC, sort_order ASC, created_at ASC, id ASC'
@@ -1345,6 +1386,11 @@ if ($page === 'users') {
                     <?php if ($hasAnyPermission(['manage_events', 'delete_events'])): ?>
                         <a href="admin.php?page=agenda" class="sidebar-link <?php echo $page === 'agenda' ? 'active' : ''; ?>">
                             <i class="fa-solid fa-calendar"></i> Agenda
+                        </a>
+                    <?php endif; ?>
+                    <?php if ($hasPermission('approve_content')): ?>
+                        <a href="admin.php?page=goedkeuren" class="sidebar-link <?php echo $page === 'goedkeuren' ? 'active' : ''; ?>">
+                            <i class="fa-solid fa-check-circle"></i> Goedkeuren
                         </a>
                     <?php endif; ?>
                     <?php if ($hasAnyPermission(['create_users', 'edit_users', 'delete_users'])): ?>
@@ -1974,6 +2020,112 @@ if ($page === 'users') {
                             </div>
                         </div>
                     </div>
+
+                <?php elseif ($page === 'goedkeuren'): ?>
+                    <div class="card p-6">
+                        <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
+                            <i class="fa-solid fa-check-circle text-2xl text-[#00811F]"></i>
+                            <h2 class="text-2xl font-bold">Goedkeuren</h2>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-6">Beoordeel ingediende inhoud van onderzoekers.</p>
+
+                        <?php
+                        // Fetch pending approval items
+                        try {
+                            $stmt = $pdo->prepare(
+                                "SELECT id, title, date, created_by, target_audience, internal_notes, approval_status, approval_feedback 
+                                 FROM events 
+                                 WHERE approval_status = 'pending' 
+                                 ORDER BY created_at DESC"
+                            );
+                            $stmt->execute();
+                            $pendingItems = $stmt->fetchAll();
+                        } catch (Exception $e) {
+                            $pendingItems = [];
+                        }
+                        ?>
+
+                        <?php if (empty($pendingItems)): ?>
+                            <div class="text-center py-12 text-gray-500">
+                                <i class="fa-solid fa-inbox text-4xl mb-2"></i>
+                                <p>Geen items ter goedkeuring.</p>
+                            </div>
+                        <?php else: ?>
+                            <div class="space-y-4">
+                                <?php foreach ($pendingItems as $item): ?>
+                                    <div class="border border-yellow-200 rounded-lg p-6 bg-yellow-50">
+                                        <div class="flex items-start justify-between gap-4 mb-3">
+                                            <div class="flex-1">
+                                                <h3 class="font-semibold text-lg text-gray-900"><?php echo htmlspecialchars($item['title'] ?? ''); ?></h3>
+                                                <p class="text-sm text-gray-600">
+                                                    <i class="fa-solid fa-calendar"></i> 
+                                                    <?php echo !empty($item['date']) ? (new DateTime($item['date']))->format('d-m-Y') : 'Geen datum'; ?>
+                                                </p>
+                                                <p class="text-sm text-gray-600">
+                                                    <i class="fa-solid fa-user"></i> 
+                                                    Ingediend door: <?php echo htmlspecialchars($item['created_by'] ?? 'Onbekend'); ?>
+                                                </p>
+                                            </div>
+                                            <span class="inline-block px-3 py-1 bg-yellow-200 text-yellow-900 text-xs font-semibold rounded">In afwachting</span>
+                                        </div>
+
+                                        <?php if (!empty($item['target_audience']) || !empty($item['internal_notes'])): ?>
+                                            <div class="bg-white p-4 rounded mb-4 border border-yellow-100">
+                                                <?php if (!empty($item['target_audience'])): ?>
+                                                    <p class="text-sm"><strong>Doelgroep:</strong> <?php echo htmlspecialchars($item['target_audience']); ?></p>
+                                                <?php endif; ?>
+                                                <?php if (!empty($item['internal_notes'])): ?>
+                                                    <p class="text-sm"><strong>Opmerkingen:</strong> <?php echo nl2br(htmlspecialchars($item['internal_notes'])); ?></p>
+                                                <?php endif; ?>
+                                            </div>
+                                        <?php endif; ?>
+
+                                        <div class="flex flex-wrap gap-2 items-center justify-end">
+                                            <form method="POST" style="display:inline;">
+                                                <input type="hidden" name="action" value="approve_item">
+                                                <input type="hidden" name="item_id" value="<?php echo (int)$item['id']; ?>">
+                                                <button type="submit" class="btn btn-success btn-sm">
+                                                    <i class="fa-solid fa-thumbs-up"></i> Goedkeuren
+                                                </button>
+                                            </form>
+                                            <button type="button" class="btn btn-error btn-sm" onclick="openRejectForm(<?php echo (int)$item['id']; ?>)">
+                                                <i class="fa-solid fa-thumbs-down"></i> Afkeuren
+                                            </button>
+                                        </div>
+
+                                        <!-- Hidden reject form -->
+                                        <form id="reject-form-<?php echo (int)$item['id']; ?>" method="POST" class="mt-4 p-4 bg-white border border-red-200 rounded hidden">
+                                            <input type="hidden" name="action" value="reject_item">
+                                            <input type="hidden" name="item_id" value="<?php echo (int)$item['id']; ?>">
+                                            
+                                            <div class="mb-3">
+                                                <label class="form-label">Terugkoppeling (waarom wordt dit afgewezen?):</label>
+                                                <textarea name="feedback" class="form-textarea" rows="3" placeholder="Uw feedback..." required></textarea>
+                                            </div>
+                                            
+                                            <div class="flex gap-2">
+                                                <button type="submit" class="btn btn-error btn-sm">
+                                                    <i class="fa-solid fa-paper-plane"></i> Afkeuren
+                                                </button>
+                                                <button type="button" class="btn btn-secondary btn-sm" onclick="closeRejectForm(<?php echo (int)$item['id']; ?>)">
+                                                    <i class="fa-solid fa-times"></i> Annuleren
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+
+                    <script>
+                        function openRejectForm(itemId) {
+                            document.getElementById('reject-form-' + itemId).classList.remove('hidden');
+                        }
+                        function closeRejectForm(itemId) {
+                            document.getElementById('reject-form-' + itemId).classList.add('hidden');
+                        }
+                    </script>
 
                 <?php elseif ($page === 'audit'): ?>
                     <div class="card p-6">
