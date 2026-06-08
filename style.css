@@ -4277,3 +4277,131 @@ section:focus-visible,
     outline: 3px solid #00811F;
     outline-offset: 2px;
 }
+
+.homepage-carousel {
+    display: flex;
+    gap: 1.5rem;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+}
+
+.homepage-carousel::-webkit-scrollbar {
+    display: none;
+}
+
+.homepage-carousel-slide {
+    flex: 0 0 100%;
+    scroll-snap-align: start;
+}
+
+.homepage-carousel-arrow {
+    background: #fff;
+    border: 2px solid #00811F;
+    color: #00811F;
+    width: 48px;
+    height: 48px;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+    transition: background-color 0.2s, color 0.2s, opacity 0.2s;
+}
+
+.homepage-carousel-arrow:hover,
+.homepage-carousel-arrow:focus {
+    background: #00811F;
+    color: #fff;
+}
+
+.homepage-carousel-arrow:disabled {
+    cursor: default;
+    opacity: 0.35;
+}
+
+.homepage-news-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.2rem;
+}
+
+.homepage-news-card {
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.homepage-news-card-img {
+    width: 100%;
+    height: 240px;
+    object-fit: cover;
+    border-bottom: 1px solid #eee;
+    background: #f6f6f6;
+}
+
+.homepage-news-card-content {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    padding: 1rem 1.2rem 0.5rem;
+}
+
+.homepage-news-card-title {
+    color: #222;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0.5rem 0 0.25rem;
+}
+
+.homepage-news-card-meta {
+    color: #777;
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+}
+
+.homepage-news-card-summary {
+    color: #444;
+    flex: 1 1 auto;
+    font-size: 0.97rem;
+    margin-bottom: 1rem;
+}
+
+.homepage-news-card-link {
+    align-items: center;
+    color: #0A66C2;
+    display: inline-flex;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.7rem;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.homepage-news-card-link:hover {
+    color: #004099;
+}
+
+@media (max-width: 900px) {
+    .homepage-news-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .homepage-news-card-img {
+        height: 160px;
+    }
+}
+
+@media (max-width: 640px) {
+    .homepage-carousel-arrow {
+        width: 42px;
+        height: 42px;
+        font-size: 1rem;
+    }
+}

@@ -5,6 +5,70 @@ require 'helpers.php';
 
 $banner1 = 'images/banner_website_01.jpg';
 $banner2 = 'images/banner_website_02.jpg';
+$linkedinRssUrl = 'https://rss.app/feeds/dV7LODC8P6clPQvr.xml';
+
+function fetchHomepageLinkedInPosts(string $url, int $limit = 8): array
+{
+    if ($url === '') {
+        return [];
+    }
+
+    $ctx = stream_context_create(['http' => ['timeout' => 5]]);
+    $content = @file_get_contents($url, false, $ctx);
+
+    if (!$content) {
+        return [];
+    }
+
+    $xml = @simplexml_load_string($content);
+    if ($xml === false || !isset($xml->channel->item)) {
+        return [];
+    }
+
+    $posts = [];
+    foreach ($xml->channel->item as $item) {
+        if (count($posts) >= $limit) {
+            break;
+        }
+
+        $description = (string)$item->description;
+        $imageUrl = '';
+        if (preg_match('/<img[^>]+src="([^">]+)"/', $description, $matches)) {
+            $imageUrl = $matches[1];
+        } else {
+            $namespaces = $item->getNamespaces(true);
+            if (isset($namespaces['media'])) {
+                $media = $item->children($namespaces['media']);
+                if (isset($media->content)) {
+                    foreach ($media->content as $mediaContent) {
+                        if (isset($mediaContent->attributes()->url)) {
+                            $imageUrl = (string)$mediaContent->attributes()->url;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        $timestamp = strtotime((string)$item->pubDate) ?: 0;
+        $posts[] = [
+            'url' => (string)$item->link,
+            'text' => trim(strip_tags($description)),
+            'title' => (string)$item->title,
+            'image' => $imageUrl,
+            'date' => $timestamp > 0 ? date('d-m-Y', $timestamp) : '',
+            'timestamp' => $timestamp,
+        ];
+    }
+
+    usort($posts, function ($a, $b) {
+        return ($b['timestamp'] ?? 0) <=> ($a['timestamp'] ?? 0);
+    });
+
+    return $posts;
+}
+
+$linkedinPosts = fetchHomepageLinkedInPosts($linkedinRssUrl, 8);
 
 try {
     $b1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn();
@@ -39,7 +103,7 @@ try {
         }
     }
     
-    $stmt = $pdo->prepare("SELECT * FROM events WHERE COALESCE(end_date, date) >= CURDATE() AND (show_on_homepage IS NULL OR show_on_homepage = 1) ORDER BY date, time LIMIT 2");
+    $stmt = $pdo->prepare("SELECT * FROM events WHERE COALESCE(end_date, date) >= CURDATE() AND (show_on_homepage IS NULL OR show_on_homepage = 1) ORDER BY date, time LIMIT 8");
     $stmt->execute();
     $events = $stmt->fetchAll();
 } catch (Exception $e) {
@@ -49,6 +113,7 @@ try {
     $infoBlock = null;
     $customBlocks = [];
     $events = [];
+    $linkedinPosts = [];
 }
 
 ini_set('display_errors', 1);
@@ -194,15 +259,31 @@ include __DIR__ . '/navbar.php';
         </section>
     <?php endforeach; ?>
         
+<?php if (!empty($events)): ?>
+<section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" tabindex="0">
+    <div class="flex items-center justify-between gap-4 mb-6 pb-6 border-b-2 border-gray-200">
+        <h2 class="text-2xl md:text-3xl font-semibold text-gray-900">Aankomende events</h2>
+        <?php if (count($events) > 1): ?>
+        <div class="flex gap-2">
+            <button type="button" class="homepage-carousel-arrow" data-carousel-prev="homepage-events" aria-label="Vorig event">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <button type="button" class="homepage-carousel-arrow" data-carousel-next="homepage-events" aria-label="Volgend event">
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+        </div>
+        <?php endif; ?>
+    </div>
+    <div class="homepage-carousel" id="homepage-events">
+<?php foreach ($events as $event): ?>
 <?php
-foreach ($events as $event):
     $eventDateTs = strtotime((string)$event['date']);
     $eventDayMonth = $eventDateTs ? date('d.m', $eventDateTs) : '';
     $eventYear = $eventDateTs ? date('Y', $eventDateTs) : '';
     $eventImageName = trim((string)($event['image'] ?? ''));
     $hasValidImage = $eventImageName !== '' && file_exists(__DIR__ . '/uploads/' . $eventImageName);
 ?>
-<section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" tabindex="0">
+<section class="homepage-carousel-slide flex flex-col md:flex-row items-center gap-10">
     <div class="flex-1">
         <span class="inline-block bg-[#00811F] text-white text-sm font-medium px-4 py-1 mb-4">Evenement</span>
         <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($event['title']); ?></h2>
@@ -256,6 +337,58 @@ foreach ($events as $event):
     </div>
 </section>
 <?php endforeach; ?>
+    </div>
+</section>
+<?php endif; ?>
+
+<?php if (!empty($linkedinPosts)): ?>
+<section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" tabindex="0">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 pb-6 border-b-2 border-gray-200">
+        <div class="flex items-center gap-4">
+            <i class="fa-brands fa-linkedin text-4xl text-[#0A66C2]"></i>
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800">LinkedIn Updates</h2>
+                <p class="text-gray-600">Recente berichten van SociaalAI Lab</p>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <?php if (count($linkedinPosts) > 1): ?>
+            <button type="button" class="homepage-carousel-arrow" data-news-prev aria-label="Vorige LinkedIn berichten">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <button type="button" class="homepage-carousel-arrow" data-news-next aria-label="Volgende LinkedIn berichten">
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+            <?php endif; ?>
+        </div>
+    </div>
+    <div class="homepage-news-grid" id="homepage-linkedin-posts">
+        <?php foreach ($linkedinPosts as $i => $post): ?>
+        <article class="homepage-news-card" data-news-index="<?php echo (int)$i; ?>">
+            <?php if (!empty($post['image'])): ?>
+                <img src="<?php echo htmlspecialchars($post['image']); ?>" alt="LinkedIn bericht" class="homepage-news-card-img" loading="lazy">
+            <?php endif; ?>
+            <div class="homepage-news-card-content">
+                <h3 class="homepage-news-card-title"><?php echo htmlspecialchars($post['title'] ?: 'SociaalAI Lab Update'); ?></h3>
+                <?php if (!empty($post['date'])): ?>
+                    <div class="homepage-news-card-meta"><i class="fa-regular fa-calendar mr-1"></i><?php echo htmlspecialchars($post['date']); ?></div>
+                <?php endif; ?>
+                <p class="homepage-news-card-summary">
+                    <?php
+                    $postText = (string)($post['text'] ?? '');
+                    $trimmedText = strlen($postText) > 180 ? substr($postText, 0, 180) . '...' : $postText;
+                    echo nl2br(htmlspecialchars($trimmedText));
+                    ?>
+                </p>
+                <a href="<?php echo htmlspecialchars($post['url']); ?>" target="_blank" rel="noopener" class="homepage-news-card-link">
+                    Lees meer <i class="fa-solid fa-arrow-right ml-2 text-xs"></i>
+                </a>
+            </div>
+        </article>
+        <?php endforeach; ?>
+    </div>
+</section>
+<?php endif; ?>
 
 <?php if ($contactBlock): ?>
 <a href="contact.php">
@@ -358,6 +491,97 @@ foreach ($events as $event):
             mobileMenu.classList.toggle('open', !isHidden);
             mobileToggle.setAttribute('aria-expanded', (!isHidden).toString());
         });
+    })();
+
+    (function () {
+        const eventCarousel = document.getElementById('homepage-events');
+        const eventPrev = document.querySelector('[data-carousel-prev="homepage-events"]');
+        const eventNext = document.querySelector('[data-carousel-next="homepage-events"]');
+
+        if (eventCarousel && eventPrev && eventNext) {
+            function updateEventButtons() {
+                eventPrev.disabled = eventCarousel.scrollLeft <= 5;
+                eventNext.disabled = eventCarousel.scrollLeft + eventCarousel.clientWidth >= eventCarousel.scrollWidth - 5;
+            }
+
+            function scrollEvents(direction) {
+                eventCarousel.scrollBy({
+                    left: direction * eventCarousel.clientWidth,
+                    behavior: 'smooth'
+                });
+            }
+
+            function scrollEventsAutomatically() {
+                const isAtEnd = eventCarousel.scrollLeft + eventCarousel.clientWidth >= eventCarousel.scrollWidth - 5;
+                eventCarousel.scrollTo({
+                    left: isAtEnd ? 0 : eventCarousel.scrollLeft + eventCarousel.clientWidth,
+                    behavior: 'smooth'
+                });
+            }
+
+            eventPrev.addEventListener('click', function () {
+                scrollEvents(-1);
+            });
+
+            eventNext.addEventListener('click', function () {
+                scrollEvents(1);
+            });
+
+            eventCarousel.addEventListener('scroll', updateEventButtons);
+            window.addEventListener('resize', updateEventButtons);
+            updateEventButtons();
+            setInterval(scrollEventsAutomatically, 10000);
+        }
+
+        const newsCards = Array.from(document.querySelectorAll('#homepage-linkedin-posts .homepage-news-card'));
+        const newsPrev = document.querySelector('[data-news-prev]');
+        const newsNext = document.querySelector('[data-news-next]');
+        let newsPage = 0;
+
+        function getNewsPerPage() {
+            return window.matchMedia('(max-width: 900px)').matches ? 1 : 2;
+        }
+
+        function showNewsPage() {
+            if (!newsCards.length) {
+                return;
+            }
+
+            const perPage = getNewsPerPage();
+            const maxPage = Math.max(0, Math.ceil(newsCards.length / perPage) - 1);
+            newsPage = Math.max(0, Math.min(newsPage, maxPage));
+
+            newsCards.forEach(function (card, index) {
+                const isVisible = index >= newsPage * perPage && index < (newsPage + 1) * perPage;
+                card.style.display = isVisible ? '' : 'none';
+            });
+
+            if (newsPrev) {
+                newsPrev.disabled = newsPage === 0;
+            }
+            if (newsNext) {
+                newsNext.disabled = newsPage >= maxPage;
+            }
+        }
+
+        if (newsCards.length) {
+            if (newsPrev) {
+                newsPrev.addEventListener('click', function () {
+                    newsPage -= 1;
+                    showNewsPage();
+                });
+            }
+
+            if (newsNext) {
+                newsNext.addEventListener('click', function () {
+                    newsPage += 1;
+                    showNewsPage();
+                });
+            }
+
+            window.addEventListener('resize', showNewsPage);
+            showNewsPage();
+        }
     })();
 
 const banners = document.querySelectorAll('.banner');
