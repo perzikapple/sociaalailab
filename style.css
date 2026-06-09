@@ -3253,7 +3253,7 @@ main>div.grid>div:hover {
 }
 
 .partners img {
-    max-height: 50px;
+    max-height: 110px;
     /* past alle logo's mooi */
     width: auto;
     object-fit: contain;
