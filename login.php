@@ -6,9 +6,9 @@ $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = '
 $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: 'images/banner_website_02.jpg';
 
 $rolePermissions = [
-    'superadmin' => ['create_users', 'edit_users', 'delete_users', 'view_audit', 'access_booking', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images'],
-    'content_manager' => ['access_booking', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images'],
-    'editor' => ['manage_events'],
+    'administrator' => ['create_users', 'edit_users', 'delete_users', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images', 'approve_content'],
+    'content_manager' => ['manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images', 'approve_content'],
+    'onderzoeker' => ['access_booking', 'create_events', 'view_feedback'],
     'viewer' => [],
 ];
 
@@ -50,9 +50,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['admin'] = $user['admin'];
             $_SESSION['first_name'] = $user['first_name'] ?? '';
             $role = trim((string)($user['role'] ?? ''));
-            if ($role === '') {
-                $role = ((int)($user['admin'] ?? 0) === 1) ? 'superadmin' : 'viewer';
+            
+            // Migration: map old roles to new roles
+            if ($role === '' || $role === 'superadmin') {
+                $role = ((int)($user['admin'] ?? 0) === 1) ? 'administrator' : 'viewer';
+            } elseif ($role === 'content_manager' || $role === 'editor' || $role === 'booking_only') {
+                // Map old roles to new ones
+                if ($role === 'content_manager') $role = 'content_manager';
+                elseif ($role === 'editor' || $role === 'booking_only') $role = 'onderzoeker';
             }
+            
             $permissions = normalizeAccountPermissions($user['permissions'] ?? null);
             if ($permissions === null) {
                 $permissions = $rolePermissions[$role] ?? [];

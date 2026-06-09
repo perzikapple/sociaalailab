@@ -63,6 +63,21 @@ try {
     if (!in_array('sort_order', $pageColumns)) {
         $pdo->exec("ALTER TABLE pages ADD COLUMN sort_order INT DEFAULT 0");
     }
+    if (!in_array('approval_status', $pageColumns)) {
+        $pdo->exec("ALTER TABLE pages ADD COLUMN approval_status VARCHAR(50) DEFAULT 'approved'");
+    }
+    if (!in_array('internal_notes', $pageColumns)) {
+        $pdo->exec("ALTER TABLE pages ADD COLUMN internal_notes TEXT DEFAULT NULL");
+    }
+    if (!in_array('created_by', $pageColumns)) {
+        $pdo->exec("ALTER TABLE pages ADD COLUMN created_by VARCHAR(255) DEFAULT NULL");
+    }
+    if (!in_array('approval_feedback', $pageColumns)) {
+        $pdo->exec("ALTER TABLE pages ADD COLUMN approval_feedback TEXT DEFAULT NULL");
+    }
+    if (!in_array('approved_by', $pageColumns)) {
+        $pdo->exec("ALTER TABLE pages ADD COLUMN approved_by VARCHAR(255) DEFAULT NULL");
+    }
     $columns = $pdo->query("SHOW COLUMNS FROM events")->fetchAll(PDO::FETCH_COLUMN);
     
     if (!in_array('location', $columns)) {
@@ -103,6 +118,24 @@ try {
     }
     if (!in_array('meer_info', $columns)) {
         $pdo->exec("ALTER TABLE events ADD COLUMN meer_info TEXT DEFAULT NULL");
+    }
+    if (!in_array('approval_status', $columns)) {
+        $pdo->exec("ALTER TABLE events ADD COLUMN approval_status VARCHAR(50) DEFAULT 'approved'");
+    }
+    if (!in_array('target_audience', $columns)) {
+        $pdo->exec("ALTER TABLE events ADD COLUMN target_audience VARCHAR(255) DEFAULT NULL");
+    }
+    if (!in_array('internal_notes', $columns)) {
+        $pdo->exec("ALTER TABLE events ADD COLUMN internal_notes TEXT DEFAULT NULL");
+    }
+    if (!in_array('created_by', $columns)) {
+        $pdo->exec("ALTER TABLE events ADD COLUMN created_by VARCHAR(255) DEFAULT NULL");
+    }
+    if (!in_array('approval_feedback', $columns)) {
+        $pdo->exec("ALTER TABLE events ADD COLUMN approval_feedback TEXT DEFAULT NULL");
+    }
+    if (!in_array('approved_by', $columns)) {
+        $pdo->exec("ALTER TABLE events ADD COLUMN approved_by VARCHAR(255) DEFAULT NULL");
     }
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS settings (

@@ -29,7 +29,7 @@
         error.style.marginTop = '8px';
         // Converter link
         const converter = document.createElement('a');
-        converter.href = 'http://localhost/School%20Stage/sociaalailab/admin.php?page=image-converter';
+        converter.href = '#';
         converter.target = '_blank';
         converter.style.display = 'none';
         converter.style.fontSize = '1.07em';
@@ -47,7 +47,7 @@
         converter.style.transition = 'background 0.2s, box-shadow 0.2s';
         converter.onmouseover = function () { this.style.background = '#fff3cd'; this.style.boxShadow = '0 4px 16px rgba(255,193,7,0.13)'; };
         converter.onmouseout = function () { this.style.background = '#fffbe6'; this.style.boxShadow = '0 2px 8px rgba(255,193,7,0.10)'; };
-        converter.innerHTML = '<span style="font-size:1.25em;vertical-align:middle;margin-right:7px;">🖼️</span>Afbeelding te groot? Gebruik de <strong>Image Converter</strong>';
+        converter.innerHTML = '<span style="font-size:1.25em;vertical-align:middle;margin-right:7px;">🖼️</span>Bestand te groot — maak het kleiner.';
         // Insert
         el.appendChild(btn);
         el.appendChild(input);
@@ -78,7 +78,7 @@
                 reader.readAsDataURL(file);
             });
             if (oversize) {
-                error.textContent = 'Eén of meer afbeeldingen zijn groter dan 10MB. Gebruik de Image Converter.';
+                error.textContent = 'Bestand te groot — maak het kleiner.';
                 converter.style.display = 'inline-block';
             }
         });

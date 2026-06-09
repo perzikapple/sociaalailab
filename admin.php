@@ -4,10 +4,9 @@ require 'db.php';
 require 'helpers.php';
 
 $rolePermissions = [
-    'superadmin' => ['create_users', 'edit_users', 'delete_users', 'view_audit', 'access_booking', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images'],
-    'content_manager' => ['access_booking', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images'],
-    'editor' => ['manage_events'],
-    'booking_only' => ['access_booking'],
+    'administrator' => ['create_users', 'edit_users', 'delete_users', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images', 'approve_content'],
+    'content_manager' => ['manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images', 'approve_content'],
+    'onderzoeker' => ['access_booking', 'create_events', 'view_feedback'],
     'viewer' => [],
 ];
 
@@ -32,7 +31,18 @@ function permissionsForRole($role, $rolePermissions)
 
 $sessionRole = trim((string)($_SESSION['role'] ?? ''));
 if ($sessionRole === '') {
-    $sessionRole = (isset($_SESSION['admin']) && (int)$_SESSION['admin'] === 1) ? 'superadmin' : 'viewer';
+    $sessionRole = (isset($_SESSION['admin']) && (int)$_SESSION['admin'] === 1) ? 'administrator' : 'viewer';
+    $_SESSION['role'] = $sessionRole;
+}
+
+// Migration: map old roles to new roles
+$roleMap = [
+    'superadmin' => 'administrator',
+    'editor' => 'onderzoeker',
+    'booking_only' => 'onderzoeker',
+];
+if (isset($roleMap[$sessionRole])) {
+    $sessionRole = $roleMap[$sessionRole];
     $_SESSION['role'] = $sessionRole;
 }
 
@@ -50,10 +60,13 @@ if (!$canAccessAdmin) {
     exit;
 }
 
-// If user is booking_only, redirect directly to booking page
-if ($sessionRole === 'booking_only') {
-    header('Location: booking.php');
-    exit;
+// Onderzoekers can only view feedback and booking, not full admin panel
+if ($sessionRole === 'onderzoeker') {
+    // They can access booking directly
+    if (!isset($_GET['page']) || !in_array($_GET['page'], ['feedback', 'booking'])) {
+        header('Location: booking.php');
+        exit;
+    }
 }
 
 $hasPermission = function ($permission) use (&$sessionPermissions) {
@@ -71,16 +84,18 @@ $hasAnyPermission = function ($permissions) use (&$hasPermission) {
 
 $adminPermissionOptions = [
     'manage_banners' => 'Banners aanpassen',
-    'manage_events' => 'Agenda maken en bewerken',
+    'manage_events' => 'Agenda beheren',
     'delete_events' => 'Agenda-items verwijderen',
-    'manage_pages' => 'Pagina categorieen maken en bewerken',
-    'delete_pages' => 'Pagina categorieen verwijderen',
+    'manage_pages' => 'Pagina\'s beheren',
+    'delete_pages' => 'Pagina\'s verwijderen',
     'create_users' => 'Gebruikers maken',
     'edit_users' => 'Gebruikers bewerken',
     'delete_users' => 'Gebruikers verwijderen',
-    'access_booking' => 'Booking pagina gebruiken',
-    'view_audit' => 'Logboek bekijken',
+    'access_booking' => 'Booking pagina',
     'optimize_images' => 'Afbeeldingen optimaliseren',
+    'approve_content' => 'Inhoud goedkeuren',
+    'create_events' => 'Agendapunten aanmaken',
+    'view_feedback' => 'Feedback bekijken',
 ];
 $allowedPermissionKeys = array_keys($adminPermissionOptions);
 
@@ -104,7 +119,7 @@ function handleUpload($fileField)
         return ['error' => '<div style="background:#fff3cd;color:#856404;border:1.5px solid #ffeeba;padding:18px 20px;border-radius:10px;font-size:1.13rem;font-weight:600;max-width:480px;margin:18px auto;text-align:center;box-shadow:0 2px 12px rgba(255,193,7,0.08);">
         <span style="font-size:1.5em;vertical-align:middle;">⚠️</span><br>
         Je afbeelding is groter dan 10MB.<br>
-        Maak je afbeelding kleiner met de <a href=\'admin.php?page=image-converter\' style=\'color:#00811F;font-weight:bold;text-decoration:underline;\'>Image Converter</a>.<br>
+        Bestand te groot — maak het kleiner.<br>
         <span style=\'font-size:0.97em;font-weight:400;\'>(Alleen JPG/PNG tot 10MB toegestaan)</span>
         </div>'];
     }
@@ -164,7 +179,7 @@ function handleMultiUpload($fileField)
             return ['error' => '<div style="background:#fff3cd;color:#856404;border:1.5px solid #ffeeba;padding:18px 20px;border-radius:10px;font-size:1.13rem;font-weight:600;max-width:480px;margin:18px auto;text-align:center;box-shadow:0 2px 12px rgba(255,193,7,0.08);">
             <span style="font-size:1.5em;vertical-align:middle;">⚠️</span><br>
             Je afbeelding is groter dan 10MB.<br>
-            Maak je afbeelding kleiner met de <a href=\'admin.php?page=image-converter\' style=\'color:#00811F;font-weight:bold;text-decoration:underline;\'>Image Converter</a>.<br>
+            Bestand te groot — maak het kleiner.<br>
             <span style=\'font-size:0.97em;font-weight:400;\'>(Alleen JPG/PNG tot 10MB toegestaan)</span>
             </div>'];
         }
@@ -298,8 +313,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $currentUser = $_SESSION['user'] ?? null; // email van ingelogde gebruiker (kan null zijn)
 
     $actionPermissionMap = [
-        'create' => 'manage_events',
-        'update' => 'manage_events',
+        'create' => ($sessionRole === 'onderzoeker' ? 'create_events' : 'manage_events'),
+        'update' => 'manage_events',  // Onderzoekers kunnen NIET updaten
         'delete' => 'delete_events',
         'delete_bulk_events' => 'delete_events',
         'reorder_event' => 'manage_events',
@@ -310,6 +325,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'update_user_permissions' => 'edit_users',
         'delete_user' => 'delete_users',
         'optimize_image' => 'optimize_images',
+        'approve_item' => 'approve_content',
+        'reject_item' => 'approve_content',
     ];
 
     if ($action !== '' && isset($actionPermissionMap[$action]) && !$hasPermission($actionPermissionMap[$action])) {
@@ -327,10 +344,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $eventSummary = sanitizeEditorBlockInput($_POST['event_summary'] ?? '');
         $meerInfo = sanitizeEditorBlockInput($_POST['meer_info'] ?? '');
         $location = sanitizeEditorPlainText($_POST['location'] ?? '');
+        $targetAudience = sanitizeEditorPlainText($_POST['target_audience'] ?? '');
+        $internalNotes = sanitizeEditorBlockInput($_POST['internal_notes'] ?? '');
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
         $signupEmbed = trim((string)($_POST['signup_embed'] ?? ''));
         $showOnHomepage = isset($_POST['show_on_homepage']) ? 1 : 0;
-        // $infoLink verwijderd
+        
+        // Approval status based on role
+        $approvalStatus = ($sessionRole === 'onderzoeker') ? 'pending' : 'approved';
 
         if ($date === '') {
             $message = 'Datum is verplicht.';
@@ -354,9 +375,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ? json_encode(array_values($galleryUpload['names']), JSON_UNESCAPED_SLASHES)
                         : null;
 
-                    // voeg updated_at en updated_by toe bij insert
-                    $stmt = $pdo->prepare('INSERT INTO events (title, date, end_date, time, time_end, description, event_summary, meer_info, image, event_gallery, location, show_signup_button, signup_embed, show_on_homepage, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)');
-                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $location ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser]);
+                    // voeg updated_at, updated_by, en approval gegevens toe bij insert
+                    $stmt = $pdo->prepare('INSERT INTO events (title, date, end_date, time, time_end, description, event_summary, meer_info, image, event_gallery, location, target_audience, internal_notes, show_signup_button, signup_embed, show_on_homepage, updated_at, updated_by, approval_status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)');
+                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $location ?: null, $targetAudience ?: null, $internalNotes ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser, $approvalStatus, $currentUser]);
                     $eventId = $pdo->lastInsertId();
                     // Audit log: event created
                     audit_log($pdo, 'create', 'events', $eventId, 'title: ' . $title, $currentUser);
@@ -376,6 +397,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $eventSummary = sanitizeEditorBlockInput($_POST['event_summary'] ?? '');
         $meerInfo = sanitizeEditorBlockInput($_POST['meer_info'] ?? '');
         $location = sanitizeEditorPlainText($_POST['location'] ?? '');
+        $targetAudience = sanitizeEditorPlainText($_POST['target_audience'] ?? '');
+        $internalNotes = sanitizeEditorBlockInput($_POST['internal_notes'] ?? '');
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
         $signupEmbed = trim((string)($_POST['signup_embed'] ?? ''));
         $showOnHomepage = isset($_POST['show_on_homepage']) ? 1 : 0;
@@ -424,9 +447,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ? json_encode($galleryNames, JSON_UNESCAPED_SLASHES)
                         : null;
 
-                    // update nu ook updated_at en updated_by
-                    $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, end_date=?, time=?, time_end=?, description=?, event_summary=?, meer_info=?, image=?, event_gallery=?, location=?, show_signup_button=?, signup_embed=?, show_on_homepage=?, updated_at=NOW(), updated_by=? WHERE id=?');
-                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $location ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser, $id]);
+                    // update nu ook updated_at, updated_by, target_audience, en internal_notes
+                    $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, end_date=?, time=?, time_end=?, description=?, event_summary=?, meer_info=?, image=?, event_gallery=?, location=?, target_audience=?, internal_notes=?, show_signup_button=?, signup_embed=?, show_on_homepage=?, updated_at=NOW(), updated_by=? WHERE id=?');
+                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $location ?: null, $targetAudience ?: null, $internalNotes ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser, $id]);
                     // Audit log: event updated
                     audit_log($pdo, 'update', 'events', $id, 'title: ' . $title, $currentUser);
 
@@ -660,7 +683,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $newLastName = trim((string)($_POST['new_last_name'] ?? ''));
         $newRole = trim((string)($_POST['new_role'] ?? 'viewer'));
         $allowedRoles = ['superadmin', 'content_manager', 'editor', 'booking_only', 'viewer'];
-        
+
         // Auto-set permissions based on role (no manual selection anymore)
         $newPermissions = permissionsForRole($newRole, $rolePermissions);
 
@@ -698,7 +721,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $targetEmail = trim((string)($_POST['target_email'] ?? ''));
         $newRole = trim((string)($_POST['role'] ?? 'viewer'));
         $allowedRoles = ['superadmin', 'content_manager', 'editor', 'booking_only', 'viewer'];
-        
+
         // Auto-set permissions based on role (no manual selection anymore)
         $newPermissions = permissionsForRole($newRole, $rolePermissions);
 
@@ -764,6 +787,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['optimize_success'] = true;
                 $_SESSION['optimize_data'] = $result;
             }
+        }
+    } elseif ($action === 'approve_item' && !empty($_POST['item_id'])) {
+        $itemId = intval($_POST['item_id']);
+        $stmt = $pdo->prepare('SELECT id FROM events WHERE id = ?');
+        $stmt->execute([$itemId]);
+        $event = $stmt->fetch();
+        
+        if ($event) {
+            $stmt = $pdo->prepare(
+                'UPDATE events SET approval_status = ?, approved_by = ?, approval_feedback = NULL 
+                 WHERE id = ?'
+            );
+            $stmt->execute(['approved', $currentUser, $itemId]);
+            audit_log($pdo, 'approve', 'events', $itemId, 'Status changed to approved', $currentUser);
+            header('Location: admin.php?page=goedkeuren&ok=approve');
+            exit;
+        } else {
+            $message = 'Item niet gevonden.';
+        }
+    } elseif ($action === 'reject_item' && !empty($_POST['item_id'])) {
+        $itemId = intval($_POST['item_id']);
+        $feedback = sanitizeEditorBlockInput($_POST['feedback'] ?? '');
+        
+        $stmt = $pdo->prepare('SELECT id FROM events WHERE id = ?');
+        $stmt->execute([$itemId]);
+        $event = $stmt->fetch();
+        
+        if ($event) {
+            $stmt = $pdo->prepare(
+                'UPDATE events SET approval_status = ?, approved_by = ?, approval_feedback = ? 
+                 WHERE id = ?'
+            );
+            $stmt->execute(['rejected', $currentUser, $feedback, $itemId]);
+            audit_log($pdo, 'reject', 'events', $itemId, 'Status changed to rejected. Feedback: ' . substr($feedback, 0, 100), $currentUser);
+            header('Location: admin.php?page=goedkeuren&ok=reject');
+            exit;
+        } else {
+            $message = 'Item niet gevonden.';
         }
     }
 }
@@ -1083,6 +1144,7 @@ $page = $_GET['page'] ?? 'agenda';
 $allowedPagesByPermission = [
     'banner' => 'manage_banners',
     'agenda' => ['manage_events', 'delete_events'],
+    'goedkeuren' => 'approve_content',
     'audit' => 'view_audit',
     'users' => ['create_users', 'edit_users', 'delete_users'],
     'index' => ['manage_pages', 'delete_pages'],
@@ -1134,7 +1196,7 @@ $canManagePages = $hasPermission('manage_pages');
 $isEditorReadOnlyPage = false;
 
 $pageItems = [];
-if ($page !== 'banner' && $page !== 'agenda' && $page !== 'audit' && $page !== 'users') {
+if ($page !== 'banner' && $page !== 'agenda' && $page !== 'goedkeuren' && $page !== 'audit' && $page !== 'users') {
     $stmt = $pdo->prepare(
         'SELECT * FROM pages WHERE page_key = ?
          ORDER BY (sort_order IS NULL OR sort_order = 0) ASC, sort_order ASC, created_at ASC, id ASC'
@@ -1230,6 +1292,7 @@ if ($page === 'users') {
             pointer-events: none !important;
             filter: grayscale(0.2);
         }
+
         .ck-editor__editable {
             min-height: 100px;
         }
@@ -1326,16 +1389,17 @@ if ($page === 'users') {
                             <i class="fa-solid fa-calendar"></i> Agenda
                         </a>
                     <?php endif; ?>
+                    <?php if ($hasPermission('approve_content')): ?>
+                        <a href="admin.php?page=goedkeuren" class="sidebar-link <?php echo $page === 'goedkeuren' ? 'active' : ''; ?>">
+                            <i class="fa-solid fa-check-circle"></i> Goedkeuren
+                        </a>
+                    <?php endif; ?>
                     <?php if ($hasAnyPermission(['create_users', 'edit_users', 'delete_users'])): ?>
                         <a href="admin.php?page=users" class="sidebar-link <?php echo $page === 'users' ? 'active' : ''; ?>">
                             <i class="fa-solid fa-users"></i> Gebruikers & Rechten
                         </a>
                     <?php endif; ?>
-                    <?php if ($hasPermission('optimize_images')): ?>
-                        <a href="admin.php?page=image-converter" class="sidebar-link <?php echo $page === 'image-converter' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-image"></i> Image Converter
-                        </a>
-                    <?php endif; ?>
+                    <!-- Image Converter removed -->
 
                     <?php if ($hasAnyPermission(['manage_pages', 'delete_pages'])): ?>
                         <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Pagina's</div>
@@ -1462,6 +1526,18 @@ if ($page === 'users') {
                                 </div>
 
                                 <div>
+                                    <label class="form-label">Doelgroep (optioneel)</label>
+                                    <input name="target_audience" class="form-input admin-input-surface" value="<?php echo htmlspecialchars($editEvent['target_audience'] ?? ''); ?>" placeholder="bijv. Scholieren, Docenten, Researchers" />
+                                    <p class="text-xs text-gray-500 mt-2">Alleen zichtbaar voor goedkeuring, niet op de publieke pagina.</p>
+                                </div>
+
+                                <div>
+                                    <label class="form-label">Opmerkingen voor goedkeuring (optioneel)</label>
+                                    <textarea name="internal_notes" rows="3" class="form-textarea" placeholder="Bijv. aanvullende informatie voor goedkeuring"><?php echo htmlspecialchars($editEvent['internal_notes'] ?? ''); ?></textarea>
+                                    <p class="text-xs text-gray-500 mt-2">Alleen zichtbaar voor administratoren, niet op de publieke pagina.</p>
+                                </div>
+
+                                <div>
                                     <label class="form-label">Afbeelding (optioneel)</label>
                                     <input type="hidden" name="existing_image" value="<?php echo htmlspecialchars($editEvent['image'] ?? ''); ?>" />
                                     <div id="upload-image-widget"></div>
@@ -1471,7 +1547,7 @@ if ($page === 'users') {
                                                 containerId: 'upload-image-widget',
                                                 inputName: 'image',
                                                 label: 'Kies een afbeelding (PNG/JPG, max 10MB)',
-                                                imageConverterUrl: 'admin.php?page=image-converter',
+                                                imageConverterUrl: null,
                                                 preview: true
                                             });
                                         });
@@ -1604,6 +1680,18 @@ if ($page === 'users') {
                                     <label class="form-label">Samenvatting na afloop (optioneel)</label>
                                     <textarea name="event_summary" rows="5" class="form-textarea"><?php echo htmlspecialchars($_POST['event_summary'] ?? ''); ?></textarea>
                                     <p class="text-xs text-gray-500 mt-2">Deze samenvatting wordt op de evenement detailpagina getoond zodra deze is ingevuld.</p>
+                                </div>
+
+                                <div>
+                                    <label class="form-label">Doelgroep (optioneel)</label>
+                                    <input name="target_audience" class="form-input admin-input-surface" placeholder="bijv. Scholieren, Docenten, Researchers" />
+                                    <p class="text-xs text-gray-500 mt-2">Alleen zichtbaar voor goedkeuring, niet op de publieke pagina.</p>
+                                </div>
+
+                                <div>
+                                    <label class="form-label">Opmerkingen voor goedkeuring (optioneel)</label>
+                                    <textarea name="internal_notes" rows="3" class="form-textarea" placeholder="Bijv. aanvullende informatie voor goedkeuring"></textarea>
+                                    <p class="text-xs text-gray-500 mt-2">Alleen zichtbaar voor administratoren, niet op de publieke pagina.</p>
                                 </div>
 
                                 <div>
@@ -1930,6 +2018,112 @@ if ($page === 'users') {
                         </div>
                     </div>
 
+                <?php elseif ($page === 'goedkeuren'): ?>
+                    <div class="card p-6">
+                        <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
+                            <i class="fa-solid fa-check-circle text-2xl text-[#00811F]"></i>
+                            <h2 class="text-2xl font-bold">Goedkeuren</h2>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-6">Beoordeel ingediende inhoud van onderzoekers.</p>
+
+                        <?php
+                        // Fetch pending approval items
+                        try {
+                            $stmt = $pdo->prepare(
+                                "SELECT id, title, date, created_by, target_audience, internal_notes, approval_status, approval_feedback 
+                                 FROM events 
+                                 WHERE approval_status = 'pending' 
+                                 ORDER BY created_at DESC"
+                            );
+                            $stmt->execute();
+                            $pendingItems = $stmt->fetchAll();
+                        } catch (Exception $e) {
+                            $pendingItems = [];
+                        }
+                        ?>
+
+                        <?php if (empty($pendingItems)): ?>
+                            <div class="text-center py-12 text-gray-500">
+                                <i class="fa-solid fa-inbox text-4xl mb-2"></i>
+                                <p>Geen items ter goedkeuring.</p>
+                            </div>
+                        <?php else: ?>
+                            <div class="space-y-4">
+                                <?php foreach ($pendingItems as $item): ?>
+                                    <div class="border border-yellow-200 rounded-lg p-6 bg-yellow-50">
+                                        <div class="flex items-start justify-between gap-4 mb-3">
+                                            <div class="flex-1">
+                                                <h3 class="font-semibold text-lg text-gray-900"><?php echo htmlspecialchars($item['title'] ?? ''); ?></h3>
+                                                <p class="text-sm text-gray-600">
+                                                    <i class="fa-solid fa-calendar"></i> 
+                                                    <?php echo !empty($item['date']) ? (new DateTime($item['date']))->format('d-m-Y') : 'Geen datum'; ?>
+                                                </p>
+                                                <p class="text-sm text-gray-600">
+                                                    <i class="fa-solid fa-user"></i> 
+                                                    Ingediend door: <?php echo htmlspecialchars($item['created_by'] ?? 'Onbekend'); ?>
+                                                </p>
+                                            </div>
+                                            <span class="inline-block px-3 py-1 bg-yellow-200 text-yellow-900 text-xs font-semibold rounded">In afwachting</span>
+                                        </div>
+
+                                        <?php if (!empty($item['target_audience']) || !empty($item['internal_notes'])): ?>
+                                            <div class="bg-white p-4 rounded mb-4 border border-yellow-100">
+                                                <?php if (!empty($item['target_audience'])): ?>
+                                                    <p class="text-sm"><strong>Doelgroep:</strong> <?php echo htmlspecialchars($item['target_audience']); ?></p>
+                                                <?php endif; ?>
+                                                <?php if (!empty($item['internal_notes'])): ?>
+                                                    <p class="text-sm"><strong>Opmerkingen:</strong> <?php echo nl2br(htmlspecialchars($item['internal_notes'])); ?></p>
+                                                <?php endif; ?>
+                                            </div>
+                                        <?php endif; ?>
+
+                                        <div class="flex flex-wrap gap-2 items-center justify-end">
+                                            <form method="POST" style="display:inline;">
+                                                <input type="hidden" name="action" value="approve_item">
+                                                <input type="hidden" name="item_id" value="<?php echo (int)$item['id']; ?>">
+                                                <button type="submit" class="btn btn-success btn-sm">
+                                                    <i class="fa-solid fa-thumbs-up"></i> Goedkeuren
+                                                </button>
+                                            </form>
+                                            <button type="button" class="btn btn-error btn-sm" onclick="openRejectForm(<?php echo (int)$item['id']; ?>)">
+                                                <i class="fa-solid fa-thumbs-down"></i> Afkeuren
+                                            </button>
+                                        </div>
+
+                                        <!-- Hidden reject form -->
+                                        <form id="reject-form-<?php echo (int)$item['id']; ?>" method="POST" class="mt-4 p-4 bg-white border border-red-200 rounded hidden">
+                                            <input type="hidden" name="action" value="reject_item">
+                                            <input type="hidden" name="item_id" value="<?php echo (int)$item['id']; ?>">
+                                            
+                                            <div class="mb-3">
+                                                <label class="form-label">Terugkoppeling (waarom wordt dit afgewezen?):</label>
+                                                <textarea name="feedback" class="form-textarea" rows="3" placeholder="Uw feedback..." required></textarea>
+                                            </div>
+                                            
+                                            <div class="flex gap-2">
+                                                <button type="submit" class="btn btn-error btn-sm">
+                                                    <i class="fa-solid fa-paper-plane"></i> Afkeuren
+                                                </button>
+                                                <button type="button" class="btn btn-secondary btn-sm" onclick="closeRejectForm(<?php echo (int)$item['id']; ?>)">
+                                                    <i class="fa-solid fa-times"></i> Annuleren
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+
+                    <script>
+                        function openRejectForm(itemId) {
+                            document.getElementById('reject-form-' + itemId).classList.remove('hidden');
+                        }
+                        function closeRejectForm(itemId) {
+                            document.getElementById('reject-form-' + itemId).classList.add('hidden');
+                        }
+                    </script>
+
                 <?php elseif ($page === 'audit'): ?>
                     <div class="card p-6">
                         <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
@@ -2066,7 +2260,10 @@ if ($page === 'users') {
 
                 <?php elseif ($page != 'banner'): ?>
                     <?php if ($page === 'image-converter'): ?>
-                        <iframe src="image_converter.html" style="width:100%;min-height:900px;border:none;background:transparent;" title="Image Converter"></iframe>
+                        <div class="card">
+                            <h2>Image Converter (verwijderd)</h2>
+                            <p>De Image Converter is verwijderd uit deze installatie.</p>
+                        </div>
                         <?php return; ?>
                     <?php endif; ?>
                     <?php
