@@ -6,8 +6,8 @@ $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = '
 $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: 'images/banner_website_02.jpg';
 
 $rolePermissions = [
-    'administrator' => ['create_users', 'edit_users', 'delete_users', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images', 'approve_content'],
-    'content_manager' => ['manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images', 'approve_content'],
+    'administrator' => ['create_users', 'edit_users', 'delete_users', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images', 'approve_content', 'access_booking'],
+    'content_manager' => ['manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images', 'approve_content', 'access_booking'],
     'onderzoeker' => ['access_booking', 'create_events', 'view_feedback'],
     'viewer' => [],
 ];
@@ -47,11 +47,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Set session and redirect
             $_SESSION['user'] = $user['email'];
             $_SESSION['email'] = $user['email'];
-            $_SESSION['admin'] = $user['admin'];
             $_SESSION['first_name'] = $user['first_name'] ?? '';
             $role = trim((string)($user['role'] ?? ''));
             
-            // Migration: map old roles to new roles
+            // Migration: map old roles to new roles FIRST
             if ($role === '' || $role === 'superadmin') {
                 $role = ((int)($user['admin'] ?? 0) === 1) ? 'administrator' : 'viewer';
             } elseif ($role === 'content_manager' || $role === 'editor' || $role === 'booking_only') {
@@ -60,11 +59,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 elseif ($role === 'editor' || $role === 'booking_only') $role = 'onderzoeker';
             }
             
+            // NOW get permissions based on mapped role
             $permissions = normalizeAccountPermissions($user['permissions'] ?? null);
-            if ($permissions === null) {
+            if ($permissions === null || empty($permissions)) {
                 $permissions = $rolePermissions[$role] ?? [];
             }
+            
+            // Set admin flag based on whether user has any permissions
+            $adminFlag = !empty($permissions) ? 1 : 0;
+            
             $_SESSION['role'] = $role;
+            $_SESSION['admin'] = $adminFlag;
             $_SESSION['permissions'] = json_encode($permissions, JSON_UNESCAPED_SLASHES);
             $_SESSION['can_access_admin'] = !empty($permissions);
             header('Location: admin.php');

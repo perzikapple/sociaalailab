@@ -4,8 +4,8 @@ require 'db.php';
 require 'helpers.php';
 
 $rolePermissions = [
-    'administrator' => ['create_users', 'edit_users', 'delete_users', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images', 'approve_content'],
-    'content_manager' => ['manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images', 'approve_content'],
+    'administrator' => ['create_users', 'edit_users', 'delete_users', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images', 'approve_content', 'access_booking'],
+    'content_manager' => ['manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images', 'approve_content', 'access_booking'],
     'onderzoeker' => ['access_booking', 'create_events', 'view_feedback'],
     'viewer' => [],
 ];
@@ -60,11 +60,10 @@ if (!$canAccessAdmin) {
     exit;
 }
 
-// Onderzoekers can only view feedback and booking, not full admin panel
+// Onderzoekers can access admin panel but only for creating events (agenda), feedback, and booking
 if ($sessionRole === 'onderzoeker') {
-    // They can access booking directly
-    if (!isset($_GET['page']) || !in_array($_GET['page'], ['feedback', 'booking'])) {
-        header('Location: booking.php');
+    if (!isset($_GET['page']) || !in_array($_GET['page'], ['agenda', 'feedback', 'booking'])) {
+        header('Location: admin.php?page=agenda');
         exit;
     }
 }
@@ -322,6 +321,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'update_banner' => 'manage_banners',
         'reset_banners' => 'manage_banners',
         'create_user' => 'create_users',
+        'update_user' => 'edit_users',
         'update_user_permissions' => 'edit_users',
         'delete_user' => 'delete_users',
         'optimize_image' => 'optimize_images',
@@ -682,7 +682,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $newFirstName = trim((string)($_POST['new_first_name'] ?? ''));
         $newLastName = trim((string)($_POST['new_last_name'] ?? ''));
         $newRole = trim((string)($_POST['new_role'] ?? 'viewer'));
-        $allowedRoles = ['administrator', 'content_manager', 'editor', 'booking_only', 'viewer'];
+        $allowedRoles = ['administrator', 'content_manager', 'editor', 'viewer'];
 
         // Auto-set permissions based on role
         $newPermissions = permissionsForRole($newRole, $rolePermissions);
@@ -720,19 +720,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action === 'update_user_permissions') {
         $targetEmail = trim((string)($_POST['target_email'] ?? ''));
         $newRole = trim((string)($_POST['role'] ?? 'viewer'));
-        $allowedRoles = ['administrator', 'content_manager', 'editor', 'booking_only', 'viewer'];
+        $allowedRoles = ['administrator', 'content_manager', 'editor', 'viewer'];
 
-        // Get permissions from checkbox array if provided
-        $selectedPermissions = isset($_POST['permissions']) && is_array($_POST['permissions']) ? $_POST['permissions'] : [];
-        $selectedPermissions = array_filter(array_map('trim', $selectedPermissions));
-
-        // If individual permissions are selected, use those; otherwise use role-based permissions
-        if (!empty($selectedPermissions)) {
-            $newPermissions = array_values($selectedPermissions);
-        } else {
-            // Auto-set permissions based on role
-            $newPermissions = permissionsForRole($newRole, $rolePermissions);
-        }
+        // Auto-set permissions based on role only
+        $newPermissions = permissionsForRole($newRole, $rolePermissions);
 
         if ($targetEmail === '' || !filter_var($targetEmail, FILTER_VALIDATE_EMAIL)) {
             $message = 'Ongeldig e-mailadres.';
@@ -752,7 +743,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             audit_log($pdo, 'update', 'accounts', $targetEmail, 'role set to ' . $newRole . ' with permissions ' . implode(', ', $newPermissions), $currentUser);
-            $message = 'Gebruikersrechten bijgewerkt.';
+            $message = 'Gebruikersrol bijgewerkt.';
+        }
+    } elseif ($action === 'update_user') {
+        $targetEmailOld = trim((string)($_POST['target_email_old'] ?? ''));
+        $targetEmailNew = trim((string)($_POST['new_email'] ?? ''));
+        $newFirstName = trim((string)($_POST['new_first_name'] ?? ''));
+        $newLastName = trim((string)($_POST['new_last_name'] ?? ''));
+        $newRole = trim((string)($_POST['new_role'] ?? 'viewer'));
+        $newPassword = (string)($_POST['new_password'] ?? '');
+        $allowedRoles = ['administrator', 'content_manager', 'editor', 'viewer'];
+
+        // Auto-set permissions based on role only
+        $newPermissions = permissionsForRole($newRole, $rolePermissions);
+
+        if ($targetEmailOld === '' || !filter_var($targetEmailOld, FILTER_VALIDATE_EMAIL)) {
+            $message = 'Ongeldig oud e-mailadres.';
+        } elseif ($targetEmailNew === '' || !filter_var($targetEmailNew, FILTER_VALIDATE_EMAIL)) {
+            $message = 'Ongeldig nieuw e-mailadres.';
+        } elseif (!in_array($newRole, $allowedRoles, true)) {
+            $message = 'Ongeldige rol gekozen.';
+        } else {
+            // Check if new email is already in use (but not by the user being edited)
+            $existsStmt = $pdo->prepare('SELECT id FROM accounts WHERE email = ? AND email != ?');
+            $existsStmt->execute([$targetEmailNew, $targetEmailOld]);
+            if ($existsStmt->fetch()) {
+                $message = 'Dit e-mailadres is al in gebruik.';
+            } else {
+                // If password is provided, hash it; otherwise keep the old one
+                $updateFields = ['first_name' => $newFirstName !== '' ? $newFirstName : null, 'last_name' => $newLastName !== '' ? $newLastName : null, 'email' => $targetEmailNew, 'role' => $newRole, 'admin' => !empty($newPermissions) ? 1 : 0, 'permissions' => json_encode($newPermissions, JSON_UNESCAPED_SLASHES)];
+
+                if ($newPassword !== '') {
+                    $updateFields['wachtwoord'] = password_hash($newPassword, PASSWORD_DEFAULT);
+                }
+
+                // Build update query
+                $updateClauses = [];
+                $params = [];
+                foreach ($updateFields as $field => $value) {
+                    $updateClauses[] = $field . ' = ?';
+                    $params[] = $value;
+                }
+                $params[] = $targetEmailOld; // WHERE clause
+
+                $updateSql = 'UPDATE accounts SET ' . implode(', ', $updateClauses) . ' WHERE email = ?';
+                $stmt = $pdo->prepare($updateSql);
+                $stmt->execute($params);
+
+                // Update session if editing own account
+                if ($targetEmailOld === ($_SESSION['email'] ?? '')) {
+                    $_SESSION['email'] = $targetEmailNew;
+                    $_SESSION['first_name'] = $newFirstName;
+                    $_SESSION['last_name'] = $newLastName;
+                    $_SESSION['role'] = $newRole;
+                    $_SESSION['admin'] = !empty($newPermissions) ? 1 : 0;
+                    $_SESSION['permissions'] = json_encode($newPermissions, JSON_UNESCAPED_SLASHES);
+                    $_SESSION['can_access_admin'] = !empty($newPermissions);
+                }
+
+                audit_log($pdo, 'update', 'accounts', $targetEmailOld, 'email changed to ' . $targetEmailNew . ', role set to ' . $newRole, $currentUser);
+                $message = 'Gebruiker bijgewerkt.';
+            }
         }
     } elseif ($action === 'delete_user') {
         $targetEmail = trim((string)($_POST['target_email'] ?? ''));
@@ -1201,6 +1252,7 @@ if (!$canViewPage($page)) {
 $canDeleteEvents = $hasPermission('delete_events');
 $canDeletePages = $hasPermission('delete_pages');
 $canManageEvents = $hasPermission('manage_events');
+$canCreateEvents = $hasPermission('create_events');
 $canManagePages = $hasPermission('manage_pages');
 $isEditorReadOnlyPage = false;
 
@@ -1629,7 +1681,7 @@ if ($page === 'users') {
                                     </button>
                                 </div>
                             </form>
-                        <?php elseif ($canManageEvents): ?>
+                        <?php elseif ($canManageEvents || $canCreateEvents): ?>
                             <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6 js-content-preview-form">
                                 <h3 class="font-semibold text-lg">Nieuw Evenement</h3>
                                 <input type="hidden" name="action" value="create">
@@ -1843,9 +1895,16 @@ if ($page === 'users') {
                         <p class="text-sm text-gray-600 mb-4">Zet per gebruiker aan wat die persoon wel of niet mag aanpassen, bekijken of verwijderen.</p>
 
                         <?php if ($hasPermission('create_users')): ?>
-                            <form method="POST" class="bg-white p-6 shadow-md space-y-4 mb-6 border border-gray-200 rounded">
-                                <h3 class="font-semibold text-lg">Gebruiker toevoegen</h3>
-                                <input type="hidden" name="action" value="create_user">
+                            <form method="POST" id="userFormContainer" class="bg-white p-6 shadow-md space-y-4 mb-6 border border-gray-200 rounded">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 id="userFormTitle" class="font-semibold text-lg">Gebruiker toevoegen</h3>
+                                    <button type="button" id="userFormCancelBtn" class="btn btn-secondary btn-sm hidden" onclick="resetUserForm()">
+                                        <i class="fa-solid fa-times"></i> Annuleren
+                                    </button>
+                                </div>
+
+                                <input type="hidden" name="action" id="userFormAction" value="create_user">
+                                <input type="hidden" name="target_email_old" id="targetEmailOld" value="">
 
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
@@ -1867,8 +1926,7 @@ if ($page === 'users') {
                                         <label class="form-label" for="new_role">Basisrol</label>
                                         <select id="new_role" name="new_role" class="form-input">
                                             <option value="viewer">Geen vaste rol</option>
-                                            <option value="booking_only">Alleen Booking</option>
-                                            <option value="editor">Bewerker / Onderzoeker</option>
+                                            <option value="editor">Onderzoeker</option>
                                             <option value="content_manager">Content Manager</option>
                                             <option value="administrator">Administrator</option>
                                         </select>
@@ -1876,14 +1934,42 @@ if ($page === 'users') {
                                 </div>
 
                                 <div>
-                                    <label class="form-label" for="new_password">Wachtwoord</label>
-                                    <input id="new_password" type="text" name="new_password" class="form-input" required placeholder="Voer wachtwoord in">
+                                    <label class="form-label" for="new_password">Wachtwoord <span id="passwordNote" class="text-xs text-gray-500"></span></label>
+                                    <input id="new_password" type="text" name="new_password" class="form-input" placeholder="Voer wachtwoord in">
                                 </div>
 
-                                <button type="submit" class="btn btn-primary">
+                                <button type="submit" id="userFormBtn" class="btn btn-primary">
                                     <i class="fa-solid fa-user-plus"></i> Gebruiker toevoegen
                                 </button>
                             </form>
+
+                            <script>
+                                function editUser(email, firstName, lastName, role, permissions) {
+                                    document.getElementById('userFormTitle').textContent = 'Gebruiker bewerken';
+                                    document.getElementById('userFormAction').value = 'update_user';
+                                    document.getElementById('targetEmailOld').value = email;
+                                    document.getElementById('new_email').value = email;
+                                    document.getElementById('new_first_name').value = firstName;
+                                    document.getElementById('new_last_name').value = lastName;
+                                    document.getElementById('new_role').value = role;
+                                    document.getElementById('new_password').value = '';
+                                    document.getElementById('passwordNote').textContent = '(laat leeg om hetzelfde wachtwoord te behouden)';
+                                    document.getElementById('userFormBtn').innerHTML = '<i class="fa-solid fa-save"></i> Opslaan';
+                                    document.getElementById('userFormCancelBtn').classList.remove('hidden');
+                                    document.getElementById('userFormContainer').scrollIntoView({behavior: 'smooth', block: 'start'});
+                                }
+
+                                function resetUserForm() {
+                                    document.getElementById('userFormContainer').reset();
+                                    document.getElementById('userFormTitle').textContent = 'Gebruiker toevoegen';
+                                    document.getElementById('userFormAction').value = 'create_user';
+                                    document.getElementById('targetEmailOld').value = '';
+                                    document.getElementById('new_password').value = '';
+                                    document.getElementById('passwordNote').textContent = '';
+                                    document.getElementById('userFormBtn').innerHTML = '<i class="fa-solid fa-user-plus"></i> Gebruiker toevoegen';
+                                    document.getElementById('userFormCancelBtn').classList.add('hidden');
+                                }
+                            </script>
                         <?php endif; ?>
 
                         <?php if (empty($userAccounts)): ?>
@@ -1919,66 +2005,6 @@ if ($page === 'users') {
                                             </div>
 
                                             <div class="flex flex-wrap gap-2">
-                                                <?php if ($hasPermission('edit_users')): ?>
-                                                    <details class="relative">
-                                                        <summary class="btn btn-secondary btn-sm cursor-pointer list-none">
-                                                            <i class="fa-solid fa-user-pen"></i> Gebruiker bewerken
-                                                        </summary>
-                                                        <form method="POST" class="mt-4 border border-gray-200 rounded p-4 space-y-4 bg-gray-50 md:min-w-[500px]">
-                                                            <input type="hidden" name="action" value="update_user_permissions">
-                                                            <input type="hidden" name="target_email" value="<?php echo htmlspecialchars($accEmail); ?>">
-
-                                                            <div class="space-y-3">
-                                                                <div>
-                                                                    <label class="text-sm font-semibold text-gray-700" for="role_<?php echo md5($accEmail); ?>">Basisrol (auto-voegt permissions toe):</label>
-                                                                    <select id="role_<?php echo md5($accEmail); ?>" name="role" class="form-input">
-                                                                        <option value="viewer" <?php echo $accRole === 'viewer' ? 'selected' : ''; ?>>Geen vaste rol</option>
-                                                                        <option value="booking_only" <?php echo $accRole === 'booking_only' ? 'selected' : ''; ?>>Alleen Booking</option>
-                                                                        <option value="editor" <?php echo $accRole === 'editor' ? 'selected' : ''; ?>>Bewerker / Onderzoeker</option>
-                                                                        <option value="content_manager" <?php echo $accRole === 'content_manager' ? 'selected' : ''; ?>>Content Manager</option>
-                                                                        <option value="administrator" <?php echo $accRole === 'administrator' ? 'selected' : ''; ?>>Administrator</option>
-                                                                    </select>
-                                                                </div>
-
-                                                                <div class="border-t pt-3">
-                                                                    <label class="text-sm font-semibold text-gray-700 mb-2 block">Individuele Permissions (extra):</label>
-                                                                    <div class="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
-                                                                        <?php $allPermissions = [
-                                                                            'create_users' => 'Gebruikers aanmaken',
-                                                                            'edit_users' => 'Gebruikers bewerken',
-                                                                            'delete_users' => 'Gebruikers verwijderen',
-                                                                            'manage_banners' => 'Banners beheren',
-                                                                            'manage_events' => 'Evenementen beheren',
-                                                                            'create_events' => 'Evenementen aanmaken',
-                                                                            'delete_events' => 'Evenementen verwijderen',
-                                                                            'manage_pages' => 'Pagina\'s beheren',
-                                                                            'delete_pages' => 'Pagina\'s verwijderen',
-                                                                            'optimize_images' => 'Afbeeldingen optimaliseren',
-                                                                            'approve_content' => 'Inhoud goedkeuren',
-                                                                            'access_booking' => 'Booking service',
-                                                                            'view_audit' => 'Auditlog bekijken',
-                                                                            'view_feedback' => 'Feedback bekijken',
-                                                                        ];
-                                                                        foreach ($allPermissions as $permKey => $permLabel): ?>
-                                                                            <label class="form-checkbox flex items-center gap-2 cursor-pointer">
-                                                                                <input type="checkbox" name="permissions[]" value="<?php echo htmlspecialchars($permKey); ?>" 
-                                                                                    <?php echo in_array($permKey, $accPermissions) ? 'checked' : ''; ?>>
-                                                                                <span class="text-sm"><?php echo htmlspecialchars($permLabel); ?></span>
-                                                                            </label>
-                                                                        <?php endforeach; ?>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-
-                                                            <div class="flex gap-2">
-                                                                <button type="submit" class="btn btn-primary btn-sm">
-                                                                    <i class="fa-solid fa-save"></i> Opslaan
-                                                                </button>
-                                                            </div>
-                                                        </form>
-                                                    </details>
-                                                <?php endif; ?>
-
                                                 <?php if ($hasPermission('delete_users') && $accEmail !== ($_SESSION['email'] ?? '')): ?>
                                                     <form method="POST" class="admin-inline-form">
                                                         <input type="hidden" name="target_email" value="<?php echo htmlspecialchars($accEmail); ?>">
@@ -1989,6 +2015,12 @@ if ($page === 'users') {
                                                 <?php endif; ?>
                                             </div>
                                         </div>
+
+                                        <?php if ($hasPermission('edit_users')): ?>
+                                            <button type="button" class="btn btn-secondary btn-sm" onclick="editUser('<?php echo htmlspecialchars($accEmail, ENT_QUOTES); ?>', '<?php echo htmlspecialchars($accFirstName, ENT_QUOTES); ?>', '<?php echo htmlspecialchars($accLastName, ENT_QUOTES); ?>', '<?php echo htmlspecialchars($accRole, ENT_QUOTES); ?>', '<?php echo htmlspecialchars(json_encode($accPermissions), ENT_QUOTES); ?>')">
+                                                <i class="fa-solid fa-pencil"></i> Bewerken
+                                            </button>
+                                        <?php endif; ?>
                                     </div>
                                 <?php endforeach; ?>
                             </div>
