@@ -1202,20 +1202,20 @@ $page = $_GET['page'] ?? 'agenda';
 
 $allowedPagesByPermission = [
     'banner' => 'manage_banners',
-    'agenda' => ['manage_events', 'delete_events'],
+    'agenda' => ['manage_events', 'delete_events', 'create_events'],
     'goedkeuren' => 'approve_content',
     'audit' => 'view_audit',
     'users' => ['create_users', 'edit_users', 'delete_users'],
-    'index' => ['manage_pages', 'delete_pages'],
-    'evenementen' => ['manage_pages', 'delete_pages'],
-    'terugblikken' => ['manage_pages', 'delete_pages'],
-    'over' => ['manage_pages', 'delete_pages'],
-    'wie-zijn-we' => ['manage_pages', 'delete_pages'],
-    'verantwoord-ai' => ['manage_pages', 'delete_pages'],
-    'contact' => ['manage_pages', 'delete_pages'],
-    'programma-kennis' => ['manage_pages', 'delete_pages'],
-    'programma-actie' => ['manage_pages', 'delete_pages'],
-    'programma-faciliteit' => ['manage_pages', 'delete_pages'],
+    'index' => ['manage_pages', 'delete_pages', 'view_pages'],
+    'evenementen' => ['manage_pages', 'delete_pages', 'view_pages'],
+    'terugblikken' => ['manage_pages', 'delete_pages', 'view_pages'],
+    'over' => ['manage_pages', 'delete_pages', 'view_pages'],
+    'wie-zijn-we' => ['manage_pages', 'delete_pages', 'view_pages'],
+    'verantwoord-ai' => ['manage_pages', 'delete_pages', 'view_pages'],
+    'contact' => ['manage_pages', 'delete_pages', 'view_pages'],
+    'programma-kennis' => ['manage_pages', 'delete_pages', 'view_pages'],
+    'programma-actie' => ['manage_pages', 'delete_pages', 'view_pages'],
+    'programma-faciliteit' => ['manage_pages', 'delete_pages', 'view_pages'],
 ];
 
 $canViewPage = function ($candidatePage) use (&$allowedPagesByPermission, &$hasPermission, &$hasAnyPermission) {
