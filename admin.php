@@ -348,7 +348,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
         $signupEmbed = trim((string)($_POST['signup_embed'] ?? ''));
         $showOnHomepage = isset($_POST['show_on_homepage']) ? 1 : 0;
-        
+
         // Approval status based on role
         $approvalStatus = ($sessionRole === 'onderzoeker') ? 'pending' : 'approved';
 
@@ -852,7 +852,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $pdo->prepare('SELECT id FROM events WHERE id = ?');
         $stmt->execute([$itemId]);
         $event = $stmt->fetch();
-        
+
         if ($event) {
             $stmt = $pdo->prepare(
                 'UPDATE events SET approval_status = ?, approved_by = ?, approval_feedback = NULL 
@@ -868,11 +868,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action === 'reject_item' && !empty($_POST['item_id'])) {
         $itemId = intval($_POST['item_id']);
         $feedback = sanitizeEditorBlockInput($_POST['feedback'] ?? '');
-        
+
         $stmt = $pdo->prepare('SELECT id FROM events WHERE id = ?');
         $stmt->execute([$itemId]);
         $event = $stmt->fetch();
-        
+
         if ($event) {
             $stmt = $pdo->prepare(
                 'UPDATE events SET approval_status = ?, approved_by = ?, approval_feedback = ? 
@@ -1449,6 +1449,11 @@ if ($page === 'users') {
                             <i class="fa-solid fa-calendar"></i> Agenda
                         </a>
                     <?php endif; ?>
+                    <?php if ($hasAnyPermission(['manage_events', 'view_audit', 'access_booking'])): ?>
+                        <a href="admin.php?page=dashboard" class="sidebar-link <?php echo $page === 'dashboard' ? 'active' : ''; ?>">
+                            <i class="fa-solid fa-chart-pie"></i> Dashboard
+                        </a>
+                    <?php endif; ?>
                     <?php if ($hasPermission('approve_content')): ?>
                         <a href="admin.php?page=goedkeuren" class="sidebar-link <?php echo $page === 'goedkeuren' ? 'active' : ''; ?>">
                             <i class="fa-solid fa-check-circle"></i> Goedkeuren
@@ -1961,7 +1966,10 @@ if ($page === 'users') {
                                     document.getElementById('passwordNote').textContent = '(laat leeg om hetzelfde wachtwoord te behouden)';
                                     document.getElementById('userFormBtn').innerHTML = '<i class="fa-solid fa-save"></i> Opslaan';
                                     document.getElementById('userFormCancelBtn').classList.remove('hidden');
-                                    document.getElementById('userFormContainer').scrollIntoView({behavior: 'smooth', block: 'start'});
+                                    document.getElementById('userFormContainer').scrollIntoView({
+                                        behavior: 'smooth',
+                                        block: 'start'
+                                    });
                                 }
 
                                 function resetUserForm() {
@@ -2134,11 +2142,11 @@ if ($page === 'users') {
                                             <div class="flex-1">
                                                 <h3 class="font-semibold text-lg text-gray-900"><?php echo htmlspecialchars($item['title'] ?? ''); ?></h3>
                                                 <p class="text-sm text-gray-600">
-                                                    <i class="fa-solid fa-calendar"></i> 
+                                                    <i class="fa-solid fa-calendar"></i>
                                                     <?php echo !empty($item['date']) ? (new DateTime($item['date']))->format('d-m-Y') : 'Geen datum'; ?>
                                                 </p>
                                                 <p class="text-sm text-gray-600">
-                                                    <i class="fa-solid fa-user"></i> 
+                                                    <i class="fa-solid fa-user"></i>
                                                     Ingediend door: <?php echo htmlspecialchars($item['created_by'] ?? 'Onbekend'); ?>
                                                 </p>
                                             </div>
@@ -2173,12 +2181,12 @@ if ($page === 'users') {
                                         <form id="reject-form-<?php echo (int)$item['id']; ?>" method="POST" class="mt-4 p-4 bg-white border border-red-200 rounded hidden">
                                             <input type="hidden" name="action" value="reject_item">
                                             <input type="hidden" name="item_id" value="<?php echo (int)$item['id']; ?>">
-                                            
+
                                             <div class="mb-3">
                                                 <label class="form-label">Terugkoppeling (waarom wordt dit afgewezen?):</label>
                                                 <textarea name="feedback" class="form-textarea" rows="3" placeholder="Uw feedback..." required></textarea>
                                             </div>
-                                            
+
                                             <div class="flex gap-2">
                                                 <button type="submit" class="btn btn-error btn-sm">
                                                     <i class="fa-solid fa-paper-plane"></i> Afkeuren
@@ -2198,6 +2206,7 @@ if ($page === 'users') {
                         function openRejectForm(itemId) {
                             document.getElementById('reject-form-' + itemId).classList.remove('hidden');
                         }
+
                         function closeRejectForm(itemId) {
                             document.getElementById('reject-form-' + itemId).classList.add('hidden');
                         }
@@ -2338,10 +2347,143 @@ if ($page === 'users') {
                     </div>
 
                 <?php elseif ($page != 'banner'): ?>
-                    <?php if ($page === 'image-converter'): ?>
-                        <div class="card">
-                            <h2>Image Converter (verwijderd)</h2>
-                            <p>De Image Converter is verwijderd uit deze installatie.</p>
+                    <?php if ($page === 'dashboard'): ?>
+                        <?php
+                        // Minimal dashboard aggregations — safe queries with fallbacks
+                        try {
+                            $totalEvents = (int) $pdo->query("SELECT COUNT(*) FROM events")->fetchColumn();
+                        } catch (Exception $e) {
+                            $totalEvents = 0;
+                        }
+                        try {
+                            $stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE COALESCE(end_date, date) >= CURDATE()");
+                            $stmt->execute();
+                            $totalUpcoming = (int) $stmt->fetchColumn();
+                        } catch (Exception $e) {
+                            $totalUpcoming = 0;
+                        }
+                        try {
+                            $stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE COALESCE(end_date, date) < CURDATE()");
+                            $stmt->execute();
+                            $totalPast = (int) $stmt->fetchColumn();
+                        } catch (Exception $e) {
+                            $totalPast = 0;
+                        }
+                        // Registrations
+                        try {
+                            $totalRegs = (int) $pdo->query("SELECT COUNT(*) FROM inschrijven")->fetchColumn();
+                            $topRegsStmt = $pdo->prepare("SELECT event_id, event_title, COUNT(*) AS cnt FROM inschrijven GROUP BY event_id, event_title ORDER BY cnt DESC LIMIT 5");
+                            $topRegsStmt->execute();
+                            $topRegs = $topRegsStmt->fetchAll(PDO::FETCH_ASSOC);
+                        } catch (Exception $e) {
+                            $totalRegs = 0;
+                            $topRegs = [];
+                        }
+                        // Bookings
+                        try {
+                            $totalBookings = (int) $pdo->query("SELECT COUNT(*) FROM bookings")->fetchColumn();
+                            $bookingsByLocStmt = $pdo->prepare("SELECT COALESCE(location_description, CONCAT('loc-', location_id)) AS loc, COUNT(*) AS cnt FROM bookings GROUP BY loc ORDER BY cnt DESC LIMIT 8");
+                            $bookingsByLocStmt->execute();
+                            $bookingsByLoc = $bookingsByLocStmt->fetchAll(PDO::FETCH_ASSOC);
+                        } catch (Exception $e) {
+                            $totalBookings = 0;
+                            $bookingsByLoc = [];
+                        }
+                        // Partners (from pages.meta partner keys)
+                        $partners = [];
+                        try {
+                            $pages = $pdo->query("SELECT meta FROM pages")->fetchAll(PDO::FETCH_COLUMN);
+                            foreach ($pages as $meta) {
+                                if (!$meta) continue;
+                                $arr = json_decode($meta, true);
+                                if (!is_array($arr)) continue;
+                                if (!empty($arr['partner'])) {
+                                    $p = trim((string)$arr['partner']);
+                                    if ($p !== '') $partners[] = $p;
+                                }
+                            }
+                        } catch (Exception $e) {
+                            // ignore
+                        }
+                        $partnerCounts = [];
+                        foreach ($partners as $p) $partnerCounts[$p] = ($partnerCounts[$p] ?? 0) + 1;
+                        arsort($partnerCounts);
+                        $topPartners = array_slice($partnerCounts, 0, 8, true);
+                        ?>
+                        <div class="card p-6">
+                            <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
+                                <i class="fa-solid fa-chart-pie text-2xl text-[#00811F]"></i>
+                                <h2 class="text-2xl font-bold">Dashboard — Overzicht & Monitoring</h2>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                                <div class="bg-white p-4 rounded shadow">
+                                    <div class="text-sm text-gray-600">Totaal evenementen</div>
+                                    <div class="text-2xl font-bold"><?php echo $totalEvents; ?></div>
+                                    <div class="text-xs text-gray-500">Aankomend: <?php echo $totalUpcoming; ?> — Terugblik: <?php echo $totalPast; ?></div>
+                                </div>
+                                <div class="bg-white p-4 rounded shadow">
+                                    <div class="text-sm text-gray-600">Inschrijvingen (totaal)</div>
+                                    <div class="text-2xl font-bold"><?php echo $totalRegs; ?></div>
+                                    <div class="text-xs text-gray-500">Top geregistreerde events hieronder</div>
+                                </div>
+                                <div class="bg-white p-4 rounded shadow">
+                                    <div class="text-sm text-gray-600">Bookings (totaal)</div>
+                                    <div class="text-2xl font-bold"><?php echo $totalBookings; ?></div>
+                                    <div class="text-xs text-gray-500">Verdeling per locatie</div>
+                                </div>
+                                <div class="bg-white p-4 rounded shadow">
+                                    <div class="text-sm text-gray-600">Top partners</div>
+                                    <div class="text-lg font-bold"><?php echo count($partnerCounts); ?></div>
+                                    <div class="text-xs text-gray-500">Partners uit pagina-meta</div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="bg-white p-4 rounded shadow">
+                                    <h3 class="font-semibold mb-2">Top geregistreerde events</h3>
+                                    <?php if (empty($topRegs)): ?>
+                                        <div class="text-sm text-gray-600">Geen registratiegegevens beschikbaar.</div>
+                                    <?php else: ?>
+                                        <ul class="list-disc list-inside text-sm">
+                                            <?php foreach ($topRegs as $r): ?>
+                                                <li><?php echo htmlspecialchars($r['event_title'] ?? ('Event ' . (int)$r['event_id'])); ?> — <?php echo (int)$r['cnt']; ?></li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    <?php endif; ?>
+                                </div>
+
+                                <div class="bg-white p-4 rounded shadow">
+                                    <h3 class="font-semibold mb-2">Bookings per locatie (top)</h3>
+                                    <?php if (empty($bookingsByLoc)): ?>
+                                        <div class="text-sm text-gray-600">Geen bookings data.</div>
+                                    <?php else: ?>
+                                        <ul class="list-inside text-sm">
+                                            <?php foreach ($bookingsByLoc as $b): ?>
+                                                <li><?php echo htmlspecialchars($b['loc']); ?> — <?php echo (int)$b['cnt']; ?></li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+
+                            <div class="mt-6 bg-white p-4 rounded shadow">
+                                <h3 class="font-semibold mb-2">Partner netwerk (top)</h3>
+                                <?php if (empty($topPartners)): ?>
+                                    <div class="text-sm text-gray-600">Geen partner-gegevens gevonden in pagina-meta.</div>
+                                <?php else: ?>
+                                    <div class="flex flex-col gap-2">
+                                        <?php foreach ($topPartners as $name => $cnt): ?>
+                                            <div class="text-sm"><?php echo htmlspecialchars($name); ?> <span class="text-xs text-gray-500">(<?php echo (int)$cnt; ?>)</span></div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                            <div class="mt-6 text-sm text-gray-600">
+                                <strong>Impact per doelstelling</strong>: kolommen en scores tonen we zodra score-velden beschikbaar zijn in de dataset.
+                                <br>
+                                <strong>Kern-KPI's</strong>: bezettingsgraad, co-design en betrokkenheid worden berekend wanneer de relevante datasetvelden aanwezig zijn.
+                            </div>
                         </div>
                         <?php return; ?>
                     <?php endif; ?>
