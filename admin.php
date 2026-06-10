@@ -2409,6 +2409,69 @@ if ($page === 'users') {
                         foreach ($partners as $p) $partnerCounts[$p] = ($partnerCounts[$p] ?? 0) + 1;
                         arsort($partnerCounts);
                         $topPartners = array_slice($partnerCounts, 0, 8, true);
+
+                        // Simple KPI calculations
+                        $kpi = [
+                            'occupancy_rate' => null,
+                            'codesign_percent' => null,
+                            'companies_percent' => null,
+                        ];
+                        try {
+                            // occupancy: bookings in last 30 days / (days * distinct locations) * 100
+                            $days = 30;
+                            $startDate = date('Y-m-d', strtotime('-' . ($days - 1) . ' days'));
+                            $endDate = date('Y-m-d');
+                            $stmt = $pdo->prepare("SELECT COUNT(*) FROM bookings WHERE booking_date BETWEEN ? AND ?");
+                            $stmt->execute([$startDate, $endDate]);
+                            $bookingsLast30 = (int)$stmt->fetchColumn();
+                            $locCount = (int)$pdo->query("SELECT COUNT(DISTINCT location_id) FROM bookings WHERE location_id IS NOT NULL")->fetchColumn();
+                            if ($locCount > 0) {
+                                $slotsBase = $days * $locCount; // simplistic slots base
+                                $kpi['occupancy_rate'] = round(($bookingsLast30 / max(1, $slotsBase)) * 100, 1);
+                            }
+                        } catch (Exception $e) {
+                            // leave null
+                        }
+
+                        try {
+                            // co-design share: events in last 90 days mentioning co-design
+                            $daysCo = 90;
+                            $startCo = date('Y-m-d', strtotime('-' . ($daysCo - 1) . ' days'));
+                            $stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE COALESCE(end_date, date) >= ? AND (title LIKE ? OR description LIKE ?)");
+                            $stmt->execute([$startCo, '%co-design%', '%co-design%']);
+                            $coCount = (int)$stmt->fetchColumn();
+                            $totalRecent = 0;
+                            $stmt2 = $pdo->prepare("SELECT COUNT(*) FROM events WHERE COALESCE(end_date, date) >= ?");
+                            if ($stmt2->execute([$startCo])) {
+                                $totalRecent = (int)$stmt2->fetchColumn();
+                            }
+                            if ($totalRecent > 0) {
+                                $kpi['codesign_percent'] = round(($coCount / $totalRecent) * 100, 1);
+                            }
+                        } catch (Exception $e) {
+                            // ignore
+                        }
+
+                        try {
+                            // companies percent from partner names heuristics (bv, ltd, bedrijf, stichting, vereniging)
+                            $companyKeywords = ['bv','ltd','company','bedrijf','inc','gmbh'];
+                            $orgKeywords = ['stichting','vereniging','non-profit','ngo','organisatie'];
+                            $company = 0; $org = 0; $totalP = 0;
+                            foreach ($partnerCounts as $name => $cnt) {
+                                $totalP += $cnt;
+                                $lower = strtolower($name);
+                                $isCompany = false; $isOrg = false;
+                                foreach ($companyKeywords as $kw) if (strpos($lower, $kw) !== false) $isCompany = true;
+                                foreach ($orgKeywords as $kw) if (strpos($lower, $kw) !== false) $isOrg = true;
+                                if ($isCompany) $company += $cnt;
+                                elseif ($isOrg) $org += $cnt;
+                            }
+                            if ($totalP > 0) {
+                                $kpi['companies_percent'] = round(($company / $totalP) * 100, 1);
+                            }
+                        } catch (Exception $e) {
+                            // ignore
+                        }
                         ?>
                         <div class="card p-6">
                             <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
@@ -2470,40 +2533,95 @@ if ($page === 'users') {
                             <div class="mt-6 text-sm text-gray-600">
                                 <strong>Impact per doelstelling</strong>: kolommen en scores tonen we zodra score-velden beschikbaar zijn in de dataset.
                                 <br>
-                                <strong>Kern-KPI's</strong>: bezettingsgraad, co-design en betrokkenheid worden berekend wanneer de relevante datasetvelden aanwezig zijn.
+                                <strong>Kern-KPI's (schatting)</strong>:
+                                <ul class="mt-2 text-sm">
+                                    <li>Bezettingsgraad (laatste 30d): <strong><?php echo is_null($kpi['occupancy_rate']) ? 'n.v.t.' : ($kpi['occupancy_rate'] . '%'); ?></strong></li>
+                                    <li>Co-design activiteiten (laatste 90d): <strong><?php echo is_null($kpi['codesign_percent']) ? 'n.v.t.' : ($kpi['codesign_percent'] . '%'); ?></strong></li>
+                                    <li>Partners: aandeel bedrijven (heuristiek): <strong><?php echo is_null($kpi['companies_percent']) ? 'n.v.t.' : ($kpi['companies_percent'] . '%'); ?></strong></li>
+                                </ul>
                             </div>
 
                             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
                             <script>
-                                document.addEventListener('DOMContentLoaded', function () {
+                                document.addEventListener('DOMContentLoaded', function() {
                                     // Top regs
                                     <?php if (!empty($topRegs)): ?>
-                                        (function(){
-                                            const labels = <?php echo json_encode(array_map(function($r){ return $r['event_title'] ?: ('Event '+$r['event_id']); }, $topRegs)); ?>;
-                                            const data = <?php echo json_encode(array_map(function($r){ return (int)$r['cnt']; }, $topRegs)); ?>;
-                                            const ctx = document.getElementById('chartTopRegs');
-                                            if (ctx) new Chart(ctx.getContext('2d'), {type:'bar', data:{labels:labels, datasets:[{label:'Inschrijvingen', data:data, backgroundColor:'rgba(0,129,31,0.7)'}]}, options:{responsive:true, maintainAspectRatio:false}});
-                                        })();
+                                            (function() {
+                                                const labels = <?php echo json_encode(array_map(function ($r) {
+                                                                    return $r['event_title'] ?: ('Event ' + $r['event_id']);
+                                                                }, $topRegs)); ?>;
+                                                const data = <?php echo json_encode(array_map(function ($r) {
+                                                                    return (int)$r['cnt'];
+                                                                }, $topRegs)); ?>;
+                                                const ctx = document.getElementById('chartTopRegs');
+                                                if (ctx) new Chart(ctx.getContext('2d'), {
+                                                    type: 'bar',
+                                                    data: {
+                                                        labels: labels,
+                                                        datasets: [{
+                                                            label: 'Inschrijvingen',
+                                                            data: data,
+                                                            backgroundColor: 'rgba(0,129,31,0.7)'
+                                                        }]
+                                                    },
+                                                    options: {
+                                                        responsive: true,
+                                                        maintainAspectRatio: false
+                                                    }
+                                                });
+                                            })();
                                     <?php endif; ?>
 
                                     // Bookings by location
                                     <?php if (!empty($bookingsByLoc)): ?>
-                                        (function(){
-                                            const labels = <?php echo json_encode(array_map(function($b){ return $b['loc']; }, $bookingsByLoc)); ?>;
-                                            const data = <?php echo json_encode(array_map(function($b){ return (int)$b['cnt']; }, $bookingsByLoc)); ?>;
-                                            const ctx = document.getElementById('chartBookingsByLoc');
-                                            if (ctx) new Chart(ctx.getContext('2d'), {type:'bar', data:{labels:labels, datasets:[{label:'Bookings', data:data, backgroundColor:'rgba(3,155,78,0.7)'}]}, options:{responsive:true, maintainAspectRatio:false}});
-                                        })();
+                                            (function() {
+                                                const labels = <?php echo json_encode(array_map(function ($b) {
+                                                                    return $b['loc'];
+                                                                }, $bookingsByLoc)); ?>;
+                                                const data = <?php echo json_encode(array_map(function ($b) {
+                                                                    return (int)$b['cnt'];
+                                                                }, $bookingsByLoc)); ?>;
+                                                const ctx = document.getElementById('chartBookingsByLoc');
+                                                if (ctx) new Chart(ctx.getContext('2d'), {
+                                                    type: 'bar',
+                                                    data: {
+                                                        labels: labels,
+                                                        datasets: [{
+                                                            label: 'Bookings',
+                                                            data: data,
+                                                            backgroundColor: 'rgba(3,155,78,0.7)'
+                                                        }]
+                                                    },
+                                                    options: {
+                                                        responsive: true,
+                                                        maintainAspectRatio: false
+                                                    }
+                                                });
+                                            })();
                                     <?php endif; ?>
 
                                     // Top partners
                                     <?php if (!empty($topPartners)): ?>
-                                        (function(){
-                                            const labels = <?php echo json_encode(array_keys($topPartners)); ?>;
-                                            const data = <?php echo json_encode(array_values($topPartners)); ?>;
-                                            const ctx = document.getElementById('chartTopPartners');
-                                            if (ctx) new Chart(ctx.getContext('2d'), {type:'bar', data:{labels:labels, datasets:[{label:'Partner mentions', data:data, backgroundColor:'rgba(33,150,83,0.7)'}]}, options:{responsive:true, maintainAspectRatio:false}});
-                                        })();
+                                            (function() {
+                                                const labels = <?php echo json_encode(array_keys($topPartners)); ?>;
+                                                const data = <?php echo json_encode(array_values($topPartners)); ?>;
+                                                const ctx = document.getElementById('chartTopPartners');
+                                                if (ctx) new Chart(ctx.getContext('2d'), {
+                                                    type: 'bar',
+                                                    data: {
+                                                        labels: labels,
+                                                        datasets: [{
+                                                            label: 'Partner mentions',
+                                                            data: data,
+                                                            backgroundColor: 'rgba(33,150,83,0.7)'
+                                                        }]
+                                                    },
+                                                    options: {
+                                                        responsive: true,
+                                                        maintainAspectRatio: false
+                                                    }
+                                                });
+                                            })();
                                     <?php endif; ?>
                                 });
                             </script>
