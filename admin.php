@@ -1444,7 +1444,7 @@ if ($page === 'users') {
                             <i class="fa-solid fa-image"></i> Banners
                         </a>
                     <?php endif; ?>
-                    <?php if ($hasAnyPermission(['manage_events', 'delete_events'])): ?>
+                    <?php if ($hasAnyPermission(['manage_events', 'delete_events', 'create_events'])): ?>
                         <a href="admin.php?page=agenda" class="sidebar-link <?php echo $page === 'agenda' ? 'active' : ''; ?>">
                             <i class="fa-solid fa-calendar"></i> Agenda
                         </a>
