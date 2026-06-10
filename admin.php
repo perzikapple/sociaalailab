@@ -2417,26 +2417,26 @@ if ($page === 'users') {
                             </div>
 
                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                                <div class="bg-white p-4 rounded shadow">
+                                <a href="agenda.php" class="block bg-white p-4 rounded shadow hover:shadow-md">
                                     <div class="text-sm text-gray-600">Totaal evenementen</div>
                                     <div class="text-2xl font-bold"><?php echo $totalEvents; ?></div>
                                     <div class="text-xs text-gray-500">Aankomend: <?php echo $totalUpcoming; ?> — Terugblik: <?php echo $totalPast; ?></div>
-                                </div>
-                                <div class="bg-white p-4 rounded shadow">
+                                </a>
+                                <a href="inschrijven.php" class="block bg-white p-4 rounded shadow hover:shadow-md">
                                     <div class="text-sm text-gray-600">Inschrijvingen (totaal)</div>
                                     <div class="text-2xl font-bold"><?php echo $totalRegs; ?></div>
                                     <div class="text-xs text-gray-500">Top geregistreerde events hieronder</div>
-                                </div>
-                                <div class="bg-white p-4 rounded shadow">
+                                </a>
+                                <a href="booking.php" class="block bg-white p-4 rounded shadow hover:shadow-md">
                                     <div class="text-sm text-gray-600">Bookings (totaal)</div>
                                     <div class="text-2xl font-bold"><?php echo $totalBookings; ?></div>
                                     <div class="text-xs text-gray-500">Verdeling per locatie</div>
-                                </div>
-                                <div class="bg-white p-4 rounded shadow">
+                                </a>
+                                <a href="terugblikken.php" class="block bg-white p-4 rounded shadow hover:shadow-md">
                                     <div class="text-sm text-gray-600">Top partners</div>
                                     <div class="text-lg font-bold"><?php echo count($partnerCounts); ?></div>
                                     <div class="text-xs text-gray-500">Partners uit pagina-meta</div>
-                                </div>
+                                </a>
                             </div>
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2445,11 +2445,7 @@ if ($page === 'users') {
                                     <?php if (empty($topRegs)): ?>
                                         <div class="text-sm text-gray-600">Geen registratiegegevens beschikbaar.</div>
                                     <?php else: ?>
-                                        <ul class="list-disc list-inside text-sm">
-                                            <?php foreach ($topRegs as $r): ?>
-                                                <li><?php echo htmlspecialchars($r['event_title'] ?? ('Event ' . (int)$r['event_id'])); ?> — <?php echo (int)$r['cnt']; ?></li>
-                                            <?php endforeach; ?>
-                                        </ul>
+                                        <canvas id="chartTopRegs" width="400" height="240"></canvas>
                                     <?php endif; ?>
                                 </div>
 
@@ -2458,11 +2454,7 @@ if ($page === 'users') {
                                     <?php if (empty($bookingsByLoc)): ?>
                                         <div class="text-sm text-gray-600">Geen bookings data.</div>
                                     <?php else: ?>
-                                        <ul class="list-inside text-sm">
-                                            <?php foreach ($bookingsByLoc as $b): ?>
-                                                <li><?php echo htmlspecialchars($b['loc']); ?> — <?php echo (int)$b['cnt']; ?></li>
-                                            <?php endforeach; ?>
-                                        </ul>
+                                        <canvas id="chartBookingsByLoc" width="400" height="240"></canvas>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -2472,11 +2464,7 @@ if ($page === 'users') {
                                 <?php if (empty($topPartners)): ?>
                                     <div class="text-sm text-gray-600">Geen partner-gegevens gevonden in pagina-meta.</div>
                                 <?php else: ?>
-                                    <div class="flex flex-col gap-2">
-                                        <?php foreach ($topPartners as $name => $cnt): ?>
-                                            <div class="text-sm"><?php echo htmlspecialchars($name); ?> <span class="text-xs text-gray-500">(<?php echo (int)$cnt; ?>)</span></div>
-                                        <?php endforeach; ?>
-                                    </div>
+                                    <canvas id="chartTopPartners" width="400" height="120"></canvas>
                                 <?php endif; ?>
                             </div>
                             <div class="mt-6 text-sm text-gray-600">
@@ -2484,6 +2472,41 @@ if ($page === 'users') {
                                 <br>
                                 <strong>Kern-KPI's</strong>: bezettingsgraad, co-design en betrokkenheid worden berekend wanneer de relevante datasetvelden aanwezig zijn.
                             </div>
+
+                            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+                            <script>
+                                document.addEventListener('DOMContentLoaded', function () {
+                                    // Top regs
+                                    <?php if (!empty($topRegs)): ?>
+                                        (function(){
+                                            const labels = <?php echo json_encode(array_map(function($r){ return $r['event_title'] ?: ('Event '+$r['event_id']); }, $topRegs)); ?>;
+                                            const data = <?php echo json_encode(array_map(function($r){ return (int)$r['cnt']; }, $topRegs)); ?>;
+                                            const ctx = document.getElementById('chartTopRegs');
+                                            if (ctx) new Chart(ctx.getContext('2d'), {type:'bar', data:{labels:labels, datasets:[{label:'Inschrijvingen', data:data, backgroundColor:'rgba(0,129,31,0.7)'}]}, options:{responsive:true, maintainAspectRatio:false}});
+                                        })();
+                                    <?php endif; ?>
+
+                                    // Bookings by location
+                                    <?php if (!empty($bookingsByLoc)): ?>
+                                        (function(){
+                                            const labels = <?php echo json_encode(array_map(function($b){ return $b['loc']; }, $bookingsByLoc)); ?>;
+                                            const data = <?php echo json_encode(array_map(function($b){ return (int)$b['cnt']; }, $bookingsByLoc)); ?>;
+                                            const ctx = document.getElementById('chartBookingsByLoc');
+                                            if (ctx) new Chart(ctx.getContext('2d'), {type:'bar', data:{labels:labels, datasets:[{label:'Bookings', data:data, backgroundColor:'rgba(3,155,78,0.7)'}]}, options:{responsive:true, maintainAspectRatio:false}});
+                                        })();
+                                    <?php endif; ?>
+
+                                    // Top partners
+                                    <?php if (!empty($topPartners)): ?>
+                                        (function(){
+                                            const labels = <?php echo json_encode(array_keys($topPartners)); ?>;
+                                            const data = <?php echo json_encode(array_values($topPartners)); ?>;
+                                            const ctx = document.getElementById('chartTopPartners');
+                                            if (ctx) new Chart(ctx.getContext('2d'), {type:'bar', data:{labels:labels, datasets:[{label:'Partner mentions', data:data, backgroundColor:'rgba(33,150,83,0.7)'}]}, options:{responsive:true, maintainAspectRatio:false}});
+                                        })();
+                                    <?php endif; ?>
+                                });
+                            </script>
                         </div>
                         <?php return; ?>
                     <?php endif; ?>
