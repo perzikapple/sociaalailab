@@ -6,7 +6,7 @@ require 'helpers.php';
 $rolePermissions = [
     'administrator' => ['create_users', 'edit_users', 'delete_users', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images', 'approve_content', 'access_booking', 'view_audit'],
     'content_manager' => ['manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images', 'approve_content', 'access_booking'],
-    'onderzoeker' => ['access_booking', 'create_events', 'view_feedback'],
+    'onderzoeker' => ['access_booking', 'create_events', 'view_feedback', 'view_pages'],
     'viewer' => [],
 ];
 
@@ -60,13 +60,12 @@ if (!$canAccessAdmin) {
     exit;
 }
 
-// Onderzoekers can access admin panel but only for creating events (agenda), feedback, and booking
-if ($sessionRole === 'onderzoeker') {
-    if (!isset($_GET['page']) || !in_array($_GET['page'], ['agenda', 'feedback', 'booking'])) {
-        header('Location: admin.php?page=agenda');
-        exit;
-    }
-}
+// Onderzoekers can now access all pages in admin panel (except users/banners managed via sidebar)
+// They can view everything but all edits will require approval
+
+// Detect if user is an onderzoeker (limited edit access)
+$isOnderzoeker = ($sessionRole === 'onderzoeker');
+$isReadOnlyMode = $isOnderzoeker;
 
 $hasPermission = function ($permission) use (&$sessionPermissions) {
     return in_array($permission, $sessionPermissions, true);
@@ -1462,7 +1461,7 @@ if ($page === 'users') {
                     <?php endif; ?>
                     <!-- Image Converter removed -->
 
-                    <?php if ($hasAnyPermission(['manage_pages', 'delete_pages'])): ?>
+                    <?php if ($hasAnyPermission(['manage_pages', 'delete_pages', 'view_pages'])): ?>
                         <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Pagina's</div>
                         <a href="admin.php?page=index" class="sidebar-link <?php echo $page === 'index' ? 'active' : ''; ?>">
                             <i class="fa-solid fa-house"></i> Homepage
@@ -1505,6 +1504,12 @@ if ($page === 'users') {
                 <?php if ($isEditorReadOnlyPage): ?>
                     <div class="alert alert-error" style="background:#f3f4f6; color:#1f2937; border-left-color:#9ca3af;">
                         <i class="fa-solid fa-eye"></i> Alleen-lezen modus: is dit een fout? Neem contact op met een beheerder om je rechten te controleren.
+                    </div>
+                <?php endif; ?>
+
+                <?php if ($isOnderzoeker): ?>
+                    <div class="alert alert-info" style="background:#dbeafe; color:#1e3a8a; border-left-color:#3b82f6; border-left-width:4px; border-radius:4px;">
+                        <i class="fa-solid fa-info-circle"></i> <strong>Modus Onderzoeker:</strong> Je kan inhoud bekijken en wijzigen, maar alle wijzigingen moeten worden goedgekeurd door een beheerder of content manager voordat ze live gaan.
                     </div>
                 <?php endif; ?>
 
