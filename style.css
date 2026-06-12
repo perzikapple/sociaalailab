@@ -4296,6 +4296,21 @@ section:focus-visible,
     scroll-snap-align: start;
 }
 
+.homepage-carousel-slide .image-template-wrap {
+    align-items: center;
+    background: #fff;
+    display: flex;
+    justify-content: center;
+    max-height: 360px;
+    overflow: hidden;
+}
+
+.homepage-carousel-slide .image-template-photo {
+    height: clamp(260px, 34vw, 360px);
+    object-fit: contain;
+    width: 100%;
+}
+
 .homepage-carousel-arrow {
     background: #fff;
     border: 2px solid #00811F;
@@ -4412,6 +4427,10 @@ section:focus-visible,
     .homepage-event-mobile-image {
         display: block;
         margin: 1rem 0 1.5rem;
+    }
+
+    .homepage-event-mobile-image .image-template-photo {
+        height: clamp(220px, 62vw, 320px);
     }
 
     .homepage-carousel-slide > .flex-1:last-child {
