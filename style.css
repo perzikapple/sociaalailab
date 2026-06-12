@@ -4464,7 +4464,6 @@ section:focus-visible,
     }
 
     .homepage-event-mobile-image .image-template-photo {
-        max-width: min(100%, 420px);
         max-height: 300px;
     }
 
