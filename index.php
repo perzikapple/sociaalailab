@@ -354,8 +354,8 @@ include __DIR__ . '/navbar.php';
         <div class="flex items-center gap-4">
             <i class="fa-brands fa-linkedin text-4xl text-[#0A66C2]"></i>
             <div>
-                <h2 class="text-2xl font-bold text-gray-800">LinkedIn Updates</h2>
-                <p class="text-gray-600">Recente berichten van SociaalAI Lab</p>
+                <h2 class="text-2xl font-bold text-gray-800">Nieuws</h2>
+                <p class="text-gray-600">Recente berichten van SociaalAI Lab Rotterdam</p>
             </div>
         </div>
         <div class="flex gap-2">
