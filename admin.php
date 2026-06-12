@@ -853,14 +853,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     } elseif ($action === 'get_approval_item' && !empty($_POST['item_id'])) {
-        // Return approval item as JSON
+        // Return approval item as JSON - ALL fields
         header('Content-Type: application/json');
         $itemId = intval($_POST['item_id']);
         
         try {
             $stmt = $pdo->prepare(
                 'SELECT id, title, date, end_date, time, time_end, description, location, image, 
-                        created_by, target_audience, internal_notes, approval_status, approval_feedback 
+                        created_by, target_audience, internal_notes, approval_status, approval_feedback,
+                        meer_info, event_summary, signup_embed, show_signup_button, show_on_homepage
                  FROM events WHERE id = ? AND approval_status = ?'
             );
             $stmt->execute([$itemId, 'pending']);
@@ -885,12 +886,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     } elseif ($action === 'approve_with_review' && !empty($_POST['item_id'])) {
-        // Approve with edits from modal
+        // Approve with edits from modal - update ALL fields
         $itemId = intval($_POST['item_id']);
         $title = sanitizeEditorBlockInput($_POST['approval_title'] ?? '');
         $date = sanitizeEditorBlockInput($_POST['approval_date'] ?? '');
+        $end_date = sanitizeEditorBlockInput($_POST['approval_end_date'] ?? '');
+        $time = sanitizeEditorBlockInput($_POST['approval_time'] ?? '');
+        $time_end = sanitizeEditorBlockInput($_POST['approval_time_end'] ?? '');
         $location = sanitizeEditorBlockInput($_POST['approval_location'] ?? '');
         $description = sanitizeEditorBlockInput($_POST['approval_description'] ?? '');
+        $meer_info = sanitizeEditorBlockInput($_POST['approval_meer_info'] ?? '');
+        $event_summary = sanitizeEditorBlockInput($_POST['approval_event_summary'] ?? '');
+        $target_audience = sanitizeEditorBlockInput($_POST['approval_target_audience'] ?? '');
+        $internal_notes = sanitizeEditorBlockInput($_POST['approval_internal_notes'] ?? '');
+        $signup_embed = sanitizeEditorBlockInput($_POST['approval_signup_embed'] ?? '');
+        $show_signup_button = !empty($_POST['approval_show_signup_button']) ? '1' : '0';
+        $show_on_homepage = !empty($_POST['approval_show_on_homepage']) ? '1' : '0';
         $feedback = sanitizeEditorBlockInput($_POST['approval_feedback'] ?? '');
         
         try {
@@ -899,15 +910,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $event = $stmt->fetch();
 
             if ($event) {
-                // Update with edited data
+                // Update with edited data - ALL fields
                 $stmt = $pdo->prepare(
                     'UPDATE events SET 
-                        title = ?, date = ?, location = ?, description = ?,
+                        title = ?, date = ?, end_date = ?, time = ?, time_end = ?, 
+                        location = ?, description = ?, meer_info = ?, event_summary = ?,
+                        target_audience = ?, internal_notes = ?, signup_embed = ?,
+                        show_signup_button = ?, show_on_homepage = ?,
                         approval_status = ?, approved_by = ?, approval_feedback = ?
                      WHERE id = ?'
                 );
-                $stmt->execute([$title, $date, $location, $description, 'approved', $currentUser, $feedback ?: null, $itemId]);
-                audit_log($pdo, 'approve', 'events', $itemId, 'Status changed to approved. Edited by admin.', $currentUser);
+                $stmt->execute([
+                    $title, $date, $end_date ?? null, $time ?? null, $time_end ?? null,
+                    $location, $description, $meer_info ?? null, $event_summary ?? null,
+                    $target_audience ?? null, $internal_notes ?? null, $signup_embed ?? null,
+                    $show_signup_button, $show_on_homepage,
+                    'approved', $currentUser, $feedback ?: null, $itemId
+                ]);
+                audit_log($pdo, 'approve', 'events', $itemId, 'Status changed to approved. Full event edited by admin.', $currentUser);
                 header('Location: admin.php?page=goedkeuren&ok=approve');
                 exit;
             } else {
@@ -935,33 +955,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = 'Item niet gevonden.';
         }
     } elseif ($action === 'reject_item' && !empty($_POST['item_id'])) {
+        // Reject with possible edits - also save edited fields for resubmission
         $itemId = intval($_POST['item_id']);
+        $title = sanitizeEditorBlockInput($_POST['approval_title'] ?? '');
+        $date = sanitizeEditorBlockInput($_POST['approval_date'] ?? '');
+        $end_date = sanitizeEditorBlockInput($_POST['approval_end_date'] ?? '');
+        $time = sanitizeEditorBlockInput($_POST['approval_time'] ?? '');
+        $time_end = sanitizeEditorBlockInput($_POST['approval_time_end'] ?? '');
+        $location = sanitizeEditorBlockInput($_POST['approval_location'] ?? '');
+        $description = sanitizeEditorBlockInput($_POST['approval_description'] ?? '');
+        $meer_info = sanitizeEditorBlockInput($_POST['approval_meer_info'] ?? '');
+        $event_summary = sanitizeEditorBlockInput($_POST['approval_event_summary'] ?? '');
+        $target_audience = sanitizeEditorBlockInput($_POST['approval_target_audience'] ?? '');
+        $internal_notes = sanitizeEditorBlockInput($_POST['approval_internal_notes'] ?? '');
+        $signup_embed = sanitizeEditorBlockInput($_POST['approval_signup_embed'] ?? '');
+        $show_signup_button = !empty($_POST['approval_show_signup_button']) ? '1' : '0';
+        $show_on_homepage = !empty($_POST['approval_show_on_homepage']) ? '1' : '0';
         $feedback = sanitizeEditorBlockInput($_POST['approval_feedback'] ?? '');
 
-        $stmt = $pdo->prepare('SELECT id FROM events WHERE id = ?');
-        $stmt->execute([$itemId]);
-        $event = $stmt->fetch();
+        try {
+            $stmt = $pdo->prepare('SELECT id FROM events WHERE id = ?');
+            $stmt->execute([$itemId]);
+            $event = $stmt->fetch();
 
-        if ($event) {
-            $stmt = $pdo->prepare(
-                'UPDATE events SET approval_status = ?, approved_by = ?, approval_feedback = ? 
-                 WHERE id = ?'
-            );
-            $stmt->execute(['rejected', $currentUser, $feedback, $itemId]);
-            audit_log($pdo, 'reject', 'events', $itemId, 'Status changed to rejected. Feedback: ' . substr($feedback, 0, 100), $currentUser);
-            header('Location: admin.php?page=goedkeuren&ok=reject');
-            exit;
-        } else {
-            $message = 'Item niet gevonden.';
+            if ($event) {
+                // Update status to rejected, but save edited fields for onderzoeker to see edits + feedback
+                $stmt = $pdo->prepare(
+                    'UPDATE events SET 
+                        title = ?, date = ?, end_date = ?, time = ?, time_end = ?, 
+                        location = ?, description = ?, meer_info = ?, event_summary = ?,
+                        target_audience = ?, internal_notes = ?, signup_embed = ?,
+                        show_signup_button = ?, show_on_homepage = ?,
+                        approval_status = ?, approved_by = ?, approval_feedback = ? 
+                     WHERE id = ?'
+                );
+                $stmt->execute([
+                    $title, $date, $end_date ?: null, $time ?: null, $time_end ?: null,
+                    $location, $description, $meer_info ?: null, $event_summary ?: null,
+                    $target_audience ?: null, $internal_notes ?: null, $signup_embed ?: null,
+                    $show_signup_button, $show_on_homepage,
+                    'rejected', $currentUser, $feedback, $itemId
+                ]);
+                audit_log($pdo, 'reject', 'events', $itemId, 'Status changed to rejected. Feedback: ' . substr($feedback, 0, 100), $currentUser);
+                header('Location: admin.php?page=goedkeuren&ok=reject');
+                exit;
+            } else {
+                $message = 'Item niet gevonden.';
+            }
+        } catch (Exception $e) {
+            $message = 'Fout bij afkeuren: ' . $e->getMessage();
         }
     } elseif ($action === 'get_request_details' && !empty($_POST['request_id'])) {
-        // Return request details as JSON for editing
+        // Return request details as JSON for editing - ALL fields including feedback
         header('Content-Type: application/json');
         $requestId = intval($_POST['request_id']);
         
         try {
             $stmt = $pdo->prepare(
-                'SELECT id, title, date, description, location, image, approval_status 
+                'SELECT id, title, date, end_date, time, time_end, description, location, image, 
+                        approval_status, approval_feedback, meer_info, event_summary, target_audience,
+                        internal_notes, signup_embed, show_signup_button, show_on_homepage
                  FROM events WHERE id = ? AND created_by = ?'
             );
             $stmt->execute([$requestId, $currentUser]);
@@ -986,12 +1039,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     } elseif ($action === 'resubmit_request' && !empty($_POST['request_id'])) {
-        // Handle resubmission of rejected request
+        // Handle resubmission of rejected request - update ALL fields
         $requestId = intval($_POST['request_id']);
         $title = sanitizeEditorBlockInput($_POST['edit_title'] ?? '');
         $date = sanitizeEditorBlockInput($_POST['edit_date'] ?? '');
+        $end_date = sanitizeEditorBlockInput($_POST['edit_end_date'] ?? '');
+        $time = sanitizeEditorBlockInput($_POST['edit_time'] ?? '');
+        $time_end = sanitizeEditorBlockInput($_POST['edit_time_end'] ?? '');
         $location = sanitizeEditorBlockInput($_POST['edit_location'] ?? '');
         $description = sanitizeEditorBlockInput($_POST['edit_description'] ?? '');
+        $meer_info = sanitizeEditorBlockInput($_POST['edit_meer_info'] ?? '');
+        $event_summary = sanitizeEditorBlockInput($_POST['edit_event_summary'] ?? '');
+        $target_audience = sanitizeEditorBlockInput($_POST['edit_target_audience'] ?? '');
+        $signup_embed = sanitizeEditorBlockInput($_POST['edit_signup_embed'] ?? '');
+        $show_signup_button = !empty($_POST['edit_show_signup_button']) ? '1' : '0';
+        $show_on_homepage = !empty($_POST['edit_show_on_homepage']) ? '1' : '0';
 
         // Verify ownership
         $stmt = $pdo->prepare('SELECT id FROM events WHERE id = ? AND created_by = ?');
@@ -1001,11 +1063,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($event) {
             try {
                 $stmt = $pdo->prepare(
-                    'UPDATE events SET title = ?, date = ?, location = ?, description = ?, 
-                                      approval_status = "pending", approved_by = NULL, approval_feedback = NULL 
+                    'UPDATE events SET 
+                        title = ?, date = ?, end_date = ?, time = ?, time_end = ?, 
+                        location = ?, description = ?, meer_info = ?, event_summary = ?,
+                        target_audience = ?, signup_embed = ?, 
+                        show_signup_button = ?, show_on_homepage = ?,
+                        approval_status = "pending", approved_by = NULL, approval_feedback = NULL
                      WHERE id = ?'
                 );
-                $stmt->execute([$title, $date, $location, $description, $requestId]);
+                $stmt->execute([
+                    $title, $date, $end_date ?: null, $time ?: null, $time_end ?: null,
+                    $location, $description, $meer_info ?: null, $event_summary ?: null,
+                    $target_audience ?: null, $signup_embed ?: null,
+                    $show_signup_button, $show_on_homepage,
+                    $requestId
+                ]);
                 audit_log($pdo, 'resubmit', 'events', $requestId, 'Request resubmitted by onderzoeker after rejection', $currentUser);
                 header('Location: admin.php?page=aanvragen&ok=resubmit');
                 exit;
@@ -1509,7 +1581,8 @@ if ($page === 'users') {
             });
 
             // CKEditor for content fields - larger with more options
-            document.querySelectorAll('textarea:not([name="title"])').forEach(textarea => {
+            // EXCLUDE approval modal textarea (initialized manually when modal opens)
+            document.querySelectorAll('textarea:not([name="title"]):not([data-no-auto-init])').forEach(textarea => {
                 ClassicEditor.create(textarea, {
                     ...ckConfig,
                     toolbar: {
@@ -1838,36 +1911,36 @@ if ($page === 'users') {
                                 <div class="grid grid-cols-3 gap-4">
                                     <div>
                                         <label class="form-label">Wanneer (datum)</label>
-                                        <input type="date" name="date" required class="form-input" />
+                                        <input type="date" name="date" required class="form-input" value="<?php echo htmlspecialchars($_POST['date'] ?? ''); ?>" />
                                         <div class="mt-2">
                                             <label class="form-checkbox">
-                                                <input type="checkbox" id="add-end-date-create" name="add_end_date" />
+                                                <input type="checkbox" id="add-end-date-create" name="add_end_date" <?php echo !empty($_POST['end_date']) ? 'checked' : ''; ?> />
                                                 Einddatum toevoegen
                                             </label>
-                                            <div id="end-date-container-create" class="admin-mt-8 admin-hidden">
+                                            <div id="end-date-container-create" class="admin-mt-8 <?php echo empty($_POST['end_date']) ? 'admin-hidden' : ''; ?>">
                                                 <label class="form-label">Einddatum <span class="text-xs text-gray-500">(optioneel)</span></label>
-                                                <input type="date" name="end_date" class="form-input" />
+                                                <input type="date" name="end_date" class="form-input" value="<?php echo htmlspecialchars($_POST['end_date'] ?? ''); ?>" />
                                             </div>
                                         </div>
                                     </div>
                                     <div>
                                         <label class="form-label">Starttijd</label>
-                                        <input type="time" name="time" class="form-input" value="<?php echo htmlspecialchars($editEvent['time'] ?? ''); ?>" />
+                                        <input type="time" name="time" class="form-input" value="<?php echo htmlspecialchars($_POST['time'] ?? ''); ?>" />
                                         <div class="mt-2">
                                             <label class="form-checkbox">
-                                                <input type="checkbox" id="add-end-time-create" name="add_end_time" />
+                                                <input type="checkbox" id="add-end-time-create" name="add_end_time" <?php echo !empty($_POST['time_end']) ? 'checked' : ''; ?> />
                                                 Eindtijd toevoegen
                                             </label>
-                                            <div id="end-time-container-create" class="admin-mt-8 admin-hidden">
+                                            <div id="end-time-container-create" class="admin-mt-8 <?php echo empty($_POST['time_end']) ? 'admin-hidden' : ''; ?>">
                                                 <label class="form-label">Eindtijd <span class="text-xs text-gray-500">(optioneel)</span></label>
-                                                <input type="time" name="time_end" class="form-input" value="<?php echo htmlspecialchars($editEvent['time_end'] ?? ''); ?>" />
+                                                <input type="time" name="time_end" class="form-input" value="<?php echo htmlspecialchars($_POST['time_end'] ?? ''); ?>" />
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 <div>
                                     <label class="form-label">Plaats</label>
-                                    <input name="location" class="form-input admin-input-surface" />
+                                    <input name="location" class="form-input admin-input-surface" value="<?php echo htmlspecialchars($_POST['location'] ?? ''); ?>" />
                                 </div>
 
                                 <div>
@@ -1877,13 +1950,13 @@ if ($page === 'users') {
 
                                 <div>
                                     <label class="form-label">Meer info tekst (optioneel)</label>
-                                    <textarea name="meer_info" rows="5" class="form-textarea"><?php echo htmlspecialchars($_POST['meer_info'] ?? ''); ?></textarea>
+                                    <textarea name="meer_info" rows="5" class="form-textarea"></textarea>
                                     <p class="text-xs text-gray-500 mt-2">Deze tekst wordt op de evenement detailpagina getoond boven de samenvatting.</p>
                                 </div>
 
                                 <div>
                                     <label class="form-label">Samenvatting na afloop (optioneel)</label>
-                                    <textarea name="event_summary" rows="5" class="form-textarea"><?php echo htmlspecialchars($_POST['event_summary'] ?? ''); ?></textarea>
+                                    <textarea name="event_summary" rows="5" class="form-textarea"></textarea>
                                     <p class="text-xs text-gray-500 mt-2">Deze samenvatting wordt op de evenement detailpagina getoond zodra deze is ingevuld.</p>
                                 </div>
 
@@ -2361,28 +2434,93 @@ if ($page === 'users') {
                                     <!-- Event Details (Preview) -->
                                     <div style="background: #f9fafb; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
                                         <h3 style="font-weight: 700; margin-top: 0; margin-bottom: 1rem; color: #111827;">📋 Event Details (Bewerkbaar)</h3>
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                        
+                                        <!-- Titel -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Titel:</strong></label>
+                                            <input type="text" name="approval_title" id="approval-title-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                        </div>
+
+                                        <!-- Datum, Einddatum, Starttijd, Eindtijd -->
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
                                             <div>
-                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Titel:</strong></label>
-                                                <input type="text" name="approval_title" id="approval-title-input" class="form-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Startdatum:</strong></label>
+                                                <input type="date" name="approval_date" id="approval-date-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
                                             </div>
                                             <div>
-                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Datum:</strong></label>
-                                                <input type="date" name="approval_date" id="approval-date-input" class="form-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Einddatum:</strong></label>
+                                                <input type="date" name="approval_end_date" id="approval-end-date-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
                                             </div>
                                             <div>
-                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Ingediend door:</strong></label>
-                                                <p style="margin: 0; color: #111827; padding: 0.5rem;" id="approval-created-by"></p>
+                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Starttijd:</strong></label>
+                                                <input type="time" name="approval_time" id="approval-time-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
                                             </div>
                                             <div>
-                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Locatie:</strong></label>
-                                                <input type="text" name="approval_location" id="approval-location-input" class="form-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Eindtijd:</strong></label>
+                                                <input type="time" name="approval_time_end" id="approval-time-end-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
                                             </div>
                                         </div>
-                                        <div style="margin-top: 1rem;">
+
+                                        <!-- Locatie -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Locatie:</strong></label>
+                                            <input type="text" name="approval_location" id="approval-location-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                        </div>
+
+                                        <!-- Beschrijving (CKEditor) -->
+                                        <div style="margin-bottom: 1rem;">
                                             <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Beschrijving:</strong></label>
-                                            <textarea name="approval_description" id="approval-description-input" class="form-textarea" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 100px; font-family: inherit;"></textarea>
+                                            <textarea name="approval_description" id="approval-description-input" data-no-auto-init="true" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 100px; font-family: inherit; background: white; color: #111827; display: block; visibility: visible;">
+</textarea>
                                         </div>
+
+                                        <!-- Meer info -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Meer info tekst (optioneel):</strong></label>
+                                            <textarea name="approval_meer_info" id="approval-meer-info-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 80px; font-family: inherit;"></textarea>
+                                            <small style="color: #6b7280;">Deze tekst wordt op de evenement detailpagina getoond boven de samenvatting.</small>
+                                        </div>
+
+                                        <!-- Event samenvatting -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Samenvatting na afloop (optioneel):</strong></label>
+                                            <textarea name="approval_event_summary" id="approval-event-summary-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 80px; font-family: inherit;"></textarea>
+                                            <small style="color: #6b7280;">Deze samenvatting wordt op de evenement detailpagina getoond zodra deze is ingevuld.</small>
+                                        </div>
+
+                                        <!-- Doelgroep -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Doelgroep (optioneel):</strong></label>
+                                            <input type="text" name="approval_target_audience" id="approval-target-audience-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;" placeholder="bijv. Scholieren, Docenten, Researchers">
+                                            <small style="color: #6b7280;">Alleen zichtbaar voor goedkeuring, niet op de publieke pagina.</small>
+                                        </div>
+
+                                        <!-- Opmerkingen voor goedkeuring -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Opmerkingen voor goedkeuring (optioneel):</strong></label>
+                                            <textarea name="approval_internal_notes" id="approval-internal-notes-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 60px; font-family: inherit;" placeholder="Bijv. aanvullende informatie voor goedkeuring"></textarea>
+                                            <small style="color: #6b7280;">Alleen zichtbaar voor administratoren, niet op de publieke pagina.</small>
+                                        </div>
+
+                                        <!-- Signup link -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Aanmelder.nl link (optioneel):</strong></label>
+                                            <input type="url" name="approval_signup_embed" id="approval-signup-embed-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;" placeholder="https://aanmelder.nl/subscribe/...">
+                                        </div>
+
+                                        <!-- Checkboxes -->
+                                        <div style="margin-bottom: 1rem; display: flex; gap: 2rem;">
+                                            <label style="display: flex; align-items: center; gap: 0.5rem; color: #111827; font-size: 0.875rem; cursor: pointer;">
+                                                <input type="checkbox" name="approval_show_signup_button" id="approval-show-signup-button" checked style="width: 1rem; height: 1rem; cursor: pointer;">
+                                                <strong>Toon inschrijf knop</strong>
+                                            </label>
+                                            <label style="display: flex; align-items: center; gap: 0.5rem; color: #111827; font-size: 0.875rem; cursor: pointer;">
+                                                <input type="checkbox" name="approval_show_on_homepage" id="approval-show-on-homepage" checked style="width: 1rem; height: 1rem; cursor: pointer;">
+                                                <strong>Toon op homepage</strong>
+                                            </label>
+                                        </div>
+
+                                        <!-- Afbeelding -->
                                         <div id="approval-image-container" style="margin-top: 1rem; display: none;">
                                             <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.5rem 0; display: block;"><strong>Afbeelding:</strong></label>
                                             <img id="approval-image" src="" alt="Event afbeelding" style="max-width: 100%; max-height: 300px; border-radius: 8px; object-fit: cover; margin-bottom: 0.5rem;">
@@ -2395,7 +2533,7 @@ if ($page === 'users') {
                                     <!-- Feedback Section -->
                                     <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
                                         <h3 style="font-weight: 700; margin-top: 0; margin-bottom: 1rem; color: #92400e;">💬 Terugkoppeling Toevoegen</h3>
-                                        <textarea name="approval_feedback" id="approval-feedback" class="form-textarea" rows="4" placeholder="Voeg hier feedback/opmerkingen toe..." style="width: 100%; padding: 0.75rem; border: 1px solid #d4a574; border-radius: 4px; font-family: inherit;"></textarea>
+                                        <textarea name="approval_feedback" id="approval-feedback" data-no-auto-init="true" class="form-textarea" rows="4" placeholder="Voeg hier feedback/opmerkingen toe..." style="width: 100%; padding: 0.75rem; border: 1px solid #d4a574; border-radius: 4px; font-family: inherit;"></textarea>
                                     </div>
 
                                     <!-- Actions -->
@@ -2430,34 +2568,75 @@ if ($page === 'users') {
                             .then(data => {
                                 if (data.success && data.item) {
                                     const item = data.item;
+                                    console.log('[openApprovalModal] Item data ontvangen:', {
+                                        title: item.title,
+                                        date: item.date,
+                                        description: item.description ? item.description.substring(0, 100) : 'LEEG!',
+                                        location: item.location
+                                    });
                                     document.getElementById('approval-item-id').value = itemId;
                                     document.getElementById('approval-modal-title').textContent = 'Details & Beoordeling - ' + itemTitle;
                                     
-                                    // Vul editable form inputs
+                                    // Vul ALLE editable form inputs
                                     document.getElementById('approval-title-input').value = item.title || '';
                                     
-                                    // Format date voor HTML date input (YYYY-MM-DD)
+                                    // Format dates voor HTML date input (YYYY-MM-DD)
                                     if (item.date) {
                                         const dateObj = new Date(item.date);
                                         const formattedDate = dateObj.toISOString().split('T')[0];
                                         document.getElementById('approval-date-input').value = formattedDate;
                                     }
+                                    if (item.end_date) {
+                                        const dateObj = new Date(item.end_date);
+                                        const formattedDate = dateObj.toISOString().split('T')[0];
+                                        document.getElementById('approval-end-date-input').value = formattedDate;
+                                    }
                                     
-                                    document.getElementById('approval-created-by').textContent = item.created_by || '-';
+                                    // Tijden
+                                    document.getElementById('approval-time-input').value = item.time || '';
+                                    document.getElementById('approval-time-end-input').value = item.time_end || '';
+                                    
+                                    // Locatie en beschrijving
                                     document.getElementById('approval-location-input').value = item.location || '';
+                                    document.getElementById('approval-meer-info-input').value = item.meer_info || '';
+                                    document.getElementById('approval-event-summary-input').value = item.event_summary || '';
+                                    document.getElementById('approval-target-audience-input').value = item.target_audience || '';
+                                    document.getElementById('approval-internal-notes-input').value = item.internal_notes || '';
+                                    document.getElementById('approval-signup-embed-input').value = item.signup_embed || '';
                                     
-                                    // Handle beschrijving - kan TinyMCE editor zijn
+                                    // Checkboxes
+                                    document.getElementById('approval-show-signup-button').checked = item.show_signup_button !== '0' && item.show_signup_button !== false;
+                                    document.getElementById('approval-show-on-homepage').checked = item.show_on_homepage !== '0' && item.show_on_homepage !== false;
+                                    
+                                    // Handle beschrijving - Initialiseer CKEditor als nog niet gedaan
                                     const descriptionInput = document.getElementById('approval-description-input');
-                                    descriptionInput.value = item.description || '';
                                     
-                                    // Als TinyMCE editor, update die ook
-                                    if (window.tinymce && window.tinymce.editors) {
-                                        for (const editor of window.tinymce.editors) {
-                                            if (editor.targetElm && editor.targetElm.id === 'approval-description-input') {
-                                                editor.setContent(item.description || '');
-                                                break;
+                                    // Als CKEditor al geinitialiseerd, clear eerst de oude instance
+                                    if (descriptionInput.ckeditorInstance) {
+                                        console.log('[openApprovalModal] CKEditor al actief, data ingesteld');
+                                        descriptionInput.ckeditorInstance.setData(item.description || '');
+                                    } else {
+                                        console.log('[openApprovalModal] CKEditor nog niet geinitialiseerd, initialiseer nu');
+                                        // Initialiseer CKEditor voor dit veld
+                                        ClassicEditor.create(descriptionInput, {
+                                            toolbar: {
+                                                items: ['undo', 'redo', '|', 'bold', 'italic', 'underline', '|', 'bulletedList', 'numberedList', '|', 'link', 'insertTable', '|', 'blockQuote']
+                                            },
+                                            link: {
+                                                addTargetToExternalLinks: true
                                             }
-                                        }
+                                        })
+                                        .then(editor => {
+                                            console.log('[openApprovalModal] CKEditor succesvol geinitialiseerd');
+                                            descriptionInput.ckeditorInstance = editor;
+                                            // Verberg de originele textarea - CKEditor toont zijn eigen editor
+                                            descriptionInput.style.display = 'none';
+                                            editor.setData(item.description || '');
+                                            console.log('[openApprovalModal] Content ingesteld:', item.description ? item.description.substring(0, 100) : 'LEEG!');
+                                        })
+                                        .catch(error => {
+                                            console.error('[openApprovalModal] CKEditor initialization error:', error);
+                                        });
                                     }
                                     
                                     document.getElementById('approval-feedback').value = '';
@@ -2501,13 +2680,39 @@ if ($page === 'users') {
 
                         function submitApprovalWithFeedback(action) {
                             const form = document.getElementById('approval-form');
-                            const feedback = document.getElementById('approval-feedback').value;
+                            const feedbackInput = document.getElementById('approval-feedback');
+                            let feedback = feedbackInput.value || '';
                             const itemId = document.getElementById('approval-item-id').value;
+                            const descriptionInput = document.getElementById('approval-description-input');
+
+                            // If feedback field has a CKEditor instance, use its data.
+                            if (feedbackInput && feedbackInput.ckeditorInstance) {
+                                feedback = feedbackInput.ckeditorInstance.getData() || '';
+                            }
                             
                             if (action === 'reject' && !feedback.trim()) {
                                 alert('Voeg feedback in voordat je afkeurt!');
                                 return;
                             }
+                            
+                            // Get description from CKEditor if available, otherwise from textarea
+                            let descriptionValue = descriptionInput.value;
+                            
+                            // Controleer CKEditor 5 instance
+                            if (descriptionInput.ckeditorInstance) {
+                                descriptionValue = descriptionInput.ckeditorInstance.getData();
+                                console.log('[submitApproval] CKEditor content gelezen:', descriptionValue.substring(0, 100));
+                            }
+                            // Controleer oude CKEDITOR (v4)
+                            else if (window.CKEDITOR && window.CKEDITOR.instances && window.CKEDITOR.instances['approval-description-input']) {
+                                descriptionValue = window.CKEDITOR.instances['approval-description-input'].getData();
+                                console.log('[submitApproval] CKEDITOR v4 content gelezen:', descriptionValue.substring(0, 100));
+                            } else {
+                                console.log('[submitApproval] Geen CKEditor, textarea value gebruikt:', descriptionValue.substring(0, 100));
+                            }
+                            
+                            // Close modal first
+                            closeApprovalModal();
                             
                             // Create a form and submit it directly (not via fetch)
                             const submitForm = document.createElement('form');
@@ -2520,8 +2725,18 @@ if ($page === 'users') {
                                 'item_id': itemId,
                                 'approval_title': document.getElementById('approval-title-input').value,
                                 'approval_date': document.getElementById('approval-date-input').value,
+                                'approval_end_date': document.getElementById('approval-end-date-input').value,
+                                'approval_time': document.getElementById('approval-time-input').value,
+                                'approval_time_end': document.getElementById('approval-time-end-input').value,
                                 'approval_location': document.getElementById('approval-location-input').value,
-                                'approval_description': document.getElementById('approval-description-input').value,
+                                'approval_description': descriptionValue,
+                                'approval_meer_info': document.getElementById('approval-meer-info-input').value,
+                                'approval_event_summary': document.getElementById('approval-event-summary-input').value,
+                                'approval_target_audience': document.getElementById('approval-target-audience-input').value,
+                                'approval_internal_notes': document.getElementById('approval-internal-notes-input').value,
+                                'approval_signup_embed': document.getElementById('approval-signup-embed-input').value,
+                                'approval_show_signup_button': document.getElementById('approval-show-signup-button').checked ? '1' : '0',
+                                'approval_show_on_homepage': document.getElementById('approval-show-on-homepage').checked ? '1' : '0',
                                 'approval_feedback': feedback
                             };
                             
@@ -2795,25 +3010,88 @@ if ($page === 'users') {
                                     <input type="hidden" name="action" value="resubmit_request">
                                     <input type="hidden" name="request_id" id="edit-request-id">
 
+                                    <!-- Admin Feedback Section -->
+                                    <div id="feedback-section" style="background: #fee2e2; border-left: 4px solid #ef4444; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; display: none;">
+                                        <h3 style="font-weight: 700; margin-top: 0; margin-bottom: 0.5rem; color: #991b1b;">⚠️ Feedback van Beheerder</h3>
+                                        <p id="feedback-text" style="margin: 0; color: #7f1d1d; white-space: pre-wrap; line-height: 1.5;"></p>
+                                    </div>
+
+                                    <!-- Event Details -->
                                     <div style="background: #f9fafb; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
                                         <h3 style="font-weight: 700; margin-top: 0; margin-bottom: 1rem; color: #111827;">📋 Event Details</h3>
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                        
+                                        <!-- Titel -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Titel:</strong></label>
+                                            <input type="text" name="edit_title" id="edit-title-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                        </div>
+
+                                        <!-- Datum, Einddatum, Starttijd, Eindtijd -->
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
                                             <div>
-                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Titel:</strong></label>
-                                                <input type="text" name="edit_title" id="edit-title-input" class="form-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Startdatum:</strong></label>
+                                                <input type="date" name="edit_date" id="edit-date-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
                                             </div>
                                             <div>
-                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Datum:</strong></label>
-                                                <input type="date" name="edit_date" id="edit-date-input" class="form-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Einddatum:</strong></label>
+                                                <input type="date" name="edit_end_date" id="edit-end-date-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
                                             </div>
                                             <div>
-                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Locatie:</strong></label>
-                                                <input type="text" name="edit_location" id="edit-location-input" class="form-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Starttijd:</strong></label>
+                                                <input type="time" name="edit_time" id="edit-time-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                            </div>
+                                            <div>
+                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Eindtijd:</strong></label>
+                                                <input type="time" name="edit_time_end" id="edit-time-end-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
                                             </div>
                                         </div>
-                                        <div style="margin-top: 1rem;">
+
+                                        <!-- Locatie -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Locatie:</strong></label>
+                                            <input type="text" name="edit_location" id="edit-location-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                        </div>
+
+                                        <!-- Beschrijving -->
+                                        <div style="margin-bottom: 1rem;">
                                             <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Beschrijving:</strong></label>
-                                            <textarea name="edit_description" id="edit-description-input" class="form-textarea" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 100px; font-family: inherit;"></textarea>
+                                            <textarea name="edit_description" id="edit-description-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 100px; font-family: inherit;"></textarea>
+                                        </div>
+
+                                        <!-- Meer info -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Meer info tekst (optioneel):</strong></label>
+                                            <textarea name="edit_meer_info" id="edit-meer-info-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 80px; font-family: inherit;"></textarea>
+                                        </div>
+
+                                        <!-- Samenvatting -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Samenvatting na afloop (optioneel):</strong></label>
+                                            <textarea name="edit_event_summary" id="edit-event-summary-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 80px; font-family: inherit;"></textarea>
+                                        </div>
+
+                                        <!-- Doelgroep -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Doelgroep (optioneel):</strong></label>
+                                            <input type="text" name="edit_target_audience" id="edit-target-audience-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;" placeholder="bijv. Scholieren, Docenten, Researchers">
+                                        </div>
+
+                                        <!-- Signup link -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Aanmelder.nl link (optioneel):</strong></label>
+                                            <input type="url" name="edit_signup_embed" id="edit-signup-embed-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;" placeholder="https://aanmelder.nl/subscribe/...">
+                                        </div>
+
+                                        <!-- Checkboxes -->
+                                        <div style="margin-bottom: 1rem; display: flex; gap: 2rem;">
+                                            <label style="display: flex; align-items: center; gap: 0.5rem; color: #111827; font-size: 0.875rem; cursor: pointer;">
+                                                <input type="checkbox" name="edit_show_signup_button" id="edit-show-signup-button" checked style="width: 1rem; height: 1rem; cursor: pointer;">
+                                                <strong>Toon inschrijf knop</strong>
+                                            </label>
+                                            <label style="display: flex; align-items: center; gap: 0.5rem; color: #111827; font-size: 0.875rem; cursor: pointer;">
+                                                <input type="checkbox" name="edit_show_on_homepage" id="edit-show-on-homepage" checked style="width: 1rem; height: 1rem; cursor: pointer;">
+                                                <strong>Toon op homepage</strong>
+                                            </label>
                                         </div>
                                     </div>
 
@@ -2850,6 +3128,7 @@ if ($page === 'users') {
                                     document.getElementById('edit-request-id').value = requestId;
                                     document.getElementById('edit-request-title').textContent = 'Aanvraag Aanpassen - ' + requestTitle;
                                     
+                                    // Vul ALLE velden
                                     document.getElementById('edit-title-input').value = item.title || '';
                                     
                                     if (item.date) {
@@ -2857,9 +3136,33 @@ if ($page === 'users') {
                                         const formattedDate = dateObj.toISOString().split('T')[0];
                                         document.getElementById('edit-date-input').value = formattedDate;
                                     }
+                                    if (item.end_date) {
+                                        const dateObj = new Date(item.end_date);
+                                        const formattedDate = dateObj.toISOString().split('T')[0];
+                                        document.getElementById('edit-end-date-input').value = formattedDate;
+                                    }
                                     
+                                    document.getElementById('edit-time-input').value = item.time || '';
+                                    document.getElementById('edit-time-end-input').value = item.time_end || '';
                                     document.getElementById('edit-location-input').value = item.location || '';
                                     document.getElementById('edit-description-input').value = item.description || '';
+                                    document.getElementById('edit-meer-info-input').value = item.meer_info || '';
+                                    document.getElementById('edit-event-summary-input').value = item.event_summary || '';
+                                    document.getElementById('edit-target-audience-input').value = item.target_audience || '';
+                                    document.getElementById('edit-signup-embed-input').value = item.signup_embed || '';
+                                    
+                                    // Checkboxes
+                                    document.getElementById('edit-show-signup-button').checked = item.show_signup_button !== '0' && item.show_signup_button !== false;
+                                    document.getElementById('edit-show-on-homepage').checked = item.show_on_homepage !== '0' && item.show_on_homepage !== false;
+                                    
+                                    // Toon feedback als aanwezig
+                                    const feedbackSection = document.getElementById('feedback-section');
+                                    if (item.approval_feedback) {
+                                        document.getElementById('feedback-text').textContent = item.approval_feedback;
+                                        feedbackSection.style.display = 'block';
+                                    } else {
+                                        feedbackSection.style.display = 'none';
+                                    }
                                     
                                     // Show modal
                                     modal.classList.remove('hidden');
@@ -3646,24 +3949,55 @@ if ($page === 'users') {
 
             function getFieldValue(form, fieldName) {
                 const input = getFieldInput(form, fieldName);
-                if (!input) return '';
-
-                if (input.tagName === 'TEXTAREA') {
-                    if (window.tinymce && Array.isArray(window.tinymce.editors)) {
-                        for (const editor of window.tinymce.editors) {
-                            if (!editor) continue;
-                            const sameElement = editor.targetElm === input;
-                            const sameName = editor.targetElm && editor.targetElm.name === input.name;
-                            const sameId = editor.id && input.id && editor.id === input.id;
-                            if (sameElement || sameName || sameId) {
-                                return editor.getContent();
+                
+                // EERST: Controleer of textarea/input hidden is
+                if (input) {
+                    const style = window.getComputedStyle(input);
+                    const isHidden = style.display === 'none' || !input.offsetParent;
+                    
+                    if (isHidden) {
+                        console.log('[getFieldValue] Field', fieldName, 'is HIDDEN - zoekend contenteditable...');
+                        
+                        // 1. Check volgende sibling
+                        let sibling = input.nextElementSibling;
+                        while (sibling && sibling.nextElementSibling && sibling !== input.nextElementSibling.nextElementSibling.nextElementSibling) {
+                            if (sibling.contentEditable === 'true' || sibling.getAttribute('contenteditable') === 'true') {
+                                const value = sibling.textContent || sibling.innerText || '';
+                                console.log('[getFieldValue] ✓ Gevonden in nextSibling DIV:', fieldName, ':', value.substring(0, 50));
+                                return value;
+                            }
+                            sibling = sibling.nextElementSibling;
+                        }
+                        
+                        // 2. Check parent children
+                        const parent = input.parentElement;
+                        if (parent) {
+                            const allDivs = parent.querySelectorAll('[contenteditable="true"]');
+                            if (allDivs.length > 0) {
+                                // Zoek ContentEditable DIV dicht bij deze textarea
+                                for (let div of allDivs) {
+                                    const value = div.textContent || div.innerText || '';
+                                    if (value && value.length > 0) {
+                                        console.log('[getFieldValue] ✓ Gevonden in parent DIV:', fieldName, ':', value.substring(0, 50));
+                                        return value;
+                                    }
+                                }
                             }
                         }
+                        
+                        // 3. Fallback: geen DIV gevonden
+                        console.log('[getFieldValue] ! Geen contenteditable DIV gevonden voor', fieldName);
+                        return '';
                     }
-                    return input.value || '';
+                } else {
+                    console.warn('[getFieldValue] Veld niet gevonden:', fieldName);
+                    return '';
                 }
 
-                return input.value || '';
+                // Textarea/input is VISIBLE - return value normaal
+                const value = input.value || '';
+                console.log('[getFieldValue]', fieldName, '(visible):', value.substring(0, 50) + (value.length > 50 ? '...' : ''));
+                return value;
             }
 
             function clearImagePreview() {
@@ -3720,8 +4054,10 @@ if ($page === 'users') {
             }
 
             function renderEventPreview(form) {
-                const titleHtml = getFieldValue(form, 'title').trim() || 'Preview titel';
-                const descriptionHtml = getFieldValue(form, 'description').trim() || '';
+                console.log('[renderEventPreview] Starting render...');
+                const titleRaw = getFieldValue(form, 'title').trim();
+                const titleHtml = titleRaw || 'Preview titel';
+                const descriptionRaw = getFieldValue(form, 'description').trim();
                 const startDate = getFieldValue(form, 'date').trim();
                 const endDate = getFieldValue(form, 'end_date').trim();
                 const startTime = formatTimeDisplay(getFieldValue(form, 'time').trim());
@@ -3736,11 +4072,15 @@ if ($page === 'users') {
                 const dateDisplay = formatDateDisplay(startDate);
                 const endDateDisplay = formatDateDisplay(endDate);
 
+                console.log('[renderEventPreview] Title:', titleHtml);
+                console.log('[renderEventPreview] Description:', descriptionRaw.substring(0, 50));
+                console.log('[renderEventPreview] Date:', startDate);
+
                 renderedEl.innerHTML = '' +
                     '<section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">' +
                     '<div class="flex-1">' +
                     '<span class="inline-block text-white text-sm font-medium px-4 py-1 mb-4" style="background-color:#ce0245;">Evenement</span>' +
-                    '<h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900">' + titleHtml + '</h2>' +
+                    '<h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900">' + escapeHtml(titleHtml) + '</h2>' +
                     '<div class="space-y-4">' +
                     '<div class="flex items-center space-x-3">' +
                     '<i class="fa-regular fa-calendar text-[#00811F] ml-[2px] text-3xl"></i>' +
@@ -3758,7 +4098,7 @@ if ($page === 'users') {
                     '</div>' +
                     '<div class="flex mb-6 space-x-3">' +
                     '<i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>' +
-                    '<div class="text-gray-700 pb-3"><strong> Wat:</strong><div class="mt-1">' + descriptionHtml + '</div></div>' +
+                    '<div class="text-gray-700 pb-3"><strong> Wat:</strong><div class="mt-1">' + (descriptionRaw ? escapeHtml(descriptionRaw) : '<em class="text-gray-500">Geen beschrijving ingevuld</em>') + '</div></div>' +
                     '</div>' +
                     '</div>' +
                     (hasEmbed ?
@@ -3850,6 +4190,43 @@ if ($page === 'users') {
                 }
             });
 
+            // Auto-save form values to localStorage
+            document.querySelectorAll('form.js-content-preview-form').forEach(function(form) {
+                const formId = (form.querySelector('[name="action"]')?.value || 'unknown') + '_' + (form.querySelector('[name="id"]')?.value || 'new');
+                const storageKey = 'formData_' + formId;
+                
+                // Restore on load
+                const saved = localStorage.getItem(storageKey);
+                if (saved) {
+                    try {
+                        const data = JSON.parse(saved);
+                        console.log('[Form] Restoring:', storageKey, data);
+                        Object.keys(data).forEach(key => {
+                            const el = form.elements[key];
+                            if (el) {
+                                el.value = data[key];
+                                console.log('[Form] Restored', key, '=', data[key]);
+                            }
+                        });
+                    } catch(e) {
+                        console.error('[Form] Restore error:', e);
+                    }
+                }
+                
+                // Save on input
+                form.addEventListener('input', function(e) {
+                    if (e.target.name && e.target.type !== 'hidden') {
+                        const data = {};
+                        form.querySelectorAll('[name]').forEach(el => {
+                            if (el.type !== 'hidden') {
+                                data[el.name] = el.value;
+                            }
+                        });
+                        localStorage.setItem(storageKey, JSON.stringify(data));
+                    }
+                });
+            });
+
             previewButtons.forEach(function(button) {
                 button.addEventListener('click', function() {
                     try {
@@ -3860,10 +4237,52 @@ if ($page === 'users') {
                             return;
                         }
 
+                        // DEBUG: Log ALL form fields om te zien welke zichtbaar zijn
+                        console.log('[Preview] ===== ALL FORM FIELDS =====');
+                        const allInputs = form.querySelectorAll('input, textarea, select, [contenteditable]');
+                        allInputs.forEach(el => {
+                            const isVisible = el.offsetParent !== null;
+                            const value = el.value || el.textContent || el.innerText || '';
+                            const style = window.getComputedStyle(el);
+                            console.log('[Preview]', el.name || el.id || el.tagName, 
+                                '| visible:', isVisible, 
+                                '| display:', style.display, 
+                                '| value:', value.substring(0, 30));
+                        });
+                        console.log('[Preview] ===== END FIELDS =====');
+
+                        // Save all form values to localStorage before anything else
+                        const formElements = form.querySelectorAll('input, textarea, select');
+                        const formData = {};
+                        formElements.forEach(el => {
+                            if (el.name && el.type !== 'hidden') {
+                                if (el.type === 'checkbox' || el.type === 'radio') {
+                                    formData[el.name] = el.checked;
+                                } else {
+                                    formData[el.name] = el.value;
+                                }
+                            }
+                        });
+                        console.log('[Preview] Saved form data:', formData);
+                        localStorage.setItem('previewFormData', JSON.stringify(formData));
+
                         // Sync TinyMCE editors back naar textarea values
                         if (window.tinymce && typeof window.tinymce.triggerSave === 'function') {
+                            console.log('[Preview] Calling tinymce.triggerSave()');
                             window.tinymce.triggerSave();
+                        } else {
+                            console.log('[Preview] TinyMCE not available');
                         }
+
+                        // Re-read all form values AFTER sync in case TinyMCE changed them
+                        formElements.forEach(el => {
+                            if (el.name && el.type !== 'hidden') {
+                                if (el.type !== 'checkbox' && el.type !== 'radio') {
+                                    formData[el.name] = el.value;
+                                }
+                            }
+                        });
+                        console.log('[Preview] Form data after TinyMCE sync:', formData);
 
                         renderPreview(form);
 
