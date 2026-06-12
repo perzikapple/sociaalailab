@@ -1398,8 +1398,8 @@ $stmt->execute();
 $events = $stmt->fetchAll();
 ?>
 <?php
-// Welke admin pagina tonen (standaard index)
-$page = $_GET['page'] ?? 'agenda';
+// Welke admin pagina tonen (standaard dashboard)
+$page = $_GET['page'] ?? 'dashboard';
 
 $allowedPagesByPermission = [
     'banner' => 'manage_banners',
@@ -1557,6 +1557,22 @@ if ($page === 'users') {
         .ck-editor__editable {
             min-height: 100px;
         }
+        /* Dashboard & Admin UI polish */
+        body.admin-page { background: #f7fafc; color: #0f172a; }
+        .admin-header { background: linear-gradient(135deg, #00811F 0%, #006f19 100%); color: #fff; }
+        .admin-header .admin-header-brand { display:inline-flex; gap:12px; align-items:center; }
+        .admin-header .admin-header-brand h1 { margin:0; font-size:1.25rem; font-weight:700; }
+        .card { background:#ffffff; border-radius:10px; padding:18px; box-shadow:0 6px 18px rgba(15,23,42,0.06); }
+        .card h3 { margin-top:0; }
+        .btn-primary { background:#0b6fbf; color:#fff; border:0; padding:8px 12px; border-radius:8px; }
+        .btn-site { background: var(--color-rdm); color: #fff; border:0; padding:8px 12px; border-radius:8px; }
+        .btn-secondary { background:#ffffff; color:#0f172a; border:1px solid rgba(15,23,42,0.08); padding:7px 10px; border-radius:8px; }
+        .btn { font-weight:600; }
+        .admin-layout-grid { gap:24px; }
+        /* Make main column full width when viewing dashboard */
+        body.dashboard-view .lg\:col-span-3 { grid-column: 1 / -1; }
+        /* Chart card title style */
+        .card canvas { background: #fff; }
     </style>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -1594,7 +1610,7 @@ if ($page === 'users') {
     </script>
 </head>
 
-<body class="admin-page">
+<body class="admin-page <?php echo $page === 'dashboard' ? 'dashboard-view' : ''; ?>">
     <!-- Sidebar Toggle Button -->
     <button class="sidebar-toggle-btn" id="sidebarToggle">
         <i class="fa-solid fa-bars"></i>
@@ -1609,6 +1625,16 @@ if ($page === 'users') {
                 <?php if ($hasPermission('view_audit')): ?>
                     <a href="admin.php?page=audit" class="btn <?php echo $page === 'audit' ? 'btn-primary' : 'btn-secondary'; ?> text-sm">
                         <i class="fa-solid fa-clipboard-list"></i> Auditlogboek
+                    </a>
+                <?php endif; ?>
+                <?php if ($hasAnyPermission(['manage_events','view_audit','access_booking'])): ?>
+                    <a href="admin.php?page=dashboard" class="btn <?php echo $page === 'dashboard' ? 'btn-site' : 'btn-secondary'; ?> text-sm">
+                        <i class="fa-solid fa-chart-pie"></i> Dashboard
+                    </a>
+                <?php endif; ?>
+                <?php if (!empty($_SESSION['can_access_admin'])): ?>
+                    <a href="admin.php?page=agenda" class="btn btn-secondary text-sm">
+                        <i class="fa-solid fa-toolbox"></i> Admin Panel
                     </a>
                 <?php endif; ?>
                 <?php if ($hasPermission('access_booking')): ?>
@@ -1635,6 +1661,7 @@ if ($page === 'users') {
 
         <div class="admin-layout-grid grid grid-cols-1 lg:grid-cols-4 gap-6">
             <!-- Sidebar -->
+            <?php if ($page !== 'dashboard'): ?>
             <aside class="sidebar">
                 <div class="sidebar-header">
                     <i class="fa-solid fa-bars"></i> Navigatie
@@ -1651,6 +1678,7 @@ if ($page === 'users') {
                             <i class="fa-solid fa-calendar"></i> Agenda
                         </a>
                     <?php endif; ?>
+                    <?php /* Dashboard link - visible in sidebar so Admin Panel shows full navigation */ ?>
                     <?php if ($hasAnyPermission(['manage_events', 'view_audit', 'access_booking'])): ?>
                         <a href="admin.php?page=dashboard" class="sidebar-link <?php echo $page === 'dashboard' ? 'active' : ''; ?>">
                             <i class="fa-solid fa-chart-pie"></i> Dashboard
@@ -1710,6 +1738,7 @@ if ($page === 'users') {
                     <?php endif; ?>
                 </nav>
             </aside>
+            <?php endif; ?>
 
             <div class="lg:col-span-3 <?php echo $isEditorReadOnlyPage ? 'admin-readonly-scope' : ''; ?>">
 
@@ -3306,13 +3335,16 @@ if ($page === 'users') {
 
                         try {
                             // companies percent from partner names heuristics (bv, ltd, bedrijf, stichting, vereniging)
-                            $companyKeywords = ['bv','ltd','company','bedrijf','inc','gmbh'];
-                            $orgKeywords = ['stichting','vereniging','non-profit','ngo','organisatie'];
-                            $company = 0; $org = 0; $totalP = 0;
+                            $companyKeywords = ['bv', 'ltd', 'company', 'bedrijf', 'inc', 'gmbh'];
+                            $orgKeywords = ['stichting', 'vereniging', 'non-profit', 'ngo', 'organisatie'];
+                            $company = 0;
+                            $org = 0;
+                            $totalP = 0;
                             foreach ($partnerCounts as $name => $cnt) {
                                 $totalP += $cnt;
                                 $lower = strtolower($name);
-                                $isCompany = false; $isOrg = false;
+                                $isCompany = false;
+                                $isOrg = false;
                                 foreach ($companyKeywords as $kw) if (strpos($lower, $kw) !== false) $isCompany = true;
                                 foreach ($orgKeywords as $kw) if (strpos($lower, $kw) !== false) $isOrg = true;
                                 if ($isCompany) $company += $cnt;
@@ -3394,8 +3426,94 @@ if ($page === 'users') {
                             </div>
 
                             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+                            <style>
+                                /* Compact chart heights for dashboard */
+                                #chartTopRegs, #chartBookingsByLoc { height: 200px !important; }
+                                #chartTopPartners { height: 200px !important; }
+                                .chart-container { position: relative; width: 100%; }
+                                /* Excel-like canvas styling: white background and subtle border */
+                                .card canvas { background: #fff; box-shadow: none; border: 1px solid rgba(0,0,0,0.06); }
+                            </style>
                             <script>
                                 document.addEventListener('DOMContentLoaded', function() {
+                                    const truncate = function(label, maxLen = 28) {
+                                        if (!label) return '';
+                                        const s = String(label);
+                                        return s.length > maxLen ? s.substr(0, maxLen - 1) + '…' : s;
+                                    };
+
+                                    const baseOptions = (maxTicks = 6) => ({
+                                        responsive: true,
+                                        maintainAspectRatio: false,
+                                        animation: { duration: 650, easing: 'easeOutQuart' },
+                                        plugins: {
+                                            legend: { display: false },
+                                            tooltip: {
+                                                backgroundColor: 'rgba(22,22,22,0.9)',
+                                                titleFont: { weight: 600 },
+                                                bodyFont: { weight: 500 },
+                                                callbacks: {
+                                                    label: function(ctx) {
+                                                        const v = ctx.raw;
+                                                        return (typeof v === 'number') ? v.toString() : String(v);
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        layout: { padding: { top: 6, bottom: 6 } },
+                                        scales: {
+                                            x: {
+                                                grid: { color: 'rgba(0,0,0,0.06)' },
+                                                ticks: {
+                                                    color: '#4b5563',
+                                                    callback: function(t) { return truncate(this.getLabelForValue(t), 30); },
+                                                    maxRotation: 40,
+                                                    minRotation: 0,
+                                                    autoSkip: true,
+                                                    maxTicksLimit: maxTicks
+                                                }
+                                            },
+                                            y: {
+                                                grid: { color: 'rgba(0,0,0,0.03)' },
+                                                beginAtZero: true,
+                                                ticks: { color: '#4b5563', precision: 0 }
+                                            }
+                                        },
+                                        fonts: { family: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial' }
+                                    });
+
+                                    // simple plugin to draw values on bars
+                                    const valueLabelsPlugin = {
+                                        id: 'valueLabels',
+                                        afterDatasetsDraw: function(chart) {
+                                            const ctx = chart.ctx;
+                                            chart.data.datasets.forEach((dataset, dsIndex) => {
+                                                const meta = chart.getDatasetMeta(dsIndex);
+                                                meta.data.forEach((el, index) => {
+                                                    const val = dataset.data[index];
+                                                    if (val === null || typeof val === 'undefined') return;
+                                                    const pos = el.tooltipPosition();
+                                                    ctx.save();
+                                                    ctx.fillStyle = '#1f2937';
+                                                    ctx.font = '12px system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial';
+                                                    ctx.textAlign = 'center';
+                                                    ctx.textBaseline = 'bottom';
+                                                    // if horizontal (indexAxis === 'y') place label to the right
+                                                    const isHorizontal = chart.options.indexAxis === 'y';
+                                                    if (isHorizontal) {
+                                                        ctx.textAlign = 'left';
+                                                        ctx.fillText(String(val), pos.x + 8, pos.y + 4);
+                                                    } else {
+                                                        ctx.fillText(String(val), pos.x, pos.y - 6);
+                                                    }
+                                                    ctx.restore();
+                                                });
+                                            });
+                                        }
+                                    };
+                                    // register locally to avoid global mutation (Chart.js auto-registration not guaranteed)
+                                    if (typeof Chart !== 'undefined' && Chart.register) Chart.register(valueLabelsPlugin);
+
                                     // Top regs
                                     <?php if (!empty($topRegs)): ?>
                                             (function() {
@@ -3406,21 +3524,25 @@ if ($page === 'users') {
                                                                     return (int)$r['cnt'];
                                                                 }, $topRegs)); ?>;
                                                 const ctx = document.getElementById('chartTopRegs');
-                                                if (ctx) new Chart(ctx.getContext('2d'), {
-                                                    type: 'bar',
-                                                    data: {
-                                                        labels: labels,
-                                                        datasets: [{
-                                                            label: 'Inschrijvingen',
-                                                            data: data,
-                                                            backgroundColor: 'rgba(0,129,31,0.7)'
-                                                        }]
-                                                    },
-                                                    options: {
-                                                        responsive: true,
-                                                        maintainAspectRatio: false
-                                                    }
-                                                });
+                                                if (ctx) {
+                                                    new Chart(ctx.getContext('2d'), {
+                                                        type: 'bar',
+                                                        data: {
+                                                            labels: labels.map(l => truncate(l, 32)),
+                                                            datasets: [{
+                                                                label: 'Inschrijvingen',
+                                                                data: data,
+                                                                backgroundColor: '#2f6fbf',
+                                                                borderRadius: 0,
+                                                                barPercentage: 0.6,
+                                                                categoryPercentage: 0.7
+                                                            }]
+                                                        },
+                                                        options: Object.assign({}, baseOptions(6), {
+                                                            plugins: Object.assign({}, { valueLabels: {} }, { title: { display: true, text: 'Inschrijvingen', align: 'center', font: { size: 14, weight: 600 }, padding: { bottom: 8 } } })
+                                                        })
+                                                    });
+                                                }
                                             })();
                                     <?php endif; ?>
 
@@ -3434,45 +3556,60 @@ if ($page === 'users') {
                                                                     return (int)$b['cnt'];
                                                                 }, $bookingsByLoc)); ?>;
                                                 const ctx = document.getElementById('chartBookingsByLoc');
-                                                if (ctx) new Chart(ctx.getContext('2d'), {
-                                                    type: 'bar',
-                                                    data: {
-                                                        labels: labels,
-                                                        datasets: [{
-                                                            label: 'Bookings',
-                                                            data: data,
-                                                            backgroundColor: 'rgba(3,155,78,0.7)'
-                                                        }]
-                                                    },
-                                                    options: {
-                                                        responsive: true,
-                                                        maintainAspectRatio: false
-                                                    }
-                                                });
+                                                if (ctx) {
+                                                    new Chart(ctx.getContext('2d'), {
+                                                        type: 'bar',
+                                                        data: {
+                                                            labels: labels.map(l => truncate(l, 28)),
+                                                            datasets: [{
+                                                                label: 'Bookings',
+                                                                data: data,
+                                                                backgroundColor: '#2f6fbf',
+                                                                borderRadius: 0,
+                                                                barPercentage: 0.6,
+                                                                categoryPercentage: 0.7
+                                                            }]
+                                                        },
+                                                        options: Object.assign({}, baseOptions(6), {
+                                                            plugins: Object.assign({}, { valueLabels: {} }, { title: { display: true, text: 'Bookings per locatie', align: 'center', font: { size: 14, weight: 600 }, padding: { bottom: 8 } } })
+                                                        })
+                                                    });
+                                                }
                                             })();
                                     <?php endif; ?>
 
-                                    // Top partners
+                                    // Top partners (horizontal, sorted)
                                     <?php if (!empty($topPartners)): ?>
                                             (function() {
-                                                const labels = <?php echo json_encode(array_keys($topPartners)); ?>;
-                                                const data = <?php echo json_encode(array_values($topPartners)); ?>;
+                                                let labels = <?php echo json_encode(array_keys($topPartners)); ?>;
+                                                let data = <?php echo json_encode(array_values($topPartners)); ?>;
+                                                // pair and sort descending by value
+                                                const paired = labels.map((l,i) => ({ label: l, value: data[i] }));
+                                                paired.sort((a,b) => b.value - a.value);
+                                                labels = paired.map(p => truncate(p.label, 32));
+                                                data = paired.map(p => p.value);
                                                 const ctx = document.getElementById('chartTopPartners');
-                                                if (ctx) new Chart(ctx.getContext('2d'), {
-                                                    type: 'bar',
-                                                    data: {
-                                                        labels: labels,
-                                                        datasets: [{
-                                                            label: 'Partner mentions',
-                                                            data: data,
-                                                            backgroundColor: 'rgba(33,150,83,0.7)'
-                                                        }]
-                                                    },
-                                                    options: {
-                                                        responsive: true,
-                                                        maintainAspectRatio: false
-                                                    }
-                                                });
+                                                if (ctx) {
+                                                    new Chart(ctx.getContext('2d'), {
+                                                        type: 'bar',
+                                                        data: {
+                                                            labels: labels,
+                                                            datasets: [{
+                                                                label: 'Partner mentions',
+                                                                data: data,
+                                                                backgroundColor: '#2f6fbf',
+                                                                borderRadius: 0
+                                                            }]
+                                                        },
+                                                        options: Object.assign({}, baseOptions(8), {
+                                                            plugins: Object.assign({}, { valueLabels: {} }, { title: { display: true, text: 'Top partners', align: 'center', font: { size: 14, weight: 600 }, padding: { bottom: 8 } } }),
+                                                            scales: {
+                                                                x: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(0,0,0,0.06)' } },
+                                                                y: { ticks: { callback: function(t) { return truncate(this.getLabelForValue(t), 28); }, maxTicksLimit: 10 }, grid: { display: false } }
+                                                            }
+                                                        })
+                                                    });
+                                                }
                                             })();
                                     <?php endif; ?>
                                 });

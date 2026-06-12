@@ -260,8 +260,8 @@ include __DIR__ . '/navbar.php';
     <?php endforeach; ?>
         
 <?php if (!empty($events)): ?>
-<section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" tabindex="0">
-    <div class="flex items-center justify-between gap-4 mb-6 pb-6 border-b-2 border-gray-200">
+<section class="bg-white shadow-lg p-6 md:p-7 max-w-6xl mx-auto my-10" tabindex="0">
+    <div class="flex items-center justify-between gap-4 mb-4 pb-4 border-b-2 border-gray-200">
         <h2 class="text-2xl md:text-3xl font-semibold text-gray-900">Aankomende events</h2>
         <?php if (count($events) > 1): ?>
         <div class="flex gap-2">
@@ -283,11 +283,11 @@ include __DIR__ . '/navbar.php';
     $eventImageName = trim((string)($event['image'] ?? ''));
     $hasValidImage = $eventImageName !== '' && file_exists(__DIR__ . '/uploads/' . $eventImageName);
 ?>
-<section class="homepage-carousel-slide flex flex-col md:flex-row items-center gap-10">
+<section class="homepage-carousel-slide flex flex-col md:flex-row items-center gap-6 md:gap-8">
     <div class="flex-1">
         <span class="inline-block bg-[#00811F] text-white text-sm font-medium px-4 py-1 mb-4">Evenement</span>
         <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($event['title']); ?></h2>
-        <div class="space-y-4">
+        <div class="space-y-3">
             <div class="flex items-center space-x-3">
                 <i class="fa-regular fa-calendar text-[#00811F] ml-[2px] text-3xl"></i>
                 <?php $dateDisplay = formatEventDateDisplay($event['date']); $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : ''; ?>
@@ -298,9 +298,9 @@ include __DIR__ . '/navbar.php';
                 <?php $loc = $event['location'] ?: 'Rotterdam - Hillevliet 90'; ?>
                 <p class="text-gray-700 ml-1"><strong>Waar:</strong> <a href="<?php echo googleMapsDirectionsUrl($loc); ?>" target="_blank" rel="noopener noreferrer" class="underline hover:text-[#00811F]"><?php echo htmlspecialchars($loc); ?></a></p>
             </div>
-            <div class="flex mb-6 space-x-3">
+            <div class="flex mb-4 space-x-3">
                 <i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>
-                <p class="text-gray-700 pb-3"><strong> Wat:</strong> <?php echo renderEditorBlock($event['description']); ?></p>
+                <p class="text-gray-700 pb-1"><strong> Wat:</strong> <?php echo renderEditorBlock($event['description']); ?></p>
             </div>
         </div>
         <?php if ($hasValidImage): ?>
@@ -310,7 +310,7 @@ include __DIR__ . '/navbar.php';
             </div>
         </div>
         <?php endif; ?>
-        <div class="mt-6 flex flex-wrap gap-3">
+        <div class="mt-4 flex flex-wrap gap-3">
             <?php $signupEmbed = trim((string)($event['signup_embed'] ?? '')); ?>
             <?php if ($signupEmbed !== ''): ?>
                 <?php echo renderAanmelderEmbed($signupEmbed); ?>
@@ -354,8 +354,8 @@ include __DIR__ . '/navbar.php';
         <div class="flex items-center gap-4">
             <i class="fa-brands fa-linkedin text-4xl text-[#0A66C2]"></i>
             <div>
-                <h2 class="text-2xl font-bold text-gray-800">LinkedIn Updates</h2>
-                <p class="text-gray-600">Recente berichten van SociaalAI Lab</p>
+                <h2 class="text-2xl font-bold text-gray-800">Nieuws</h2>
+                <p class="text-gray-600">Recente berichten van SociaalAI Lab Rotterdam</p>
             </div>
         </div>
         <div class="flex gap-2">
