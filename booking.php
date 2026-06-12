@@ -113,6 +113,11 @@ $stmt = $pdo->prepare("SELECT * FROM bookings");
 $stmt->execute();
 $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Also show approved agenda events in booking calendar/day view
+$stmt = $pdo->prepare("SELECT id, title, date, end_date, time, time_end, location, hardware_request, staff_present FROM events WHERE approval_status IN ('approved','pending')");
+$stmt->execute();
+$events = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 $message = "";
 // Support flash messages from booking POST handling
 if (!empty($_SESSION['booking_message'])) {
@@ -353,13 +358,36 @@ $daysWithStaff = array_keys($staffByDate);
         $dayBookings = array_filter($bookings, function($b) use ($selectedDay) {
             return $selectedDay && $b['booking_date'] === $selectedDay;
         });
+        $dayEvents = array_filter($events, function($e) use ($selectedDay) {
+            if (!$selectedDay || empty($e['date'])) return false;
+            $start = $e['date'];
+            $end = $e['end_date'] ?: $e['date'];
+            return $selectedDay >= $start && $selectedDay <= $end;
+        });
         
-        if ($selectedDay && empty($dayBookings)): 
+        if ($selectedDay && empty($dayBookings) && empty($dayEvents)): 
         ?>
             <p style="color: #999; text-align: center; padding: 2rem;">Geen boekingen op deze dag</p>
         <?php elseif (!$selectedDay): ?>
             <p style="color: #999; text-align: center; padding: 2rem;">Selecteer een dag om boekingen te zien</p>
         <?php else: ?>
+            <?php foreach ($dayEvents as $e): ?>
+                <div class="booking" style="border-left-color:#2563eb;">
+                    <div>
+                        <strong><?= htmlspecialchars($e['title'] ?? 'Ongetiteld event') ?></strong><br>
+                        <?= htmlspecialchars($e['location'] ?? 'Locatie volgt') ?><br>
+                        <span style="font-size: 0.9rem; color: #666;">
+                            <?= !empty($e['time']) ? substr($e['time'], 0, 5) : 'Tijd volgt' ?><?= !empty($e['time_end']) ? ' - ' . substr($e['time_end'], 0, 5) : '' ?>
+                        </span>
+                        <?php if (!empty($e['hardware_request'])): ?>
+                            <br><span style="font-size: 0.85rem; color: #2563eb;"><strong>Hardware:</strong> <?= nl2br(htmlspecialchars($e['hardware_request'])) ?></span>
+                        <?php endif; ?>
+                        <?php if (!empty($e['staff_present'])): ?>
+                            <br><span style="font-size: 0.85rem; color: #1f2937;"><strong>SociaalAI Lab erbij:</strong> <?= nl2br(htmlspecialchars($e['staff_present'])) ?></span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            <?php endforeach; ?>
             <?php foreach ($dayBookings as $b): ?>
                 <?php $loc = findById($locations, $b['location_id']); ?>
                 <div class="booking">
@@ -475,6 +503,22 @@ $daysWithStaff = array_keys($staffByDate);
                     }
                     if (!empty($b['title'])) {
                         $bookingTitlesByDate[$b['booking_date']][] = $b['title'];
+                    }
+                }
+                foreach ($events as $e) {
+                    if (empty($e['date'])) continue;
+                    $startTs = strtotime($e['date']);
+                    $endTs = strtotime($e['end_date'] ?: $e['date']);
+                    if ($startTs === false || $endTs === false) continue;
+                    for ($ts = $startTs; $ts <= $endTs; $ts = strtotime('+1 day', $ts)) {
+                        $d = date('Y-m-d', $ts);
+                        $daysWithBookings[] = $d;
+                        if (!isset($bookingTitlesByDate[$d])) {
+                            $bookingTitlesByDate[$d] = [];
+                        }
+                        if (!empty($e['title'])) {
+                            $bookingTitlesByDate[$d][] = $e['title'];
+                        }
                     }
                 }
                 

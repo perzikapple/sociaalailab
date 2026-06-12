@@ -349,6 +349,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $eventSummary = sanitizeEditorBlockInput($_POST['event_summary'] ?? '');
         $meerInfo = sanitizeEditorBlockInput($_POST['meer_info'] ?? '');
         $location = sanitizeEditorPlainText($_POST['location'] ?? '');
+        $hardwareRequest = sanitizeEditorBlockInput($_POST['hardware_request'] ?? '');
+        $staffPresent = sanitizeEditorBlockInput($_POST['staff_present'] ?? '');
         $targetAudience = sanitizeEditorPlainText($_POST['target_audience'] ?? '');
         $internalNotes = sanitizeEditorBlockInput($_POST['internal_notes'] ?? '');
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
@@ -381,8 +383,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         : null;
 
                     // voeg updated_at, updated_by, en approval gegevens toe bij insert
-                    $stmt = $pdo->prepare('INSERT INTO events (title, date, end_date, time, time_end, description, event_summary, meer_info, image, event_gallery, location, target_audience, internal_notes, show_signup_button, signup_embed, show_on_homepage, updated_at, updated_by, approval_status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)');
-                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $location ?: null, $targetAudience ?: null, $internalNotes ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser, $approvalStatus, $currentUser]);
+                    $stmt = $pdo->prepare('INSERT INTO events (title, date, end_date, time, time_end, description, event_summary, meer_info, image, event_gallery, location, hardware_request, staff_present, target_audience, internal_notes, show_signup_button, signup_embed, show_on_homepage, updated_at, updated_by, approval_status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)');
+                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $location ?: null, $hardwareRequest ?: null, $staffPresent ?: null, $targetAudience ?: null, $internalNotes ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser, $approvalStatus, $currentUser]);
                     $eventId = $pdo->lastInsertId();
                     // Audit log: event created
                     audit_log($pdo, 'create', 'events', $eventId, 'title: ' . $title, $currentUser);
@@ -402,6 +404,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $eventSummary = sanitizeEditorBlockInput($_POST['event_summary'] ?? '');
         $meerInfo = sanitizeEditorBlockInput($_POST['meer_info'] ?? '');
         $location = sanitizeEditorPlainText($_POST['location'] ?? '');
+        $hardwareRequest = sanitizeEditorBlockInput($_POST['hardware_request'] ?? '');
+        $staffPresent = sanitizeEditorBlockInput($_POST['staff_present'] ?? '');
         $targetAudience = sanitizeEditorPlainText($_POST['target_audience'] ?? '');
         $internalNotes = sanitizeEditorBlockInput($_POST['internal_notes'] ?? '');
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
@@ -453,8 +457,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         : null;
 
                     // update nu ook updated_at, updated_by, target_audience, en internal_notes
-                    $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, end_date=?, time=?, time_end=?, description=?, event_summary=?, meer_info=?, image=?, event_gallery=?, location=?, target_audience=?, internal_notes=?, show_signup_button=?, signup_embed=?, show_on_homepage=?, updated_at=NOW(), updated_by=? WHERE id=?');
-                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $location ?: null, $targetAudience ?: null, $internalNotes ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser, $id]);
+                    $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, end_date=?, time=?, time_end=?, description=?, event_summary=?, meer_info=?, image=?, event_gallery=?, location=?, hardware_request=?, staff_present=?, target_audience=?, internal_notes=?, show_signup_button=?, signup_embed=?, show_on_homepage=?, updated_at=NOW(), updated_by=? WHERE id=?');
+                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $location ?: null, $hardwareRequest ?: null, $staffPresent ?: null, $targetAudience ?: null, $internalNotes ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser, $id]);
                     // Audit log: event updated
                     audit_log($pdo, 'update', 'events', $id, 'title: ' . $title, $currentUser);
 
@@ -861,7 +865,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $pdo->prepare(
                 'SELECT id, title, date, end_date, time, time_end, description, location, image, 
                         created_by, target_audience, internal_notes, approval_status, approval_feedback,
-                        meer_info, event_summary, signup_embed, show_signup_button, show_on_homepage
+                    meer_info, event_summary, signup_embed, show_signup_button, show_on_homepage,
+                    hardware_request, staff_present
                  FROM events WHERE id = ? AND approval_status = ?'
             );
             $stmt->execute([$itemId, 'pending']);
@@ -894,6 +899,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $time = sanitizeEditorBlockInput($_POST['approval_time'] ?? '');
         $time_end = sanitizeEditorBlockInput($_POST['approval_time_end'] ?? '');
         $location = sanitizeEditorBlockInput($_POST['approval_location'] ?? '');
+        $hardware_request = sanitizeEditorBlockInput($_POST['approval_hardware_request'] ?? '');
+        $staff_present = sanitizeEditorBlockInput($_POST['approval_staff_present'] ?? '');
         $description = sanitizeEditorBlockInput($_POST['approval_description'] ?? '');
         $meer_info = sanitizeEditorBlockInput($_POST['approval_meer_info'] ?? '');
         $event_summary = sanitizeEditorBlockInput($_POST['approval_event_summary'] ?? '');
@@ -914,7 +921,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = $pdo->prepare(
                     'UPDATE events SET 
                         title = ?, date = ?, end_date = ?, time = ?, time_end = ?, 
-                        location = ?, description = ?, meer_info = ?, event_summary = ?,
+                        location = ?, hardware_request = ?, staff_present = ?, description = ?, meer_info = ?, event_summary = ?,
                         target_audience = ?, internal_notes = ?, signup_embed = ?,
                         show_signup_button = ?, show_on_homepage = ?,
                         approval_status = ?, approved_by = ?, approval_feedback = ?
@@ -922,7 +929,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
                 $stmt->execute([
                     $title, $date, $end_date ?? null, $time ?? null, $time_end ?? null,
-                    $location, $description, $meer_info ?? null, $event_summary ?? null,
+                    $location, $hardware_request ?: null, $staff_present ?: null, $description, $meer_info ?? null, $event_summary ?? null,
                     $target_audience ?? null, $internal_notes ?? null, $signup_embed ?? null,
                     $show_signup_button, $show_on_homepage,
                     'approved', $currentUser, $feedback ?: null, $itemId
@@ -963,6 +970,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $time = sanitizeEditorBlockInput($_POST['approval_time'] ?? '');
         $time_end = sanitizeEditorBlockInput($_POST['approval_time_end'] ?? '');
         $location = sanitizeEditorBlockInput($_POST['approval_location'] ?? '');
+        $hardware_request = sanitizeEditorBlockInput($_POST['approval_hardware_request'] ?? '');
+        $staff_present = sanitizeEditorBlockInput($_POST['approval_staff_present'] ?? '');
         $description = sanitizeEditorBlockInput($_POST['approval_description'] ?? '');
         $meer_info = sanitizeEditorBlockInput($_POST['approval_meer_info'] ?? '');
         $event_summary = sanitizeEditorBlockInput($_POST['approval_event_summary'] ?? '');
@@ -983,7 +992,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = $pdo->prepare(
                     'UPDATE events SET 
                         title = ?, date = ?, end_date = ?, time = ?, time_end = ?, 
-                        location = ?, description = ?, meer_info = ?, event_summary = ?,
+                        location = ?, hardware_request = ?, staff_present = ?, description = ?, meer_info = ?, event_summary = ?,
                         target_audience = ?, internal_notes = ?, signup_embed = ?,
                         show_signup_button = ?, show_on_homepage = ?,
                         approval_status = ?, approved_by = ?, approval_feedback = ? 
@@ -991,7 +1000,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
                 $stmt->execute([
                     $title, $date, $end_date ?: null, $time ?: null, $time_end ?: null,
-                    $location, $description, $meer_info ?: null, $event_summary ?: null,
+                    $location, $hardware_request ?: null, $staff_present ?: null, $description, $meer_info ?: null, $event_summary ?: null,
                     $target_audience ?: null, $internal_notes ?: null, $signup_embed ?: null,
                     $show_signup_button, $show_on_homepage,
                     'rejected', $currentUser, $feedback, $itemId
@@ -1014,7 +1023,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $pdo->prepare(
                 'SELECT id, title, date, end_date, time, time_end, description, location, image, 
                         approval_status, approval_feedback, meer_info, event_summary, target_audience,
-                        internal_notes, signup_embed, show_signup_button, show_on_homepage
+                    internal_notes, signup_embed, show_signup_button, show_on_homepage,
+                    hardware_request, staff_present
                  FROM events WHERE id = ? AND created_by = ?'
             );
             $stmt->execute([$requestId, $currentUser]);
@@ -1047,6 +1057,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $time = sanitizeEditorBlockInput($_POST['edit_time'] ?? '');
         $time_end = sanitizeEditorBlockInput($_POST['edit_time_end'] ?? '');
         $location = sanitizeEditorBlockInput($_POST['edit_location'] ?? '');
+        $hardware_request = sanitizeEditorBlockInput($_POST['edit_hardware_request'] ?? '');
+        $staff_present = sanitizeEditorBlockInput($_POST['edit_staff_present'] ?? '');
         $description = sanitizeEditorBlockInput($_POST['edit_description'] ?? '');
         $meer_info = sanitizeEditorBlockInput($_POST['edit_meer_info'] ?? '');
         $event_summary = sanitizeEditorBlockInput($_POST['edit_event_summary'] ?? '');
@@ -1065,7 +1077,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = $pdo->prepare(
                     'UPDATE events SET 
                         title = ?, date = ?, end_date = ?, time = ?, time_end = ?, 
-                        location = ?, description = ?, meer_info = ?, event_summary = ?,
+                        location = ?, hardware_request = ?, staff_present = ?, description = ?, meer_info = ?, event_summary = ?,
                         target_audience = ?, signup_embed = ?, 
                         show_signup_button = ?, show_on_homepage = ?,
                         approval_status = "pending", approved_by = NULL, approval_feedback = NULL
@@ -1073,7 +1085,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
                 $stmt->execute([
                     $title, $date, $end_date ?: null, $time ?: null, $time_end ?: null,
-                    $location, $description, $meer_info ?: null, $event_summary ?: null,
+                    $location, $hardware_request ?: null, $staff_present ?: null, $description, $meer_info ?: null, $event_summary ?: null,
                     $target_audience ?: null, $signup_embed ?: null,
                     $show_signup_button, $show_on_homepage,
                     $requestId
@@ -1554,25 +1566,39 @@ if ($page === 'users') {
             filter: grayscale(0.2);
         }
 
+        /* Approval modal lock: keep modal centered and block nav/sidebar interaction */
+        body.approval-modal-open {
+            overflow: hidden;
+        }
+
+        body.approval-modal-open .admin-header,
+        body.approval-modal-open .sidebar,
+        body.approval-modal-open .sidebar-toggle-btn {
+            pointer-events: none !important;
+            user-select: none !important;
+        }
+
+        #approval-modal {
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 20000 !important;
+            align-items: center !important;
+            justify-content: center !important;
+            pointer-events: auto !important;
+        }
+
+        #approval-modal > div {
+            margin: 0 auto;
+            transform-origin: center center;
+        }
+
+        #approval-modal .ck-editor__editable {
+            min-height: 120px;
+        }
+
         .ck-editor__editable {
             min-height: 100px;
         }
-        /* Dashboard & Admin UI polish */
-        body.admin-page { background: #f7fafc; color: #0f172a; }
-        .admin-header { background: linear-gradient(135deg, #00811F 0%, #006f19 100%); color: #fff; }
-        .admin-header .admin-header-brand { display:inline-flex; gap:12px; align-items:center; }
-        .admin-header .admin-header-brand h1 { margin:0; font-size:1.25rem; font-weight:700; }
-        .card { background:#ffffff; border-radius:10px; padding:18px; box-shadow:0 6px 18px rgba(15,23,42,0.06); }
-        .card h3 { margin-top:0; }
-        .btn-primary { background:#0b6fbf; color:#fff; border:0; padding:8px 12px; border-radius:8px; }
-        .btn-site { background: var(--color-rdm); color: #fff; border:0; padding:8px 12px; border-radius:8px; }
-        .btn-secondary { background:#ffffff; color:#0f172a; border:1px solid rgba(15,23,42,0.08); padding:7px 10px; border-radius:8px; }
-        .btn { font-weight:600; }
-        .admin-layout-grid { gap:24px; }
-        /* Make main column full width when viewing dashboard */
-        body.dashboard-view .lg\:col-span-3 { grid-column: 1 / -1; }
-        /* Chart card title style */
-        .card canvas { background: #fff; }
     </style>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -1816,6 +1842,18 @@ if ($page === 'users') {
                                 </div>
 
                                 <div>
+                                    <label class="form-label">Hardware (optioneel)</label>
+                                    <textarea name="hardware_request" rows="3" class="form-textarea" placeholder="Bijv. 2x VR bril, 1x Speaker"><?php echo htmlspecialchars($editEvent['hardware_request'] ?? ''); ?></textarea>
+                                    <p class="text-xs text-gray-500 mt-2">Wordt meegenomen naar Booking en zichtbaar bij goedkeuring.</p>
+                                </div>
+
+                                <div>
+                                    <label class="form-label">Wie van SociaalAI Lab zijn erbij? (optioneel)</label>
+                                    <textarea name="staff_present" rows="3" class="form-textarea" placeholder="Bijv. Naam 1, Naam 2"><?php echo htmlspecialchars($editEvent['staff_present'] ?? ''); ?></textarea>
+                                    <p class="text-xs text-gray-500 mt-2">Mag leeg blijven.</p>
+                                </div>
+
+                                <div>
                                     <label class="form-label">Omschrijving</label>
                                     <textarea name="description" rows="5" class="form-textarea"><?php echo htmlspecialchars($editEvent['description'] ?? ''); ?></textarea>
                                 </div>
@@ -1970,6 +2008,18 @@ if ($page === 'users') {
                                 <div>
                                     <label class="form-label">Plaats</label>
                                     <input name="location" class="form-input admin-input-surface" value="<?php echo htmlspecialchars($_POST['location'] ?? ''); ?>" />
+                                </div>
+
+                                <div>
+                                    <label class="form-label">Hardware (optioneel)</label>
+                                    <textarea name="hardware_request" rows="3" class="form-textarea" placeholder="Bijv. 2x VR bril, 1x Speaker"><?php echo htmlspecialchars($_POST['hardware_request'] ?? ''); ?></textarea>
+                                    <p class="text-xs text-gray-500 mt-2">Wordt meegenomen naar Booking en zichtbaar bij goedkeuring.</p>
+                                </div>
+
+                                <div>
+                                    <label class="form-label">Wie van SociaalAI Lab zijn erbij? (optioneel)</label>
+                                    <textarea name="staff_present" rows="3" class="form-textarea" placeholder="Bijv. Naam 1, Naam 2"><?php echo htmlspecialchars($_POST['staff_present'] ?? ''); ?></textarea>
+                                    <p class="text-xs text-gray-500 mt-2">Mag leeg blijven.</p>
                                 </div>
 
                                 <div>
@@ -2355,7 +2405,8 @@ if ($page === 'users') {
                             $stmt = $pdo->prepare(
                                 "SELECT id, title, date, end_date, time, time_end, description, location, image, 
                                         created_by, target_audience, internal_notes, approval_status, approval_feedback,
-                                        info_link, signup_embed, show_signup_button, created_at
+                                    info_link, signup_embed, show_signup_button, created_at,
+                                    hardware_request, staff_present
                                  FROM events 
                                  WHERE approval_status = 'pending' 
                                  ORDER BY created_at DESC"
@@ -2444,8 +2495,8 @@ if ($page === 'users') {
                     </div>
 
                     <!-- Approval Details Modal -->
-                    <div id="approval-modal" class="hidden" style="position: fixed; inset: 0; z-index: 9998; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; padding: 1rem; opacity: 0; transition: opacity 0.3s ease;">
-                        <div style="background: white; border-radius: 12px; width: 100%; max-width: 900px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,.3); transform: scale(0.95); transition: transform 0.3s ease;">
+                    <div id="approval-modal" class="hidden" style="position: fixed; inset: 0; z-index: 20000; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; padding: 1rem; opacity: 0; transition: opacity 0.3s ease; pointer-events: auto;">
+                        <div style="background: white; border-radius: 12px; width: 100%; max-width: 900px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,.3); transform: scale(0.95); transition: transform 0.3s ease; margin: 0 auto;">
                             <!-- Header -->
                             <div style="display: flex; justify-content: space-between; align-items: center; padding: 1.5rem; border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; background: white; z-index: 10;">
                                 <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0;" id="approval-modal-title">Details & Beoordeling</h2>
@@ -2494,6 +2545,16 @@ if ($page === 'users') {
                                         <div style="margin-bottom: 1rem;">
                                             <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Locatie:</strong></label>
                                             <input type="text" name="approval_location" id="approval-location-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                        </div>
+
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Hardware (optioneel):</strong></label>
+                                            <textarea name="approval_hardware_request" id="approval-hardware-request-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 70px; font-family: inherit;"></textarea>
+                                        </div>
+
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Wie van SociaalAI Lab zijn erbij? (optioneel):</strong></label>
+                                            <textarea name="approval_staff_present" id="approval-staff-present-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 70px; font-family: inherit;"></textarea>
                                         </div>
 
                                         <!-- Beschrijving (CKEditor) -->
@@ -2627,6 +2688,8 @@ if ($page === 'users') {
                                     
                                     // Locatie en beschrijving
                                     document.getElementById('approval-location-input').value = item.location || '';
+                                    document.getElementById('approval-hardware-request-input').value = item.hardware_request || '';
+                                    document.getElementById('approval-staff-present-input').value = item.staff_present || '';
                                     document.getElementById('approval-meer-info-input').value = item.meer_info || '';
                                     document.getElementById('approval-event-summary-input').value = item.event_summary || '';
                                     document.getElementById('approval-target-audience-input').value = item.target_audience || '';
@@ -2684,6 +2747,7 @@ if ($page === 'users') {
                                     // Show modal with animation
                                     modal.classList.remove('hidden');
                                     modal.style.display = 'flex';
+                                    document.body.classList.add('approval-modal-open');
                                     setTimeout(() => {
                                         modal.style.opacity = '1';
                                         modal.querySelector('div').style.transform = 'scale(1)';
@@ -2704,6 +2768,7 @@ if ($page === 'users') {
                             setTimeout(() => {
                                 modal.classList.add('hidden');
                                 modal.style.display = 'none';
+                                document.body.classList.remove('approval-modal-open');
                             }, 300);
                         }
 
@@ -2758,6 +2823,8 @@ if ($page === 'users') {
                                 'approval_time': document.getElementById('approval-time-input').value,
                                 'approval_time_end': document.getElementById('approval-time-end-input').value,
                                 'approval_location': document.getElementById('approval-location-input').value,
+                                'approval_hardware_request': document.getElementById('approval-hardware-request-input').value,
+                                'approval_staff_present': document.getElementById('approval-staff-present-input').value,
                                 'approval_description': descriptionValue,
                                 'approval_meer_info': document.getElementById('approval-meer-info-input').value,
                                 'approval_event_summary': document.getElementById('approval-event-summary-input').value,
@@ -3081,6 +3148,16 @@ if ($page === 'users') {
                                             <input type="text" name="edit_location" id="edit-location-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
                                         </div>
 
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Hardware (optioneel):</strong></label>
+                                            <textarea name="edit_hardware_request" id="edit-hardware-request-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 70px; font-family: inherit;"></textarea>
+                                        </div>
+
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Wie van SociaalAI Lab zijn erbij? (optioneel):</strong></label>
+                                            <textarea name="edit_staff_present" id="edit-staff-present-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 70px; font-family: inherit;"></textarea>
+                                        </div>
+
                                         <!-- Beschrijving -->
                                         <div style="margin-bottom: 1rem;">
                                             <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Beschrijving:</strong></label>
@@ -3174,6 +3251,8 @@ if ($page === 'users') {
                                     document.getElementById('edit-time-input').value = item.time || '';
                                     document.getElementById('edit-time-end-input').value = item.time_end || '';
                                     document.getElementById('edit-location-input').value = item.location || '';
+                                    document.getElementById('edit-hardware-request-input').value = item.hardware_request || '';
+                                    document.getElementById('edit-staff-present-input').value = item.staff_present || '';
                                     document.getElementById('edit-description-input').value = item.description || '';
                                     document.getElementById('edit-meer-info-input').value = item.meer_info || '';
                                     document.getElementById('edit-event-summary-input').value = item.event_summary || '';
