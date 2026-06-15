@@ -64,14 +64,18 @@ $weekStart = (clone $selectedDateTime)->modify('monday this week');
 $weekEnd = (clone $weekStart)->modify('+6 days');
 
 $locations = [
-        ['id' => 1, 'name' => 'Grote Zaal 1', 'color' => '#00811F'],
-        ['id' => 2, 'name' => 'Grote Zaal 2', 'color' => '#00811F'],
-        ['id' => 3, 'name' => 'Grote Zaal 3', 'color' => '#00811F'],
+        ['id' => 1, 'name' => 'Sociaal AI Lab Hillevliet', 'color' => '#00811F'],
+        ['id' => 2, 'name' => 'Labkar', 'color' => '#0066CC'],
+        ['id' => 999, 'name' => 'Extern (overig)', 'color' => '#FF9500'],
+];
 
-        ['id' => 4, 'name' => 'Workshop 1', 'color' => '#0066CC'],
-        ['id' => 5, 'name' => 'Workshop 2', 'color' => '#0066CC'],
-
-        ['id' => 999, 'name' => 'Extern', 'color' => '#FF9500'],
+$tables = [
+    'gt1' => 'Grote tafel 1',
+    'gt2' => 'Grote tafel 2',
+    'gt3' => 'Grote tafel 3',
+    'kt1' => 'Kleine tafel 1',
+    'kt2' => 'Kleine tafel 2',
+    'kt3' => 'Kleine tafel 3',
 ];
 
 $hardware = [
@@ -160,91 +164,98 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['staff_dates'])) {
 
 /* BOOKING INSERT - support multiple locations selection */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['booking_date'])) {
-    $bookingDate = $_POST['booking_date'] ?? null;
-    $bookingStartTime = $_POST['start_time'] ?? null;
-    $bookingEndTime = $_POST['end_time'] ?? null;
-    $locationIds = $_POST['location_ids'] ?? [];
-    // allow single location submitted as scalar for backwards compatibility
-    if (!is_array($locationIds) && !empty($locationIds)) {
-        $locationIds = [$locationIds];
-    }
+     $bookingDate = $_POST['booking_date'] ?? null;
+     $bookingStartTime = $_POST['start_time'] ?? null;
+     $bookingEndTime = $_POST['end_time'] ?? null;
+     $bookingTitle = $_POST['booking_title'] ?? null;
+     $locationIds = $_POST['location_ids'] ?? [];
+     $tablesJson = $_POST['tables_json'] ?? '[]';
+     // allow single location submitted as scalar for backwards compatibility
+     if (!is_array($locationIds) && !empty($locationIds)) {
+         $locationIds = [$locationIds];
+     }
 
-    if (!empty($bookingDate) && !empty($bookingStartTime) && !empty($bookingEndTime) && !empty($locationIds)) {
-        $hardwareJson = json_encode($_POST['hardware'] ?? []);
-        $inserted = [];
-        $skipped = [];
+     if (!empty($bookingDate) && !empty($bookingStartTime) && !empty($bookingEndTime) && !empty($locationIds)) {
+         $hardwareJson = json_encode($_POST['hardware'] ?? []);
+         $inserted = [];
+         $skipped = [];
 
-        foreach ($locationIds as $locId) {
-            $locId = intval($locId);
-            if ($locId === 0) continue;
+         foreach ($locationIds as $locId) {
+             $locId = intval($locId);
+             if ($locId === 0) continue;
 
-            $locationDescription = $locId == 999 ? ($_POST['location_description'] ?? '') : null;
+             $locationDescription = $locId == 999 ? ($_POST['location_description'] ?? '') : null;
 
-            // Check for conflicting bookings for this location
-            $conflict = false;
-            foreach ($bookings as $b) {
-                if ($b['booking_date'] === $bookingDate && $b['location_id'] == $locId) {
-                    // Externe bookings (999) conflicteren niet met elkaar
-                    if ($locId == 999) continue;
+             // Check for conflicting bookings for this location
+             $conflict = false;
+             foreach ($bookings as $b) {
+                 if ($b['booking_date'] === $bookingDate && $b['location_id'] == $locId) {
+                     // Externe bookings (999) conflicteren niet met elkaar
+                     if ($locId == 999) continue;
 
-                    $bStart = (int)substr($b['start_time'], 0, 2);
-                    $bEnd = (int)substr($b['end_time'], 0, 2);
-                    $newStart = (int)substr($bookingStartTime, 0, 2);
-                    $newEnd = (int)substr($bookingEndTime, 0, 2);
+                     $bStart = (int)substr($b['start_time'], 0, 2);
+                     $bEnd = (int)substr($b['end_time'], 0, 2);
+                     $newStart = (int)substr($bookingStartTime, 0, 2);
+                     $newEnd = (int)substr($bookingEndTime, 0, 2);
 
-                    if ($newStart < $bEnd && $newEnd > $bStart) {
-                        $conflict = true;
-                        break;
-                    }
-                }
-            }
+                     if ($newStart < $bEnd && $newEnd > $bStart) {
+                         $conflict = true;
+                         break;
+                     }
+                 }
+             }
 
-            if ($conflict) {
-                $skipped[] = $locId;
-                continue;
-            }
+             if ($conflict) {
+                 $skipped[] = $locId;
+                 continue;
+             }
 
-            $hardwareJson = $_POST['hardware_json'] ?? '[]';
-            $stmt = $pdo->prepare("INSERT INTO bookings (location_id, location_description, booking_date, start_time, end_time, hardware_ids) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->execute([
-                $locId,
-                $locationDescription,
-                $bookingDate,
-                $bookingStartTime,
-                $bookingEndTime,
-                $hardwareJson
-            ]);
+             $hardwareJson = $_POST['hardware_json'] ?? '[]';
+             // Only use tafels_json if this is location_id 1 (Sociaal AI Lab Hillevliet)
+             $tablesForBooking = ($locId == 1) ? $tablesJson : '[]';
 
-            $inserted[] = $locId;
-        }
+             $stmt = $pdo->prepare("INSERT INTO bookings (title, location_id, location_description, booking_date, start_time, end_time, hardware_ids, tables_ids) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+             $stmt->execute([
+                 $bookingTitle,
+                 $locId,
+                 $locationDescription,
+                 $bookingDate,
+                 $bookingStartTime,
+                 $bookingEndTime,
+                 $hardwareJson,
+                 $tablesForBooking
+             ]);
 
-        // prepare a user-friendly message and store in session so it survives the redirect
-        $msgParts = [];
-        if (!empty($inserted)) {
-            $names = [];
-            foreach ($inserted as $id) {
-                $loc = findById($locations, $id);
-                $names[] = $loc ? $loc['name'] : "#{$id}";
-            }
-            $msgParts[] = "Geboekt: " . implode(', ', $names);
-        }
-        if (!empty($skipped)) {
-            $names = [];
-            foreach ($skipped as $id) {
-                $loc = findById($locations, $id);
-                $names[] = $loc ? $loc['name'] : "#{$id}";
-            }
-            $msgParts[] = "Kon niet boeken (conflict): " . implode(', ', $names);
-        }
+             $inserted[] = $locId;
+         }
 
-        if (!empty($msgParts)) {
-            $_SESSION['booking_message'] = implode(' | ', $msgParts);
-        }
+         // prepare a user-friendly message and store in session so it survives the redirect
+         $msgParts = [];
+         if (!empty($inserted)) {
+             $names = [];
+             foreach ($inserted as $id) {
+                 $loc = findById($locations, $id);
+                 $names[] = $loc ? $loc['name'] : "#{$id}";
+             }
+             $msgParts[] = "Geboekt: " . implode(', ', $names);
+         }
+         if (!empty($skipped)) {
+             $names = [];
+             foreach ($skipped as $id) {
+                 $loc = findById($locations, $id);
+                 $names[] = $loc ? $loc['name'] : "#{$id}";
+             }
+             $msgParts[] = "Kon niet boeken (conflict): " . implode(', ', $names);
+         }
 
-        header("Location: booking.php?view=$view&date=$selectedDate");
-        exit;
-    }
-}
+         if (!empty($msgParts)) {
+             $_SESSION['booking_message'] = implode(' | ', $msgParts);
+         }
+
+         header("Location: booking.php?view=$view&date=$selectedDate");
+         exit;
+     }
+ }
 
 /* LOAD ALL STAFF ASSIGNMENTS FOR DISPLAY */
 $stmt = $pdo->prepare("SELECT DISTINCT staff_name, color, COUNT(DISTINCT staff_date) as num_dates FROM location_staff WHERE location_id = 1 GROUP BY staff_name, color ORDER BY staff_name");
@@ -388,15 +399,32 @@ $daysWithStaff = array_keys($staffByDate);
                     </div>
                 </div>
             <?php endforeach; ?>
-            <?php foreach ($dayBookings as $b): ?>
-                <?php $loc = findById($locations, $b['location_id']); ?>
-                <div class="booking">
-                    <div>
-                        <strong><?= htmlspecialchars($b['title'] ?? 'Ongetiteld') ?></strong><br>
-                        <?= htmlspecialchars($b['location_id'] == 999 ? ($b['location_description'] ?? 'Extern') : $loc['name']) ?><br>
-                        <span style="font-size: 0.9rem; color: #666;">
-                            <?= substr($b['start_time'], 0, 5) ?> - <?= substr($b['end_time'], 0, 5) ?>
-                            <?php 
+             <?php foreach ($dayBookings as $b): ?>
+                 <?php $loc = findById($locations, $b['location_id']); ?>
+                 <div class="booking">
+                     <div>
+                         <strong><?= htmlspecialchars($b['title'] ?? 'Ongetiteld') ?></strong><br>
+                         <?php if ($b['location_id'] == 999): ?>
+                             Extern (overig)<?php if (!empty($b['location_description'])): ?> - <?= htmlspecialchars($b['location_description']) ?><?php endif; ?>
+                         <?php else: ?>
+                             <?= htmlspecialchars($loc['name']) ?>
+                         <?php endif; ?><br>
+                         <span style="font-size: 0.9rem; color: #666;">
+                             <?= substr($b['start_time'], 0, 5) ?> - <?= substr($b['end_time'], 0, 5) ?>
+                            <?php
+                            // Show tables if this is Sociaal AI Lab Hillevliet
+                            if ($b['location_id'] == 1 && !empty($b['tables_ids'])):
+                                $tablesList = json_decode($b['tables_ids'], true);
+                                if (!empty($tablesList)):
+                                    $tableNames = [];
+                                    foreach ($tablesList as $tableId) {
+                                        $tableNames[] = $tables[$tableId] ?? $tableId;
+                                    }
+                            ?>
+                                <br><span style="font-size: 0.85rem; color: #0066CC;"><strong>Tafels:</strong> <?= implode(', ', $tableNames) ?></span>
+                            <?php endif; endif; ?>
+
+                            <?php
                             if ($b['hardware_ids']): 
                                 $hwList = json_decode($b['hardware_ids'], true);
                                 if (!empty($hwList)):
@@ -612,11 +640,11 @@ $daysWithStaff = array_keys($staffByDate);
             <input type="date" name="booking_date" id="booking_date" required>
 
             <div style="margin-bottom: 1.2rem;">
-                <label style="display: block; margin-bottom: 0.75rem; font-weight: 600; color: #00811F;">Kies één of meerdere ruimtes:</label>
+                <label style="display: block; margin-bottom: 0.75rem; font-weight: 600; color: #00811F;">Selecteer locatie(s):</label>
                 <div class="location-buttons">
                     <?php foreach ($locations as $l): ?>
                         <label class="location-button" style="cursor: pointer;">
-                            <input type="checkbox" name="location_ids[]" value="<?= $l['id'] ?>" onchange="toggleLocationDescription()">
+                            <input type="checkbox" name="location_ids[]" value="<?= $l['id'] ?>" onchange="toggleLocationDescription(); toggleTableSelection()">
                             <span style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; background: #f9fafb; border: 2px solid #dfe8f3; border-radius: 10px; font-weight: 500; color: #333; transition: all 0.3s ease;">
                                 <div style="width: 12px; height: 12px; border-radius: 3px; border: 2px solid #dfe8f3; background: white;"></div>
                                 <?= htmlspecialchars($l['name']) ?>
@@ -624,6 +652,47 @@ $daysWithStaff = array_keys($staffByDate);
                         </label>
                     <?php endforeach; ?>
                 </div>
+            </div>
+
+            <!-- Tafelselectie voor Sociaal AI Lab Hillevliet -->
+            <div id="table_selection" style="display:none; margin-bottom: 1.2rem; padding: 1rem; background: #f9fafb; border-radius: 10px; border: 2px solid #dfe8f3;">
+                <label style="display: block; margin-bottom: 0.75rem; font-weight: 600; color: #00811F;">Selecteer tafel(s) in Sociaal AI Lab Hillevliet:</label>
+                
+                <fieldset style="margin-bottom: 1rem; padding: 0.75rem; border: 1px solid #dfe8f3; border-radius: 8px; background: white;">
+                    <legend style="font-weight: 600; color: #333; padding: 0 0.5rem;">Grote tafels</legend>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" name="tables[]" value="gt1" style="cursor: pointer;">
+                            <span>Grote tafel 1</span>
+                        </label>
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" name="tables[]" value="gt2" style="cursor: pointer;">
+                            <span>Grote tafel 2</span>
+                        </label>
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" name="tables[]" value="gt3" style="cursor: pointer;">
+                            <span>Grote tafel 3</span>
+                        </label>
+                    </div>
+                </fieldset>
+
+                <fieldset style="padding: 0.75rem; border: 1px solid #dfe8f3; border-radius: 8px; background: white;">
+                    <legend style="font-weight: 600; color: #333; padding: 0 0.5rem;">Kleine tafels</legend>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" name="tables[]" value="kt1" style="cursor: pointer;">
+                            <span>Kleine tafel 1</span>
+                        </label>
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" name="tables[]" value="kt2" style="cursor: pointer;">
+                            <span>Kleine tafel 2</span>
+                        </label>
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" name="tables[]" value="kt3" style="cursor: pointer;">
+                            <span>Kleine tafel 3</span>
+                        </label>
+                    </div>
+                </fieldset>
             </div>
 
             <input type="text" name="location_description" id="location_description" placeholder="Waar/wat is de externe locatie?" style="display:none;">
@@ -653,10 +722,13 @@ $daysWithStaff = array_keys($staffByDate);
                 </div>
             </div>
 
-            <!-- Hidden input voor hardware data -->
-            <input type="hidden" name="hardware_json" id="hardware_json" value="[]">
+             <!-- Hidden input voor hardware data -->
+             <input type="hidden" name="hardware_json" id="hardware_json" value="[]">
+             
+             <!-- Hidden input voor tafels data -->
+             <input type="hidden" name="tables_json" id="tables_json" value="[]">
 
-            <button type="submit" class="btn" id="submitBtn">Boek nu</button>
+             <button type="submit" class="btn" id="submitBtn">Boek nu</button>
         </form>
     </section>
 
@@ -698,22 +770,43 @@ function checkIfPastDate(dateStr) {
 
 // Toggle location description field based on whether extern (999) is selected
 function toggleLocationDescription() {
-    const checkboxes = document.querySelectorAll('input[name="location_ids[]"]');
-    const descriptionField = document.getElementById('location_description');
-    let externSelected = false;
-    checkboxes.forEach(cb => {
-        if (cb.checked && cb.value === '999') externSelected = true;
-    });
+     const checkboxes = document.querySelectorAll('input[name="location_ids[]"]');
+     const descriptionField = document.getElementById('location_description');
+     let externSelected = false;
+     checkboxes.forEach(cb => {
+         if (cb.checked && cb.value === '999') externSelected = true;
+     });
 
-    if (externSelected) {
-        descriptionField.style.display = 'block';
-        descriptionField.required = true;
-    } else {
-        descriptionField.style.display = 'none';
-        descriptionField.required = false;
-        descriptionField.value = '';
-    }
-}
+     if (externSelected) {
+         descriptionField.style.display = 'block';
+         descriptionField.required = true;
+     } else {
+         descriptionField.style.display = 'none';
+         descriptionField.required = false;
+         descriptionField.value = '';
+     }
+ }
+
+ // Toggle table selection based on whether Sociaal AI Lab Hillevliet (id=1) is selected
+ function toggleTableSelection() {
+     const checkboxes = document.querySelectorAll('input[name="location_ids[]"]');
+     const tableSelection = document.getElementById('table_selection');
+     let hillevlietSelected = false;
+     checkboxes.forEach(cb => {
+         if (cb.checked && cb.value === '1') hillevlietSelected = true;
+     });
+
+     if (hillevlietSelected) {
+         tableSelection.style.display = 'block';
+     } else {
+         tableSelection.style.display = 'none';
+         // Clear table selections if Hillevliet is deselected
+         const tableCheckboxes = document.querySelectorAll('input[name="tables[]"]');
+         tableCheckboxes.forEach(cb => {
+             cb.checked = false;
+         });
+     }
+ }
 
 // Initialize form with selected day if present
 document.addEventListener('DOMContentLoaded', function() {
@@ -727,6 +820,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize location description field visibility
     toggleLocationDescription();
+    toggleTableSelection();
     
     // Listen for date field changes to enable/disable submit button
     const dateInput = document.getElementById('booking_date');
@@ -855,12 +949,13 @@ function updateHardwareDisplay() {
 
 // Prevent form submit if no hardware selected
 document.getElementById('bookingForm').addEventListener('submit', function(e) {
-    if (Object.keys(selectedHardware).length === 0) {
-        alert('Voeg minstens één hardware item toe');
-        e.preventDefault();
-        return false;
-    }
-});
+     // Save selected tables before submission
+     const tableCheckboxes = document.querySelectorAll('input[name="tables[]"]:checked');
+     const selectedTables = Array.from(tableCheckboxes).map(cb => cb.value);
+     document.getElementById('tables_json').value = JSON.stringify(selectedTables);
+     
+     // Hardware is now optional - no validation needed
+ });
 </script>
 
 <!-- STAFF SECTION -->

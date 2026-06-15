@@ -234,13 +234,16 @@ try {
 
     $bookingColumns = $pdo->query("SHOW COLUMNS FROM bookings")->fetchAll(PDO::FETCH_COLUMN);
     if (!in_array('location_description', $bookingColumns)) {
-        $pdo->exec("ALTER TABLE bookings ADD COLUMN location_description VARCHAR(255) DEFAULT NULL");
+         $pdo->exec("ALTER TABLE bookings ADD COLUMN location_description VARCHAR(255) DEFAULT NULL");
     }
     if (!in_array('staff_present', $bookingColumns)) {
-        $pdo->exec("ALTER TABLE bookings ADD COLUMN staff_present TEXT DEFAULT NULL");
+         $pdo->exec("ALTER TABLE bookings ADD COLUMN staff_present TEXT DEFAULT NULL");
     }
     if (!in_array('title', $bookingColumns)) {
-        $pdo->exec("ALTER TABLE bookings ADD COLUMN title VARCHAR(255) DEFAULT NULL");
+         $pdo->exec("ALTER TABLE bookings ADD COLUMN title VARCHAR(255) DEFAULT NULL");
+    }
+    if (!in_array('tables_ids', $bookingColumns)) {
+         $pdo->exec("ALTER TABLE bookings ADD COLUMN tables_ids JSON DEFAULT NULL");
     }
 
     $pdo->exec("
