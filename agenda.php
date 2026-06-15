@@ -125,10 +125,6 @@ foreach ($events as $event):
             <?php endif; ?>
             <?php if ($signupEmbed !== ''): ?>
             <?php echo renderAanmelderEmbed($signupEmbed); ?>
-            <?php elseif (!empty($event['show_signup_button'])): ?>
-            <a href="inschrijven.php?event_id=<?php echo (int)$event['id']; ?>" class="mt-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">
-                Inschrijven
-            </a>
             <?php endif; ?>
             <a href="event-detail.php?id=<?php echo (int)$event['id']; ?>" class="mt-4 ml-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">
                 Meer info
