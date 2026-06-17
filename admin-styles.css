@@ -50,7 +50,7 @@ body.admin-page::before {
     right: 0;
     bottom: 0;
     background: radial-gradient(circle at 20% 50%, rgba(46, 125, 50, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(251, 192, 45, 0.1) 0%, transparent 50%);
+        radial-gradient(circle at 80% 80%, rgba(251, 192, 45, 0.1) 0%, transparent 50%);
     pointer-events: none;
     z-index: 0;
 }
@@ -59,7 +59,7 @@ body.admin-page::before {
 .admin-header {
     background: #ffffff;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12),
-                0 2px 8px rgba(0, 0, 0, 0.08);
+        0 2px 8px rgba(0, 0, 0, 0.08);
     position: relative;
     padding: 1.5rem 0;
     border-bottom: 1px solid rgba(46, 125, 50, 0.15);
@@ -67,15 +67,16 @@ body.admin-page::before {
 }
 
 body.admin-page main {
-    margin-top: 10px; /* minimal gap between header and page content */
+    margin-top: 10px;
+    /* minimal gap between header and page content */
     z-index: auto;
 }
 
-.admin-header > div {
+.admin-header>div {
     padding: 0 2rem;
 }
 
-.admin-header > div > * {
+.admin-header>div>* {
     padding: 0.25rem 0.5rem;
     border-radius: 0.75rem;
 }
@@ -84,7 +85,7 @@ body.admin-page main {
 .admin-header:hover {
     background: #ffffff;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15),
-                0 4px 12px rgba(0, 0, 0, 0.1);
+        0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .admin-header .max-w-7xl {
@@ -165,9 +166,15 @@ body.admin-page main {
 main {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 2.5rem 2rem;
+    padding: 2rem 2rem;
     position: relative;
     z-index: 1;
+}
+
+/* Wider dashboard max-width for premium layout */
+main.dashboard-wide {
+    max-width: 1600px;
+    padding: 32px 28px;
 }
 
 /* --- Grid Layout --- */
@@ -185,7 +192,7 @@ main {
     background: rgba(255, 255, 255, 0.95);
     border-radius: 20px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12),
-                0 2px 8px rgba(0, 0, 0, 0.08);
+        0 2px 8px rgba(0, 0, 0, 0.08);
     display: flex;
     flex-direction: column;
     align-self: start;
@@ -222,7 +229,7 @@ main {
     min-height: 0;
 }
 
-.sidebar-nav-scroll > nav {
+.sidebar-nav-scroll>nav {
     direction: ltr;
 }
 
@@ -272,8 +279,15 @@ main {
 }
 
 @keyframes shimmer {
-    0%, 100% { transform: translate(0, 0); }
-    50% { transform: translate(-30%, -30%); }
+
+    0%,
+    100% {
+        transform: translate(0, 0);
+    }
+
+    50% {
+        transform: translate(-30%, -30%);
+    }
 }
 
 .sidebar-header i {
@@ -310,7 +324,7 @@ main {
     padding: 0.75rem 0;
 }
 
-.sidebar .divide-y > div {
+.sidebar .divide-y>div {
     padding: 0.875rem 1.5rem;
     background: linear-gradient(135deg, #fbc02d 0%, #f9a825 100%);
     font-weight: 700;
@@ -391,13 +405,103 @@ main {
     background: rgba(255, 255, 255, 0.95);
     border-radius: 20px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12),
-                0 2px 8px rgba(0, 0, 0, 0.08);
+        0 2px 8px rgba(0, 0, 0, 0.08);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: visible;
-    padding: 2.5rem;
+    padding: 2rem;
     border: 1px solid rgba(255, 255, 255, 0.95);
     position: relative;
 }
+
+/* KPI cards (top) */
+.kpi-card {
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    background: #fff;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.10);
+}
+
+.kpi-card .kpi-title {
+    color: #6b7280;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.kpi-card .kpi-value {
+    color: #064e1b;
+    font-weight: 800;
+    font-size: 38px;
+    line-height: 1;
+}
+
+.kpi-card .kpi-meta {
+    color: #9ca3af;
+    font-size: 0.85rem;
+    margin-top: 6px;
+}
+
+/* Dashboard grid for charts */
+.dashboard-grid {
+    display: grid;
+    gap: 24px;
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+}
+
+/* Chart card tweaks */
+.chart-card {
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 6px 20px rgba(2, 6, 23, 0.06);
+}
+
+/* Make canvases use full width and taller minimum height */
+.card canvas,
+.chart-card canvas {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 480px !important;
+    background: transparent;
+    border: none;
+}
+
+/* Reduce chart height on small screens */
+@media (max-width: 640px) {
+
+    .card canvas,
+    .chart-card canvas {
+        min-height: 360px !important;
+    }
+
+    .kpi-card .kpi-value {
+        font-size: 32px;
+    }
+}
+
+@media (min-width: 1200px) {
+    .kpi-card .kpi-value {
+        font-size: 40px;
+    }
+}
+
+/* Chart wrapper styling (added for dashboard charts) */
+.chart-wrapper {
+    width: 100%;
+    height: 600px;
+    padding: 20px 30px 40px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, .08);
+}
+
 
 .card::before {
     content: '';
@@ -411,11 +515,11 @@ main {
 
 .card:hover {
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2),
-                0 4px 12px rgba(0, 0, 0, 0.1);
+        0 4px 12px rgba(0, 0, 0, 0.1);
     transform: translateY(-8px);
 }
 
-.card > .flex.items-center {
+.card>.flex.items-center {
     padding: 0 0 1.5rem 0;
     margin-bottom: 2rem;
 }
@@ -457,6 +561,7 @@ main {
     font-size: 0.9rem;
     letter-spacing: 0.025em;
 }
+
 /*--- agenda btn styles ---*/
 .admin-page input[type="text"],
 .admin-page input[type="email"],
@@ -467,13 +572,15 @@ main {
 .admin-page select {
     width: 100%;
     padding: 0.875rem 1.25rem;
-    border: 2px solid #c8e6c9; /* Changed from #f5f7fa to visible green border */
+    border: 2px solid #c8e6c9;
+    /* Changed from #f5f7fa to visible green border */
     border-radius: 14px;
     font-family: inherit;
     font-size: 0.925rem;
     background: #f9fafb;
     color: #1a202c;
-    box-shadow: inset 0 1px 4px rgba(0,0,0,0.06); /* Added subtle inner shadow */
+    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.06);
+    /* Added subtle inner shadow */
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
@@ -510,12 +617,11 @@ main {
     resize: vertical;
     min-height: 140px;
     line-height: 1.7;
-    background-image: repeating-linear-gradient(
-        transparent,
-        transparent calc(1.7em - 1px),
-        #e2e8f0 calc(1.7em - 1px),
-        #e2e8f0 1.7em
-    ); /* Added lined paper effect */
+    background-image: repeating-linear-gradient(transparent,
+            transparent calc(1.7em - 1px),
+            #e2e8f0 calc(1.7em - 1px),
+            #e2e8f0 1.7em);
+    /* Added lined paper effect */
     background-attachment: local;
 }
 
@@ -714,6 +820,7 @@ main {
         opacity: 0;
         transform: translateY(-20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -746,7 +853,8 @@ main {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 2rem; /* Change from 1.5rem to 2rem for more space */
+    gap: 2rem;
+    /* Change from 1.5rem to 2rem for more space */
     padding: 1.25rem;
     background: rgba(245, 245, 245, 0.98);
     border-left: 4px solid #2e7d32;
@@ -759,8 +867,10 @@ main {
 }
 
 .event-item:hover {
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); /* Less shadow */
-    transform: translateY(-2px); /* Changed from -6px */
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    /* Less shadow */
+    transform: translateY(-2px);
+    /* Changed from -6px */
     background: rgba(240, 240, 240, 0.98);
 }
 
@@ -810,7 +920,7 @@ main {
     flex-shrink: 0;
 }
 
-.event-actions > .flex {
+.event-actions>.flex {
     gap: 0.75rem;
 }
 
@@ -912,13 +1022,25 @@ main {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 @keyframes zoomIn {
-    from { transform: scale(0.8); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 /* Sidebar Toggle Button - inside navigation header */
@@ -1043,6 +1165,7 @@ main {
     justify-content: flex-end;
     flex-wrap: wrap;
 }
+
 /* =========================
    DESKTOP (1024px+)
 ========================= */
@@ -1297,7 +1420,8 @@ main {
         top: auto;
         width: 48px;
         height: 48px;
-        z-index: 2100;  /* ← was 1101, must be > sidebar's z-index: 2000 */
+        z-index: 2100;
+        /* ← was 1101, must be > sidebar's z-index: 2000 */
     }
 
     .admin-layout-grid {
@@ -1400,5 +1524,3 @@ main {
         border-radius: 6px;
     }
 }
-
-
