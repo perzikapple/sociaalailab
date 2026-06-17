@@ -3,6 +3,12 @@ session_start();
 require 'db.php';
 require 'helpers.php';
 
+// Security check: redirect to login if not logged in
+if (!($_SESSION['can_access_admin'] ?? false)) {
+    header('Location: login.php');
+    exit;
+}
+
 $rolePermissions = [
     'administrator' => ['create_users', 'edit_users', 'delete_users', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images', 'approve_content', 'access_booking', 'view_audit'],
     'content_manager' => ['manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images', 'approve_content', 'access_booking'],

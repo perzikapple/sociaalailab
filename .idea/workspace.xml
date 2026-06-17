@@ -4,11 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="40eddd61-eef5-4b26-93ed-e0e08ad9a623" name="Changes" comment="Mobile en tablet admin panel veranderingen">
+    <list default="true" id="40eddd61-eef5-4b26-93ed-e0e08ad9a623" name="Changes" comment="locaties aanpassingen booking">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/admin-styles.css" beforeDir="false" afterPath="$PROJECT_DIR$/admin-styles.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/booking.php" beforeDir="false" afterPath="$PROJECT_DIR$/booking.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db.php" beforeDir="false" afterPath="$PROJECT_DIR$/db.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/admin.php" beforeDir="false" afterPath="$PROJECT_DIR$/admin.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -42,7 +40,7 @@
     </persistenceIdMap>
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="244" />
+    <option name="cachedIndexableFilesCount" value="262" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="Git.Settings">
@@ -66,23 +64,23 @@
   </component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.019505273061943" />
-      <entry key="MS500" value="1.5424095723949058" />
-      <entry key="S2" value="4.665599432102249" />
-      <entry key="S5" value="9.62791362733711" />
-      <entry key="S10" value="13.242118331006177" />
-      <entry key="S30" value="16.765986848699846" />
-      <entry key="S60" value="17.837503047500462" />
-      <entry key="M2" value="18.406853590403063" />
-      <entry key="M5" value="18.759815676112062" />
-      <entry key="M10" value="18.879414226206265" />
-      <entry key="M15" value="18.919499344524333" />
-      <entry key="M30" value="18.95969448997219" />
-      <entry key="H1" value="18.979833428279616" />
-      <entry key="H2" value="18.989913257317642" />
-      <entry key="H4" value="18.99495576412235" />
-      <entry key="D1" value="18.999159173917775" />
-      <entry key="W1" value="18.999879879046603" />
+      <entry key="MS100" value="1.0" />
+      <entry key="MS500" value="1.000128678276109" />
+      <entry key="S2" value="1.272144224831778" />
+      <entry key="S5" value="3.7497076024144578" />
+      <entry key="S10" value="9.133013997020527" />
+      <entry key="S30" value="19.615804624639846" />
+      <entry key="S60" value="24.1813117835635" />
+      <entry key="M2" value="26.91327443841561" />
+      <entry key="M5" value="28.7197540019164" />
+      <entry key="M10" value="29.352020446118775" />
+      <entry key="M15" value="29.56624760774935" />
+      <entry key="M30" value="29.782235705487807" />
+      <entry key="H1" value="29.890894869013703" />
+      <entry key="H2" value="29.945391568212838" />
+      <entry key="H4" value="29.972681802458283" />
+      <entry key="D1" value="29.995445023899936" />
+      <entry key="W1" value="29.999349241523863" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
@@ -104,23 +102,23 @@
       <entry key="W1" value="0.0" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="0.9785008546683446" />
-      <entry key="MS500" value="1.5315671718892419" />
-      <entry key="S2" value="4.648423129423227" />
-      <entry key="S5" value="9.611905636860524" />
-      <entry key="S10" value="13.23083769214674" />
-      <entry key="S30" value="16.761152798944266" />
-      <entry key="S60" value="17.834921403445268" />
-      <entry key="M2" value="18.405518890972488" />
-      <entry key="M5" value="18.75927089557983" />
-      <entry key="M10" value="18.87913998734595" />
-      <entry key="M15" value="18.91931610542827" />
-      <entry key="M30" value="18.959602663228548" />
-      <entry key="H1" value="18.979787462995887" />
-      <entry key="H2" value="18.989890261683648" />
-      <entry key="H4" value="18.99494426305554" />
-      <entry key="D1" value="18.99915725662181" />
-      <entry key="W1" value="18.99987960513612" />
+      <entry key="MS100" value="1.2491405380329421E-16" />
+      <entry key="MS500" value="7.824783947049565E-4" />
+      <entry key="S2" value="0.42809170130177454" />
+      <entry key="S5" value="3.2196110674181786" />
+      <entry key="S10" value="8.81411079517918" />
+      <entry key="S30" value="19.49296143084779" />
+      <entry key="S60" value="24.11734003559158" />
+      <entry key="M2" value="26.880601325839738" />
+      <entry key="M5" value="28.706512663917568" />
+      <entry key="M10" value="29.345370461370422" />
+      <entry key="M15" value="29.561807721629307" />
+      <entry key="M30" value="29.78001246872482" />
+      <entry key="H1" value="29.889782424900893" />
+      <entry key="H2" value="29.944835139434247" />
+      <entry key="H4" value="29.97240353635217" />
+      <entry key="D1" value="29.995398639029634" />
+      <entry key="W1" value="29.999342614937795" />
     </decayedShown>
   </component>
   <component name="PhpDebugGeneral" listening_started="true" />
@@ -186,7 +184,12 @@
       <workItem from="1780644220477" duration="1430000" />
       <workItem from="1780905634577" duration="3717000" />
       <workItem from="1780916409208" duration="3857000" />
-      <workItem from="1781510938522" duration="4206000" />
+      <workItem from="1781510938522" duration="4503000" />
+      <workItem from="1781523853614" duration="177000" />
+      <workItem from="1781526591018" duration="2624000" />
+      <workItem from="1781531809996" duration="416000" />
+      <workItem from="1781698847119" duration="8000" />
+      <workItem from="1781700453349" duration="951000" />
     </task>
     <task id="LOCAL-00001" summary="Merge branch 'main' of origin">
       <option name="closed" value="true" />
@@ -220,7 +223,15 @@
       <option name="project" value="LOCAL" />
       <updated>1780906861269</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="locaties aanpassingen booking">
+      <option name="closed" value="true" />
+      <created>1781516638836</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1781516638836</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -232,7 +243,8 @@
     <MESSAGE value="locaties nieuewe booking" />
     <MESSAGE value="locaties nieuewe booking 2" />
     <MESSAGE value="Mobile en tablet admin panel veranderingen" />
-    <option name="LAST_COMMIT_MESSAGE" value="Mobile en tablet admin panel veranderingen" />
+    <MESSAGE value="locaties aanpassingen booking" />
+    <option name="LAST_COMMIT_MESSAGE" value="locaties aanpassingen booking" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>
