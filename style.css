@@ -3113,9 +3113,9 @@ main>div.grid>div:hover {
 
 .sociaalai-submit-btn {
     display: inline-block;
-    background: #00811f;
+    background: #d12254;
     color: #ffffff;
-    border: 1px solid #00811f;
+    border: 1px solid #ffff;
     border-radius: 10px;
     font-weight: 700;
     padding: 0.75rem 1.5rem;
@@ -3124,7 +3124,7 @@ main>div.grid>div:hover {
 }
 
 .sociaalai-submit-btn:hover {
-    background: #006f19;
+    background: #d12254;
 }
 
 .sociaalai-submit-btn:active {
@@ -4470,4 +4470,18 @@ section:focus-visible,
     .homepage-carousel-slide > .flex-1:last-child {
         display: none;
     }
+}
+
+h2 span {
+    background-color: #d12254;
+    color: white;
+    font-size: 16px;
+    padding: 4px 8px; /* top/bottom, left/right */
+}
+
+.pink-text{
+    background-color: #d12254;
+    color: white;
+    font-size: 16px;
+    padding: 4px 8px; /* top/bottom, left/right 
 }
