@@ -5,6 +5,27 @@ require 'db.php';
 $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: 'images/banner_website_01.jpg';
 $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: 'images/banner_website_02.jpg';
 
+$rolePermissions = [
+    'administrator' => ['create_users', 'edit_users', 'delete_users', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images', 'approve_content', 'access_booking', 'view_audit'],
+    'content_manager' => ['manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images', 'approve_content', 'access_booking'],
+    'onderzoeker' => ['access_booking', 'create_events', 'view_feedback', 'view_pages'],
+    'viewer' => [],
+];
+
+function normalizeAccountPermissions($value)
+{
+    if (!is_string($value) || trim($value) === '') {
+        return null;
+    }
+
+    $decoded = json_decode($value, true);
+    if (!is_array($decoded)) {
+        return null;
+    }
+
+    return array_values(array_unique(array_filter(array_map('strval', $decoded))));
+}
+
 $message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email']);
@@ -14,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = 'Invalid email format.';
     } else {
         // Look up user in database
-        $stmt = $pdo->prepare("SELECT email, wachtwoord, admin, role FROM accounts WHERE email = ?");
+        $stmt = $pdo->prepare("SELECT email, wachtwoord, admin, role, permissions, first_name FROM accounts WHERE email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
 
@@ -26,13 +47,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Set session and redirect
             $_SESSION['user'] = $user['email'];
             $_SESSION['email'] = $user['email'];
-            $_SESSION['admin'] = $user['admin'];
+            $_SESSION['first_name'] = $user['first_name'] ?? '';
             $role = trim((string)($user['role'] ?? ''));
-            if ($role === '') {
-                $role = ((int)($user['admin'] ?? 0) === 1) ? 'superadmin' : 'viewer';
+            
+            // Migration: map old roles to new roles FIRST
+            if ($role === '' || $role === 'superadmin') {
+                $role = ((int)($user['admin'] ?? 0) === 1) ? 'administrator' : 'viewer';
+            } elseif ($role === 'content_manager' || $role === 'editor' || $role === 'booking_only') {
+                // Map old roles to new ones
+                if ($role === 'content_manager') $role = 'content_manager';
+                elseif ($role === 'editor' || $role === 'booking_only') $role = 'onderzoeker';
             }
+            
+            // NOW get permissions based on mapped role
+            $permissions = normalizeAccountPermissions($user['permissions'] ?? null);
+            if ($permissions === null || empty($permissions)) {
+                $permissions = $rolePermissions[$role] ?? [];
+            }
+            
+            // Set admin flag based on whether user has any permissions
+            $adminFlag = !empty($permissions) ? 1 : 0;
+            
             $_SESSION['role'] = $role;
-            $_SESSION['can_access_admin'] = ((int)($user['admin'] ?? 0) === 1) || in_array($role, ['superadmin', 'content_manager', 'editor'], true);
+            $_SESSION['admin'] = $adminFlag;
+            $_SESSION['permissions'] = json_encode($permissions, JSON_UNESCAPED_SLASHES);
+            $_SESSION['can_access_admin'] = !empty($permissions);
             header('Location: admin.php');
             exit;
         }

@@ -255,8 +255,6 @@ include __DIR__ . '/navbar.php';
                 $signupEmbed = trim((string)($event['signup_embed'] ?? ''));
                 if ($signupEmbed !== '') {
                     echo renderAanmelderEmbed($signupEmbed);
-                } elseif (!empty($event['show_signup_button'])) {
-                    echo '<a href="inschrijven.php?event_id=' . (int)$event['id'] . '" class="inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">Inschrijven</a>';
                 }
                 ?>
                 <?php if (!empty($event['info_link'])): ?>

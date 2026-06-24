@@ -14,6 +14,7 @@ $stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE COALESCE(end_date, date
 $stmt->execute();
 $totalPast = $stmt->fetchColumn();
 
+
 $itemsPerPage = 6;
 $currentPage = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 if ($currentPage < 1) {
@@ -24,6 +25,9 @@ if ($currentPage > $totalPages) {
     $currentPage = $totalPages;
 }
 $offset = ($currentPage - 1) * $itemsPerPage;
+
+// Sorteervolgorde ophalen
+$sortOrder = isset($_GET['sort']) && $_GET['sort'] === 'asc' ? 'ASC' : 'DESC';
 
 
 $banner1 = 'images/banner_website_01.jpg';
@@ -47,7 +51,7 @@ try {
         }
     }
 
-    $stmt = $pdo->prepare("SELECT * FROM events WHERE COALESCE(end_date, date) < CURDATE() ORDER BY date DESC, time DESC LIMIT :limit OFFSET :offset");
+    $stmt = $pdo->prepare("SELECT * FROM events WHERE COALESCE(end_date, date) < CURDATE() ORDER BY date $sortOrder, time $sortOrder LIMIT :limit OFFSET :offset");
     $stmt->bindValue(':limit', $itemsPerPage, PDO::PARAM_INT);
     $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
     $stmt->execute();
@@ -204,6 +208,20 @@ include __DIR__ . '/navbar.php';
         </section>
     <?php endforeach; ?>
 
+
+    <div class="max-w-6xl mx-auto mb-4 flex justify-end px-4 sm:px-0">
+        <div class="bg-white rounded-lg shadow px-4 py-2">
+            <form method="get" action="terugblikken.php#agenda-terugblik-switch" class="flex flex-row gap-2 items-center m-0">
+                <input type="hidden" name="page" value="<?php echo $currentPage; ?>">
+                <label for="sort" class="font-semibold">Sorteer:</label>
+                <select name="sort" id="sort" class="border rounded px-2 py-1" onchange="this.form.submit()">
+                    <option value="desc" <?php if ($sortOrder === 'DESC') echo 'selected'; ?>>Nieuw naar oud</option>
+                    <option value="asc" <?php if ($sortOrder === 'ASC') echo 'selected'; ?>>Oud naar nieuw</option>
+                </select>
+            </form>
+        </div>
+    </div>
+
     <?php if (empty($events)): ?>
         <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12 text-center">
             <p class="text-gray-700">Er zijn nog geen voorbije evenementen.</p>
@@ -238,6 +256,11 @@ include __DIR__ . '/navbar.php';
                     <i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>
                     <div class="text-gray-700 pb-1"><strong>Wat:</strong><div class="mt-1"><?php echo renderEditorBlock($event['description']); ?></div></div>
                 </div>
+                <?php if ($hasValidImage): ?>
+                <div class="mobile-image mb-4">
+                    <img src="uploads/<?php echo htmlspecialchars($eventImageName); ?>" alt="<?php echo htmlspecialchars(strip_tags((string)$event['title'])); ?>" class="image-template-photo" style="object-fit: contain;">
+                </div>
+                <?php endif; ?>
                 <div class="mb-4 flex flex-wrap gap-3">
                     <a href="event-detail.php?id=<?php echo (int)$event['id']; ?>" class="inline-block bg-[#00811F] text-white px-6 py-2 rounded-lg font-semibold hover:bg-[#005c16] transition">Meer info</a>
                     <?php if (!empty($event['info_link'])): ?>
@@ -247,7 +270,7 @@ include __DIR__ . '/navbar.php';
             </div>
         </div>
         <?php if ($hasValidImage): ?>
-        <div class="flex-1">
+        <div class="flex-1 desktop-image">
             <div class="image-template-wrap">
                 <img src="uploads/<?php echo htmlspecialchars($eventImageName); ?>" alt="<?php echo htmlspecialchars(strip_tags((string)$event['title'])); ?>" class="image-template-photo" style="object-fit: contain;">
                 <!--

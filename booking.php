@@ -8,6 +8,51 @@ if (!($_SESSION['can_access_admin'] ?? false)) {
     exit;
 }
 
+$sessionPermissions = [];
+$decodedPermissions = json_decode((string)($_SESSION['permissions'] ?? ''), true);
+if (is_array($decodedPermissions)) {
+    $sessionPermissions = array_map('strval', $decodedPermissions);
+}
+
+if (!in_array('access_booking', $sessionPermissions, true)) {
+    header('Location: admin.php');
+    exit;
+}
+
+// Staff color palette (auto-assigned to each unique staff member)
+$staffColorPalette = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8',
+    '#F7DC6F', '#BB8FCE', '#85C1E2', '#F8B88B', '#52C9A8',
+    '#E57373', '#64B5F6', '#81C784', '#FFD54F', '#BA68C8'
+];
+
+function getStaffColor($pdo, $staffName, $palette) {
+    // Check if staff already has a color assigned
+    $stmt = $pdo->prepare("SELECT color FROM location_staff WHERE staff_name = ? LIMIT 1");
+    $stmt->execute([$staffName]);
+    $existing = $stmt->fetchColumn();
+    
+    if ($existing) {
+        return $existing; // Reuse existing color
+    }
+    
+    // Get all colors in use
+    $stmt = $pdo->prepare("SELECT DISTINCT color FROM location_staff WHERE color IS NOT NULL");
+    $stmt->execute();
+    $usedColors = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    $usedColors = array_map('strtoupper', $usedColors);
+    
+    // Find first available color from palette
+    foreach ($palette as $color) {
+        if (!in_array(strtoupper($color), $usedColors)) {
+            return $color;
+        }
+    }
+    
+    // If all colors used, return a random one (shouldn't happen with 15 colors)
+    return $palette[count($usedColors) % count($palette)];
+}
+
 $currentMonth = $_GET['month'] ?? date('n');
 $currentYear = $_GET['year'] ?? date('Y');
 $view = $_GET['view'] ?? 'week';
@@ -19,14 +64,47 @@ $weekStart = (clone $selectedDateTime)->modify('monday this week');
 $weekEnd = (clone $weekStart)->modify('+6 days');
 
 $locations = [
-        ['id' => 1, 'name' => 'Grote Zaal', 'color' => '#00811F'],
-        ['id' => 2, 'name' => 'Workshop', 'color' => '#0066CC'],
+        ['id' => 1, 'name' => 'Sociaal AI Lab Hillevliet', 'color' => '#00811F'],
+        ['id' => 2, 'name' => 'Labkar', 'color' => '#0066CC'],
+        ['id' => 999, 'name' => 'Extern (overig)', 'color' => '#FF9500'],
+];
+
+$tables = [
+    'gt1' => 'Grote tafel 1',
+    'gt2' => 'Grote tafel 2',
+    'gt3' => 'Grote tafel 3',
+    'kt1' => 'Kleine tafel 1',
+    'kt2' => 'Kleine tafel 2',
+    'kt3' => 'Kleine tafel 3',
 ];
 
 $hardware = [
-        ['id' => 1, 'name' => 'Projector', 'quantity' => 2],
-        ['id' => 2, 'name' => 'Whiteboard', 'quantity' => 3],
-        ['id' => 3, 'name' => 'Microfoon', 'quantity' => 4],
+    ['id' => 1, 'name' => 'PC (Workstation 9950X3D RTX5090 96GB RAM)', 'quantity' => 1],
+    ['id' => 2, 'name' => 'PC (Framework Max+ 395 128GB)', 'quantity' => 4],
+    ['id' => 3, 'name' => 'Robohond Unitree Go2 X', 'quantity' => 1],
+    ['id' => 4, 'name' => 'Robohond Unitree Go2 Pro', 'quantity' => 1],
+    ['id' => 5, 'name' => 'Tablet 8,7" Samsung Galaxy Tab A11', 'quantity' => 1],
+    ['id' => 6, 'name' => 'Tablet 11" Samsung Galaxy Tab A11', 'quantity' => 1],
+    ['id' => 7, 'name' => 'VR bril Oculus Quest 3 512GB', 'quantity' => 2],
+    ['id' => 8, 'name' => 'accu+zonnepaneel', 'quantity' => 1],
+    ['id' => 9, 'name' => 'labkar buiten', 'quantity' => 1],
+    ['id' => 10, 'name' => 'Wijkbot kar + afstandbediening', 'quantity' => 1],
+    ['id' => 11, 'name' => 'labkar binnen', 'quantity' => 3],
+    ['id' => 12, 'name' => 'speaker/microfoon Jabra Speak 2 75', 'quantity' => 1],
+    ['id' => 13, 'name' => 'speaker/microfoon Jabra Speak 2 55', 'quantity' => 2],
+    ['id' => 14, 'name' => 'Draadloze microfoon set van 2', 'quantity' => 1],
+    ['id' => 15, 'name' => 'WiFi Router ASUS TUF BE9400', 'quantity' => 1],
+    ['id' => 16, 'name' => 'laptop + muis + AC adapter', 'quantity' => 10],
+    ['id' => 17, 'name' => 'toetsenbord', 'quantity' => 3],
+    ['id' => 18, 'name' => 'muis', 'quantity' => 3],
+    ['id' => 19, 'name' => 'Raspberry Pi + AC adapter + HDMI kabel', 'quantity' => 6],
+    ['id' => 20, 'name' => 'Scherm 50" TCL 50Q6C', 'quantity' => 4],
+    ['id' => 21, 'name' => 'Scherm 27" Philips 27E2N2500 + beugel', 'quantity' => 6],
+    ['id' => 22, 'name' => 'Kensington Combinatie Ultra Laptop Slot x10', 'quantity' => 10],
+    ['id' => 23, 'name' => 'HDMI 8k kabel 2m', 'quantity' => 6],
+    ['id' => 24, 'name' => 'HDMI 8k kabel 5m', 'quantity' => 1],
+    ['id' => 25, 'name' => 'Banner Sociaalailab', 'quantity' => 1],
+    ['id' => 26, 'name' => 'Verwijsstandaard Sociaalailab', 'quantity' => 2],
 ];
 
 function findById($arr, $id) {
@@ -34,53 +112,230 @@ function findById($arr, $id) {
     return null;
 }
 
-$message = "";
+/* LOAD BOOKINGS FIRST */
+$stmt = $pdo->prepare("SELECT * FROM bookings");
+$stmt->execute();
+$bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-/* BOOKING INSERT */
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $bookingDate = $_POST['booking_date'];
-    $bookingStartTime = $_POST['start_time'];
-    $bookingEndTime = $_POST['end_time'];
-    $locationId = $_POST['location_id'];
+// Also show approved agenda events in booking calendar/day view
+$stmt = $pdo->prepare("SELECT id, title, date, end_date, time, time_end, location, hardware_request, staff_present FROM events WHERE approval_status IN ('approved','pending')");
+$stmt->execute();
+$events = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$message = "";
+// Support flash messages from booking POST handling
+if (!empty($_SESSION['booking_message'])) {
+    $message = $_SESSION['booking_message'];
+    unset($_SESSION['booking_message']);
+}
+
+/* STAFF ASSIGNMENT HANDLING - CHECK FIRST */
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['staff_dates'])) {
+    $staffDates = trim($_POST['staff_dates']);
+    $staffLocationId = $_POST['staff_location_id'] ?? 1;
+    $staffName = trim($_POST['staff_name']);
+    $startTime = trim($_POST['staff_start_time'] ?? null);
+    $endTime = trim($_POST['staff_end_time'] ?? null);
     
-    // Check for conflicting bookings
-    $conflict = false;
-    foreach ($bookings as $b) {
-        if ($b['booking_date'] === $bookingDate && $b['location_id'] == $locationId) {
-            $bStart = (int)substr($b['start_time'], 0, 2);
-            $bEnd = (int)substr($b['end_time'], 0, 2);
-            $newStart = (int)substr($bookingStartTime, 0, 2);
-            $newEnd = (int)substr($bookingEndTime, 0, 2);
+    // Auto-assign color based on staff name
+    $staffColor = getStaffColor($pdo, $staffName, $staffColorPalette);
+
+    if (!empty($staffDates) && !empty($staffName)) {
+        // Split dates by comma, newline, or semicolon
+        $dateArray = preg_split('/[,;\n\r]+/', $staffDates, -1, PREG_SPLIT_NO_EMPTY);
+        // Trim dates but don't remove duplicates - allow same date multiple times with different times
+        $dateArray = array_map('trim', $dateArray);
+        
+        foreach ($dateArray as $dateStr) {
+            // Validate date format (YYYY-MM-DD)
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateStr)) {
+                $stmt = $pdo->prepare("
+                    INSERT INTO location_staff (staff_date, location_id, staff_name, color, start_time, end_time)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ");
+                $stmt->execute([$dateStr, $staffLocationId, $staffName, $staffColor, $startTime ?: null, $endTime ?: null]);
+            }
+        }
+    }
+
+    header("Location: booking.php?view=$view&date=$selectedDate");
+    exit;
+}
+
+/* BOOKING INSERT - support multiple locations selection */
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['booking_date'])) {
+     $bookingDate = $_POST['booking_date'] ?? null;
+     $bookingStartTime = $_POST['start_time'] ?? null;
+     $bookingEndTime = $_POST['end_time'] ?? null;
+     $bookingTitle = $_POST['booking_title'] ?? null;
+     $locationIds = $_POST['location_ids'] ?? [];
+     $tablesJson = $_POST['tables_json'] ?? '[]';
+     // allow single location submitted as scalar for backwards compatibility
+     if (!is_array($locationIds) && !empty($locationIds)) {
+         $locationIds = [$locationIds];
+     }
+
+     if (!empty($bookingDate) && !empty($bookingStartTime) && !empty($bookingEndTime) && !empty($locationIds)) {
+         $hardwareJson = json_encode($_POST['hardware'] ?? []);
+         $inserted = [];
+         $skipped = [];
+
+         foreach ($locationIds as $locId) {
+             $locId = intval($locId);
+             if ($locId === 0) continue;
+
+             $locationDescription = $locId == 999 ? ($_POST['location_description'] ?? '') : null;
+
+             // Check for conflicting bookings for this location
+             $conflict = false;
+             foreach ($bookings as $b) {
+                 if ($b['booking_date'] === $bookingDate && $b['location_id'] == $locId) {
+                     // Externe bookings (999) conflicteren niet met elkaar
+                     if ($locId == 999) continue;
+
+                     $bStart = (int)substr($b['start_time'], 0, 2);
+                     $bEnd = (int)substr($b['end_time'], 0, 2);
+                     $newStart = (int)substr($bookingStartTime, 0, 2);
+                     $newEnd = (int)substr($bookingEndTime, 0, 2);
+
+                     if ($newStart < $bEnd && $newEnd > $bStart) {
+                         $conflict = true;
+                         break;
+                     }
+                 }
+             }
+
+             if ($conflict) {
+                 $skipped[] = $locId;
+                 continue;
+             }
+
+             $hardwareJson = $_POST['hardware_json'] ?? '[]';
+             // Only use tafels_json if this is location_id 1 (Sociaal AI Lab Hillevliet)
+             $tablesForBooking = ($locId == 1) ? $tablesJson : '[]';
+
+             $stmt = $pdo->prepare("INSERT INTO bookings (title, location_id, location_description, booking_date, start_time, end_time, hardware_ids, tables_ids) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+             $stmt->execute([
+                 $bookingTitle,
+                 $locId,
+                 $locationDescription,
+                 $bookingDate,
+                 $bookingStartTime,
+                 $bookingEndTime,
+                 $hardwareJson,
+                 $tablesForBooking
+             ]);
+
+             $inserted[] = $locId;
+         }
+
+         // prepare a user-friendly message and store in session so it survives the redirect
+         $msgParts = [];
+         if (!empty($inserted)) {
+             $names = [];
+             foreach ($inserted as $id) {
+                 $loc = findById($locations, $id);
+                 $names[] = $loc ? $loc['name'] : "#{$id}";
+             }
+             $msgParts[] = "Geboekt: " . implode(', ', $names);
+         }
+         if (!empty($skipped)) {
+             $names = [];
+             foreach ($skipped as $id) {
+                 $loc = findById($locations, $id);
+                 $names[] = $loc ? $loc['name'] : "#{$id}";
+             }
+             $msgParts[] = "Kon niet boeken (conflict): " . implode(', ', $names);
+         }
+
+         if (!empty($msgParts)) {
+             $_SESSION['booking_message'] = implode(' | ', $msgParts);
+         }
+
+         header("Location: booking.php?view=$view&date=$selectedDate");
+         exit;
+     }
+ }
+
+/* LOAD ALL STAFF ASSIGNMENTS FOR DISPLAY */
+$stmt = $pdo->prepare("SELECT DISTINCT staff_name, color, COUNT(DISTINCT staff_date) as num_dates FROM location_staff WHERE location_id = 1 GROUP BY staff_name, color ORDER BY staff_name");
+$stmt->execute();
+$allStaffAssignments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+/* LOAD STAFF ASSIGNMENTS FOR SELECTED DAY */
+$stmt = $pdo->prepare("SELECT * FROM location_staff WHERE staff_date = ?");
+/* LOAD STAFF DATA FOR SELECTED DAY AND MERGE TIME SLOTS */
+$stmt = $pdo->prepare("SELECT staff_name, start_time, end_time, color FROM location_staff WHERE staff_date = ? AND location_id = 1 ORDER BY start_time");
+$stmt->execute([$selectedDay]);
+$staffData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Group by staff_name and merge overlapping/adjacent time slots
+$staffByLocation = [];
+$staffGroups = [];
+foreach ($staffData as $staff) {
+    $name = $staff['staff_name'];
+    if (!isset($staffGroups[$name])) {
+        $staffGroups[$name] = ['color' => $staff['color'], 'slots' => []];
+    }
+    $staffGroups[$name]['slots'][] = [
+        'start' => $staff['start_time'],
+        'end' => $staff['end_time']
+    ];
+}
+
+// Merge overlapping and adjacent time slots for each staff member
+foreach ($staffGroups as $name => $group) {
+    $slots = $group['slots'];
+    
+    if (empty($slots)) continue;
+    
+    // Sort by start time
+    usort($slots, function($a, $b) {
+        $aStart = $a['start'] ?? '00:00';
+        $bStart = $b['start'] ?? '00:00';
+        return strcmp($aStart, $bStart);
+    });
+    
+    // Merge overlapping/adjacent slots
+    $merged = [];
+    foreach ($slots as $slot) {
+        $start = $slot['start'];
+        $end = $slot['end'];
+        
+        if (empty($merged)) {
+            $merged[] = $slot;
+        } else {
+            $lastSlot = &$merged[count($merged) - 1];
+            $lastEnd = $lastSlot['end'] ?? '23:59';
+            $currentStart = $start ?? '00:00';
             
-            // Check if times overlap
-            if ($newStart < $bEnd && $newEnd > $bStart) {
-                $conflict = true;
-                $message = "Deze ruimte is al geboekt in dit tijdsgewijd!";
-                break;
+            // Check if slots overlap or are adjacent (within 1 minute)
+            if (strtotime($currentStart) <= strtotime($lastEnd)) {
+                // Merge: extend the end time if new slot ends later
+                if ($end && (!$lastSlot['end'] || strtotime($end) > strtotime($lastSlot['end']))) {
+                    $lastSlot['end'] = $end;
+                }
+            } else {
+                // No overlap, add as new slot
+                $merged[] = $slot;
             }
         }
     }
     
-    if (!$conflict) {
-        $stmt = $pdo->prepare("INSERT INTO bookings (location_id, booking_date, start_time, end_time, hardware_ids)
-        VALUES (?, ?, ?, ?, ?)");
-        $stmt->execute([
-                $locationId,
-                $bookingDate,
-                $bookingStartTime,
-                $bookingEndTime,
-                json_encode($_POST['hardware'] ?? [])
-        ]);
-
-        header("Location: booking.php?view=$view&date=$selectedDate");
-        exit;
-    }
+    $staffByLocation[$name] = [
+        'color' => $group['color'],
+        'slots' => $merged
+    ];
 }
 
-/* BOOKINGS */
-$stmt = $pdo->prepare("SELECT * FROM bookings");
+/* LOAD ALL DATES WITH STAFF FOR CALENDAR INDICATOR */
+$stmt = $pdo->prepare("SELECT staff_date, GROUP_CONCAT(color SEPARATOR '|') as colors FROM location_staff WHERE location_id = 1 GROUP BY staff_date");
 $stmt->execute();
-$bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$staffByDate = [];
+foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+    $staffByDate[$row['staff_date']] = explode('|', $row['colors']);
+}
+$daysWithStaff = array_keys($staffByDate);
 ?>
 <!doctype html>
 <html lang="nl">
@@ -114,29 +369,125 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $dayBookings = array_filter($bookings, function($b) use ($selectedDay) {
             return $selectedDay && $b['booking_date'] === $selectedDay;
         });
+        $dayEvents = array_filter($events, function($e) use ($selectedDay) {
+            if (!$selectedDay || empty($e['date'])) return false;
+            $start = $e['date'];
+            $end = $e['end_date'] ?: $e['date'];
+            return $selectedDay >= $start && $selectedDay <= $end;
+        });
         
-        if ($selectedDay && empty($dayBookings)): 
+        if ($selectedDay && empty($dayBookings) && empty($dayEvents)): 
         ?>
             <p style="color: #999; text-align: center; padding: 2rem;">Geen boekingen op deze dag</p>
         <?php elseif (!$selectedDay): ?>
             <p style="color: #999; text-align: center; padding: 2rem;">Selecteer een dag om boekingen te zien</p>
         <?php else: ?>
-            <?php foreach ($dayBookings as $b): ?>
-                <?php $loc = findById($locations, $b['location_id']); ?>
-                <div class="booking">
-                    <div class="bar" style="background:<?= $loc['color'] ?>"></div>
+            <?php foreach ($dayEvents as $e): ?>
+                <div class="booking" style="border-left-color:#2563eb;">
                     <div>
-                        <strong><?= $loc['name'] ?></strong><br>
-                        <?= $b['start_time'] ?> - <?= $b['end_time'] ?>
+                        <strong><?= htmlspecialchars($e['title'] ?? 'Ongetiteld event') ?></strong><br>
+                        <?= htmlspecialchars($e['location'] ?? 'Locatie volgt') ?><br>
+                        <span style="font-size: 0.9rem; color: #666;">
+                            <?= !empty($e['time']) ? substr($e['time'], 0, 5) : 'Tijd volgt' ?><?= !empty($e['time_end']) ? ' - ' . substr($e['time_end'], 0, 5) : '' ?>
+                        </span>
+                        <?php if (!empty($e['hardware_request'])): ?>
+                            <br><span style="font-size: 0.85rem; color: #2563eb;"><strong>Hardware:</strong> <?= nl2br(htmlspecialchars($e['hardware_request'])) ?></span>
+                        <?php endif; ?>
+                        <?php if (!empty($e['staff_present'])): ?>
+                            <br><span style="font-size: 0.85rem; color: #1f2937;"><strong>SociaalAI Lab erbij:</strong> <?= nl2br(htmlspecialchars($e['staff_present'])) ?></span>
+                        <?php endif; ?>
                     </div>
                 </div>
             <?php endforeach; ?>
+             <?php foreach ($dayBookings as $b): ?>
+                 <?php $loc = findById($locations, $b['location_id']); ?>
+                 <div class="booking">
+                     <div>
+                         <strong><?= htmlspecialchars($b['title'] ?? 'Ongetiteld') ?></strong><br>
+                         <?php if ($b['location_id'] == 999): ?>
+                             Extern (overig)<?php if (!empty($b['location_description'])): ?> - <?= htmlspecialchars($b['location_description']) ?><?php endif; ?>
+                         <?php else: ?>
+                             <?= htmlspecialchars($loc['name']) ?>
+                         <?php endif; ?><br>
+                         <span style="font-size: 0.9rem; color: #666;">
+                             <?= substr($b['start_time'], 0, 5) ?> - <?= substr($b['end_time'], 0, 5) ?>
+                            <?php
+                            // Show tables if this is Sociaal AI Lab Hillevliet
+                            if ($b['location_id'] == 1 && !empty($b['tables_ids'])):
+                                $tablesList = json_decode($b['tables_ids'], true);
+                                if (!empty($tablesList)):
+                                    $tableNames = [];
+                                    foreach ($tablesList as $tableId) {
+                                        $tableNames[] = $tables[$tableId] ?? $tableId;
+                                    }
+                            ?>
+                                <br><span style="font-size: 0.85rem; color: #0066CC;"><strong>Tafels:</strong> <?= implode(', ', $tableNames) ?></span>
+                            <?php endif; endif; ?>
+
+                            <?php
+                            if ($b['hardware_ids']): 
+                                $hwList = json_decode($b['hardware_ids'], true);
+                                if (!empty($hwList)):
+                            ?>
+                                <br><span style="font-size: 0.85rem; color: #00811F;"><strong>Hardware:</strong>
+                                <?php 
+                                $hwNames = [];
+                                foreach ((array)$hwList as $hw) {
+                                    if (isset($hw['id']) && isset($hw['quantity'])) {
+                                        foreach ($hardware as $h) {
+                                            if ($h['id'] == $hw['id']) {
+                                                $hwNames[] = $hw['quantity'] . '× ' . $h['name'];
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                                echo implode(', ', $hwNames);
+                                ?>
+                                </span>
+                            <?php endif; endif; ?>
+                        </span>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+        
+        <?php if ($selectedDay && !empty($staffByLocation)): ?>
+            <div style="margin-top: 2rem; border-top: 2px solid #dfe8f3; padding-top: 1.5rem;">
+                <h3 style="margin-bottom: 1rem; color: #00811F;">Ingedeeld personeel</h3>
+                <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+                    <?php foreach ($staffByLocation as $name => $info): ?>
+                        <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; background: #f9fafb; border-radius: 10px; border: 2px solid #dfe8f3;">
+                            <div style="width: 20px; height: 20px; border-radius: 4px; background: <?= htmlspecialchars($info['color']) ?>; border: 2px solid #ddd;"></div>
+                            <div>
+                                <span style="font-weight: 600; color: #00811F; display: block;"><?= htmlspecialchars($name) ?></span>
+                                <span style="color: #666; font-size: 0.85rem;">
+                                    <?php 
+                                    if (empty($info['slots'])) {
+                                        echo 'Hele dag';
+                                    } else {
+                                        $timeStrs = [];
+                                        foreach ($info['slots'] as $slot) {
+                                            if ($slot['start'] && $slot['end']) {
+                                                $timeStrs[] = substr($slot['start'], 0, 5) . '-' . substr($slot['end'], 0, 5);
+                                            } else {
+                                                $timeStrs[] = 'Hele dag';
+                                            }
+                                        }
+                                        echo implode(', ', $timeStrs);
+                                    }
+                                    ?>
+                                </span>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
         <?php endif; ?>
     </section>
 
     <!-- MONTH CALENDAR -->
     <section class="card">
-        <div class="calendar-header">
             <h2>Kalender <?= date('F Y', mktime(0, 0, 0, $currentMonth, 1, $currentYear)) ?></h2>
             <div class="nav-buttons">
                 <?php 
@@ -144,22 +495,10 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 $prevYear = $currentMonth - 1 ? $currentYear : $currentYear - 1;
                 $nextMonth = ($currentMonth % 12) + 1;
                 $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
-                
-                // Extract day from selected date and adjust for prev/next month
-                $selectedDateForNav = $selectedDay ? $selectedDay : date('Y-m-d');
-                $dayOfMonth = (int)date('d', strtotime($selectedDateForNav));
-                
-                // Ensure the day exists in the target month
-                $prevMonthDate = date('Y-m-d', mktime(0, 0, 0, $prevMonth, min($dayOfMonth, cal_days_in_month(CAL_GREGORIAN, $prevMonth, $prevYear)), $prevYear));
-                $nextMonthDate = date('Y-m-d', mktime(0, 0, 0, $nextMonth, min($dayOfMonth, cal_days_in_month(CAL_GREGORIAN, $nextMonth, $nextYear)), $nextYear));
-                
-                // Format selected date for display
-                $selectedDateDisplay = date('d M', strtotime($selectedDateForNav));
-                $isToday = $selectedDateForNav === date('Y-m-d');
                 ?>
-                <a href="?month=<?= $prevMonth ?>&year=<?= $prevYear ?>&selected_day=<?= $prevMonthDate ?>" class="btn-nav"><i class="fa fa-chevron-left"></i></a>
-                <a href="?month=<?= date('n') ?>&year=<?= date('Y') ?>&selected_day=<?= date('Y-m-d') ?>" class="btn-nav"><?= $isToday ? 'Vandaag' : $selectedDateDisplay ?></a>
-                <a href="?month=<?= $nextMonth ?>&year=<?= $nextYear ?>&selected_day=<?= $nextMonthDate ?>" class="btn-nav"><i class="fa fa-chevron-right"></i></a>
+                <a href="?month=<?= $prevMonth ?>&year=<?= $prevYear ?>" class="btn-nav"><i class="fa fa-chevron-left"></i></a>
+                <a href="?month=<?= $currentMonth ?>&year=<?= $currentYear ?>" class="btn-nav"><?= date('F', mktime(0, 0, 0, $currentMonth, 1, $currentYear)) ?></a>
+                <a href="?month=<?= $nextMonth ?>&year=<?= $nextYear ?>" class="btn-nav"><i class="fa fa-chevron-right"></i></a>
             </div>
         </div>
 
@@ -184,8 +523,31 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 
                 // Create array of dates with bookings
                 $daysWithBookings = [];
+                $bookingTitlesByDate = [];
                 foreach ($bookings as $b) {
                     $daysWithBookings[] = $b['booking_date'];
+                    if (!isset($bookingTitlesByDate[$b['booking_date']])) {
+                        $bookingTitlesByDate[$b['booking_date']] = [];
+                    }
+                    if (!empty($b['title'])) {
+                        $bookingTitlesByDate[$b['booking_date']][] = $b['title'];
+                    }
+                }
+                foreach ($events as $e) {
+                    if (empty($e['date'])) continue;
+                    $startTs = strtotime($e['date']);
+                    $endTs = strtotime($e['end_date'] ?: $e['date']);
+                    if ($startTs === false || $endTs === false) continue;
+                    for ($ts = $startTs; $ts <= $endTs; $ts = strtotime('+1 day', $ts)) {
+                        $d = date('Y-m-d', $ts);
+                        $daysWithBookings[] = $d;
+                        if (!isset($bookingTitlesByDate[$d])) {
+                            $bookingTitlesByDate[$d] = [];
+                        }
+                        if (!empty($e['title'])) {
+                            $bookingTitlesByDate[$d][] = $e['title'];
+                        }
+                    }
                 }
                 
                 $day = 1;
@@ -201,11 +563,29 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             $isToday = $dateStr === date('Y-m-d') ? 'today' : '';
                             $isSelected = $dateStr === $selectedDay ? 'selected' : '';
                             $hasBooking = in_array($dateStr, $daysWithBookings) ? 'has-booking' : '';
-                            $clickable = $isPast ? '' : 'onclick="selectDay(\'' . $dateStr . '\', ' . $currentMonth . ', ' . $currentYear . ')" style="cursor: pointer;"';
-                            echo "<td class=\"day-cell $isToday $isSelected $hasBooking $isPast\" $clickable>";
+                            $hasStaff = in_array($dateStr, $daysWithStaff) ? 'has-staff' : '';
+                            // Past dates ARE now clickable to view history
+                            $clickable = 'onclick="selectDay(\'' . $dateStr . '\', ' . $currentMonth . ', ' . $currentYear . ')" style="cursor: pointer;"';
+                            echo "<td class=\"day-cell $isToday $isSelected $hasBooking $hasStaff $isPast\" $clickable>";
                             echo "<span class=\"day-number\">$day</span>";
+                            if ($hasStaff) {
+                                echo "<div class=\"staff-indicators\">";
+                                if (isset($staffByDate[$dateStr])) {
+                                    foreach ($staffByDate[$dateStr] as $color) {
+                                        echo "<div class=\"staff-indicator\" style=\"background-color: " . htmlspecialchars($color) . ";\"></div>";
+                                    }
+                                }
+                                echo "</div>";
+                            }
                             if ($hasBooking) {
                                 echo "<div class=\"booking-indicator\"></div>";
+                                if (!empty($bookingTitlesByDate[$dateStr])) {
+                                    echo "<div class=\"booking-titles\">";
+                                    foreach ($bookingTitlesByDate[$dateStr] as $title) {
+                                        echo "<div class=\"booking-title\">" . htmlspecialchars($title) . "</div>";
+                                    }
+                                    echo "</div>";
+                                }
                             }
                             echo "</td>";
                             $day++;
@@ -237,59 +617,6 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 $dayOfWeek = $selectedDateObj->format('N');
                 $isWeekend = ($dayOfWeek >= 6);
                 ?>
-    <section class="card day-details" id="details-<?= $dateStr ?>" style="display: none;">
-        <div class="day-details-header">
-            <h2>Beschikbare uren - <?= date('d F Y', strtotime($dateStr)) ?></h2>
-            <button class="close-btn" onclick="closeDayDetails()"><i class="fa fa-times"></i></button>
-        </div>
-        
-        <div class="time-schedule">
-            <div class="time-header">
-                <span>Tijd</span>
-                <span>Beschikbaarheid</span>
-            </div>
-            
-            <?php
-            $today = date('Y-m-d');
-            $isPastDate = $dateStr < $today;
-            
-            for ($hour = 8; $hour < 18; $hour++) {
-                $timeStart = sprintf('%02d:00', $hour);
-                $timeEnd = sprintf('%02d:00', $hour + 1);
-                
-                // Check all bookings for this timeslot and collect all booked locations
-                $isBooked = false;
-                $bookedLocations = [];
-                foreach ($bookings as $b) {
-                    if ($b['booking_date'] === $dateStr) {
-                        $bStart = (int)substr($b['start_time'], 0, 2);
-                        $bEnd = (int)substr($b['end_time'], 0, 2);
-                        if ($hour >= $bStart && $hour < $bEnd) {
-                            $isBooked = true;
-                            $loc = findById($locations, $b['location_id']);
-                            if ($loc) {
-                                $bookedLocations[] = $loc['name'];
-                            }
-                        }
-                    }
-                }
-                
-                $statusClass = $isWeekend ? 'weekend' : ($isBooked ? 'booked' : 'available');
-                $bookedText = !empty($bookedLocations) ? 'Geboekt - ' . implode(', ', $bookedLocations) : '';
-                $statusText = $isWeekend ? 'Weekend gesloten' : ($isBooked ? $bookedText : 'Beschikbaar');
-                
-                if ($isPastDate) {
-                    $statusClass .= ' past';
-                }
-                
-                echo "<div class=\"time-slot $statusClass\" onclick=\"selectTime(this, '$timeStart', '$timeEnd', '$dateStr')\">";
-                echo "<span class=\"time\">$timeStart - $timeEnd</span>";
-                echo "<span class=\"status\">$statusText</span>";
-                echo "</div>";
-            }
-            ?>
-        </div>
-    </section>
                 <?php
                 $day++;
             }
@@ -297,7 +624,7 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
     ?>
 
-    <!-- FORM -->
+    <!-- FORM 2 -->
     <section class="card form-card">
         <h2>Nieuwe booking</h2>
 
@@ -308,98 +635,178 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <?php endif; ?>
 
         <form method="POST" id="bookingForm">
+            <input type="text" name="booking_title" id="booking_title" placeholder="Titel/naam van de booking (bijv: Team Meeting, Workshop)" required>
+            
             <input type="date" name="booking_date" id="booking_date" required>
 
-            <select name="location_id">
-                <?php foreach ($locations as $l): ?>
-                    <option value="<?= $l['id'] ?>"><?= $l['name'] ?></option>
-                <?php endforeach; ?>
-            </select>
+            <div style="margin-bottom: 1.2rem;">
+                <label style="display: block; margin-bottom: 0.75rem; font-weight: 600; color: #00811F;">Selecteer locatie(s):</label>
+                <div class="location-buttons">
+                    <?php foreach ($locations as $l): ?>
+                        <label class="location-button" style="cursor: pointer;">
+                            <input type="checkbox" name="location_ids[]" value="<?= $l['id'] ?>" onchange="toggleLocationDescription(); toggleTableSelection()">
+                            <span style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; background: #f9fafb; border: 2px solid #dfe8f3; border-radius: 10px; font-weight: 500; color: #333; transition: all 0.3s ease;">
+                                <div style="width: 12px; height: 12px; border-radius: 3px; border: 2px solid #dfe8f3; background: white;"></div>
+                                <?= htmlspecialchars($l['name']) ?>
+                            </span>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+
+            <!-- Tafelselectie voor Sociaal AI Lab Hillevliet -->
+            <div id="table_selection" style="display:none; margin-bottom: 1.2rem; padding: 1rem; background: #f9fafb; border-radius: 10px; border: 2px solid #dfe8f3;">
+                <label style="display: block; margin-bottom: 0.75rem; font-weight: 600; color: #00811F;">Selecteer tafel(s) in Sociaal AI Lab Hillevliet:</label>
+                
+                <fieldset style="margin-bottom: 1rem; padding: 0.75rem; border: 1px solid #dfe8f3; border-radius: 8px; background: white;">
+                    <legend style="font-weight: 600; color: #333; padding: 0 0.5rem;">Grote tafels</legend>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" name="tables[]" value="gt1" style="cursor: pointer;">
+                            <span>Grote tafel 1</span>
+                        </label>
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" name="tables[]" value="gt2" style="cursor: pointer;">
+                            <span>Grote tafel 2</span>
+                        </label>
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" name="tables[]" value="gt3" style="cursor: pointer;">
+                            <span>Grote tafel 3</span>
+                        </label>
+                    </div>
+                </fieldset>
+
+                <fieldset style="padding: 0.75rem; border: 1px solid #dfe8f3; border-radius: 8px; background: white;">
+                    <legend style="font-weight: 600; color: #333; padding: 0 0.5rem;">Kleine tafels</legend>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" name="tables[]" value="kt1" style="cursor: pointer;">
+                            <span>Kleine tafel 1</span>
+                        </label>
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" name="tables[]" value="kt2" style="cursor: pointer;">
+                            <span>Kleine tafel 2</span>
+                        </label>
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" name="tables[]" value="kt3" style="cursor: pointer;">
+                            <span>Kleine tafel 3</span>
+                        </label>
+                    </div>
+                </fieldset>
+            </div>
+
+            <input type="text" name="location_description" id="location_description" placeholder="Waar/wat is de externe locatie?" style="display:none;">
 
             <div class="row">
                 <input type="time" name="start_time" id="start_time" required>
                 <input type="time" name="end_time" id="end_time" required>
             </div>
 
-            <div class="chips">
-                <?php foreach ($hardware as $h): ?>
-                    <label>
-                        <input type="checkbox" name="hardware[]" value="<?= $h['id'] ?>">
-                        <?= $h['name'] ?>
-                    </label>
-                <?php endforeach; ?>
+            <textarea name="staff_present" placeholder="Wie is/zijn er present bij deze booking?" style="resize: vertical; min-height: 60px;"></textarea>
+
+            <div style="margin-bottom: 1.2rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #00811F;">Hardware toevoegen:</label>
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                    <select id="hardware_select" style="flex: 1;">
+                        <option value="">-- Kies hardware --</option>
+                        <?php foreach ($hardware as $h): ?>
+                            <option value="<?= $h['id'] ?>" data-max="<?= $h['quantity'] ?>"><?= htmlspecialchars($h['name']) ?> (max: <?= $h['quantity'] ?>)</option>
+                        <?php endforeach; ?>
+                    </select>
+                    <input type="number" id="hardware_qty" min="1" value="1" style="width: 80px;">
+                    <button type="button" class="btn" onclick="addHardware()" style="width: auto; padding: 0.85rem 1.5rem;">Voeg toe</button>
+                </div>
+                
+                <div id="selected_hardware" style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+                    <!-- Items worden hier toegevoegd -->
+                </div>
             </div>
 
-            <button type="submit" class="btn">Boek nu</button>
+             <!-- Hidden input voor hardware data -->
+             <input type="hidden" name="hardware_json" id="hardware_json" value="[]">
+             
+             <!-- Hidden input voor tafels data -->
+             <input type="hidden" name="tables_json" id="tables_json" value="[]">
+
+             <button type="submit" class="btn" id="submitBtn">Boek nu</button>
         </form>
     </section>
 
 </div>
 
-<!-- MOBILE FIXED BUTTON -->
-<button class="fab" onclick="document.querySelector('.form-card').scrollIntoView()">
-    <i class="fa fa-plus"></i>
-</button>
-
 <script>
-let currentOpenDay = null;
-
 function selectDay(dateStr, month, year) {
     // Update URL to include selected_day parameter
     window.location.href = `?month=${month}&year=${year}&selected_day=${dateStr}`;
 }
 
-function showDayDetails(dateStr) {
-    // Close any previously open day details
-    if (currentOpenDay) {
-        document.getElementById('details-' + currentOpenDay).style.display = 'none';
-    }
+function checkIfPastDate(dateStr) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     
-    // Show the details for the clicked day
-    const detailsElement = document.getElementById('details-' + dateStr);
-    if (detailsElement) {
-        detailsElement.style.display = 'block';
-        currentOpenDay = dateStr;
-        
-        // Smooth scroll to the details section
-        setTimeout(() => {
-            detailsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 100);
+    const selectedDate = new Date(dateStr);
+    selectedDate.setHours(0, 0, 0, 0);
+    
+    const submitBtn = document.getElementById('submitBtn');
+    const bookingForm = document.getElementById('bookingForm');
+    
+    if (selectedDate < today) {
+        // Past date - disable everything
+        submitBtn.disabled = true;
+        submitBtn.title = 'Je kan geen bookings toevoegen voor voorbijgegane dagen';
+        // Disable all form inputs
+        bookingForm.querySelectorAll('input, select, button').forEach(el => {
+            if (el.id !== 'submitBtn') el.disabled = true;
+        });
+    } else {
+        // Future date - enable everything
+        submitBtn.disabled = false;
+        submitBtn.title = '';
+        bookingForm.querySelectorAll('input, select, button').forEach(el => {
+            el.disabled = false;
+        });
     }
 }
 
-function closeDayDetails() {
-    if (currentOpenDay) {
-        document.getElementById('details-' + currentOpenDay).style.display = 'none';
-        currentOpenDay = null;
-    }
-}
+// Toggle location description field based on whether extern (999) is selected
+function toggleLocationDescription() {
+     const checkboxes = document.querySelectorAll('input[name="location_ids[]"]');
+     const descriptionField = document.getElementById('location_description');
+     let externSelected = false;
+     checkboxes.forEach(cb => {
+         if (cb.checked && cb.value === '999') externSelected = true;
+     });
 
-function selectTime(element, startTime, endTime, selectedDay) {
-    // Don't allow selecting if weekend, already booked, or past date
-    if (element.classList.contains('weekend') || element.classList.contains('booked') || element.classList.contains('past')) {
-        return;
-    }
-    
-    // Get the parent section to remove selections only from that day's slots
-    const parentSection = element.closest('.day-details');
-    if (parentSection) {
-        parentSection.querySelectorAll('.time-slot').forEach(el => el.classList.remove('selected'));
-    }
-    
-    // Add selection to clicked element
-    element.classList.add('selected');
-    
-    // Update form fields
-    document.getElementById('booking_date').value = selectedDay;
-    document.getElementById('start_time').value = startTime;
-    document.getElementById('end_time').value = endTime;
-    
-    // Scroll to form
-    setTimeout(() => {
-        document.querySelector('.form-card').scrollIntoView({ behavior: 'smooth' });
-    }, 100);
-}
+     if (externSelected) {
+         descriptionField.style.display = 'block';
+         descriptionField.required = true;
+     } else {
+         descriptionField.style.display = 'none';
+         descriptionField.required = false;
+         descriptionField.value = '';
+     }
+ }
+
+ // Toggle table selection based on whether Sociaal AI Lab Hillevliet (id=1) is selected
+ function toggleTableSelection() {
+     const checkboxes = document.querySelectorAll('input[name="location_ids[]"]');
+     const tableSelection = document.getElementById('table_selection');
+     let hillevlietSelected = false;
+     checkboxes.forEach(cb => {
+         if (cb.checked && cb.value === '1') hillevlietSelected = true;
+     });
+
+     if (hillevlietSelected) {
+         tableSelection.style.display = 'block';
+     } else {
+         tableSelection.style.display = 'none';
+         // Clear table selections if Hillevliet is deselected
+         const tableCheckboxes = document.querySelectorAll('input[name="tables[]"]');
+         tableCheckboxes.forEach(cb => {
+             cb.checked = false;
+         });
+     }
+ }
 
 // Initialize form with selected day if present
 document.addEventListener('DOMContentLoaded', function() {
@@ -407,8 +814,20 @@ document.addEventListener('DOMContentLoaded', function() {
     if (selectedDay) {
         document.getElementById('booking_date').value = selectedDay;
         
-        // Also open the day details automatically
-        showDayDetails(selectedDay);
+        // Check if date is in past and disable booking if so
+        checkIfPastDate(selectedDay);
+    }
+    
+    // Initialize location description field visibility
+    toggleLocationDescription();
+    toggleTableSelection();
+    
+    // Listen for date field changes to enable/disable submit button
+    const dateInput = document.getElementById('booking_date');
+    if (dateInput) {
+        dateInput.addEventListener('change', function() {
+            checkIfPastDate(this.value);
+        });
     }
     
     // Add form validation on submit
@@ -440,9 +859,136 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         }
+        
+        // Auto-fill staff name fields if user is logged in
+        const loggedInName = '<?= htmlspecialchars($_SESSION['first_name'] ?? '') ?>';
+        if (loggedInName) {
+            const staffNameInputs = document.querySelectorAll('input[name="staff_name"]');
+            staffNameInputs.forEach(input => {
+                if (input.value.trim() === '') {
+                    input.placeholder = 'Naam van personeel (standaard: ' + loggedInName + ')';
+                    input.addEventListener('focus', function() {
+                        if (this.value.trim() === '') {
+                            this.value = loggedInName;
+                        }
+                    });
+                    input.addEventListener('blur', function() {
+                        if (this.value.trim() === loggedInName) {
+                            this.value = '';
+                        }
+                    });
+                }
+            });
+        }
     }
 });
+
+// Hardware selection system
+let selectedHardware = {};
+
+function addHardware() {
+    const select = document.getElementById('hardware_select');
+    const qtyInput = document.getElementById('hardware_qty');
+    const hardwareId = select.value;
+    const qty = parseInt(qtyInput.value) || 1;
+    
+    if (!hardwareId) {
+        alert('Kies eerst een hardware item');
+        return;
+    }
+    
+    const option = select.options[select.selectedIndex];
+    const maxQty = parseInt(option.dataset.max) || 1;
+    const hardwareName = option.text.split(' (max:')[0];
+    
+    if (qty > maxQty) {
+        alert(`Maximaal ${maxQty} beschikbaar van dit item`);
+        return;
+    }
+    
+    selectedHardware[hardwareId] = {
+        name: hardwareName,
+        qty: qty,
+        max: maxQty
+    };
+    
+    updateHardwareDisplay();
+    select.value = '';
+    qtyInput.value = '1';
+}
+
+function removeHardware(hardwareId) {
+    delete selectedHardware[hardwareId];
+    updateHardwareDisplay();
+}
+
+function updateHardwareDisplay() {
+    const container = document.getElementById('selected_hardware');
+    container.innerHTML = '';
+    
+    let hasItems = false;
+    for (const [hwId, hw] of Object.entries(selectedHardware)) {
+        hasItems = true;
+        const chip = document.createElement('div');
+        chip.style.cssText = 'display: flex; align-items: center; gap: 0.5rem; padding: 0.7rem 1rem; background: #f0f5ff; border-radius: 10px; border: 2px solid #dfe8f3;';
+        chip.innerHTML = `
+            <span style="flex: 1; font-weight: 600; color: #00811F;">${hw.name}</span>
+            <span style="background: #00811F; color: white; padding: 0.3rem 0.6rem; border-radius: 6px; font-weight: 600; font-size: 0.85rem;">${hw.qty}x</span>
+            <button type="button" onclick="removeHardware('${hwId}')" style="background: none; border: none; color: #ff6b6b; cursor: pointer; font-size: 1.2rem; padding: 0;">×</button>
+        `;
+        container.appendChild(chip);
+    }
+    
+    // Update hidden JSON field
+    const jsonData = [];
+    for (const [hwId, hw] of Object.entries(selectedHardware)) {
+        jsonData.push({ id: hwId, quantity: hw.qty });
+    }
+    document.getElementById('hardware_json').value = JSON.stringify(jsonData);
+}
+
+// Prevent form submit if no hardware selected
+document.getElementById('bookingForm').addEventListener('submit', function(e) {
+     // Save selected tables before submission
+     const tableCheckboxes = document.querySelectorAll('input[name="tables[]"]:checked');
+     const selectedTables = Array.from(tableCheckboxes).map(cb => cb.value);
+     document.getElementById('tables_json').value = JSON.stringify(selectedTables);
+     
+     // Hardware is now optional - no validation needed
+ });
 </script>
+
+<!-- STAFF SECTION -->
+<section class="card form-card">
+    <h2>Aanwezigheid op locatie toevoegen</h2>
+    
+    <form method="POST">
+        <input type="hidden" name="staff_location_id" value="1">
+        
+        <input 
+            type="text" 
+            name="staff_name" 
+            placeholder="Naam van personeelslid"
+            required
+        >
+        
+        <div class="row">
+            <input type="time" name="staff_start_time" id="staff_start_time" placeholder="Start tijd (optioneel)">
+            <input type="time" name="staff_end_time" id="staff_end_time" placeholder="Eind tijd (optioneel)">
+        </div>
+        
+        <textarea 
+            name="staff_dates" 
+            placeholder="2024-01-15&#10;2024-01-16&#10;2024-01-17&#10;&#10;of: 2024-01-15, 2024-01-16, 2024-01-17"
+            style="resize: vertical; min-height: 80px;"
+            required
+        ></textarea>
+        
+        <small style="color: #999; margin: -0.6rem 0 0 0; font-size: 0.85rem;">Formaat: YYYY-MM-DD (één per regel of gescheiden door komma)<br>Kleur wordt automatisch toegewezen!</small>
+        
+        <button type="submit" class="btn">Opslaan</button>
+    </form>
+</section>
 
 </body>
 </html>

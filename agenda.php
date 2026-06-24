@@ -94,7 +94,7 @@ foreach ($events as $event):
     $eventImageName = trim((string)($event['image'] ?? ''));
     $hasValidImage = $eventImageName !== '' && file_exists(__DIR__ . '/uploads/' . $eventImageName);
     ?>
-    <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" tabindex="0">
+    <section class="agenda-event-card flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" tabindex="0">
         <div class="flex-1">
             <span class="inline-block text-white text-sm font-medium px-4 py-1 mb-4" style="background-color:#ce0245;">Evenement</span>
             <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900"><?php echo renderEditorInline($event['title']); ?></h2>
@@ -118,19 +118,20 @@ foreach ($events as $event):
                     <div class="text-gray-700 pb-3 "><strong> Wat:</strong><div class="mt-1"><?php echo renderEditorBlock($event['description']); ?></div></div>
                 </div>
             </div>
+            <?php if ($hasValidImage): ?>
+            <div class="mobile-image mb-4">
+                <img src="uploads/<?php echo htmlspecialchars($eventImageName); ?>" alt="<?php echo htmlspecialchars(strip_tags((string)$event['title'])); ?>" class="image-template-photo" style="object-fit: contain;">
+            </div>
+            <?php endif; ?>
             <?php if ($signupEmbed !== ''): ?>
             <?php echo renderAanmelderEmbed($signupEmbed); ?>
-            <?php elseif (!empty($event['show_signup_button'])): ?>
-            <a href="inschrijven.php?event_id=<?php echo (int)$event['id']; ?>" class="mt-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">
-                Inschrijven
-            </a>
             <?php endif; ?>
             <a href="event-detail.php?id=<?php echo (int)$event['id']; ?>" class="mt-4 ml-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">
                 Meer info
             </a>
         </div>
         <?php if ($hasValidImage): ?>
-        <div class="flex-1">
+        <div class="flex-1 desktop-image">
             <div class="image-template-wrap">
                 <img src="uploads/<?php echo htmlspecialchars($eventImageName); ?>" alt="<?php echo htmlspecialchars(strip_tags((string)$event['title'])); ?>" class="image-template-photo" style="object-fit: contain;">
                 <!--
@@ -147,7 +148,7 @@ foreach ($events as $event):
     </section>
 <?php endforeach; ?>
 
-<?php if (!empty($_SESSION['can_access_admin']) || (isset($_SESSION['admin']) && (int)$_SESSION['admin'] === 1)): ?>
+<?php if (!empty($_SESSION['can_access_admin'])): ?>
     <a href="admin.php" title="Voeg evenement toe" class="fixed bottom-6 right-6 bg-[#00811F] text-white rounded-full w-12 h-12 flex items-center justify-center text-3xl shadow-lg">+</a>
 <?php endif; ?>
 </main>

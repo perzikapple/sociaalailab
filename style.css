@@ -1,10 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap');
 /* Sidebar toggle button alleen tonen op mobiel */
 @media (min-width: 1024px) {
     .sidebar-toggle-btn {
         display: none !important;
     }
 }
-@import url('https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap');
 
 /* Consistent image size and spacing for wie-zijn-we page diubjjhyrhyrjji */
 #homepage-cards-container {
@@ -1296,6 +1296,33 @@
 
     .bg-rose-200\! {
         background-color: var(--color-rose-200) !important
+    }
+    /* Mobile ordering helper: put element first on small screens, last on md+ */
+    .mobile-order-first {
+        order: -1;
+    }
+
+    @media (min-width: 768px) {
+        .mobile-order-first {
+            order: 1;
+        }
+    }
+
+    /* Show image only on mobile when duplicated inside content */
+    .mobile-image {
+        display: block;
+    }
+    .desktop-image {
+        display: none;
+    }
+
+    @media (min-width: 768px) {
+        .mobile-image {
+            display: none;
+        }
+        .desktop-image {
+            display: block;
+        }
     }
 
     .bg-rose-500 {
@@ -2998,6 +3025,46 @@ main>div.grid>div:hover {
 .watdoenwe-page .text-gray-700,
 .watdoenwe-page .leading-relaxed {
     overflow-wrap: anywhere;
+}
+
+/* Link styling - ONLY for editor-rendered content (title, description, content fields) */
+
+/* Blue styling ONLY for links in rendered editor content */
+/* Event description and summary content */
+.event-description a {
+    color: #0066cc !important;
+    text-decoration: underline !important;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.event-description a:hover {
+    color: #0052a3 !important;
+}
+
+.event-description a:visited {
+    color: #6b21a8 !important;
+}
+
+/* Links in text-gray-700 context (rendered content only) */
+.text-gray-700 a {
+    color: #0066cc !important;
+    text-decoration: underline !important;
+}
+
+.text-gray-700 a:hover {
+    color: #0052a3 !important;
+}
+
+/* Links in leading-relaxed sections (main content) */
+.leading-relaxed a {
+    color: #0066cc !important;
+    text-decoration: underline !important;
+}
+
+.leading-relaxed a:hover {
+    color: #0052a3 !important;
+}
     word-break: break-word;
 }
 
@@ -3186,7 +3253,7 @@ main>div.grid>div:hover {
 }
 
 .partners img {
-    max-height: 50px;
+    max-height: 110px;
     /* past alle logo's mooi */
     width: auto;
     object-fit: contain;
@@ -3456,6 +3523,7 @@ button,
 section {
     width: 95%;
 }
+
 @media (max-width: 490px) {
 
     .watdoenwe-page .card.row {
@@ -3474,6 +3542,7 @@ section {
     }
 
 }
+
 @media (max-width: 571px) {
 
     /* Container voor de items */
@@ -3487,7 +3556,7 @@ section {
 
 
 
-    #watdoenwe-switch > div {
+    #watdoenwe-switch>div {
         background-color: #ffffff;
         border-radius: 12px;
         box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
@@ -3671,7 +3740,7 @@ section {
     align-items: center !important;
 }
 
-.text-padding[style*="flex-direction: row"] > div {
+.text-padding[style*="flex-direction: row"]>div {
     align-self: center;
 }
 
@@ -4101,6 +4170,24 @@ section {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
+.agenda-event-card .image-template-wrap {
+    align-items: center;
+    background: #fff;
+    display: flex;
+    justify-content: center;
+    max-height: 360px;
+    overflow: hidden;
+    width: 100%;
+}
+
+.agenda-event-card .image-template-photo {
+    height: auto !important;
+    max-height: 360px;
+    max-width: 100%;
+    object-fit: contain;
+    width: auto;
+}
+
 .image-template-badge {
     position: absolute;
     top: 1rem;
@@ -4175,6 +4262,19 @@ section {
 
 
 
+@media (max-width: 767px) {
+    .agenda-event-card .mobile-image {
+        align-items: center;
+        display: flex;
+        justify-content: center;
+    }
+
+    .agenda-event-card .mobile-image .image-template-photo {
+        max-height: 300px;
+        max-width: min(100%, 420px);
+    }
+}
+
 @media (max-width: 768px) {
     .mobile-hide-no-image {
         display: none;
@@ -4185,7 +4285,7 @@ section {
     align-items: center !important;
 }
 
-.text-padding[style*="flex-direction: row"] > div {
+.text-padding[style*="flex-direction: row"]>div {
     align-self: center;
 }
 
@@ -4204,7 +4304,170 @@ section:focus-visible,
     outline-offset: 2px;
 }
 
-.watdoenwe-page .grid > .bg-white:focus {
+.watdoenwe-page .grid>.bg-white:focus {
     outline: 3px solid #00811F;
     outline-offset: 2px;
+}
+
+.homepage-carousel {
+    display: flex;
+    gap: 1.5rem;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+}
+
+.homepage-carousel::-webkit-scrollbar {
+    display: none;
+}
+
+.homepage-carousel-slide {
+    flex: 0 0 100%;
+    scroll-snap-align: start;
+}
+
+.homepage-carousel-slide .image-template-wrap {
+    align-items: center;
+    background: #fff;
+    display: flex;
+    justify-content: center;
+    max-height: 360px;
+    overflow: hidden;
+    width: 100%;
+}
+
+.homepage-carousel-slide .image-template-photo {
+    height: auto;
+    max-height: 360px;
+    max-width: 100%;
+    object-fit: contain;
+    width: auto;
+}
+
+.homepage-carousel-arrow {
+    background: #fff;
+    border: 2px solid #00811F;
+    color: #00811F;
+    width: 48px;
+    height: 48px;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+    transition: background-color 0.2s, color 0.2s, opacity 0.2s;
+}
+
+.homepage-carousel-arrow:hover,
+.homepage-carousel-arrow:focus {
+    background: #00811F;
+    color: #fff;
+}
+
+.homepage-carousel-arrow:disabled {
+    cursor: default;
+    opacity: 0.35;
+}
+
+.homepage-news-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.2rem;
+}
+
+.homepage-news-card {
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.homepage-news-card-img {
+    width: 100%;
+    height: 240px;
+    object-fit: cover;
+    border-bottom: 1px solid #eee;
+    background: #f6f6f6;
+}
+
+.homepage-news-card-content {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    padding: 1rem 1.2rem 0.5rem;
+}
+
+.homepage-news-card-title {
+    color: #222;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0.5rem 0 0.25rem;
+}
+
+.homepage-news-card-meta {
+    color: #777;
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+}
+
+.homepage-news-card-summary {
+    color: #444;
+    flex: 1 1 auto;
+    font-size: 0.97rem;
+    margin-bottom: 1rem;
+}
+
+.homepage-news-card-link {
+    align-items: center;
+    color: #0A66C2;
+    display: inline-flex;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.7rem;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.homepage-news-card-link:hover {
+    color: #004099;
+}
+
+.homepage-event-mobile-image {
+    display: none;
+}
+
+@media (max-width: 900px) {
+    .homepage-news-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .homepage-news-card-img {
+        height: 160px;
+    }
+}
+
+@media (max-width: 640px) {
+    .homepage-carousel-arrow {
+        width: 42px;
+        height: 42px;
+        font-size: 1rem;
+    }
+
+    .homepage-event-mobile-image {
+        display: block;
+        margin: 0.75rem 0 1rem;
+    }
+
+    .homepage-event-mobile-image .image-template-photo {
+        max-height: 300px;
+    }
+
+    .homepage-carousel-slide > .flex-1:last-child {
+        display: none;
+    }
 }

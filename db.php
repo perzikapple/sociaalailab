@@ -1,13 +1,22 @@
 <?php
-$host = "localhost";
-$db   = "sociaalai";
- $user = "root";
- $pass = "";
+// Auto-detect if we're on localhost or production
+$isLocalhost = strpos($_SERVER['HTTP_HOST'] ?? 'localhost', 'localhost') !== false || 
+               strpos($_SERVER['HTTP_HOST'] ?? 'localhost', '127.0.0.1') !== false;
 
-// $host = "sociju-sociaalailab.db.transip.me";
-// $db   = "sociju_sociaalailab";
-// $user = "sociju_Sociaalailab";
-// $pass = "Techniekcollege12345#";
+if ($isLocalhost) {
+    // Local development
+    $host = "localhost";
+    $db   = "sociaalai";
+    $user = "root";
+    $pass = "";
+} else {
+    // Production (TransIP)
+    $host = "sociju-sociaalailab.db.transip.me";
+    $db   = "sociju_sociaalailab";
+    $user = "sociju_Sociaalailab";
+    $pass = "Techniekcollege12345#";
+}
+
 try {
     $pdo = new PDO(
         "mysql:host=$host;dbname=$db;charset=utf8mb4",
@@ -54,6 +63,21 @@ try {
     if (!in_array('sort_order', $pageColumns)) {
         $pdo->exec("ALTER TABLE pages ADD COLUMN sort_order INT DEFAULT 0");
     }
+    if (!in_array('approval_status', $pageColumns)) {
+        $pdo->exec("ALTER TABLE pages ADD COLUMN approval_status VARCHAR(50) DEFAULT 'approved'");
+    }
+    if (!in_array('internal_notes', $pageColumns)) {
+        $pdo->exec("ALTER TABLE pages ADD COLUMN internal_notes TEXT DEFAULT NULL");
+    }
+    if (!in_array('created_by', $pageColumns)) {
+        $pdo->exec("ALTER TABLE pages ADD COLUMN created_by VARCHAR(255) DEFAULT NULL");
+    }
+    if (!in_array('approval_feedback', $pageColumns)) {
+        $pdo->exec("ALTER TABLE pages ADD COLUMN approval_feedback TEXT DEFAULT NULL");
+    }
+    if (!in_array('approved_by', $pageColumns)) {
+        $pdo->exec("ALTER TABLE pages ADD COLUMN approved_by VARCHAR(255) DEFAULT NULL");
+    }
     $columns = $pdo->query("SHOW COLUMNS FROM events")->fetchAll(PDO::FETCH_COLUMN);
     
     if (!in_array('location', $columns)) {
@@ -95,6 +119,30 @@ try {
     if (!in_array('meer_info', $columns)) {
         $pdo->exec("ALTER TABLE events ADD COLUMN meer_info TEXT DEFAULT NULL");
     }
+    if (!in_array('approval_status', $columns)) {
+        $pdo->exec("ALTER TABLE events ADD COLUMN approval_status VARCHAR(50) DEFAULT 'approved'");
+    }
+    if (!in_array('target_audience', $columns)) {
+        $pdo->exec("ALTER TABLE events ADD COLUMN target_audience VARCHAR(255) DEFAULT NULL");
+    }
+    if (!in_array('internal_notes', $columns)) {
+        $pdo->exec("ALTER TABLE events ADD COLUMN internal_notes TEXT DEFAULT NULL");
+    }
+    if (!in_array('created_by', $columns)) {
+        $pdo->exec("ALTER TABLE events ADD COLUMN created_by VARCHAR(255) DEFAULT NULL");
+    }
+    if (!in_array('approval_feedback', $columns)) {
+        $pdo->exec("ALTER TABLE events ADD COLUMN approval_feedback TEXT DEFAULT NULL");
+    }
+    if (!in_array('approved_by', $columns)) {
+        $pdo->exec("ALTER TABLE events ADD COLUMN approved_by VARCHAR(255) DEFAULT NULL");
+    }
+    if (!in_array('hardware_request', $columns)) {
+        $pdo->exec("ALTER TABLE events ADD COLUMN hardware_request TEXT DEFAULT NULL");
+    }
+    if (!in_array('staff_present', $columns)) {
+        $pdo->exec("ALTER TABLE events ADD COLUMN staff_present TEXT DEFAULT NULL");
+    }
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS settings (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -114,6 +162,7 @@ try {
             last_name VARCHAR(120) DEFAULT NULL,
             admin TINYINT(1) NOT NULL DEFAULT 0,
             role VARCHAR(30) NOT NULL DEFAULT 'viewer',
+            permissions TEXT DEFAULT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ");
@@ -125,15 +174,18 @@ try {
     if (!in_array('role', $accountColumns, true)) {
         $pdo->exec("ALTER TABLE accounts ADD COLUMN role VARCHAR(30) NOT NULL DEFAULT 'viewer'");
     }
+    if (!in_array('permissions', $accountColumns, true)) {
+        $pdo->exec("ALTER TABLE accounts ADD COLUMN permissions TEXT DEFAULT NULL");
+    }
     if (!in_array('first_name', $accountColumns, true)) {
         $pdo->exec("ALTER TABLE accounts ADD COLUMN first_name VARCHAR(120) DEFAULT NULL");
     }
     if (!in_array('last_name', $accountColumns, true)) {
         $pdo->exec("ALTER TABLE accounts ADD COLUMN last_name VARCHAR(120) DEFAULT NULL");
     }
-    $pdo->exec("UPDATE accounts SET role = 'superadmin' WHERE admin = 1 AND (role IS NULL OR role = '' OR role = 'viewer')");
-    $pdo->exec("UPDATE accounts SET admin = 1 WHERE role IN ('superadmin', 'content_manager', 'editor')");
-    $pdo->exec("UPDATE accounts SET admin = 0 WHERE role = 'viewer'");
+    $pdo->exec("UPDATE accounts SET role = 'superadmin' WHERE admin = 1 AND (role IS NULL OR role = '' OR role = 'viewer') AND (permissions IS NULL OR permissions = '')");
+    $pdo->exec("UPDATE accounts SET admin = 1 WHERE role IN ('superadmin', 'content_manager', 'editor') AND (permissions IS NULL OR permissions = '')");
+    $pdo->exec("UPDATE accounts SET admin = 0 WHERE role = 'viewer' AND (permissions IS NULL OR permissions = '' OR permissions = '[]')");
     
     $pdo->exec("CREATE TABLE IF NOT EXISTS audit_logs (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -143,6 +195,16 @@ try {
             details TEXT DEFAULT NULL,
             performed_by VARCHAR(255) DEFAULT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+    
+    $pdo->exec("CREATE TABLE IF NOT EXISTS password_resets (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            email VARCHAR(255) NOT NULL,
+            token VARCHAR(255) NOT NULL UNIQUE,
+            expires_at DATETIME NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX (email),
+            INDEX (token)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 
     $pdo->exec("
@@ -156,6 +218,65 @@ try {
             UNIQUE KEY uniq_event_email (event_id, email)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ");
+
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS bookings (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            location_id INT NOT NULL,
+            location_description VARCHAR(255) DEFAULT NULL,
+            booking_date DATE NOT NULL,
+            start_time TIME NOT NULL,
+            end_time TIME NOT NULL,
+            hardware_ids JSON DEFAULT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    ");
+
+    $bookingColumns = $pdo->query("SHOW COLUMNS FROM bookings")->fetchAll(PDO::FETCH_COLUMN);
+    if (!in_array('location_description', $bookingColumns)) {
+         $pdo->exec("ALTER TABLE bookings ADD COLUMN location_description VARCHAR(255) DEFAULT NULL");
+    }
+    if (!in_array('staff_present', $bookingColumns)) {
+         $pdo->exec("ALTER TABLE bookings ADD COLUMN staff_present TEXT DEFAULT NULL");
+    }
+    if (!in_array('title', $bookingColumns)) {
+         $pdo->exec("ALTER TABLE bookings ADD COLUMN title VARCHAR(255) DEFAULT NULL");
+    }
+    if (!in_array('tables_ids', $bookingColumns)) {
+         $pdo->exec("ALTER TABLE bookings ADD COLUMN tables_ids JSON DEFAULT NULL");
+    }
+
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS location_staff (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            staff_date DATE NOT NULL,
+            location_id INT NOT NULL,
+            staff_name VARCHAR(255) NOT NULL,
+            start_time TIME DEFAULT NULL,
+            end_time TIME DEFAULT NULL,
+            color VARCHAR(7) DEFAULT '#FF9500',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    ");
+
+    $staffColumns = $pdo->query("SHOW COLUMNS FROM location_staff")->fetchAll(PDO::FETCH_COLUMN);
+    if (!in_array('color', $staffColumns)) {
+        $pdo->exec("ALTER TABLE location_staff ADD COLUMN color VARCHAR(7) DEFAULT '#FF9500'");
+    }
+    if (!in_array('start_time', $staffColumns)) {
+        $pdo->exec("ALTER TABLE location_staff ADD COLUMN start_time TIME DEFAULT NULL");
+    }
+    if (!in_array('end_time', $staffColumns)) {
+        $pdo->exec("ALTER TABLE location_staff ADD COLUMN end_time TIME DEFAULT NULL");
+    }
+    
+    // Remove old unique constraint if it exists
+    try {
+        $pdo->exec("ALTER TABLE location_staff DROP INDEX IF EXISTS unique_staff_per_location_date");
+    } catch (Exception $e) {
+        // Constraint might not exist
+    }
 
     if (!function_exists('audit_log')) {
         function audit_log($pdo, $action, $table_name, $record_id = null, $details = null, $performed_by = null) {

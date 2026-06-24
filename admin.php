@@ -3,33 +3,91 @@ session_start();
 require 'db.php';
 require 'helpers.php';
 
-$sessionRole = trim((string)($_SESSION['role'] ?? ''));
-if ($sessionRole === '') {
-    $sessionRole = (isset($_SESSION['admin']) && (int)$_SESSION['admin'] === 1) ? 'superadmin' : 'viewer';
-    $_SESSION['role'] = $sessionRole;
-}
-$canAccessAdmin = (bool)($_SESSION['can_access_admin'] ?? false);
-if (!$canAccessAdmin) {
-    $canAccessAdmin = (isset($_SESSION['admin']) && (int)$_SESSION['admin'] === 1)
-        || in_array($sessionRole, ['superadmin', 'content_manager', 'editor'], true);
-    $_SESSION['can_access_admin'] = $canAccessAdmin;
-}
-
-if (!$canAccessAdmin) {
+// Security check: redirect to login if not logged in
+if (!($_SESSION['can_access_admin'] ?? false)) {
     header('Location: login.php');
     exit;
 }
 
 $rolePermissions = [
-    'superadmin' => ['manage_users', 'view_audit', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images'],
-    'content_manager' => ['manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images'],
-    'editor' => ['manage_events'],
+    'administrator' => ['create_users', 'edit_users', 'delete_users', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images', 'approve_content', 'access_booking', 'view_audit'],
+    'content_manager' => ['manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images', 'approve_content', 'access_booking'],
+    'onderzoeker' => ['access_booking', 'create_events', 'view_feedback', 'view_pages'],
     'viewer' => [],
 ];
 
-$hasPermission = function ($permission) use (&$sessionRole, &$rolePermissions) {
-    $permissions = $rolePermissions[$sessionRole] ?? [];
-    return in_array($permission, $permissions, true);
+function normalizeAccountPermissions($value)
+{
+    if (!is_string($value) || trim($value) === '') {
+        return null;
+    }
+
+    $decoded = json_decode($value, true);
+    if (!is_array($decoded)) {
+        return null;
+    }
+
+    return array_values(array_unique(array_filter(array_map('strval', $decoded))));
+}
+
+function permissionsForRole($role, $rolePermissions)
+{
+    return $rolePermissions[$role] ?? [];
+}
+
+$sessionRole = trim((string)($_SESSION['role'] ?? ''));
+if ($sessionRole === '') {
+    $sessionRole = (isset($_SESSION['admin']) && (int)$_SESSION['admin'] === 1) ? 'administrator' : 'viewer';
+    $_SESSION['role'] = $sessionRole;
+}
+
+// Simple permission helpers (fallback if missing earlier)
+$hasPermission = function ($permission) use ($sessionRole, $rolePermissions) {
+    if (!is_string($permission) || $permission === '') return false;
+    $perms = $rolePermissions[$sessionRole] ?? [];
+    return in_array($permission, $perms, true);
+};
+
+$isOnderzoeker = ($sessionRole === 'onderzoeker');
+
+// Migration: map old roles to new roles
+$hasAnyPermission = function ($permissions) use (&$hasPermission) {
+    foreach ($permissions as $permission) {
+        if ($hasPermission($permission)) {
+            return true;
+        }
+    }
+    return false;
+};
+
+$hasRole = function ($role) use (&$sessionRole) {
+    return $sessionRole === $role;
+};
+
+$adminPermissionOptions = [
+    'manage_banners' => 'Banners aanpassen',
+    'manage_events' => 'Agenda beheren',
+    'delete_events' => 'Agenda-items verwijderen',
+    'manage_pages' => 'Pagina\'s beheren',
+    'delete_pages' => 'Pagina\'s verwijderen',
+    'create_users' => 'Gebruikers maken',
+    'edit_users' => 'Gebruikers bewerken',
+    'delete_users' => 'Gebruikers verwijderen',
+    'access_booking' => 'Booking pagina',
+    'optimize_images' => 'Afbeeldingen optimaliseren',
+    'approve_content' => 'Inhoud goedkeuren',
+    'create_events' => 'Agendapunten aanmaken',
+    'view_feedback' => 'Feedback bekijken',
+];
+$allowedPermissionKeys = array_keys($adminPermissionOptions);
+
+$collectPostedPermissions = function ($field) use (&$allowedPermissionKeys) {
+    $posted = $_POST[$field] ?? [];
+    if (!is_array($posted)) {
+        $posted = [];
+    }
+
+    return array_values(array_intersect($allowedPermissionKeys, array_map('strval', $posted)));
 };
 
 $message = '';
@@ -38,8 +96,14 @@ function handleUpload($fileField)
 {
     if (empty($_FILES[$fileField]['name'])) return null;
     $allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    if (!in_array($_FILES[$fileField]['type'], $allowed) || $_FILES[$fileField]['size'] > 50 * 1024 * 1024) {
-        return ['error' => 'Ongeldig afbeeldingsbestand (jpg/png/gif/webp, max 50MB).'];
+    // Max 10MB voor uploads in het hele admin panel
+    if (!in_array($_FILES[$fileField]['type'], $allowed) || $_FILES[$fileField]['size'] > 10 * 1024 * 1024) {
+        return ['error' => '<div style="background:#fff3cd;color:#856404;border:1.5px solid #ffeeba;padding:18px 20px;border-radius:10px;font-size:1.13rem;font-weight:600;max-width:480px;margin:18px auto;text-align:center;box-shadow:0 2px 12px rgba(255,193,7,0.08);">
+        <span style="font-size:1.5em;vertical-align:middle;">⚠️</span><br>
+        Je afbeelding is groter dan 10MB.<br>
+        Bestand te groot — maak het kleiner.<br>
+        <span style=\'font-size:0.97em;font-weight:400;\'>(Alleen JPG/PNG tot 10MB toegestaan)</span>
+        </div>'];
     }
     if (!is_dir(__DIR__ . '/uploads')) mkdir(__DIR__ . '/uploads', 0755, true);
     $ext = pathinfo($_FILES[$fileField]['name'], PATHINFO_EXTENSION);
@@ -86,14 +150,20 @@ function handleMultiUpload($fileField)
             return ['error' => 'Een van de galerijfoto\'s kon niet worden geupload.'];
         }
 
-        if (!in_array($type, $allowed, true) || $size > 50 * 1024 * 1024) {
+        // Max 10MB per foto, zelfde melding als enkele upload
+        if (!in_array($type, $allowed, true) || $size > 10 * 1024 * 1024) {
             foreach ($saved as $fileName) {
                 $path = __DIR__ . '/uploads/' . $fileName;
                 if (file_exists($path)) {
                     @unlink($path);
                 }
             }
-            return ['error' => 'Ongeldig galerijbestand (jpg/png/gif/webp, max 50MB per foto).'];
+            return ['error' => '<div style="background:#fff3cd;color:#856404;border:1.5px solid #ffeeba;padding:18px 20px;border-radius:10px;font-size:1.13rem;font-weight:600;max-width:480px;margin:18px auto;text-align:center;box-shadow:0 2px 12px rgba(255,193,7,0.08);">
+            <span style="font-size:1.5em;vertical-align:middle;">⚠️</span><br>
+            Je afbeelding is groter dan 10MB.<br>
+            Bestand te groot — maak het kleiner.<br>
+            <span style=\'font-size:0.97em;font-weight:400;\'>(Alleen JPG/PNG tot 10MB toegestaan)</span>
+            </div>'];
         }
 
         $ext = pathinfo($name, PATHINFO_EXTENSION);
@@ -219,23 +289,29 @@ function sanitizeEditorBlockInput($value)
 $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: 'images/banner_website_01.jpg';
 $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: 'images/banner_website_02.jpg';
 
+// Current user email
+$currentUser = $_SESSION['user'] ?? null;
+
 // Verwerk POST acties
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
-    $currentUser = $_SESSION['user'] ?? null; // email van ingelogde gebruiker (kan null zijn)
 
     $actionPermissionMap = [
-        'create' => 'manage_events',
-        'update' => 'manage_events',
+        'create' => ($sessionRole === 'onderzoeker' ? 'create_events' : 'manage_events'),
+        'update' => 'manage_events',  // Onderzoekers kunnen NIET updaten
         'delete' => 'delete_events',
         'delete_bulk_events' => 'delete_events',
         'reorder_event' => 'manage_events',
         'delete_bulk_pages' => 'delete_pages',
         'update_banner' => 'manage_banners',
         'reset_banners' => 'manage_banners',
-        'create_user' => 'manage_users',
-        'update_user_role' => 'manage_users',
+        'create_user' => 'create_users',
+        'update_user' => 'edit_users',
+        'update_user_permissions' => 'edit_users',
+        'delete_user' => 'delete_users',
         'optimize_image' => 'optimize_images',
+        'approve_item' => 'approve_content',
+        'reject_item' => 'approve_content',
     ];
 
     if ($action !== '' && isset($actionPermissionMap[$action]) && !$hasPermission($actionPermissionMap[$action])) {
@@ -253,10 +329,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $eventSummary = sanitizeEditorBlockInput($_POST['event_summary'] ?? '');
         $meerInfo = sanitizeEditorBlockInput($_POST['meer_info'] ?? '');
         $location = sanitizeEditorPlainText($_POST['location'] ?? '');
+        $hardwareRequest = sanitizeEditorBlockInput($_POST['hardware_request'] ?? '');
+        $staffPresent = sanitizeEditorBlockInput($_POST['staff_present'] ?? '');
+        $targetAudience = sanitizeEditorPlainText($_POST['target_audience'] ?? '');
+        $internalNotes = sanitizeEditorBlockInput($_POST['internal_notes'] ?? '');
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
         $signupEmbed = trim((string)($_POST['signup_embed'] ?? ''));
         $showOnHomepage = isset($_POST['show_on_homepage']) ? 1 : 0;
-        // $infoLink verwijderd
+
+        // Approval status based on role
+        $approvalStatus = ($sessionRole === 'onderzoeker') ? 'pending' : 'approved';
 
         if ($date === '') {
             $message = 'Datum is verplicht.';
@@ -280,9 +362,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ? json_encode(array_values($galleryUpload['names']), JSON_UNESCAPED_SLASHES)
                         : null;
 
-                    // voeg updated_at en updated_by toe bij insert
-                    $stmt = $pdo->prepare('INSERT INTO events (title, date, end_date, time, time_end, description, event_summary, meer_info, image, event_gallery, location, show_signup_button, signup_embed, show_on_homepage, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)');
-                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $location ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser]);
+                    // voeg updated_at, updated_by, en approval gegevens toe bij insert
+                    $stmt = $pdo->prepare('INSERT INTO events (title, date, end_date, time, time_end, description, event_summary, meer_info, image, event_gallery, location, hardware_request, staff_present, target_audience, internal_notes, show_signup_button, signup_embed, show_on_homepage, updated_at, updated_by, approval_status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)');
+                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $location ?: null, $hardwareRequest ?: null, $staffPresent ?: null, $targetAudience ?: null, $internalNotes ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser, $approvalStatus, $currentUser]);
                     $eventId = $pdo->lastInsertId();
                     // Audit log: event created
                     audit_log($pdo, 'create', 'events', $eventId, 'title: ' . $title, $currentUser);
@@ -302,6 +384,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $eventSummary = sanitizeEditorBlockInput($_POST['event_summary'] ?? '');
         $meerInfo = sanitizeEditorBlockInput($_POST['meer_info'] ?? '');
         $location = sanitizeEditorPlainText($_POST['location'] ?? '');
+        $hardwareRequest = sanitizeEditorBlockInput($_POST['hardware_request'] ?? '');
+        $staffPresent = sanitizeEditorBlockInput($_POST['staff_present'] ?? '');
+        $targetAudience = sanitizeEditorPlainText($_POST['target_audience'] ?? '');
+        $internalNotes = sanitizeEditorBlockInput($_POST['internal_notes'] ?? '');
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
         $signupEmbed = trim((string)($_POST['signup_embed'] ?? ''));
         $showOnHomepage = isset($_POST['show_on_homepage']) ? 1 : 0;
@@ -350,9 +436,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ? json_encode($galleryNames, JSON_UNESCAPED_SLASHES)
                         : null;
 
-                    // update nu ook updated_at en updated_by
-                    $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, end_date=?, time=?, time_end=?, description=?, event_summary=?, meer_info=?, image=?, event_gallery=?, location=?, show_signup_button=?, signup_embed=?, show_on_homepage=?, updated_at=NOW(), updated_by=? WHERE id=?');
-                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $location ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser, $id]);
+                    // update nu ook updated_at, updated_by, target_audience, en internal_notes
+                    $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, end_date=?, time=?, time_end=?, description=?, event_summary=?, meer_info=?, image=?, event_gallery=?, location=?, hardware_request=?, staff_present=?, target_audience=?, internal_notes=?, show_signup_button=?, signup_embed=?, show_on_homepage=?, updated_at=NOW(), updated_by=? WHERE id=?');
+                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $location ?: null, $hardwareRequest ?: null, $staffPresent ?: null, $targetAudience ?: null, $internalNotes ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser, $id]);
                     // Audit log: event updated
                     audit_log($pdo, 'update', 'events', $id, 'title: ' . $title, $currentUser);
 
@@ -438,7 +524,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $direction = $_POST['direction'] ?? '';
 
         if ($id && ($direction === 'up' || $direction === 'down')) {
-            $currentUser = $_SESSION['user'] ?? null;
             $pdo->beginTransaction();
             try {
                 // Normaliseer sort_order als nodig
@@ -585,7 +670,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $newFirstName = trim((string)($_POST['new_first_name'] ?? ''));
         $newLastName = trim((string)($_POST['new_last_name'] ?? ''));
         $newRole = trim((string)($_POST['new_role'] ?? 'viewer'));
-        $allowedRoles = ['superadmin', 'content_manager', 'editor', 'viewer'];
+        $allowedRoles = ['administrator', 'content_manager', 'editor', 'viewer'];
+
+        // Auto-set permissions based on role
+        $newPermissions = permissionsForRole($newRole, $rolePermissions);
 
         if ($newEmail === '' || !filter_var($newEmail, FILTER_VALIDATE_EMAIL)) {
             $message = 'Vul een geldig e-mailadres in.';
@@ -600,8 +688,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message = 'Er bestaat al een gebruiker met dit e-mailadres.';
             } else {
                 $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-                $adminFlag = in_array($newRole, ['superadmin', 'content_manager', 'editor'], true) ? 1 : 0;
-                $insertStmt = $pdo->prepare('INSERT INTO accounts (email, wachtwoord, first_name, last_name, admin, role) VALUES (?, ?, ?, ?, ?, ?)');
+                $adminFlag = !empty($newPermissions) ? 1 : 0;
+                $permissionsJson = json_encode($newPermissions, JSON_UNESCAPED_SLASHES);
+                $insertStmt = $pdo->prepare('INSERT INTO accounts (email, wachtwoord, first_name, last_name, admin, role, permissions) VALUES (?, ?, ?, ?, ?, ?, ?)');
                 $insertStmt->execute([
                     $newEmail,
                     $hashedPassword,
@@ -609,34 +698,113 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $newLastName !== '' ? $newLastName : null,
                     $adminFlag,
                     $newRole,
+                    $permissionsJson,
                 ]);
 
-                audit_log($pdo, 'create', 'accounts', $newEmail, 'new user with role ' . $newRole, $currentUser);
+                audit_log($pdo, 'create', 'accounts', $newEmail, 'new user with role ' . $newRole . ' and permissions ' . implode(', ', $newPermissions), $currentUser);
                 $message = 'Nieuwe gebruiker toegevoegd.';
             }
         }
-    } elseif ($action === 'update_user_role') {
+    } elseif ($action === 'update_user_permissions') {
         $targetEmail = trim((string)($_POST['target_email'] ?? ''));
         $newRole = trim((string)($_POST['role'] ?? 'viewer'));
-        $allowedRoles = ['superadmin', 'content_manager', 'editor', 'viewer'];
+        $allowedRoles = ['administrator', 'content_manager', 'editor', 'viewer'];
+
+        // Auto-set permissions based on role only
+        $newPermissions = permissionsForRole($newRole, $rolePermissions);
 
         if ($targetEmail === '' || !filter_var($targetEmail, FILTER_VALIDATE_EMAIL)) {
             $message = 'Ongeldig e-mailadres.';
         } elseif (!in_array($newRole, $allowedRoles, true)) {
             $message = 'Ongeldige rol gekozen.';
         } else {
-            $adminFlag = in_array($newRole, ['superadmin', 'content_manager', 'editor'], true) ? 1 : 0;
-            $stmt = $pdo->prepare('UPDATE accounts SET role = ?, admin = ? WHERE email = ?');
-            $stmt->execute([$newRole, $adminFlag, $targetEmail]);
+            $adminFlag = !empty($newPermissions) ? 1 : 0;
+            $permissionsJson = json_encode($newPermissions, JSON_UNESCAPED_SLASHES);
+            $stmt = $pdo->prepare('UPDATE accounts SET role = ?, admin = ?, permissions = ? WHERE email = ?');
+            $stmt->execute([$newRole, $adminFlag, $permissionsJson, $targetEmail]);
 
             if ($targetEmail === ($_SESSION['email'] ?? '')) {
                 $_SESSION['role'] = $newRole;
                 $_SESSION['admin'] = $adminFlag;
-                $_SESSION['can_access_admin'] = ($adminFlag === 1) || in_array($newRole, ['superadmin', 'content_manager', 'editor'], true);
+                $_SESSION['permissions'] = $permissionsJson;
+                $_SESSION['can_access_admin'] = !empty($newPermissions);
             }
 
-            audit_log($pdo, 'update', 'accounts', $targetEmail, 'role set to ' . $newRole, $currentUser);
+            audit_log($pdo, 'update', 'accounts', $targetEmail, 'role set to ' . $newRole . ' with permissions ' . implode(', ', $newPermissions), $currentUser);
             $message = 'Gebruikersrol bijgewerkt.';
+        }
+    } elseif ($action === 'update_user') {
+        $targetEmailOld = trim((string)($_POST['target_email_old'] ?? ''));
+        $targetEmailNew = trim((string)($_POST['new_email'] ?? ''));
+        $newFirstName = trim((string)($_POST['new_first_name'] ?? ''));
+        $newLastName = trim((string)($_POST['new_last_name'] ?? ''));
+        $newRole = trim((string)($_POST['new_role'] ?? 'viewer'));
+        $newPassword = (string)($_POST['new_password'] ?? '');
+        $allowedRoles = ['administrator', 'content_manager', 'editor', 'viewer'];
+
+        // Auto-set permissions based on role only
+        $newPermissions = permissionsForRole($newRole, $rolePermissions);
+
+        if ($targetEmailOld === '' || !filter_var($targetEmailOld, FILTER_VALIDATE_EMAIL)) {
+            $message = 'Ongeldig oud e-mailadres.';
+        } elseif ($targetEmailNew === '' || !filter_var($targetEmailNew, FILTER_VALIDATE_EMAIL)) {
+            $message = 'Ongeldig nieuw e-mailadres.';
+        } elseif (!in_array($newRole, $allowedRoles, true)) {
+            $message = 'Ongeldige rol gekozen.';
+        } else {
+            // Check if new email is already in use (but not by the user being edited)
+            $existsStmt = $pdo->prepare('SELECT id FROM accounts WHERE email = ? AND email != ?');
+            $existsStmt->execute([$targetEmailNew, $targetEmailOld]);
+            if ($existsStmt->fetch()) {
+                $message = 'Dit e-mailadres is al in gebruik.';
+            } else {
+                // If password is provided, hash it; otherwise keep the old one
+                $updateFields = ['first_name' => $newFirstName !== '' ? $newFirstName : null, 'last_name' => $newLastName !== '' ? $newLastName : null, 'email' => $targetEmailNew, 'role' => $newRole, 'admin' => !empty($newPermissions) ? 1 : 0, 'permissions' => json_encode($newPermissions, JSON_UNESCAPED_SLASHES)];
+
+                if ($newPassword !== '') {
+                    $updateFields['wachtwoord'] = password_hash($newPassword, PASSWORD_DEFAULT);
+                }
+
+                // Build update query
+                $updateClauses = [];
+                $params = [];
+                foreach ($updateFields as $field => $value) {
+                    $updateClauses[] = $field . ' = ?';
+                    $params[] = $value;
+                }
+                $params[] = $targetEmailOld; // WHERE clause
+
+                $updateSql = 'UPDATE accounts SET ' . implode(', ', $updateClauses) . ' WHERE email = ?';
+                $stmt = $pdo->prepare($updateSql);
+                $stmt->execute($params);
+
+                // Update session if editing own account
+                if ($targetEmailOld === ($_SESSION['email'] ?? '')) {
+                    $_SESSION['email'] = $targetEmailNew;
+                    $_SESSION['first_name'] = $newFirstName;
+                    $_SESSION['last_name'] = $newLastName;
+                    $_SESSION['role'] = $newRole;
+                    $_SESSION['admin'] = !empty($newPermissions) ? 1 : 0;
+                    $_SESSION['permissions'] = json_encode($newPermissions, JSON_UNESCAPED_SLASHES);
+                    $_SESSION['can_access_admin'] = !empty($newPermissions);
+                }
+
+                audit_log($pdo, 'update', 'accounts', $targetEmailOld, 'email changed to ' . $targetEmailNew . ', role set to ' . $newRole, $currentUser);
+                $message = 'Gebruiker bijgewerkt.';
+            }
+        }
+    } elseif ($action === 'delete_user') {
+        $targetEmail = trim((string)($_POST['target_email'] ?? ''));
+
+        if ($targetEmail === '' || !filter_var($targetEmail, FILTER_VALIDATE_EMAIL)) {
+            $message = 'Ongeldig e-mailadres.';
+        } elseif ($targetEmail === ($_SESSION['email'] ?? '')) {
+            $message = 'Je kunt je eigen account niet verwijderen.';
+        } else {
+            $stmt = $pdo->prepare('DELETE FROM accounts WHERE email = ?');
+            $stmt->execute([$targetEmail]);
+            audit_log($pdo, 'delete', 'accounts', $targetEmail, null, $currentUser);
+            $message = 'Gebruiker verwijderd.';
         }
     } elseif ($action === 'optimize_image') {
         $imagePath = trim((string)($_POST['image_path'] ?? ''));
@@ -667,6 +835,290 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['optimize_success'] = true;
                 $_SESSION['optimize_data'] = $result;
             }
+        }
+    } elseif ($action === 'get_approval_item' && !empty($_POST['item_id'])) {
+        // Return approval item as JSON - ALL fields
+        header('Content-Type: application/json');
+        $itemId = intval($_POST['item_id']);
+
+        try {
+            $stmt = $pdo->prepare(
+                'SELECT id, title, date, end_date, time, time_end, description, location, image, 
+                        created_by, target_audience, internal_notes, approval_status, approval_feedback,
+                    meer_info, event_summary, signup_embed, show_signup_button, show_on_homepage,
+                    hardware_request, staff_present
+                 FROM events WHERE id = ? AND approval_status = ?'
+            );
+            $stmt->execute([$itemId, 'pending']);
+            $item = $stmt->fetch();
+
+            if ($item) {
+                echo json_encode([
+                    'success' => true,
+                    'item' => $item
+                ]);
+            } else {
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'Item not found'
+                ]);
+            }
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'error' => $e->getMessage()
+            ]);
+        }
+        exit;
+    } elseif ($action === 'approve_with_review' && !empty($_POST['item_id'])) {
+        // Approve with edits from modal - update ALL fields
+        $itemId = intval($_POST['item_id']);
+        $title = sanitizeEditorBlockInput($_POST['approval_title'] ?? '');
+        $date = sanitizeEditorBlockInput($_POST['approval_date'] ?? '');
+        $end_date = sanitizeEditorBlockInput($_POST['approval_end_date'] ?? '');
+        $time = sanitizeEditorBlockInput($_POST['approval_time'] ?? '');
+        $time_end = sanitizeEditorBlockInput($_POST['approval_time_end'] ?? '');
+        $location = sanitizeEditorBlockInput($_POST['approval_location'] ?? '');
+        $hardware_request = sanitizeEditorBlockInput($_POST['approval_hardware_request'] ?? '');
+        $staff_present = sanitizeEditorBlockInput($_POST['approval_staff_present'] ?? '');
+        $description = sanitizeEditorBlockInput($_POST['approval_description'] ?? '');
+        $meer_info = sanitizeEditorBlockInput($_POST['approval_meer_info'] ?? '');
+        $event_summary = sanitizeEditorBlockInput($_POST['approval_event_summary'] ?? '');
+        $target_audience = sanitizeEditorBlockInput($_POST['approval_target_audience'] ?? '');
+        $internal_notes = sanitizeEditorBlockInput($_POST['approval_internal_notes'] ?? '');
+        $signup_embed = sanitizeEditorBlockInput($_POST['approval_signup_embed'] ?? '');
+        $show_signup_button = !empty($_POST['approval_show_signup_button']) ? '1' : '0';
+        $show_on_homepage = !empty($_POST['approval_show_on_homepage']) ? '1' : '0';
+        $feedback = sanitizeEditorBlockInput($_POST['approval_feedback'] ?? '');
+
+        try {
+            $stmt = $pdo->prepare('SELECT id, image FROM events WHERE id = ?');
+            $stmt->execute([$itemId]);
+            $event = $stmt->fetch();
+
+            if ($event) {
+                // Update with edited data - ALL fields
+                $stmt = $pdo->prepare(
+                    'UPDATE events SET 
+                        title = ?, date = ?, end_date = ?, time = ?, time_end = ?, 
+                        location = ?, hardware_request = ?, staff_present = ?, description = ?, meer_info = ?, event_summary = ?,
+                        target_audience = ?, internal_notes = ?, signup_embed = ?,
+                        show_signup_button = ?, show_on_homepage = ?,
+                        approval_status = ?, approved_by = ?, approval_feedback = ?
+                     WHERE id = ?'
+                );
+                $stmt->execute([
+                    $title,
+                    $date,
+                    $end_date ?? null,
+                    $time ?? null,
+                    $time_end ?? null,
+                    $location,
+                    $hardware_request ?: null,
+                    $staff_present ?: null,
+                    $description,
+                    $meer_info ?? null,
+                    $event_summary ?? null,
+                    $target_audience ?? null,
+                    $internal_notes ?? null,
+                    $signup_embed ?? null,
+                    $show_signup_button,
+                    $show_on_homepage,
+                    'approved',
+                    $currentUser,
+                    $feedback ?: null,
+                    $itemId
+                ]);
+                audit_log($pdo, 'approve', 'events', $itemId, 'Status changed to approved. Full event edited by admin.', $currentUser);
+                header('Location: admin.php?page=goedkeuren&ok=approve');
+                exit;
+            } else {
+                $message = 'Item niet gevonden.';
+            }
+        } catch (Exception $e) {
+            $message = 'Fout bij goedkeuren: ' . $e->getMessage();
+        }
+    } elseif ($action === 'approve_item' && !empty($_POST['item_id'])) {
+        $itemId = intval($_POST['item_id']);
+        $stmt = $pdo->prepare('SELECT id FROM events WHERE id = ?');
+        $stmt->execute([$itemId]);
+        $event = $stmt->fetch();
+
+        if ($event) {
+            $stmt = $pdo->prepare(
+                'UPDATE events SET approval_status = ?, approved_by = ?, approval_feedback = NULL 
+                 WHERE id = ?'
+            );
+            $stmt->execute(['approved', $currentUser, $itemId]);
+            audit_log($pdo, 'approve', 'events', $itemId, 'Status changed to approved', $currentUser);
+            header('Location: admin.php?page=goedkeuren&ok=approve');
+            exit;
+        } else {
+            $message = 'Item niet gevonden.';
+        }
+    } elseif ($action === 'reject_item' && !empty($_POST['item_id'])) {
+        // Reject with possible edits - also save edited fields for resubmission
+        $itemId = intval($_POST['item_id']);
+        $title = sanitizeEditorBlockInput($_POST['approval_title'] ?? '');
+        $date = sanitizeEditorBlockInput($_POST['approval_date'] ?? '');
+        $end_date = sanitizeEditorBlockInput($_POST['approval_end_date'] ?? '');
+        $time = sanitizeEditorBlockInput($_POST['approval_time'] ?? '');
+        $time_end = sanitizeEditorBlockInput($_POST['approval_time_end'] ?? '');
+        $location = sanitizeEditorBlockInput($_POST['approval_location'] ?? '');
+        $hardware_request = sanitizeEditorBlockInput($_POST['approval_hardware_request'] ?? '');
+        $staff_present = sanitizeEditorBlockInput($_POST['approval_staff_present'] ?? '');
+        $description = sanitizeEditorBlockInput($_POST['approval_description'] ?? '');
+        $meer_info = sanitizeEditorBlockInput($_POST['approval_meer_info'] ?? '');
+        $event_summary = sanitizeEditorBlockInput($_POST['approval_event_summary'] ?? '');
+        $target_audience = sanitizeEditorBlockInput($_POST['approval_target_audience'] ?? '');
+        $internal_notes = sanitizeEditorBlockInput($_POST['approval_internal_notes'] ?? '');
+        $signup_embed = sanitizeEditorBlockInput($_POST['approval_signup_embed'] ?? '');
+        $show_signup_button = !empty($_POST['approval_show_signup_button']) ? '1' : '0';
+        $show_on_homepage = !empty($_POST['approval_show_on_homepage']) ? '1' : '0';
+        $feedback = sanitizeEditorBlockInput($_POST['approval_feedback'] ?? '');
+
+        try {
+            $stmt = $pdo->prepare('SELECT id FROM events WHERE id = ?');
+            $stmt->execute([$itemId]);
+            $event = $stmt->fetch();
+
+            if ($event) {
+                // Update status to rejected, but save edited fields for onderzoeker to see edits + feedback
+                $stmt = $pdo->prepare(
+                    'UPDATE events SET 
+                        title = ?, date = ?, end_date = ?, time = ?, time_end = ?, 
+                        location = ?, hardware_request = ?, staff_present = ?, description = ?, meer_info = ?, event_summary = ?,
+                        target_audience = ?, internal_notes = ?, signup_embed = ?,
+                        show_signup_button = ?, show_on_homepage = ?,
+                        approval_status = ?, approved_by = ?, approval_feedback = ? 
+                     WHERE id = ?'
+                );
+                $stmt->execute([
+                    $title,
+                    $date,
+                    $end_date ?: null,
+                    $time ?: null,
+                    $time_end ?: null,
+                    $location,
+                    $hardware_request ?: null,
+                    $staff_present ?: null,
+                    $description,
+                    $meer_info ?: null,
+                    $event_summary ?: null,
+                    $target_audience ?: null,
+                    $internal_notes ?: null,
+                    $signup_embed ?: null,
+                    $show_signup_button,
+                    $show_on_homepage,
+                    'rejected',
+                    $currentUser,
+                    $feedback,
+                    $itemId
+                ]);
+                audit_log($pdo, 'reject', 'events', $itemId, 'Status changed to rejected. Feedback: ' . substr($feedback, 0, 100), $currentUser);
+                header('Location: admin.php?page=goedkeuren&ok=reject');
+                exit;
+            } else {
+                $message = 'Item niet gevonden.';
+            }
+        } catch (Exception $e) {
+            $message = 'Fout bij afkeuren: ' . $e->getMessage();
+        }
+    } elseif ($action === 'get_request_details' && !empty($_POST['request_id'])) {
+        // Return request details as JSON for editing - ALL fields including feedback
+        header('Content-Type: application/json');
+        $requestId = intval($_POST['request_id']);
+
+        try {
+            $stmt = $pdo->prepare(
+                'SELECT id, title, date, end_date, time, time_end, description, location, image, 
+                        approval_status, approval_feedback, meer_info, event_summary, target_audience,
+                    internal_notes, signup_embed, show_signup_button, show_on_homepage,
+                    hardware_request, staff_present
+                 FROM events WHERE id = ? AND created_by = ?'
+            );
+            $stmt->execute([$requestId, $currentUser]);
+            $item = $stmt->fetch();
+
+            if ($item) {
+                echo json_encode([
+                    'success' => true,
+                    'item' => $item
+                ]);
+            } else {
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'Aanvraag niet gevonden'
+                ]);
+            }
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'error' => $e->getMessage()
+            ]);
+        }
+        exit;
+    } elseif ($action === 'resubmit_request' && !empty($_POST['request_id'])) {
+        // Handle resubmission of rejected request - update ALL fields
+        $requestId = intval($_POST['request_id']);
+        $title = sanitizeEditorBlockInput($_POST['edit_title'] ?? '');
+        $date = sanitizeEditorBlockInput($_POST['edit_date'] ?? '');
+        $end_date = sanitizeEditorBlockInput($_POST['edit_end_date'] ?? '');
+        $time = sanitizeEditorBlockInput($_POST['edit_time'] ?? '');
+        $time_end = sanitizeEditorBlockInput($_POST['edit_time_end'] ?? '');
+        $location = sanitizeEditorBlockInput($_POST['edit_location'] ?? '');
+        $hardware_request = sanitizeEditorBlockInput($_POST['edit_hardware_request'] ?? '');
+        $staff_present = sanitizeEditorBlockInput($_POST['edit_staff_present'] ?? '');
+        $description = sanitizeEditorBlockInput($_POST['edit_description'] ?? '');
+        $meer_info = sanitizeEditorBlockInput($_POST['edit_meer_info'] ?? '');
+        $event_summary = sanitizeEditorBlockInput($_POST['edit_event_summary'] ?? '');
+        $target_audience = sanitizeEditorBlockInput($_POST['edit_target_audience'] ?? '');
+        $signup_embed = sanitizeEditorBlockInput($_POST['edit_signup_embed'] ?? '');
+        $show_signup_button = !empty($_POST['edit_show_signup_button']) ? '1' : '0';
+        $show_on_homepage = !empty($_POST['edit_show_on_homepage']) ? '1' : '0';
+
+        // Verify ownership
+        $stmt = $pdo->prepare('SELECT id FROM events WHERE id = ? AND created_by = ?');
+        $stmt->execute([$requestId, $currentUser]);
+        $event = $stmt->fetch();
+
+        if ($event) {
+            try {
+                $stmt = $pdo->prepare(
+                    'UPDATE events SET 
+                        title = ?, date = ?, end_date = ?, time = ?, time_end = ?, 
+                        location = ?, hardware_request = ?, staff_present = ?, description = ?, meer_info = ?, event_summary = ?,
+                        target_audience = ?, signup_embed = ?, 
+                        show_signup_button = ?, show_on_homepage = ?,
+                        approval_status = "pending", approved_by = NULL, approval_feedback = NULL
+                     WHERE id = ?'
+                );
+                $stmt->execute([
+                    $title,
+                    $date,
+                    $end_date ?: null,
+                    $time ?: null,
+                    $time_end ?: null,
+                    $location,
+                    $hardware_request ?: null,
+                    $staff_present ?: null,
+                    $description,
+                    $meer_info ?: null,
+                    $event_summary ?: null,
+                    $target_audience ?: null,
+                    $signup_embed ?: null,
+                    $show_signup_button,
+                    $show_on_homepage,
+                    $requestId
+                ]);
+                audit_log($pdo, 'resubmit', 'events', $requestId, 'Request resubmitted by onderzoeker after rejection', $currentUser);
+                header('Location: admin.php?page=aanvragen&ok=resubmit');
+                exit;
+            } catch (Exception $e) {
+                $message = 'Fout bij opnieuw indienen: ' . $e->getMessage();
+            }
+        } else {
+            $message = 'Aanvraag niet gevonden of geen toestemming.';
         }
     }
 }
@@ -869,7 +1321,6 @@ if ($pageAction === 'create_page') {
     $direction = $_POST['direction'] ?? '';
 
     if ($id && $pageKey && ($direction === 'up' || $direction === 'down')) {
-        $currentUser = $_SESSION['user'] ?? null;
         $pdo->beginTransaction();
         try {
             $stmt = $pdo->prepare('SELECT id, sort_order, created_at FROM pages WHERE page_key = ? ORDER BY created_at ASC, id ASC');
@@ -974,55 +1425,40 @@ if (!empty($_GET['edit_page'])) {
 }
 
 // Haal events voor overzicht (datum-gestuurd)
-$stmt = $pdo->prepare('SELECT * FROM events ORDER BY date ASC, time ASC, created_at ASC, id ASC');
+// Toekomstige events eerst (gesorteerd op datum), daarna voorbije events
+$stmt = $pdo->prepare('SELECT * FROM events ORDER BY CASE WHEN date >= CURDATE() THEN 0 ELSE 1 END, date ASC, time ASC, created_at ASC, id ASC');
 $stmt->execute();
 $events = $stmt->fetchAll();
 ?>
 <?php
-// Welke admin pagina tonen (standaard index)
-$page = $_GET['page'] ?? 'index';
-
-$editorViewOnlyPages = [
-    'banner',
-    'index',
-    'evenementen',
-    'terugblikken',
-    'over',
-    'wie-zijn-we',
-    'verantwoord-ai',
-    'contact',
-    'programma-kennis',
-    'programma-actie',
-    'programma-faciliteit',
-];
+// Welke admin pagina tonen (standaard dashboard)
+$page = $_GET['page'] ?? 'dashboard';
 
 $allowedPagesByPermission = [
     'banner' => 'manage_banners',
-    'agenda' => 'manage_events',
+    'agenda' => ['manage_events', 'delete_events', 'create_events'],
+    'goedkeuren' => 'approve_content',
     'audit' => 'view_audit',
-    'users' => 'manage_users',
-    'index' => 'manage_pages',
-    'evenementen' => 'manage_pages',
-    'terugblikken' => 'manage_pages',
-    'over' => 'manage_pages',
-    'wie-zijn-we' => 'manage_pages',
-    'verantwoord-ai' => 'manage_pages',
-    'contact' => 'manage_pages',
-    'programma-kennis' => 'manage_pages',
-    'programma-actie' => 'manage_pages',
-    'programma-faciliteit' => 'manage_pages',
+    'users' => ['create_users', 'edit_users', 'delete_users'],
+    'index' => ['manage_pages', 'delete_pages', 'view_pages'],
+    'evenementen' => ['manage_pages', 'delete_pages', 'view_pages'],
+    'terugblikken' => ['manage_pages', 'delete_pages', 'view_pages'],
+    'over' => ['manage_pages', 'delete_pages', 'view_pages'],
+    'wie-zijn-we' => ['manage_pages', 'delete_pages', 'view_pages'],
+    'verantwoord-ai' => ['manage_pages', 'delete_pages', 'view_pages'],
+    'contact' => ['manage_pages', 'delete_pages', 'view_pages'],
+    'programma-kennis' => ['manage_pages', 'delete_pages', 'view_pages'],
+    'programma-actie' => ['manage_pages', 'delete_pages', 'view_pages'],
+    'programma-faciliteit' => ['manage_pages', 'delete_pages', 'view_pages'],
 ];
 
-$canViewPage = function ($candidatePage) use (&$allowedPagesByPermission, &$hasPermission, &$sessionRole, &$editorViewOnlyPages) {
+$canViewPage = function ($candidatePage) use (&$allowedPagesByPermission, &$hasPermission, &$hasAnyPermission) {
     if (!isset($allowedPagesByPermission[$candidatePage])) {
         return true;
     }
 
-    if ($hasPermission($allowedPagesByPermission[$candidatePage])) {
-        return true;
-    }
-
-    if ($sessionRole === 'editor' && in_array($candidatePage, $editorViewOnlyPages, true)) {
+    $candidatePermission = $allowedPagesByPermission[$candidatePage];
+    if (is_array($candidatePermission) ? $hasAnyPermission($candidatePermission) : $hasPermission($candidatePermission)) {
         return true;
     }
 
@@ -1048,10 +1484,13 @@ if (!$canViewPage($page)) {
 
 $canDeleteEvents = $hasPermission('delete_events');
 $canDeletePages = $hasPermission('delete_pages');
-$isEditorReadOnlyPage = ($sessionRole === 'editor' && $page !== 'agenda');
+$canManageEvents = $hasPermission('manage_events');
+$canCreateEvents = $hasPermission('create_events');
+$canManagePages = $hasPermission('manage_pages');
+$isEditorReadOnlyPage = false;
 
 $pageItems = [];
-if ($page !== 'banner' && $page !== 'agenda' && $page !== 'audit' && $page !== 'users') {
+if ($page !== 'banner' && $page !== 'agenda' && $page !== 'goedkeuren' && $page !== 'audit' && $page !== 'users') {
     $stmt = $pdo->prepare(
         'SELECT * FROM pages WHERE page_key = ?
          ORDER BY (sort_order IS NULL OR sort_order = 0) ASC, sort_order ASC, created_at ASC, id ASC'
@@ -1118,7 +1557,7 @@ if ($page === 'audit') {
 
 if ($page === 'users') {
     try {
-        $stmt = $pdo->query('SELECT email, first_name, last_name, admin, role FROM accounts ORDER BY email ASC');
+        $stmt = $pdo->query('SELECT email, first_name, last_name, admin, role, permissions FROM accounts ORDER BY email ASC');
         $userAccounts = $stmt->fetchAll();
     } catch (Exception $e) {
         $message = 'Gebruikers konden niet worden geladen.';
@@ -1129,6 +1568,7 @@ if ($page === 'users') {
 <html lang="nl">
 
 <head>
+    <script src="admin-upload-widget.js"></script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Admin - SociaalAI Lab</title>
@@ -1137,44 +1577,8 @@ if ($page === 'users') {
     <link rel="stylesheet" href="ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/Pixels_icon.png">
     <script src="custom.js"></script>
-    <!-- TinyMCE toevoegen met API key -->
-    <script src="https://cdn.tiny.cloud/1/qnkn0kjik1i39qbzy3vn798sz5jjf0brz2sp43v420o1rnqx/tinymce/8/tinymce.min.js" referrerpolicy="origin" crossorigin="anonymous"></script>
-    <script>
-        tinymce.init({
-            selector: 'textarea',
-            plugins: [
-                // Core editing features
-                'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'link', 'lists', 'media', 'searchreplace', 'table', 'visualblocks', 'wordcount',
-                // Your account includes a free trial of TinyMCE premium features
-                // Try the most popular premium features until Apr 27, 2026:
-                'checklist', 'mediaembed', 'casechange', 'formatpainter', 'pageembed', 'a11ychecker', 'tinymcespellchecker', 'permanentpen', 'powerpaste', 'advtable', 'advcode', 'advtemplate', 'tinymceai', 'uploadcare', 'mentions', 'tinycomments', 'tableofcontents', 'footnotes', 'mergetags', 'autocorrect', 'typography', 'inlinecss', 'markdown', 'importword', 'exportword', 'exportpdf'
-            ],
-            toolbar: 'undo redo | tinymceai-chat tinymceai-quickactions tinymceai-review | blocks fontfamily fontsize | bold italic underline strikethrough | link media table mergetags | addcomment showcomments | spellcheckdialog a11ycheck typography uploadcare | align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat',
-            tinycomments_mode: 'embedded',
-            tinycomments_author: 'Author name',
-            mergetags_list: [{
-                    value: 'First.Name',
-                    title: 'First Name'
-                },
-                {
-                    value: 'Email',
-                    title: 'Email'
-                },
-            ],
-            tinymceai_token_provider: async () => {
-                await fetch(`https://demo.api.tiny.cloud/1/qnkn0kjik1i39qbzy3vn798sz5jjf0brz2sp43v420o1rnqx/auth/random`, {
-                    method: "POST",
-                    credentials: "include"
-                });
-                return {
-                    token: await fetch(`https://demo.api.tiny.cloud/1/qnkn0kjik1i39qbzy3vn798sz5jjf0brz2sp43v420o1rnqx/jwt/tinymceai`, {
-                        credentials: "include"
-                    }).then(r => r.text())
-                };
-            },
-            uploadcare_public_key: '7802a2584c2144503210',
-        });
-    </script>
+    <!-- CKEditor 5 CDN (FREE, UNLIMITED) -->
+    <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
     <style>
         .btn-readonly-disabled {
             opacity: 0.55;
@@ -1182,49 +1586,153 @@ if ($page === 'users') {
             pointer-events: none !important;
             filter: grayscale(0.2);
         }
+
+        /* Approval modal lock: keep modal centered and block nav/sidebar interaction */
+        body.approval-modal-open {
+            overflow: hidden;
+        }
+
+        body.approval-modal-open .admin-header,
+        body.approval-modal-open .sidebar,
+        body.approval-modal-open .sidebar-toggle-btn {
+            pointer-events: none !important;
+            user-select: none !important;
+        }
+
+        #approval-modal {
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 20000 !important;
+            align-items: center !important;
+            justify-content: center !important;
+            pointer-events: auto !important;
+        }
+
+        #approval-modal>div {
+            margin: 0 auto;
+            transform-origin: center center;
+        }
+
+        #approval-modal .ck-editor__editable {
+            min-height: 120px;
+        }
+
+        .ck-editor__editable {
+            min-height: 100px;
+        }
+
+        .ck-editor__editable {
+            min-height: 100px;
+        }
+
+        /* Dashboard & Admin UI polish */
+        body.admin-page {
+            background: #f7fafc;
+            color: #0f172a;
+        }
+
+        .admin-header .admin-header-brand {
+            display: inline-flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .admin-header .admin-header-brand h1 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 10px;
+            padding: 18px;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+        }
+
+        .card h3 {
+            margin-top: 0;
+        }
+
+        .btn-primary {
+            background: #0b6fbf;
+            color: #fff;
+            border: 0;
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+
+        .btn-site {
+            background: var(--color-rdm);
+            color: #fff;
+            border: 0;
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+
+        .btn-secondary {
+            background: #ffffff;
+            color: #0f172a;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            padding: 7px 10px;
+            border-radius: 8px;
+        }
+
+        .btn {
+            font-weight: 600;
+        }
+
+        .admin-layout-grid {
+            gap: 24px;
+        }
+
+        /* Make main column full width when viewing dashboard */
+        body.dashboard-view .lg\:col-span-3 {
+            grid-column: 1 / -1;
+        }
+
+        /* Chart card title style */
+        .card canvas {
+            background: #fff;
+        }
     </style>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const isCompactEditor = window.matchMedia('(max-width: 1023.98px)').matches;
-            const compactToolbar = 'undo redo | bold italic | bullist numlist | link';
-            const fullToolbar = 'undo redo | bold italic underline | bullist numlist | link image | table';
-            const compactPlugins = 'lists link';
-            const fullPlugins = 'lists link image table';
+            // CKEditor 5 base configuration
+            const ckConfig = {
+                toolbar: {
+                    items: ['undo', 'redo', '|', 'bold', 'italic', 'underline', '|', 'bulletedList', 'numberedList', '|', 'link']
+                },
+                link: {
+                    addTargetToExternalLinks: true
+                }
+            };
 
-            // TinyMCE for title fields - compact
-            tinymce.init({
-                selector: 'textarea[name="title"]',
-                plugins: isCompactEditor ? compactPlugins : fullPlugins,
-                toolbar: isCompactEditor ? compactToolbar : fullToolbar,
-                menubar: false,
-                statusbar: !isCompactEditor,
-                toolbar_mode: isCompactEditor ? 'scrolling' : 'wrap',
-                branding: false,
-                height: isCompactEditor ? 42 : 50,
-                resize: true,
-                force_br_newlines: true,
-                forced_root_block: false
+            // CKEditor for title fields - compact
+            document.querySelectorAll('textarea[name="title"]').forEach(textarea => {
+                ClassicEditor.create(textarea, {
+                    toolbar: {
+                        items: ['undo', 'redo', '|', 'bold', 'italic'],
+                        shouldNotGroupWhenFull: true
+                    }
+                }).catch(error => console.error('CKEditor error:', error));
             });
 
-            // TinyMCE for content fields - larger
-            tinymce.init({
-                selector: 'textarea:not([name="title"])',
-                plugins: isCompactEditor ? compactPlugins : fullPlugins,
-                toolbar: isCompactEditor ? compactToolbar : fullToolbar,
-                menubar: false,
-                statusbar: !isCompactEditor,
-                toolbar_mode: isCompactEditor ? 'scrolling' : 'wrap',
-                branding: false,
-                height: isCompactEditor ? 220 : 300,
-                resize: true,
-                force_br_newlines: true,
-                forced_root_block: false
+            // CKEditor for content fields - larger with more options
+            // EXCLUDE approval modal textarea (initialized manually when modal opens)
+            document.querySelectorAll('textarea:not([name="title"]):not([data-no-auto-init])').forEach(textarea => {
+                ClassicEditor.create(textarea, {
+                    ...ckConfig,
+                    toolbar: {
+                        items: ['undo', 'redo', '|', 'bold', 'italic', 'underline', '|', 'bulletedList', 'numberedList', '|', 'link', 'insertTable', '|', 'blockQuote']
+                    }
+                }).catch(error => console.error('CKEditor error:', error));
             });
         });
     </script>
 </head>
 
-<body class="admin-page">
+<body class="admin-page <?php echo $page === 'dashboard' ? 'dashboard-view' : ''; ?>">
     <!-- Sidebar Toggle Button -->
     <button class="sidebar-toggle-btn" id="sidebarToggle">
         <i class="fa-solid fa-bars"></i>
@@ -1241,9 +1749,21 @@ if ($page === 'users') {
                         <i class="fa-solid fa-clipboard-list"></i> Auditlogboek
                     </a>
                 <?php endif; ?>
-                <a href="booking.php" class="btn btn-secondary text-sm">
-                    <i class="fa-solid fa-calendar-check"></i> Booking
-                </a>
+                <?php if ($hasAnyPermission(['manage_events', 'view_audit', 'access_booking'])): ?>
+                    <a href="admin.php?page=dashboard" class="btn <?php echo $page === 'dashboard' ? 'btn-site' : 'btn-secondary'; ?> text-sm">
+                        <i class="fa-solid fa-chart-pie"></i> Dashboard
+                    </a>
+                <?php endif; ?>
+                <?php if (!empty($_SESSION['can_access_admin'])): ?>
+                    <a href="admin.php?page=agenda" class="btn btn-secondary text-sm">
+                        <i class="fa-solid fa-toolbox"></i> Admin Panel
+                    </a>
+                <?php endif; ?>
+                <?php if ($hasPermission('access_booking')): ?>
+                    <a href="booking.php" class="btn btn-secondary text-sm">
+                        <i class="fa-solid fa-calendar-check"></i> Booking
+                    </a>
+                <?php endif; ?>
                 <a href="index.php" class="btn btn-secondary text-sm">
                     <i class="fa-solid fa-arrow-left"></i> Terug naar site
                 </a>
@@ -1263,76 +1783,91 @@ if ($page === 'users') {
 
         <div class="admin-layout-grid grid grid-cols-1 lg:grid-cols-4 gap-6">
             <!-- Sidebar -->
-            <aside class="sidebar">
-                <div class="sidebar-header">
-                    <i class="fa-solid fa-bars"></i> Navigatie
-                </div>
-                <nav class="divide-y">
-                    <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Beheer</div>
-                    <?php if ($hasPermission('manage_banners') || $sessionRole === 'editor'): ?>
-                        <a href="admin.php?page=banner" class="sidebar-link <?php echo $page === 'banner' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-image"></i> Banners
-                        </a>
-                    <?php endif; ?>
-                    <?php if ($hasPermission('manage_events')): ?>
-                        <a href="admin.php?page=agenda" class="sidebar-link <?php echo $page === 'agenda' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-calendar"></i> Agenda
-                        </a>
-                    <?php endif; ?>
-                    <?php if ($hasPermission('manage_users')): ?>
-                        <a href="admin.php?page=users" class="sidebar-link <?php echo $page === 'users' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-users"></i> Gebruikers & Rollen
-                        </a>
-                    <?php endif; ?>
-                    <?php if ($hasPermission('optimize_images')): ?>
-                        <a href="admin.php?page=image-converter" class="sidebar-link <?php echo $page === 'image-converter' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-image"></i> Image Converter
-                        </a>
-                    <?php endif; ?>
+            <?php if ($page !== 'dashboard'): ?>
+                <aside class="sidebar">
+                    <div class="sidebar-header">
+                        <i class="fa-solid fa-bars"></i> Navigatie
+                    </div>
+                    <nav class="divide-y">
+                        <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Beheer</div>
+                        <?php if ($hasPermission('manage_banners')): ?>
+                            <a href="admin.php?page=banner" class="sidebar-link <?php echo $page === 'banner' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-image"></i> Banners
+                            </a>
+                        <?php endif; ?>
+                        <?php if ($hasAnyPermission(['manage_events', 'delete_events', 'create_events'])): ?>
+                            <a href="admin.php?page=agenda" class="sidebar-link <?php echo $page === 'agenda' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-calendar"></i> Agenda
+                            </a>
+                        <?php endif; ?>
+                        <?php /* Dashboard link removed from sidebar per request */ ?>
+                        <?php if ($hasPermission('approve_content')): ?>
+                            <a href="admin.php?page=goedkeuren" class="sidebar-link <?php echo $page === 'goedkeuren' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-check-circle"></i> Goedkeuren
+                            </a>
+                        <?php endif; ?>
+                        <?php if ($hasRole('onderzoeker')): ?>
+                            <a href="admin.php?page=aanvragen" class="sidebar-link <?php echo $page === 'aanvragen' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-paper-plane"></i> Mijn Aanvragen
+                            </a>
+                        <?php endif; ?>
+                        <?php if ($hasAnyPermission(['create_users', 'edit_users', 'delete_users'])): ?>
+                            <a href="admin.php?page=users" class="sidebar-link <?php echo $page === 'users' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-users"></i> Gebruikers & Rechten
+                            </a>
+                        <?php endif; ?>
+                        <!-- Image Converter removed -->
 
-                    <?php if ($hasPermission('manage_pages') || $sessionRole === 'editor'): ?>
-                        <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Pagina's</div>
-                        <a href="admin.php?page=index" class="sidebar-link <?php echo $page === 'index' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-house"></i> Homepage
-                        </a>
-                        <a href="admin.php?page=evenementen" class="sidebar-link <?php echo $page === 'evenementen' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-calendar-check"></i> Evenementen
-                        </a>
-                        <a href="admin.php?page=terugblikken" class="sidebar-link <?php echo $page === 'terugblikken' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-history"></i> Terugblikken
-                        </a>
-                        <a href="admin.php?page=over" class="sidebar-link <?php echo $page === 'over' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-info-circle"></i> Voor wie?
-                        </a>
-                        <a href="admin.php?page=wie-zijn-we" class="sidebar-link <?php echo $page === 'wie-zijn-we' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-people-group"></i> Wie zijn we?
-                        </a>
-                        <a href="admin.php?page=verantwoord-ai" class="sidebar-link <?php echo $page === 'verantwoord-ai' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-shield"></i> Verantwoord AI
-                        </a>
-                        <a href="admin.php?page=contact" class="sidebar-link <?php echo $page === 'contact' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-envelope"></i> Contact
-                        </a>
+                        <?php if ($hasAnyPermission(['manage_pages', 'delete_pages', 'view_pages'])): ?>
+                            <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Pagina's</div>
+                            <a href="admin.php?page=index" class="sidebar-link <?php echo $page === 'index' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-house"></i> Homepage
+                            </a>
+                            <a href="admin.php?page=evenementen" class="sidebar-link <?php echo $page === 'evenementen' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-calendar-check"></i> Evenementen
+                            </a>
+                            <a href="admin.php?page=terugblikken" class="sidebar-link <?php echo $page === 'terugblikken' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-history"></i> Terugblikken
+                            </a>
+                            <a href="admin.php?page=over" class="sidebar-link <?php echo $page === 'over' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-info-circle"></i> Voor wie?
+                            </a>
+                            <a href="admin.php?page=wie-zijn-we" class="sidebar-link <?php echo $page === 'wie-zijn-we' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-people-group"></i> Wie zijn we?
+                            </a>
+                            <a href="admin.php?page=verantwoord-ai" class="sidebar-link <?php echo $page === 'verantwoord-ai' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-shield"></i> Verantwoord AI
+                            </a>
+                            <a href="admin.php?page=contact" class="sidebar-link <?php echo $page === 'contact' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-envelope"></i> Contact
+                            </a>
 
-                        <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Wat doen we</div>
-                        <a href="admin.php?page=programma-kennis" class="sidebar-link <?php echo $page === 'programma-kennis' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-brain"></i> Kennis & Vaardigheden
-                        </a>
-                        <a href="admin.php?page=programma-actie" class="sidebar-link <?php echo $page === 'programma-actie' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-rocket"></i> Actie, onderzoek & ontwerp
-                        </a>
-                        <a href="admin.php?page=programma-faciliteit" class="sidebar-link <?php echo $page === 'programma-faciliteit' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-building"></i> Faciliteit van het Lab
-                        </a>
-                    <?php endif; ?>
-                </nav>
-            </aside>
+                            <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Wat doen we</div>
+                            <a href="admin.php?page=programma-kennis" class="sidebar-link <?php echo $page === 'programma-kennis' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-brain"></i> Kennis & Vaardigheden
+                            </a>
+                            <a href="admin.php?page=programma-actie" class="sidebar-link <?php echo $page === 'programma-actie' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-rocket"></i> Actie, onderzoek & ontwerp
+                            </a>
+                            <a href="admin.php?page=programma-faciliteit" class="sidebar-link <?php echo $page === 'programma-faciliteit' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-building"></i> Faciliteit van het Lab
+                            </a>
+                        <?php endif; ?>
+                    </nav>
+                </aside>
+            <?php endif; ?>
 
             <div class="lg:col-span-3 <?php echo $isEditorReadOnlyPage ? 'admin-readonly-scope' : ''; ?>">
 
                 <?php if ($isEditorReadOnlyPage): ?>
                     <div class="alert alert-error" style="background:#f3f4f6; color:#1f2937; border-left-color:#9ca3af;">
                         <i class="fa-solid fa-eye"></i> Alleen-lezen modus: is dit een fout? Neem contact op met een beheerder om je rechten te controleren.
+                    </div>
+                <?php endif; ?>
+
+                <?php if ($isOnderzoeker): ?>
+                    <div class="alert alert-info" style="background:#dbeafe; color:#1e3a8a; border-left-color:#3b82f6; border-left-width:4px; border-radius:4px;">
+                        <i class="fa-solid fa-info-circle"></i> <strong>Modus Onderzoeker:</strong> Je kan inhoud bekijken en wijzigen, maar alle wijzigingen moeten worden goedgekeurd door een beheerder of content manager voordat ze live gaan.
                     </div>
                 <?php endif; ?>
 
@@ -1343,7 +1878,7 @@ if ($page === 'users') {
                             <h2 class="text-2xl font-bold">Agenda Beheer</h2>
                         </div>
 
-                        <?php if ($editEvent): ?>
+                        <?php if ($editEvent && $canManageEvents): ?>
                             <a href="admin.php?page=agenda" class="btn btn-secondary mb-6">
                                 <i class="fa-solid fa-arrow-left"></i> Terug
                             </a>
@@ -1398,6 +1933,18 @@ if ($page === 'users') {
                                 </div>
 
                                 <div>
+                                    <label class="form-label">Hardware (optioneel)</label>
+                                    <textarea name="hardware_request" rows="3" class="form-textarea" placeholder="Bijv. 2x VR bril, 1x Speaker"><?php echo htmlspecialchars($editEvent['hardware_request'] ?? ''); ?></textarea>
+                                    <p class="text-xs text-gray-500 mt-2">Wordt meegenomen naar Booking en zichtbaar bij goedkeuring.</p>
+                                </div>
+
+                                <div>
+                                    <label class="form-label">Wie van SociaalAI Lab zijn erbij? (optioneel)</label>
+                                    <textarea name="staff_present" rows="3" class="form-textarea" placeholder="Bijv. Naam 1, Naam 2"><?php echo htmlspecialchars($editEvent['staff_present'] ?? ''); ?></textarea>
+                                    <p class="text-xs text-gray-500 mt-2">Mag leeg blijven.</p>
+                                </div>
+
+                                <div>
                                     <label class="form-label">Omschrijving</label>
                                     <textarea name="description" rows="5" class="form-textarea"><?php echo htmlspecialchars($editEvent['description'] ?? ''); ?></textarea>
                                 </div>
@@ -1415,9 +1962,32 @@ if ($page === 'users') {
                                 </div>
 
                                 <div>
+                                    <label class="form-label">Doelgroep (optioneel)</label>
+                                    <input name="target_audience" class="form-input admin-input-surface" value="<?php echo htmlspecialchars($editEvent['target_audience'] ?? ''); ?>" placeholder="bijv. Scholieren, Docenten, Researchers" />
+                                    <p class="text-xs text-gray-500 mt-2">Alleen zichtbaar voor goedkeuring, niet op de publieke pagina.</p>
+                                </div>
+
+                                <div>
+                                    <label class="form-label">Opmerkingen voor goedkeuring (optioneel)</label>
+                                    <textarea name="internal_notes" rows="3" class="form-textarea" placeholder="Bijv. aanvullende informatie voor goedkeuring"><?php echo htmlspecialchars($editEvent['internal_notes'] ?? ''); ?></textarea>
+                                    <p class="text-xs text-gray-500 mt-2">Alleen zichtbaar voor administratoren, niet op de publieke pagina.</p>
+                                </div>
+
+                                <div>
                                     <label class="form-label">Afbeelding (optioneel)</label>
                                     <input type="hidden" name="existing_image" value="<?php echo htmlspecialchars($editEvent['image'] ?? ''); ?>" />
-                                    <input type="file" name="image" accept="image/*" class="form-input" />
+                                    <div id="upload-image-widget"></div>
+                                    <script>
+                                        document.addEventListener('DOMContentLoaded', function() {
+                                            createImageUploadWidget({
+                                                containerId: 'upload-image-widget',
+                                                inputName: 'image',
+                                                label: 'Kies een afbeelding (PNG/JPG, max 10MB)',
+                                                imageConverterUrl: null,
+                                                preview: true
+                                            });
+                                        });
+                                    </script>
                                     <?php if (!empty($editEvent['image'])): ?>
                                         <p class="text-sm mt-2 text-gray-600">Huidige: <?php echo htmlspecialchars($editEvent['image']); ?></p>
                                         <label class="form-checkbox mt-2 inline-flex items-center gap-2">
@@ -1429,7 +1999,7 @@ if ($page === 'users') {
 
                                 <div>
                                     <label class="form-label">Foto's tijdens event (optioneel, meerdere bestanden)</label>
-                                    <input type="file" name="gallery_images[]" accept="image/*" multiple class="form-input" />
+                                    <div class="admin-upload-widget" data-name="gallery_images[]" data-accept="image/*" data-multiple="true"></div>
                                     <?php $editGallery = decodeEventGallery($editEvent['event_gallery'] ?? null); ?>
                                     <?php if (!empty($editGallery)): ?>
                                         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
@@ -1486,7 +2056,7 @@ if ($page === 'users') {
                                     </button>
                                 </div>
                             </form>
-                        <?php else: ?>
+                        <?php elseif ($canManageEvents || $canCreateEvents): ?>
                             <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6 js-content-preview-form">
                                 <h3 class="font-semibold text-lg">Nieuw Evenement</h3>
                                 <input type="hidden" name="action" value="create">
@@ -1499,36 +2069,48 @@ if ($page === 'users') {
                                 <div class="grid grid-cols-3 gap-4">
                                     <div>
                                         <label class="form-label">Wanneer (datum)</label>
-                                        <input type="date" name="date" required class="form-input" />
+                                        <input type="date" name="date" required class="form-input" value="<?php echo htmlspecialchars($_POST['date'] ?? ''); ?>" />
                                         <div class="mt-2">
                                             <label class="form-checkbox">
-                                                <input type="checkbox" id="add-end-date-create" name="add_end_date" />
+                                                <input type="checkbox" id="add-end-date-create" name="add_end_date" <?php echo !empty($_POST['end_date']) ? 'checked' : ''; ?> />
                                                 Einddatum toevoegen
                                             </label>
-                                            <div id="end-date-container-create" class="admin-mt-8 admin-hidden">
+                                            <div id="end-date-container-create" class="admin-mt-8 <?php echo empty($_POST['end_date']) ? 'admin-hidden' : ''; ?>">
                                                 <label class="form-label">Einddatum <span class="text-xs text-gray-500">(optioneel)</span></label>
-                                                <input type="date" name="end_date" class="form-input" />
+                                                <input type="date" name="end_date" class="form-input" value="<?php echo htmlspecialchars($_POST['end_date'] ?? ''); ?>" />
                                             </div>
                                         </div>
                                     </div>
                                     <div>
                                         <label class="form-label">Starttijd</label>
-                                        <input type="time" name="time" class="form-input" value="<?php echo htmlspecialchars($editEvent['time'] ?? ''); ?>" />
+                                        <input type="time" name="time" class="form-input" value="<?php echo htmlspecialchars($_POST['time'] ?? ''); ?>" />
                                         <div class="mt-2">
                                             <label class="form-checkbox">
-                                                <input type="checkbox" id="add-end-time-create" name="add_end_time" />
+                                                <input type="checkbox" id="add-end-time-create" name="add_end_time" <?php echo !empty($_POST['time_end']) ? 'checked' : ''; ?> />
                                                 Eindtijd toevoegen
                                             </label>
-                                            <div id="end-time-container-create" class="admin-mt-8 admin-hidden">
+                                            <div id="end-time-container-create" class="admin-mt-8 <?php echo empty($_POST['time_end']) ? 'admin-hidden' : ''; ?>">
                                                 <label class="form-label">Eindtijd <span class="text-xs text-gray-500">(optioneel)</span></label>
-                                                <input type="time" name="time_end" class="form-input" value="<?php echo htmlspecialchars($editEvent['time_end'] ?? ''); ?>" />
+                                                <input type="time" name="time_end" class="form-input" value="<?php echo htmlspecialchars($_POST['time_end'] ?? ''); ?>" />
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 <div>
                                     <label class="form-label">Plaats</label>
-                                    <input name="location" class="form-input admin-input-surface" />
+                                    <input name="location" class="form-input admin-input-surface" value="<?php echo htmlspecialchars($_POST['location'] ?? ''); ?>" />
+                                </div>
+
+                                <div>
+                                    <label class="form-label">Hardware (optioneel)</label>
+                                    <textarea name="hardware_request" rows="3" class="form-textarea" placeholder="Bijv. 2x VR bril, 1x Speaker"><?php echo htmlspecialchars($_POST['hardware_request'] ?? ''); ?></textarea>
+                                    <p class="text-xs text-gray-500 mt-2">Wordt meegenomen naar Booking en zichtbaar bij goedkeuring.</p>
+                                </div>
+
+                                <div>
+                                    <label class="form-label">Wie van SociaalAI Lab zijn erbij? (optioneel)</label>
+                                    <textarea name="staff_present" rows="3" class="form-textarea" placeholder="Bijv. Naam 1, Naam 2"><?php echo htmlspecialchars($_POST['staff_present'] ?? ''); ?></textarea>
+                                    <p class="text-xs text-gray-500 mt-2">Mag leeg blijven.</p>
                                 </div>
 
                                 <div>
@@ -1538,24 +2120,36 @@ if ($page === 'users') {
 
                                 <div>
                                     <label class="form-label">Meer info tekst (optioneel)</label>
-                                    <textarea name="meer_info" rows="5" class="form-textarea"><?php echo htmlspecialchars($_POST['meer_info'] ?? ''); ?></textarea>
+                                    <textarea name="meer_info" rows="5" class="form-textarea"></textarea>
                                     <p class="text-xs text-gray-500 mt-2">Deze tekst wordt op de evenement detailpagina getoond boven de samenvatting.</p>
                                 </div>
 
                                 <div>
                                     <label class="form-label">Samenvatting na afloop (optioneel)</label>
-                                    <textarea name="event_summary" rows="5" class="form-textarea"><?php echo htmlspecialchars($_POST['event_summary'] ?? ''); ?></textarea>
+                                    <textarea name="event_summary" rows="5" class="form-textarea"></textarea>
                                     <p class="text-xs text-gray-500 mt-2">Deze samenvatting wordt op de evenement detailpagina getoond zodra deze is ingevuld.</p>
                                 </div>
 
                                 <div>
+                                    <label class="form-label">Doelgroep (optioneel)</label>
+                                    <input name="target_audience" class="form-input admin-input-surface" placeholder="bijv. Scholieren, Docenten, Researchers" />
+                                    <p class="text-xs text-gray-500 mt-2">Alleen zichtbaar voor goedkeuring, niet op de publieke pagina.</p>
+                                </div>
+
+                                <div>
+                                    <label class="form-label">Opmerkingen voor goedkeuring (optioneel)</label>
+                                    <textarea name="internal_notes" rows="3" class="form-textarea" placeholder="Bijv. aanvullende informatie voor goedkeuring"></textarea>
+                                    <p class="text-xs text-gray-500 mt-2">Alleen zichtbaar voor administratoren, niet op de publieke pagina.</p>
+                                </div>
+
+                                <div>
                                     <label class="form-label">Afbeelding (optioneel)</label>
-                                    <input type="file" name="image" accept="image/*" class="form-input" />
+                                    <div class="admin-upload-widget" data-name="image" data-accept="image/*"></div>
                                 </div>
 
                                 <div>
                                     <label class="form-label">Foto's tijdens event (optioneel, meerdere bestanden)</label>
-                                    <input type="file" name="gallery_images[]" accept="image/*" multiple class="form-input" />
+                                    <div class="admin-upload-widget" data-name="gallery_images[]" data-accept="image/*" data-multiple="true"></div>
                                 </div>
                                 <!-- Meer info link veld verwijderd -->
 
@@ -1654,9 +2248,11 @@ if ($page === 'users') {
                                                             </a>
                                                         <?php endif; ?>
                                                         <div class="admin-row-actions-stack flex flex-col gap-1">
-                                                            <a href="admin.php?page=agenda&edit=<?php echo (int)$event['id']; ?>" class="btn btn-secondary btn-sm">
-                                                                <i class="fa-solid fa-pencil"></i> Bewerk
-                                                            </a>
+                                                            <?php if ($canManageEvents): ?>
+                                                                <a href="admin.php?page=agenda&edit=<?php echo (int)$event['id']; ?>" class="btn btn-secondary btn-sm">
+                                                                    <i class="fa-solid fa-pencil"></i> Bewerk
+                                                                </a>
+                                                            <?php endif; ?>
                                                             <?php if ($canDeleteEvents): ?>
                                                                 <form method="POST" onsubmit="return confirm('Verwijder dit evenement?');" class="admin-inline-form">
                                                                     <input type="hidden" name="action" value="delete">
@@ -1681,49 +2277,90 @@ if ($page === 'users') {
                     <div class="card p-6">
                         <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
                             <i class="fa-solid fa-users text-2xl text-[#00811F]"></i>
-                            <h2 class="text-2xl font-bold">Gebruikers & Rollen</h2>
+                            <h2 class="text-2xl font-bold">Gebruikers & Rechten</h2>
                         </div>
-                        <p class="text-sm text-gray-600 mb-4">Wijs per gebruiker een rol toe. Rollen bepalen welke onderdelen van het adminpaneel zichtbaar en bewerkbaar zijn.</p>
+                        <p class="text-sm text-gray-600 mb-4">Zet per gebruiker aan wat die persoon wel of niet mag aanpassen, bekijken of verwijderen.</p>
 
-                        <form method="POST" class="bg-white p-6 shadow-md space-y-4 mb-6 border border-gray-200 rounded">
-                            <h3 class="font-semibold text-lg">Gebruiker toevoegen</h3>
-                            <input type="hidden" name="action" value="create_user">
+                        <?php if ($hasPermission('create_users')): ?>
+                            <form method="POST" id="userFormContainer" class="bg-white p-6 shadow-md space-y-4 mb-6 border border-gray-200 rounded">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 id="userFormTitle" class="font-semibold text-lg">Gebruiker toevoegen</h3>
+                                    <button type="button" id="userFormCancelBtn" class="btn btn-secondary btn-sm hidden" onclick="resetUserForm()">
+                                        <i class="fa-solid fa-times"></i> Annuleren
+                                    </button>
+                                </div>
 
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <input type="hidden" name="action" id="userFormAction" value="create_user">
+                                <input type="hidden" name="target_email_old" id="targetEmailOld" value="">
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="form-label" for="new_first_name">Voornaam</label>
+                                        <input id="new_first_name" type="text" name="new_first_name" class="form-input" maxlength="120" placeholder="Voornaam">
+                                    </div>
+                                    <div>
+                                        <label class="form-label" for="new_last_name">Achternaam</label>
+                                        <input id="new_last_name" type="text" name="new_last_name" class="form-input" maxlength="120" placeholder="Achternaam">
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="md:col-span-2">
+                                        <label class="form-label" for="new_email">E-mailadres</label>
+                                        <input id="new_email" type="email" name="new_email" class="form-input" required placeholder="naam@voorbeeld.nl">
+                                    </div>
+                                    <div>
+                                        <label class="form-label" for="new_role">Basisrol</label>
+                                        <select id="new_role" name="new_role" class="form-input">
+                                            <option value="viewer">Geen vaste rol</option>
+                                            <option value="editor">Onderzoeker</option>
+                                            <option value="content_manager">Content Manager</option>
+                                            <option value="administrator">Administrator</option>
+                                        </select>
+                                    </div>
+                                </div>
+
                                 <div>
-                                    <label class="form-label" for="new_first_name">Voornaam</label>
-                                    <input id="new_first_name" type="text" name="new_first_name" class="form-input" maxlength="120" placeholder="Voornaam">
+                                    <label class="form-label" for="new_password">Wachtwoord <span id="passwordNote" class="text-xs text-gray-500"></span></label>
+                                    <input id="new_password" type="text" name="new_password" class="form-input" placeholder="Voer wachtwoord in">
                                 </div>
-                                <div>
-                                    <label class="form-label" for="new_last_name">Achternaam</label>
-                                    <input id="new_last_name" type="text" name="new_last_name" class="form-input" maxlength="120" placeholder="Achternaam">
-                                </div>
-                            </div>
 
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div class="md:col-span-2">
-                                    <label class="form-label" for="new_email">E-mailadres</label>
-                                    <input id="new_email" type="email" name="new_email" class="form-input" required placeholder="naam@voorbeeld.nl">
-                                </div>
-                                <div>
-                                    <label class="form-label" for="new_role">Rol</label>
-                                    <select id="new_role" name="new_role" class="form-input">
-                                        <option value="editor">Bewerker</option>
-                                        <option value="content_manager">Content Manager</option>
-                                        <option value="superadmin">Administrator</option>
-                                    </select>
-                                </div>
-                            </div>
+                                <button type="submit" id="userFormBtn" class="btn btn-primary">
+                                    <i class="fa-solid fa-user-plus"></i> Gebruiker toevoegen
+                                </button>
+                            </form>
 
-                            <div>
-                                <label class="form-label" for="new_password">Wachtwoord</label>
-                                <input id="new_password" type="text" name="new_password" class="form-input" required placeholder="Voer wachtwoord in">
-                            </div>
+                            <script>
+                                function editUser(email, firstName, lastName, role, permissions) {
+                                    document.getElementById('userFormTitle').textContent = 'Gebruiker bewerken';
+                                    document.getElementById('userFormAction').value = 'update_user';
+                                    document.getElementById('targetEmailOld').value = email;
+                                    document.getElementById('new_email').value = email;
+                                    document.getElementById('new_first_name').value = firstName;
+                                    document.getElementById('new_last_name').value = lastName;
+                                    document.getElementById('new_role').value = role;
+                                    document.getElementById('new_password').value = '';
+                                    document.getElementById('passwordNote').textContent = '(laat leeg om hetzelfde wachtwoord te behouden)';
+                                    document.getElementById('userFormBtn').innerHTML = '<i class="fa-solid fa-save"></i> Opslaan';
+                                    document.getElementById('userFormCancelBtn').classList.remove('hidden');
+                                    document.getElementById('userFormContainer').scrollIntoView({
+                                        behavior: 'smooth',
+                                        block: 'start'
+                                    });
+                                }
 
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fa-solid fa-user-plus"></i> Gebruiker toevoegen
-                            </button>
-                        </form>
+                                function resetUserForm() {
+                                    document.getElementById('userFormContainer').reset();
+                                    document.getElementById('userFormTitle').textContent = 'Gebruiker toevoegen';
+                                    document.getElementById('userFormAction').value = 'create_user';
+                                    document.getElementById('targetEmailOld').value = '';
+                                    document.getElementById('new_password').value = '';
+                                    document.getElementById('passwordNote').textContent = '';
+                                    document.getElementById('userFormBtn').innerHTML = '<i class="fa-solid fa-user-plus"></i> Gebruiker toevoegen';
+                                    document.getElementById('userFormCancelBtn').classList.add('hidden');
+                                }
+                            </script>
+                        <?php endif; ?>
 
                         <?php if (empty($userAccounts)): ?>
                             <div class="text-center py-8 text-gray-500">
@@ -1742,32 +2379,39 @@ if ($page === 'users') {
                                     if ($accRole === '') {
                                         $accRole = ((int)($acc['admin'] ?? 0) === 1) ? 'superadmin' : 'viewer';
                                     }
+                                    $accPermissions = normalizeAccountPermissions($acc['permissions'] ?? null);
+                                    if ($accPermissions === null) {
+                                        $accPermissions = permissionsForRole($accRole, $rolePermissions);
+                                    }
                                     ?>
-                                    <form method="POST" class="border border-gray-200 rounded p-4 bg-white flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
-                                        <input type="hidden" name="action" value="update_user_role">
-                                        <input type="hidden" name="target_email" value="<?php echo htmlspecialchars($accEmail); ?>">
+                                    <div class="border border-gray-200 rounded p-4 bg-white space-y-4">
+                                        <div class="flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
+                                            <div>
+                                                <?php if ($accFullName !== ''): ?>
+                                                    <p class="font-semibold text-gray-900"><?php echo htmlspecialchars($accFullName); ?></p>
+                                                <?php endif; ?>
+                                                <p class="font-semibold text-gray-900"><?php echo htmlspecialchars($accEmail); ?></p>
+                                                <p class="text-xs text-gray-500">Basisrol: <?php echo htmlspecialchars($accRole); ?></p>
+                                            </div>
 
-                                        <div>
-                                            <?php if ($accFullName !== ''): ?>
-                                                <p class="font-semibold text-gray-900"><?php echo htmlspecialchars($accFullName); ?></p>
-                                            <?php endif; ?>
-                                            <p class="font-semibold text-gray-900"><?php echo htmlspecialchars($accEmail); ?></p>
-                                            <p class="text-xs text-gray-500">Huidige rol: <?php echo htmlspecialchars($accRole); ?></p>
+                                            <div class="flex flex-wrap gap-2">
+                                                <?php if ($hasPermission('delete_users') && $accEmail !== ($_SESSION['email'] ?? '')): ?>
+                                                    <form method="POST" class="admin-inline-form">
+                                                        <input type="hidden" name="target_email" value="<?php echo htmlspecialchars($accEmail); ?>">
+                                                        <button type="submit" name="action" value="delete_user" class="btn btn-danger btn-sm" onclick="return confirm('Verwijder deze gebruiker?');">
+                                                            <i class="fa-solid fa-trash"></i> Gebruiker verwijderen
+                                                        </button>
+                                                    </form>
+                                                <?php endif; ?>
+                                            </div>
                                         </div>
 
-                                        <div class="flex items-center gap-2">
-                                            <label class="text-sm text-gray-700" for="role_<?php echo md5($accEmail); ?>">Rol</label>
-                                            <select id="role_<?php echo md5($accEmail); ?>" name="role" class="form-input">
-                                                <option value="superadmin" <?php echo $accRole === 'superadmin' ? 'selected' : ''; ?>>Administrator</option>
-                                                <option value="content_manager" <?php echo $accRole === 'content_manager' ? 'selected' : ''; ?>>Content Manager</option>
-                                                <option value="editor" <?php echo $accRole === 'editor' ? 'selected' : ''; ?>>Bewerker</option>
-
-                                            </select>
-                                            <button type="submit" class="btn btn-primary btn-sm">
-                                                <i class="fa-solid fa-save"></i> Opslaan
+                                        <?php if ($hasPermission('edit_users')): ?>
+                                            <button type="button" class="btn btn-secondary btn-sm" onclick="editUser('<?php echo htmlspecialchars($accEmail, ENT_QUOTES); ?>', '<?php echo htmlspecialchars($accFirstName, ENT_QUOTES); ?>', '<?php echo htmlspecialchars($accLastName, ENT_QUOTES); ?>', '<?php echo htmlspecialchars($accRole, ENT_QUOTES); ?>', '<?php echo htmlspecialchars(json_encode($accPermissions), ENT_QUOTES); ?>')">
+                                                <i class="fa-solid fa-pencil"></i> Bewerken
                                             </button>
-                                        </div>
-                                    </form>
+                                        <?php endif; ?>
+                                    </div>
                                 <?php endforeach; ?>
                             </div>
                         <?php endif; ?>
@@ -1837,6 +2481,477 @@ if ($page === 'users') {
                             </div>
                         </div>
                     </div>
+
+                <?php elseif ($page === 'goedkeuren'): ?>
+                    <div class="card p-6">
+                        <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
+                            <i class="fa-solid fa-check-circle text-2xl text-[#00811F]"></i>
+                            <h2 class="text-2xl font-bold">Goedkeuren</h2>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-6">Beoordeel ingediende inhoud van onderzoekers.</p>
+
+                        <?php
+                        // Fetch pending approval items - get ALL fields so we can display them
+                        try {
+                            $stmt = $pdo->prepare(
+                                "SELECT id, title, date, end_date, time, time_end, description, location, image, 
+                                        created_by, target_audience, internal_notes, approval_status, approval_feedback,
+                                    info_link, signup_embed, show_signup_button, created_at,
+                                    hardware_request, staff_present
+                                 FROM events 
+                                 WHERE approval_status = 'pending' 
+                                 ORDER BY created_at DESC"
+                            );
+                            $stmt->execute();
+                            $pendingItems = $stmt->fetchAll();
+                        } catch (Exception $e) {
+                            $pendingItems = [];
+                        }
+                        ?>
+
+                        <?php if (empty($pendingItems)): ?>
+                            <div class="text-center py-12 text-gray-500">
+                                <i class="fa-solid fa-inbox text-4xl mb-2"></i>
+                                <p>Geen items ter goedkeuring.</p>
+                            </div>
+                        <?php else: ?>
+                            <div class="space-y-4">
+                                <?php foreach ($pendingItems as $item): ?>
+                                    <div class="border border-yellow-200 rounded-lg p-6 bg-yellow-50">
+                                        <div class="flex items-start justify-between gap-4 mb-3">
+                                            <div class="flex-1">
+                                                <h3 class="font-semibold text-lg text-gray-900"><?php echo htmlspecialchars($item['title'] ?? ''); ?></h3>
+                                                <p class="text-sm text-gray-600">
+                                                    <i class="fa-solid fa-calendar"></i>
+                                                    <?php echo !empty($item['date']) ? (new DateTime($item['date']))->format('d-m-Y') : 'Geen datum'; ?>
+                                                </p>
+                                                <p class="text-sm text-gray-600">
+                                                    <i class="fa-solid fa-user"></i>
+                                                    Ingediend door: <?php echo htmlspecialchars($item['created_by'] ?? 'Onbekend'); ?>
+                                                </p>
+                                            </div>
+                                            <span class="inline-block px-3 py-1 bg-yellow-200 text-yellow-900 text-xs font-semibold rounded">In afwachting</span>
+                                        </div>
+
+                                        <?php if (!empty($item['target_audience']) || !empty($item['internal_notes'])): ?>
+                                            <div class="bg-white p-4 rounded mb-4 border border-yellow-100">
+                                                <?php if (!empty($item['target_audience'])): ?>
+                                                    <p class="text-sm"><strong>Doelgroep:</strong> <?php echo htmlspecialchars($item['target_audience']); ?></p>
+                                                <?php endif; ?>
+                                                <?php if (!empty($item['internal_notes'])): ?>
+                                                    <p class="text-sm"><strong>Opmerkingen:</strong> <?php echo nl2br(htmlspecialchars($item['internal_notes'])); ?></p>
+                                                <?php endif; ?>
+                                            </div>
+                                        <?php endif; ?>
+
+                                        <div class="flex flex-wrap gap-2 items-center justify-end">
+                                            <button type="button" class="btn btn-info btn-sm" onclick="openApprovalModal(<?php echo (int)$item['id']; ?>, '<?php echo htmlspecialchars($item['title'] ?? '', ENT_QUOTES, 'UTF-8'); ?>')">
+                                                <i class="fa-solid fa-eye"></i> Details bekijken & Beoordelen
+                                            </button>
+                                            <form method="POST" style="display:inline;">
+                                                <input type="hidden" name="action" value="approve_item">
+                                                <input type="hidden" name="item_id" value="<?php echo (int)$item['id']; ?>">
+                                                <button type="submit" class="btn btn-success btn-sm">
+                                                    <i class="fa-solid fa-thumbs-up"></i> Direct goedkeuren
+                                                </button>
+                                            </form>
+                                            <button type="button" class="btn btn-error btn-sm" onclick="openRejectForm(<?php echo (int)$item['id']; ?>)">
+                                                <i class="fa-solid fa-thumbs-down"></i> Afkeuren
+                                            </button>
+                                        </div>
+
+                                        <!-- Hidden reject form -->
+                                        <form id="reject-form-<?php echo (int)$item['id']; ?>" method="POST" class="mt-4 p-4 bg-white border border-red-200 rounded hidden">
+                                            <input type="hidden" name="action" value="reject_item">
+                                            <input type="hidden" name="item_id" value="<?php echo (int)$item['id']; ?>">
+
+                                            <div class="mb-3">
+                                                <label class="form-label">Terugkoppeling (waarom wordt dit afgewezen?):</label>
+                                                <textarea name="feedback" class="form-textarea" rows="3" placeholder="Uw feedback..." required></textarea>
+                                            </div>
+
+                                            <div class="flex gap-2">
+                                                <button type="submit" class="btn btn-error btn-sm">
+                                                    <i class="fa-solid fa-paper-plane"></i> Afkeuren
+                                                </button>
+                                                <button type="button" class="btn btn-secondary btn-sm" onclick="closeRejectForm(<?php echo (int)$item['id']; ?>)">
+                                                    <i class="fa-solid fa-times"></i> Annuleren
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Approval Details Modal -->
+                    <div id="approval-modal" class="hidden" style="position: fixed; inset: 0; z-index: 20000; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; padding: 1rem; opacity: 0; transition: opacity 0.3s ease; pointer-events: auto;">
+                        <div style="background: white; border-radius: 12px; width: 100%; max-width: 900px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,.3); transform: scale(0.95); transition: transform 0.3s ease; margin: 0 auto;">
+                            <!-- Header -->
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1.5rem; border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; background: white; z-index: 10;">
+                                <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0;" id="approval-modal-title">Details & Beoordeling</h2>
+                                <button type="button" onclick="closeApprovalModal()" class="btn btn-error btn-sm" style="font-size: 0.875rem;">
+                                    <i class="fa-solid fa-xmark"></i> Sluiten
+                                </button>
+                            </div>
+
+                            <!-- Content -->
+                            <div style="padding: 1.5rem;">
+                                <form method="POST" id="approval-form">
+                                    <input type="hidden" name="action" value="approve_with_review">
+                                    <input type="hidden" name="item_id" id="approval-item-id">
+
+                                    <!-- Event Details (Preview) -->
+                                    <div style="background: #f9fafb; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                                        <h3 style="font-weight: 700; margin-top: 0; margin-bottom: 1rem; color: #111827;">📋 Event Details (Bewerkbaar)</h3>
+
+                                        <!-- Titel -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Titel:</strong></label>
+                                            <input type="text" name="approval_title" id="approval-title-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                        </div>
+
+                                        <!-- Datum, Einddatum, Starttijd, Eindtijd -->
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+                                            <div>
+                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Startdatum:</strong></label>
+                                                <input type="date" name="approval_date" id="approval-date-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                            </div>
+                                            <div>
+                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Einddatum:</strong></label>
+                                                <input type="date" name="approval_end_date" id="approval-end-date-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                            </div>
+                                            <div>
+                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Starttijd:</strong></label>
+                                                <input type="time" name="approval_time" id="approval-time-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                            </div>
+                                            <div>
+                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Eindtijd:</strong></label>
+                                                <input type="time" name="approval_time_end" id="approval-time-end-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                            </div>
+                                        </div>
+
+                                        <!-- Locatie -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Locatie:</strong></label>
+                                            <input type="text" name="approval_location" id="approval-location-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                        </div>
+
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Hardware (optioneel):</strong></label>
+                                            <textarea name="approval_hardware_request" id="approval-hardware-request-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 70px; font-family: inherit;"></textarea>
+                                        </div>
+
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Wie van SociaalAI Lab zijn erbij? (optioneel):</strong></label>
+                                            <textarea name="approval_staff_present" id="approval-staff-present-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 70px; font-family: inherit;"></textarea>
+                                        </div>
+
+                                        <!-- Beschrijving (CKEditor) -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Beschrijving:</strong></label>
+                                            <textarea name="approval_description" id="approval-description-input" data-no-auto-init="true" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 100px; font-family: inherit; background: white; color: #111827; display: block; visibility: visible;">
+</textarea>
+                                        </div>
+
+                                        <!-- Meer info -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Meer info tekst (optioneel):</strong></label>
+                                            <textarea name="approval_meer_info" id="approval-meer-info-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 80px; font-family: inherit;"></textarea>
+                                            <small style="color: #6b7280;">Deze tekst wordt op de evenement detailpagina getoond boven de samenvatting.</small>
+                                        </div>
+
+                                        <!-- Event samenvatting -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Samenvatting na afloop (optioneel):</strong></label>
+                                            <textarea name="approval_event_summary" id="approval-event-summary-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 80px; font-family: inherit;"></textarea>
+                                            <small style="color: #6b7280;">Deze samenvatting wordt op de evenement detailpagina getoond zodra deze is ingevuld.</small>
+                                        </div>
+
+                                        <!-- Doelgroep -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Doelgroep (optioneel):</strong></label>
+                                            <input type="text" name="approval_target_audience" id="approval-target-audience-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;" placeholder="bijv. Scholieren, Docenten, Researchers">
+                                            <small style="color: #6b7280;">Alleen zichtbaar voor goedkeuring, niet op de publieke pagina.</small>
+                                        </div>
+
+                                        <!-- Opmerkingen voor goedkeuring -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Opmerkingen voor goedkeuring (optioneel):</strong></label>
+                                            <textarea name="approval_internal_notes" id="approval-internal-notes-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 60px; font-family: inherit;" placeholder="Bijv. aanvullende informatie voor goedkeuring"></textarea>
+                                            <small style="color: #6b7280;">Alleen zichtbaar voor administratoren, niet op de publieke pagina.</small>
+                                        </div>
+
+                                        <!-- Signup link -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Aanmelder.nl link (optioneel):</strong></label>
+                                            <input type="url" name="approval_signup_embed" id="approval-signup-embed-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;" placeholder="https://aanmelder.nl/subscribe/...">
+                                        </div>
+
+                                        <!-- Checkboxes -->
+                                        <div style="margin-bottom: 1rem; display: flex; gap: 2rem;">
+                                            <label style="display: flex; align-items: center; gap: 0.5rem; color: #111827; font-size: 0.875rem; cursor: pointer;">
+                                                <input type="checkbox" name="approval_show_signup_button" id="approval-show-signup-button" checked style="width: 1rem; height: 1rem; cursor: pointer;">
+                                                <strong>Toon inschrijf knop</strong>
+                                            </label>
+                                            <label style="display: flex; align-items: center; gap: 0.5rem; color: #111827; font-size: 0.875rem; cursor: pointer;">
+                                                <input type="checkbox" name="approval_show_on_homepage" id="approval-show-on-homepage" checked style="width: 1rem; height: 1rem; cursor: pointer;">
+                                                <strong>Toon op homepage</strong>
+                                            </label>
+                                        </div>
+
+                                        <!-- Afbeelding -->
+                                        <div id="approval-image-container" style="margin-top: 1rem; display: none;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.5rem 0; display: block;"><strong>Afbeelding:</strong></label>
+                                            <img id="approval-image" src="" alt="Event afbeelding" style="max-width: 100%; max-height: 300px; border-radius: 8px; object-fit: cover; margin-bottom: 0.5rem;">
+                                            <input type="file" name="approval_image" id="approval-image-input" class="form-input" accept="image/*" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                            <input type="hidden" name="approval_existing_image" id="approval-existing-image">
+                                            <small style="color: #6b7280;">Laat leeg om huidige afbeelding te behouden</small>
+                                        </div>
+                                    </div>
+
+                                    <!-- Feedback Section -->
+                                    <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                                        <h3 style="font-weight: 700; margin-top: 0; margin-bottom: 1rem; color: #92400e;">💬 Terugkoppeling Toevoegen</h3>
+                                        <textarea name="approval_feedback" id="approval-feedback" data-no-auto-init="true" class="form-textarea" rows="4" placeholder="Voeg hier feedback/opmerkingen toe..." style="width: 100%; padding: 0.75rem; border: 1px solid #d4a574; border-radius: 4px; font-family: inherit;"></textarea>
+                                    </div>
+
+                                    <!-- Actions -->
+                                    <div style="display: flex; gap: 1rem; justify-content: flex-end; padding-top: 1rem; border-top: 1px solid #e5e7eb;">
+                                        <button type="button" onclick="closeApprovalModal()" class="btn btn-secondary">
+                                            <i class="fa-solid fa-times"></i> Annuleren
+                                        </button>
+                                        <button type="button" onclick="submitApprovalWithFeedback('reject')" class="btn btn-error">
+                                            <i class="fa-solid fa-thumbs-down"></i> Afkeuren
+                                        </button>
+                                        <button type="button" onclick="submitApprovalWithFeedback('approve')" class="btn btn-success">
+                                            <i class="fa-solid fa-check-circle"></i> Goedkeuren
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <script>
+                        function openApprovalModal(itemId, itemTitle) {
+                            const modal = document.getElementById('approval-modal');
+                            const formData = new FormData();
+                            formData.append('action', 'get_approval_item');
+                            formData.append('item_id', itemId);
+
+                            fetch('admin.php', {
+                                    method: 'POST',
+                                    body: formData
+                                })
+                                .then(r => r.json())
+                                .then(data => {
+                                    if (!(data && data.success && data.item)) {
+                                        alert('Kon item niet laden: ' + (data && data.error ? data.error : 'Onbekende fout'));
+                                        return;
+                                    }
+
+                                    const item = data.item;
+                                    document.getElementById('approval-item-id').value = itemId;
+                                    document.getElementById('approval-modal-title').textContent = 'Details & Beoordeling - ' + itemTitle;
+
+                                    // Basic fields
+                                    document.getElementById('approval-title-input').value = item.title || '';
+                                    if (item.date) {
+                                        const d = new Date(item.date);
+                                        document.getElementById('approval-date-input').value = d.toISOString().split('T')[0];
+                                    } else {
+                                        document.getElementById('approval-date-input').value = '';
+                                    }
+                                    if (item.end_date) {
+                                        const d2 = new Date(item.end_date);
+                                        document.getElementById('approval-end-date-input').value = d2.toISOString().split('T')[0];
+                                    } else {
+                                        document.getElementById('approval-end-date-input').value = '';
+                                    }
+
+                                    document.getElementById('approval-time-input').value = item.time || '';
+                                    document.getElementById('approval-time-end-input').value = item.time_end || '';
+                                    document.getElementById('approval-location-input').value = item.location || '';
+                                    document.getElementById('approval-hardware-request-input').value = item.hardware_request || '';
+                                    document.getElementById('approval-staff-present-input').value = item.staff_present || '';
+                                    document.getElementById('approval-meer-info-input').value = item.meer_info || '';
+                                    document.getElementById('approval-event-summary-input').value = item.event_summary || '';
+                                    document.getElementById('approval-target-audience-input').value = item.target_audience || '';
+                                    document.getElementById('approval-internal-notes-input').value = item.internal_notes || '';
+                                    document.getElementById('approval-signup-embed-input').value = item.signup_embed || '';
+
+                                    document.getElementById('approval-show-signup-button').checked = item.show_signup_button !== '0' && item.show_signup_button !== false;
+                                    document.getElementById('approval-show-on-homepage').checked = item.show_on_homepage !== '0' && item.show_on_homepage !== false;
+
+                                    // Description: prefer CKEditor instance if present
+                                    const descriptionInput = document.getElementById('approval-description-input');
+                                    try {
+                                        if (descriptionInput && descriptionInput.ckeditorInstance) {
+                                            descriptionInput.ckeditorInstance.setData(item.description || '');
+                                        } else if (descriptionInput) {
+                                            ClassicEditor.create(descriptionInput, {
+                                                toolbar: {
+                                                    items: ['undo', 'redo', '|', 'bold', 'italic', 'underline', '|', 'bulletedList', 'numberedList', '|', 'link', 'insertTable', '|', 'blockQuote']
+                                                },
+                                                link: {
+                                                    addTargetToExternalLinks: true
+                                                }
+                                            }).then(editor => {
+                                                descriptionInput.ckeditorInstance = editor;
+                                                descriptionInput.style.display = 'none';
+                                                editor.setData(item.description || '');
+                                            }).catch(() => {
+                                                // fallback: set textarea value
+                                                descriptionInput.value = item.description || '';
+                                            });
+                                        }
+                                    } catch (e) {
+                                        if (descriptionInput) descriptionInput.value = item.description || '';
+                                    }
+
+                                    document.getElementById('approval-feedback').value = '';
+                                    document.getElementById('approval-existing-image').value = item.image || '';
+
+                                    const imageContainer = document.getElementById('approval-image-container');
+                                    if (item.image) {
+                                        const imageElem = document.getElementById('approval-image');
+                                        imageElem.src = 'uploads/' + item.image;
+                                        imageContainer.style.display = 'block';
+                                    } else {
+                                        imageContainer.style.display = 'none';
+                                    }
+
+                                    // Show modal with animation
+                                    modal.classList.remove('hidden');
+                                    modal.style.display = 'flex';
+                                    document.body.classList.add('approval-modal-open');
+                                    setTimeout(() => {
+                                        modal.style.opacity = '1';
+                                        modal.querySelector('div').style.transform = 'scale(1)';
+                                    }, 10);
+                                })
+                                .catch(err => {
+                                    alert('Fout bij laden van gegevens: ' + err.message);
+                                });
+                        }
+
+                        function closeApprovalModal() {
+                            const modal = document.getElementById('approval-modal');
+                            modal.style.opacity = '0';
+                            modal.querySelector('div').style.transform = 'scale(0.95)';
+                            setTimeout(() => {
+                                modal.classList.add('hidden');
+                                modal.style.display = 'none';
+                                document.body.classList.remove('approval-modal-open');
+                            }, 300);
+                        }
+
+                        function submitApprovalWithFeedback(action) {
+                            const form = document.getElementById('approval-form');
+                            const feedbackInput = document.getElementById('approval-feedback');
+                            let feedback = feedbackInput.value || '';
+                            const itemId = document.getElementById('approval-item-id').value;
+                            const descriptionInput = document.getElementById('approval-description-input');
+
+                            // If feedback field has a CKEditor instance, use its data.
+                            if (feedbackInput && feedbackInput.ckeditorInstance) {
+                                feedback = feedbackInput.ckeditorInstance.getData() || '';
+                            }
+
+                            if (action === 'reject' && !feedback.trim()) {
+                                alert('Voeg feedback in voordat je afkeurt!');
+                                return;
+                            }
+
+                            // Get description from CKEditor if available, otherwise from textarea
+                            let descriptionValue = descriptionInput ? descriptionInput.value : '';
+
+                            // Controleer CKEditor 5 instance
+                            if (descriptionInput.ckeditorInstance) {
+                                descriptionValue = descriptionInput.ckeditorInstance.getData();
+                                console.log('[submitApproval] CKEditor content gelezen:', descriptionValue.substring(0, 100));
+                            }
+                            // Controleer oude CKEDITOR (v4)
+                            else if (window.CKEDITOR && window.CKEDITOR.instances && window.CKEDITOR.instances['approval-description-input']) {
+                                descriptionValue = window.CKEDITOR.instances['approval-description-input'].getData();
+                                console.log('[submitApproval] CKEDITOR v4 content gelezen:', descriptionValue.substring(0, 100));
+                            } else {
+                                console.log('[submitApproval] Geen CKEditor, textarea value gebruikt:', descriptionValue.substring(0, 100));
+                            }
+
+                            // Close modal first
+                            closeApprovalModal();
+
+                            // Create a form and submit it directly (not via fetch)
+                            const submitForm = document.createElement('form');
+                            submitForm.method = 'POST';
+                            submitForm.action = 'admin.php';
+
+                            // Add all fields
+                            const fields = {
+                                'action': action === 'reject' ? 'reject_item' : 'approve_with_review',
+                                'item_id': itemId,
+                                'approval_title': document.getElementById('approval-title-input').value,
+                                'approval_date': document.getElementById('approval-date-input').value,
+                                'approval_end_date': document.getElementById('approval-end-date-input').value,
+                                'approval_time': document.getElementById('approval-time-input').value,
+                                'approval_time_end': document.getElementById('approval-time-end-input').value,
+                                'approval_location': document.getElementById('approval-location-input').value,
+                                'approval_hardware_request': document.getElementById('approval-hardware-request-input').value,
+                                'approval_staff_present': document.getElementById('approval-staff-present-input').value,
+                                'approval_description': descriptionValue,
+                                'approval_meer_info': document.getElementById('approval-meer-info-input').value,
+                                'approval_event_summary': document.getElementById('approval-event-summary-input').value,
+                                'approval_target_audience': document.getElementById('approval-target-audience-input').value,
+                                'approval_internal_notes': document.getElementById('approval-internal-notes-input').value,
+                                'approval_signup_embed': document.getElementById('approval-signup-embed-input').value,
+                                'approval_show_signup_button': document.getElementById('approval-show-signup-button').checked ? '1' : '0',
+                                'approval_show_on_homepage': document.getElementById('approval-show-on-homepage').checked ? '1' : '0',
+                                'approval_feedback': feedback
+                            };
+
+                            Object.keys(fields).forEach(key => {
+                                const input = document.createElement('input');
+                                input.type = 'hidden';
+                                input.name = key;
+                                input.value = fields[key];
+                                submitForm.appendChild(input);
+                            });
+
+                            document.body.appendChild(submitForm);
+                            submitForm.submit();
+                        }
+
+                        // Close modal when clicking outside
+                        document.addEventListener('click', function(e) {
+                            const modal = document.getElementById('approval-modal');
+                            if (modal && e.target === modal) {
+                                closeApprovalModal();
+                            }
+                        });
+
+                        // Close modal on ESC key
+                        document.addEventListener('keydown', function(e) {
+                            if (e.key === 'Escape') {
+                                const modal = document.getElementById('approval-modal');
+                                if (modal && !modal.classList.contains('hidden')) {
+                                    closeApprovalModal();
+                                }
+                            }
+                        });
+                    </script>
+
+                    <script>
+                        function openRejectForm(itemId) {
+                            document.getElementById('reject-form-' + itemId).classList.remove('hidden');
+                        }
+
+                        function closeRejectForm(itemId) {
+                            document.getElementById('reject-form-' + itemId).classList.add('hidden');
+                        }
+                    </script>
 
                 <?php elseif ($page === 'audit'): ?>
                     <div class="card p-6">
@@ -1972,9 +3087,946 @@ if ($page === 'users') {
                         <?php endif; ?>
                     </div>
 
+                <?php elseif ($page === 'aanvragen'): ?>
+                    <!-- Mijn Aanvragen (Requests) Page for Onderzoekers -->
+                    <div class="card p-6">
+                        <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
+                            <i class="fa-solid fa-paper-plane text-2xl text-[#00811F]"></i>
+                            <h2 class="text-2xl font-bold">Mijn Aanvragen</h2>
+                        </div>
+
+                        <?php
+                        // Get rejected items for current user
+                        $stmt = $pdo->prepare(
+                            'SELECT id, title, date, location, description, image, approval_status, approval_feedback, created_at
+                             FROM events 
+                             WHERE created_by = ? AND approval_status IN ("rejected", "pending")
+                             ORDER BY created_at DESC'
+                        );
+                        $stmt->execute([$currentUser]);
+                        $myRequests = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                        ?>
+
+                        <?php if (empty($myRequests)): ?>
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fa-solid fa-inbox text-4xl mb-2"></i>
+                                <p>Geen aangevraagde items of ze zijn allemaal goedgekeurd.</p>
+                            </div>
+                        <?php else: ?>
+                            <div class="space-y-4">
+                                <?php foreach ($myRequests as $request): ?>
+                                    <div class="border border-gray-200 rounded-lg p-4 <?php echo $request['approval_status'] === 'rejected' ? 'bg-red-50' : 'bg-yellow-50'; ?>">
+                                        <div class="flex items-start justify-between mb-3">
+                                            <div class="flex-1">
+                                                <h3 class="text-lg font-bold"><?php echo htmlspecialchars($request['title']); ?></h3>
+                                                <p class="text-sm text-gray-600">
+                                                    <i class="fa-solid fa-calendar"></i> <?php echo date('d-m-Y', strtotime($request['date'])); ?>
+                                                    <?php if (!empty($request['location'])): ?>
+                                                        | <i class="fa-solid fa-map-pin"></i> <?php echo htmlspecialchars($request['location']); ?>
+                                                    <?php endif; ?>
+                                                </p>
+                                            </div>
+                                            <span class="badge <?php echo $request['approval_status'] === 'rejected' ? 'bg-red-500' : 'bg-yellow-500'; ?>">
+                                                <?php echo ucfirst($request['approval_status']); ?>
+                                            </span>
+                                        </div>
+
+                                        <!-- Show rejection reason if rejected -->
+                                        <?php if ($request['approval_status'] === 'rejected' && !empty($request['approval_feedback'])): ?>
+                                            <div class="bg-red-100 border border-red-300 rounded p-3 mb-3">
+                                                <p class="text-sm font-semibold text-red-700 mb-1">
+                                                    <i class="fa-solid fa-exclamation-circle"></i> Reden van afkeuring:
+                                                </p>
+                                                <p class="text-sm text-red-900"><?php echo nl2br(htmlspecialchars($request['approval_feedback'])); ?></p>
+                                            </div>
+                                        <?php endif; ?>
+
+                                        <!-- Description preview -->
+                                        <p class="text-sm text-gray-700 mb-3">
+                                            <?php
+                                            $desc = strip_tags($request['description']);
+                                            echo htmlspecialchars(substr($desc, 0, 150)) . (strlen($desc) > 150 ? '...' : '');
+                                            ?>
+                                        </p>
+
+                                        <!-- Edit button -->
+                                        <?php if ($request['approval_status'] === 'rejected'): ?>
+                                            <button type="button" class="btn btn-primary btn-sm" onclick="openEditRequestModal(<?php echo (int)$request['id']; ?>, '<?php echo htmlspecialchars($request['title'], ENT_QUOTES); ?>')">
+                                                <i class="fa-solid fa-pencil"></i> Aanpassen & Opnieuw Indienen
+                                            </button>
+                                        <?php elseif ($request['approval_status'] === 'pending'): ?>
+                                            <span class="text-sm text-yellow-700">
+                                                <i class="fa-solid fa-hourglass"></i> In afwachting van beoordeling...
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Edit Request Modal -->
+                    <div id="edit-request-modal" class="hidden" style="position: fixed; inset: 0; z-index: 9998; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; padding: 1rem; opacity: 0; transition: opacity 0.3s ease;">
+                        <div style="background: white; border-radius: 12px; width: 100%; max-width: 900px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,.3); transform: scale(0.95); transition: transform 0.3s ease;">
+                            <!-- Header -->
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1.5rem; border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; background: white; z-index: 10;">
+                                <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0;" id="edit-request-title">Aanvraag Aanpassen</h2>
+                                <button type="button" onclick="closeEditRequestModal()" class="btn btn-error btn-sm" style="font-size: 0.875rem;">
+                                    <i class="fa-solid fa-xmark"></i> Sluiten
+                                </button>
+                            </div>
+
+                            <!-- Content -->
+                            <div style="padding: 1.5rem;">
+                                <form method="POST" id="edit-request-form" enctype="multipart/form-data">
+                                    <input type="hidden" name="action" value="resubmit_request">
+                                    <input type="hidden" name="request_id" id="edit-request-id">
+
+                                    <!-- Admin Feedback Section -->
+                                    <div id="feedback-section" style="background: #fee2e2; border-left: 4px solid #ef4444; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; display: none;">
+                                        <h3 style="font-weight: 700; margin-top: 0; margin-bottom: 0.5rem; color: #991b1b;">⚠️ Feedback van Beheerder</h3>
+                                        <p id="feedback-text" style="margin: 0; color: #7f1d1d; white-space: pre-wrap; line-height: 1.5;"></p>
+                                    </div>
+
+                                    <!-- Event Details -->
+                                    <div style="background: #f9fafb; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                                        <h3 style="font-weight: 700; margin-top: 0; margin-bottom: 1rem; color: #111827;">📋 Event Details</h3>
+
+                                        <!-- Titel -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Titel:</strong></label>
+                                            <input type="text" name="edit_title" id="edit-title-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                        </div>
+
+                                        <!-- Datum, Einddatum, Starttijd, Eindtijd -->
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+                                            <div>
+                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Startdatum:</strong></label>
+                                                <input type="date" name="edit_date" id="edit-date-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                            </div>
+                                            <div>
+                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Einddatum:</strong></label>
+                                                <input type="date" name="edit_end_date" id="edit-end-date-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                            </div>
+                                            <div>
+                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Starttijd:</strong></label>
+                                                <input type="time" name="edit_time" id="edit-time-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                            </div>
+                                            <div>
+                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Eindtijd:</strong></label>
+                                                <input type="time" name="edit_time_end" id="edit-time-end-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                            </div>
+                                        </div>
+
+                                        <!-- Locatie -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Locatie:</strong></label>
+                                            <input type="text" name="edit_location" id="edit-location-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                        </div>
+
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Hardware (optioneel):</strong></label>
+                                            <textarea name="edit_hardware_request" id="edit-hardware-request-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 70px; font-family: inherit;"></textarea>
+                                        </div>
+
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Wie van SociaalAI Lab zijn erbij? (optioneel):</strong></label>
+                                            <textarea name="edit_staff_present" id="edit-staff-present-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 70px; font-family: inherit;"></textarea>
+                                        </div>
+
+                                        <!-- Beschrijving -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Beschrijving:</strong></label>
+                                            <textarea name="edit_description" id="edit-description-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 100px; font-family: inherit;"></textarea>
+                                        </div>
+
+                                        <!-- Meer info -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Meer info tekst (optioneel):</strong></label>
+                                            <textarea name="edit_meer_info" id="edit-meer-info-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 80px; font-family: inherit;"></textarea>
+                                        </div>
+
+                                        <!-- Samenvatting -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Samenvatting na afloop (optioneel):</strong></label>
+                                            <textarea name="edit_event_summary" id="edit-event-summary-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 80px; font-family: inherit;"></textarea>
+                                        </div>
+
+                                        <!-- Doelgroep -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Doelgroep (optioneel):</strong></label>
+                                            <input type="text" name="edit_target_audience" id="edit-target-audience-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;" placeholder="bijv. Scholieren, Docenten, Researchers">
+                                        </div>
+
+                                        <!-- Signup link -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Aanmelder.nl link (optioneel):</strong></label>
+                                            <input type="url" name="edit_signup_embed" id="edit-signup-embed-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;" placeholder="https://aanmelder.nl/subscribe/...">
+                                        </div>
+
+                                        <!-- Checkboxes -->
+                                        <div style="margin-bottom: 1rem; display: flex; gap: 2rem;">
+                                            <label style="display: flex; align-items: center; gap: 0.5rem; color: #111827; font-size: 0.875rem; cursor: pointer;">
+                                                <input type="checkbox" name="edit_show_signup_button" id="edit-show-signup-button" checked style="width: 1rem; height: 1rem; cursor: pointer;">
+                                                <strong>Toon inschrijf knop</strong>
+                                            </label>
+                                            <label style="display: flex; align-items: center; gap: 0.5rem; color: #111827; font-size: 0.875rem; cursor: pointer;">
+                                                <input type="checkbox" name="edit_show_on_homepage" id="edit-show-on-homepage" checked style="width: 1rem; height: 1rem; cursor: pointer;">
+                                                <strong>Toon op homepage</strong>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Actions -->
+                                    <div style="display: flex; gap: 1rem; justify-content: flex-end; padding-top: 1rem; border-top: 1px solid #e5e7eb;">
+                                        <button type="button" onclick="closeEditRequestModal()" class="btn btn-secondary">
+                                            <i class="fa-solid fa-times"></i> Annuleren
+                                        </button>
+                                        <button type="submit" class="btn btn-success">
+                                            <i class="fa-solid fa-check-circle"></i> Opnieuw Indienen
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <script>
+                        function openEditRequestModal(requestId, requestTitle) {
+                            const modal = document.getElementById('edit-request-modal');
+                            const formData = new FormData();
+                            formData.append('action', 'get_request_details');
+                            formData.append('request_id', requestId);
+
+                            fetch('admin.php', {
+                                    method: 'POST',
+                                    body: formData
+                                })
+                                .then(r => r.json())
+                                .then(data => {
+                                    if (!(data && data.success && data.item)) {
+                                        alert('Kon aanvraag niet laden');
+                                        return;
+                                    }
+
+                                    const item = data.item;
+                                    document.getElementById('edit-request-id').value = requestId;
+                                    document.getElementById('edit-request-title').textContent = 'Aanvraag Aanpassen - ' + requestTitle;
+
+                                    document.getElementById('edit-title-input').value = item.title || '';
+                                    if (item.date) {
+                                        const d = new Date(item.date);
+                                        document.getElementById('edit-date-input').value = d.toISOString().split('T')[0];
+                                    } else {
+                                        document.getElementById('edit-date-input').value = '';
+                                    }
+                                    if (item.end_date) {
+                                        const d2 = new Date(item.end_date);
+                                        document.getElementById('edit-end-date-input').value = d2.toISOString().split('T')[0];
+                                    } else {
+                                        document.getElementById('edit-end-date-input').value = '';
+                                    }
+
+                                    document.getElementById('edit-time-input').value = item.time || '';
+                                    document.getElementById('edit-time-end-input').value = item.time_end || '';
+                                    document.getElementById('edit-location-input').value = item.location || '';
+                                    document.getElementById('edit-hardware-request-input').value = item.hardware_request || '';
+                                    document.getElementById('edit-staff-present-input').value = item.staff_present || '';
+                                    document.getElementById('edit-description-input').value = item.description || '';
+                                    document.getElementById('edit-meer-info-input').value = item.meer_info || '';
+                                    document.getElementById('edit-event-summary-input').value = item.event_summary || '';
+                                    document.getElementById('edit-target-audience-input').value = item.target_audience || '';
+                                    document.getElementById('edit-signup-embed-input').value = item.signup_embed || '';
+
+                                    document.getElementById('edit-show-signup-button').checked = item.show_signup_button !== '0' && item.show_signup_button !== false;
+                                    document.getElementById('edit-show-on-homepage').checked = item.show_on_homepage !== '0' && item.show_on_homepage !== false;
+
+                                    const feedbackSection = document.getElementById('feedback-section');
+                                    if (item.approval_feedback) {
+                                        document.getElementById('feedback-text').textContent = item.approval_feedback;
+                                        feedbackSection.style.display = 'block';
+                                    } else {
+                                        feedbackSection.style.display = 'none';
+                                    }
+
+                                    modal.classList.remove('hidden');
+                                    modal.style.display = 'flex';
+                                    setTimeout(() => {
+                                        modal.style.opacity = '1';
+                                        modal.querySelector('div').style.transform = 'scale(1)';
+                                    }, 10);
+                                })
+                                .catch(err => alert('Fout: ' + err.message));
+                        }
+
+                        function closeEditRequestModal() {
+                            const modal = document.getElementById('edit-request-modal');
+                            modal.style.opacity = '0';
+                            modal.querySelector('div').style.transform = 'scale(0.95)';
+                            setTimeout(() => {
+                                modal.classList.add('hidden');
+                                modal.style.display = 'none';
+                            }, 300);
+                        }
+
+                        document.addEventListener('keydown', function(e) {
+                            if (e.key === 'Escape') {
+                                const modal = document.getElementById('edit-request-modal');
+                                if (modal && !modal.classList.contains('hidden')) {
+                                    closeEditRequestModal();
+                                }
+                            }
+                        });
+                    </script>
+
                 <?php elseif ($page != 'banner'): ?>
-                    <?php if ($page === 'image-converter'): ?>
-                        <iframe src="image_converter.html" style="width:100%;min-height:900px;border:none;background:transparent;" title="Image Converter"></iframe>
+                    <?php if ($page === 'dashboard'): ?>
+                        <?php
+                        // Minimal dashboard aggregations — safe queries with fallbacks
+                        try {
+                            $totalEvents = (int) $pdo->query("SELECT COUNT(*) FROM events")->fetchColumn();
+                        } catch (Exception $e) {
+                            $totalEvents = 0;
+                        }
+                        try {
+                            $stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE COALESCE(end_date, date) >= CURDATE()");
+                            $stmt->execute();
+                            $totalUpcoming = (int) $stmt->fetchColumn();
+                        } catch (Exception $e) {
+                            $totalUpcoming = 0;
+                        }
+                        try {
+                            $stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE COALESCE(end_date, date) < CURDATE()");
+                            $stmt->execute();
+                            $totalPast = (int) $stmt->fetchColumn();
+                        } catch (Exception $e) {
+                            $totalPast = 0;
+                        }
+                        // Registrations
+                        try {
+                            $totalRegs = (int) $pdo->query("SELECT COUNT(*) FROM inschrijven")->fetchColumn();
+                            $topRegsStmt = $pdo->prepare("SELECT event_id, event_title, COUNT(*) AS cnt FROM inschrijven GROUP BY event_id, event_title ORDER BY cnt DESC LIMIT 5");
+                            $topRegsStmt->execute();
+                            $topRegs = $topRegsStmt->fetchAll(PDO::FETCH_ASSOC);
+                        } catch (Exception $e) {
+                            $totalRegs = 0;
+                            $topRegs = [];
+                        }
+                        // Bookings
+                        try {
+                            $totalBookings = (int) $pdo->query("SELECT COUNT(*) FROM bookings")->fetchColumn();
+                            $bookingsByLocStmt = $pdo->prepare("SELECT COALESCE(location_description, CONCAT('loc-', location_id)) AS loc, COUNT(*) AS cnt FROM bookings GROUP BY loc ORDER BY cnt DESC LIMIT 8");
+                            $bookingsByLocStmt->execute();
+                            $bookingsByLoc = $bookingsByLocStmt->fetchAll(PDO::FETCH_ASSOC);
+                        } catch (Exception $e) {
+                            $totalBookings = 0;
+                            $bookingsByLoc = [];
+                        }
+                        // Partners (from pages.meta partner keys)
+                        $partners = [];
+                        try {
+                            $pages = $pdo->query("SELECT meta FROM pages")->fetchAll(PDO::FETCH_COLUMN);
+                            foreach ($pages as $meta) {
+                                if (!$meta) continue;
+                                $arr = json_decode($meta, true);
+                                if (!is_array($arr)) continue;
+                                if (!empty($arr['partner'])) {
+                                    $p = trim((string)$arr['partner']);
+                                    if ($p !== '') $partners[] = $p;
+                                }
+                            }
+                        } catch (Exception $e) {
+                            // ignore
+                        }
+                        $partnerCounts = [];
+                        foreach ($partners as $p) $partnerCounts[$p] = ($partnerCounts[$p] ?? 0) + 1;
+                        arsort($partnerCounts);
+                        $topPartners = array_slice($partnerCounts, 0, 8, true);
+
+                        // Simple KPI calculations
+                        $kpi = [
+                            'occupancy_rate' => null,
+                            'codesign_percent' => null,
+                            'companies_percent' => null,
+                        ];
+                        try {
+                            // occupancy: bookings in last 30 days / (days * distinct locations) * 100
+                            $days = 30;
+                            $startDate = date('Y-m-d', strtotime('-' . ($days - 1) . ' days'));
+                            $endDate = date('Y-m-d');
+                            $stmt = $pdo->prepare("SELECT COUNT(*) FROM bookings WHERE booking_date BETWEEN ? AND ?");
+                            $stmt->execute([$startDate, $endDate]);
+                            $bookingsLast30 = (int)$stmt->fetchColumn();
+                            $locCount = (int)$pdo->query("SELECT COUNT(DISTINCT location_id) FROM bookings WHERE location_id IS NOT NULL")->fetchColumn();
+                            if ($locCount > 0) {
+                                $slotsBase = $days * $locCount; // simplistic slots base
+                                $kpi['occupancy_rate'] = round(($bookingsLast30 / max(1, $slotsBase)) * 100, 1);
+                            }
+                        } catch (Exception $e) {
+                            // leave null
+                        }
+
+                        try {
+                            // co-design share: events in last 90 days mentioning co-design
+                            $daysCo = 90;
+                            $startCo = date('Y-m-d', strtotime('-' . ($daysCo - 1) . ' days'));
+                            $stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE COALESCE(end_date, date) >= ? AND (title LIKE ? OR description LIKE ?)");
+                            $stmt->execute([$startCo, '%co-design%', '%co-design%']);
+                            $coCount = (int)$stmt->fetchColumn();
+                            $totalRecent = 0;
+                            $stmt2 = $pdo->prepare("SELECT COUNT(*) FROM events WHERE COALESCE(end_date, date) >= ?");
+                            if ($stmt2->execute([$startCo])) {
+                                $totalRecent = (int)$stmt2->fetchColumn();
+                            }
+                            if ($totalRecent > 0) {
+                                $kpi['codesign_percent'] = round(($coCount / $totalRecent) * 100, 1);
+                            }
+                        } catch (Exception $e) {
+                            // ignore
+                        }
+
+                        try {
+                            // companies percent from partner names heuristics (bv, ltd, bedrijf, stichting, vereniging)
+                            $companyKeywords = ['bv', 'ltd', 'company', 'bedrijf', 'inc', 'gmbh'];
+                            $orgKeywords = ['stichting', 'vereniging', 'non-profit', 'ngo', 'organisatie'];
+                            $company = 0;
+                            $org = 0;
+                            $totalP = 0;
+                            foreach ($partnerCounts as $name => $cnt) {
+                                $totalP += $cnt;
+                                $lower = strtolower($name);
+                                $isCompany = false;
+                                $isOrg = false;
+                                foreach ($companyKeywords as $kw) if (strpos($lower, $kw) !== false) $isCompany = true;
+                                foreach ($orgKeywords as $kw) if (strpos($lower, $kw) !== false) $isOrg = true;
+                                if ($isCompany) $company += $cnt;
+                                elseif ($isOrg) $org += $cnt;
+                            }
+                            if ($totalP > 0) {
+                                $kpi['companies_percent'] = round(($company / $totalP) * 100, 1);
+                            }
+                        } catch (Exception $e) {
+                            // ignore
+                        }
+                        ?>
+                        <div class="card p-6">
+                            <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
+                                <i class="fa-solid fa-chart-pie text-2xl text-[#00811F]"></i>
+                                <h2 class="text-2xl font-bold">Dashboard — Overzicht & Monitoring</h2>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                                <a href="agenda.php" class="kpi-card">
+                                    <div class="kpi-title">Totaal evenementen</div>
+                                    <div class="kpi-value"><?php echo $totalEvents; ?></div>
+                                    <div class="kpi-meta">Aankomend: <?php echo $totalUpcoming; ?> — Terugblik: <?php echo $totalPast; ?></div>
+                                </a>
+                                <a href="inschrijven.php" class="kpi-card">
+                                    <div class="kpi-title">Inschrijvingen (totaal)</div>
+                                    <div class="kpi-value"><?php echo $totalRegs; ?></div>
+                                    <div class="kpi-meta">Top geregistreerde events hieronder</div>
+                                </a>
+                                <a href="booking.php" class="kpi-card">
+                                    <div class="kpi-title">Bookings (totaal)</div>
+                                    <div class="kpi-value"><?php echo $totalBookings; ?></div>
+                                    <div class="kpi-meta">Verdeling per locatie</div>
+                                </a>
+                                <a href="terugblikken.php" class="kpi-card">
+                                    <div class="kpi-title">Top partners</div>
+                                    <div class="kpi-value"><?php echo count($partnerCounts); ?></div>
+                                    <div class="kpi-meta">Partners uit pagina-meta</div>
+                                </a>
+                            </div>
+
+                            <div class="dashboard-grid">
+                                <div class="chart-card">
+                                    <h3 class="font-semibold mb-2">Top geregistreerde events</h3>
+                                    <?php if (empty($topRegs)): ?>
+                                        <div class="text-sm text-gray-600">Geen registratiegegevens beschikbaar.</div>
+                                    <?php else: ?>
+                                        <canvas id="chartTopRegs"></canvas>
+                                    <?php endif; ?>
+                                </div>
+
+                                <div class="chart-card">
+                                    <h3 class="font-semibold mb-2">Bookings per locatie (top)</h3>
+                                    <?php if (empty($bookingsByLoc)): ?>
+                                        <div class="text-sm text-gray-600">Geen bookings data.</div>
+                                    <?php else: ?>
+                                        <canvas id="chartBookingsByLoc"></canvas>
+                                    <?php endif; ?>
+                                </div>
+
+                                <div class="chart-card">
+                                    <h3 class="font-semibold mb-2">Partner netwerk (top)</h3>
+                                    <?php if (empty($topPartners)): ?>
+                                        <div class="text-sm text-gray-600">Geen partner-gegevens gevonden in pagina-meta.</div>
+                                    <?php else: ?>
+                                        <canvas id="chartTopPartners"></canvas>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <div class="mt-6 text-sm text-gray-600">
+                                <strong>Impact per doelstelling</strong>: kolommen en scores tonen we zodra score-velden beschikbaar zijn in de dataset.
+                                <br>
+                                <strong>Kern-KPI's (schatting)</strong>:
+                                <ul class="mt-2 text-sm">
+                                    <li>Bezettingsgraad (laatste 30d): <strong><?php echo is_null($kpi['occupancy_rate']) ? 'n.v.t.' : ($kpi['occupancy_rate'] . '%'); ?></strong></li>
+                                    <li>Co-design activiteiten (laatste 90d): <strong><?php echo is_null($kpi['codesign_percent']) ? 'n.v.t.' : ($kpi['codesign_percent'] . '%'); ?></strong></li>
+                                    <li>Partners: aandeel bedrijven (heuristiek): <strong><?php echo is_null($kpi['companies_percent']) ? 'n.v.t.' : ($kpi['companies_percent'] . '%'); ?></strong></li>
+                                </ul>
+                            </div>
+
+                            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+                            <style>
+                                /* Compact chart heights for dashboard */
+                                #chartTopRegs,
+                                #chartBookingsByLoc {
+                                    height: 200px !important;
+                                }
+
+                                /* Per-canvas height hints to keep charts compact and consistent */
+                                #chartTopRegs {
+                                    height: 260px !important;
+                                }
+
+                                #chartBookingsByLoc {
+                                    height: 220px !important;
+                                }
+
+                                #chartTopPartners {
+                                    height: 200px !important;
+                                }
+
+                                /* .chart-wrapper moved to admin-styles.css */
+
+                                .chart-container {
+                                    position: relative;
+                                    width: 100%;
+                                    max-width: 820px;
+                                    /* keep charts from stretching too wide */
+                                    margin: 0 auto;
+                                    padding: 12px 0;
+                                }
+
+                                /* Excel-like canvas styling: white background and subtle border */
+                                .card canvas {
+                                    background: #fff;
+                                    box-shadow: none;
+                                    border: 1px solid rgba(0, 0, 0, 0.06);
+                                    display: block;
+                                    margin: 0 auto;
+                                    max-width: 100%;
+                                }
+                            </style>
+                            <script>
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    const truncate = function(label, maxLen = 28) {
+                                        if (!label) return '';
+                                        const s = String(label);
+                                        return s.length > maxLen ? s.substr(0, maxLen - 1) + '…' : s;
+                                    };
+
+                                    const baseOptions = (maxTicks = 6) => {
+                                        const w = Math.max(window.innerWidth || 1024, 320);
+                                        const isMobile = w < 640;
+                                        const fontSize = isMobile ? 11 : (w < 1024 ? 12 : 13);
+                                        const titleSize = isMobile ? 15 : 18;
+
+                                        return {
+                                            responsive: true,
+                                            maintainAspectRatio: false,
+                                            aspectRatio: isMobile ? 1.0 : (w < 1024 ? 1.2 : 1.8),
+                                            animation: {
+                                                duration: 600,
+                                                easing: 'easeOutQuart'
+                                            },
+                                            plugins: {
+                                                legend: {
+                                                    display: true,
+                                                    position: 'top',
+                                                    labels: {
+                                                        color: '#374151',
+                                                        font: {
+                                                            size: isMobile ? 12 : 13,
+                                                            weight: 600
+                                                        }
+                                                    }
+                                                },
+                                                tooltip: {
+                                                    enabled: true,
+                                                    backgroundColor: 'rgba(17,24,39,0.95)',
+                                                    titleFont: {
+                                                        size: titleSize,
+                                                        weight: 700
+                                                    },
+                                                    bodyFont: {
+                                                        size: fontSize + 1,
+                                                        weight: 500
+                                                    },
+                                                    padding: 10,
+                                                    cornerRadius: 8,
+                                                    displayColors: false,
+                                                    callbacks: {
+                                                        label: function(ctx) {
+                                                            const v = ctx.raw;
+                                                            return (typeof v === 'number') ? v.toString() : String(v);
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            layout: {
+                                                padding: {
+                                                    top: 12,
+                                                    right: 8,
+                                                    left: 8,
+                                                    bottom: 8
+                                                }
+                                            },
+                                            scales: {
+                                                x: {
+                                                    grid: {
+                                                        display: false
+                                                    },
+                                                    ticks: {
+                                                        color: '#374151',
+                                                        font: {
+                                                            size: Math.max(12, fontSize)
+                                                        },
+                                                        callback: function(t) {
+                                                            return truncate(this.getLabelForValue(t), isMobile ? 18 : 40);
+                                                        },
+                                                        maxRotation: 45,
+                                                        minRotation: 45,
+                                                        autoSkip: false,
+                                                        maxTicksLimit: maxTicks
+                                                    }
+                                                },
+                                                y: {
+                                                    grid: {
+                                                        color: 'rgba(0,0,0,0.06)',
+                                                        drawBorder: false
+                                                    },
+                                                    beginAtZero: true,
+                                                    ticks: {
+                                                        color: '#374151',
+                                                        font: {
+                                                            size: Math.max(12, fontSize)
+                                                        },
+                                                        precision: 0
+                                                    },
+                                                    title: {
+                                                        display: true,
+                                                        text: 'Aantal',
+                                                        color: '#6b7280',
+                                                        font: {
+                                                            size: Math.max(12, fontSize),
+                                                            weight: 600
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            fonts: {
+                                                family: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial'
+                                            }
+                                        };
+                                    };
+
+                                    // improved plugin to draw values on bars with responsive font and overlap avoidance
+                                    const valueLabelsPlugin = {
+                                        id: 'valueLabels',
+                                        afterDatasetsDraw(chart) {
+                                            const ctx = chart.ctx;
+                                            const scaleFactor = Math.max(1, Math.min(chart.width / 800, 1.6));
+                                            const baseFontSize = Math.round(12 * scaleFactor);
+                                            ctx.font = baseFontSize + 'px system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial';
+                                            ctx.fillStyle = '#111827';
+
+                                            chart.data.datasets.forEach((dataset, dsIndex) => {
+                                                const meta = chart.getDatasetMeta(dsIndex);
+                                                if (!meta || !meta.data) return;
+                                                meta.data.forEach((el, index) => {
+                                                    const val = dataset.data[index];
+                                                    if (val === null || typeof val === 'undefined') return;
+
+                                                    const pos = el.tooltipPosition();
+                                                    ctx.save();
+                                                    const isHorizontal = chart.options.indexAxis === 'y';
+
+                                                    // Only render labels when there is space (avoid overlap on very small bars)
+                                                    const box = el.getProps(['base', 'x', 'y', 'width', 'height'], true);
+                                                    const minSize = 18 * scaleFactor; // minimum pixel height/width to show label
+                                                    const canShow = isHorizontal ? Math.abs(box.width) > minSize : Math.abs(box.height) > minSize;
+                                                    if (!canShow) {
+                                                        ctx.restore();
+                                                        return;
+                                                    }
+
+                                                    if (isHorizontal) {
+                                                        ctx.textAlign = 'left';
+                                                        ctx.textBaseline = 'middle';
+                                                        ctx.fillText(String(val), pos.x + 8, pos.y);
+                                                    } else {
+                                                        ctx.textAlign = 'center';
+                                                        ctx.textBaseline = 'bottom';
+                                                        ctx.fillText(String(val), pos.x, pos.y - 6);
+                                                    }
+                                                    ctx.restore();
+                                                });
+                                            });
+                                        }
+                                    };
+                                    // register locally to avoid global mutation (Chart.js auto-registration not guaranteed)
+                                    if (typeof Chart !== 'undefined' && Chart.register) Chart.register(valueLabelsPlugin);
+
+                                    // Top regs
+                                    <?php if (!empty($topRegs)): ?>
+                                            (function() {
+                                                const labels = <?php echo json_encode(array_map(function ($r) {
+                                                                    return $r['event_title'] ?: ('Event ' + $r['event_id']);
+                                                                }, $topRegs)); ?>;
+                                                const data = <?php echo json_encode(array_map(function ($r) {
+                                                                    return (int)$r['cnt'];
+                                                                }, $topRegs)); ?>;
+                                                const ctx = document.getElementById('chartTopRegs');
+                                                if (ctx) {
+                                                    // Use a consistent blue palette for a professional look
+                                                    const primaryBlue = '#2f6fbf';
+                                                    const ctx2 = ctx.getContext('2d');
+                                                    const grad = ctx2.createLinearGradient(0, 0, 0, ctx2.canvas.height || 200);
+                                                    grad.addColorStop(0, '#7fb3ff');
+                                                    grad.addColorStop(1, primaryBlue);
+                                                    const bg = labels.map(() => grad);
+                                                    const w = Math.max(window.innerWidth || 1024, 320);
+                                                    const isMobile = w < 640;
+                                                    const titleSize = isMobile ? 15 : 18;
+                                                    new Chart(ctx.getContext('2d'), {
+                                                        type: 'bar',
+                                                        data: {
+                                                            labels: labels.map(l => truncate(l, 28)),
+                                                            datasets: [{
+                                                                label: 'Inschrijvingen',
+                                                                data: data,
+                                                                backgroundColor: bg,
+                                                                borderRadius: 12,
+                                                                borderColor: 'rgba(47,111,191,0.12)',
+                                                                borderWidth: 1,
+                                                                borderSkipped: false,
+                                                                barPercentage: 0.65,
+                                                                categoryPercentage: 0.75
+                                                            }]
+                                                        },
+                                                        options: Object.assign({}, baseOptions(5), {
+                                                            plugins: Object.assign({}, {
+                                                                valueLabels: {}
+                                                            }, {
+                                                                title: {
+                                                                    display: true,
+                                                                    text: 'Inschrijvingen',
+                                                                    align: 'center',
+                                                                    font: {
+                                                                        size: titleSize,
+                                                                        weight: 700
+                                                                    },
+                                                                    padding: {
+                                                                        bottom: 8
+                                                                    }
+                                                                }
+                                                            }),
+                                                            scales: {
+                                                                x: {
+                                                                    ticks: {
+                                                                        autoSkip: false,
+                                                                        minRotation: 45,
+                                                                        maxRotation: 45,
+                                                                        font: {
+                                                                            size: 13,
+                                                                            weight: '600'
+                                                                        }
+                                                                    },
+                                                                    grid: {
+                                                                        display: false
+                                                                    }
+                                                                },
+                                                                y: {
+                                                                    beginAtZero: true,
+                                                                    grid: {
+                                                                        color: 'rgba(0,0,0,0.06)'
+                                                                    }
+                                                                }
+                                                            }
+                                                        })
+                                                    });
+                                                }
+                                            })();
+                                    <?php endif; ?>
+
+                                    // Bookings by location
+                                    <?php if (!empty($bookingsByLoc)): ?>
+                                            (function() {
+                                                const labels = <?php echo json_encode(array_map(function ($b) {
+                                                                    return $b['loc'];
+                                                                }, $bookingsByLoc)); ?>;
+                                                const data = <?php echo json_encode(array_map(function ($b) {
+                                                                    return (int)$b['cnt'];
+                                                                }, $bookingsByLoc)); ?>;
+                                                const ctx = document.getElementById('chartBookingsByLoc');
+                                                if (ctx) {
+                                                    const primaryBlue = '#2f6fbf';
+                                                    const ctx2 = ctx.getContext('2d');
+                                                    const grad = ctx2.createLinearGradient(0, 0, 0, ctx2.canvas.height || 200);
+                                                    grad.addColorStop(0, '#7fb3ff');
+                                                    grad.addColorStop(1, primaryBlue);
+                                                    new Chart(ctx2, {
+                                                        type: 'bar',
+                                                        data: {
+                                                            labels: labels.map(l => truncate(l, 28)),
+                                                            datasets: [{
+                                                                label: 'Bookings',
+                                                                data: data,
+                                                                backgroundColor: grad,
+                                                                borderRadius: 12,
+                                                                borderColor: 'rgba(47,111,191,0.12)',
+                                                                borderWidth: 1,
+                                                                borderSkipped: false,
+                                                                barPercentage: 0.65,
+                                                                categoryPercentage: 0.75
+                                                            }]
+                                                        },
+                                                        options: Object.assign({}, baseOptions(5), {
+                                                            plugins: Object.assign({}, {
+                                                                valueLabels: {}
+                                                            }, {
+                                                                title: {
+                                                                    display: true,
+                                                                    text: 'Bookings per locatie',
+                                                                    align: 'center',
+                                                                    font: {
+                                                                        size: 14,
+                                                                        weight: 600
+                                                                    },
+                                                                    padding: {
+                                                                        bottom: 8
+                                                                    }
+                                                                }
+                                                            }),
+                                                            scales: {
+                                                                x: {
+                                                                    ticks: {
+                                                                        autoSkip: false,
+                                                                        minRotation: 45,
+                                                                        maxRotation: 45,
+                                                                        font: {
+                                                                            size: 13,
+                                                                            weight: '600'
+                                                                        }
+                                                                    },
+                                                                    grid: {
+                                                                        display: false
+                                                                    }
+                                                                },
+                                                                y: {
+                                                                    beginAtZero: true,
+                                                                    grid: {
+                                                                        color: 'rgba(0,0,0,0.06)'
+                                                                    }
+                                                                }
+                                                            }
+                                                        })
+                                                    });
+                                                }
+                                            })();
+                                    <?php endif; ?>
+
+                                    // Top partners (horizontal, sorted)
+                                    <?php if (!empty($topPartners)): ?>
+                                            (function() {
+                                                let labels = <?php echo json_encode(array_keys($topPartners)); ?>;
+                                                let data = <?php echo json_encode(array_values($topPartners)); ?>;
+                                                // pair and sort descending by value
+                                                const paired = labels.map((l, i) => ({
+                                                    label: l,
+                                                    value: data[i]
+                                                }));
+                                                paired.sort((a, b) => b.value - a.value);
+                                                labels = paired.map(p => truncate(p.label, 32));
+                                                data = paired.map(p => p.value);
+                                                const ctx = document.getElementById('chartTopPartners');
+                                                if (ctx) {
+                                                    const primaryBlue = '#2f6fbf';
+                                                    const ctx2 = ctx.getContext('2d');
+                                                    const grad = ctx2.createLinearGradient(0, 0, ctx2.canvas.width || 300, 0);
+                                                    grad.addColorStop(0, '#7fb3ff');
+                                                    grad.addColorStop(1, primaryBlue);
+                                                    // make partners vertical (indexAxis: 'x') for consistent vertical charts across devices
+                                                    new Chart(ctx2, {
+                                                        type: 'bar',
+                                                        data: {
+                                                            labels: labels,
+                                                            datasets: [{
+                                                                label: 'Partner mentions',
+                                                                data: data,
+                                                                backgroundColor: grad,
+                                                                borderRadius: 12,
+                                                                borderColor: 'rgba(47,111,191,0.12)',
+                                                                borderWidth: 1,
+                                                                borderSkipped: false,
+                                                                barPercentage: 0.65,
+                                                                categoryPercentage: 0.75
+                                                            }]
+                                                        },
+                                                        options: Object.assign({}, baseOptions(6), {
+                                                            plugins: Object.assign({}, {
+                                                                valueLabels: {}
+                                                            }, {
+                                                                title: {
+                                                                    display: true,
+                                                                    text: 'Top partners',
+                                                                    align: 'center',
+                                                                    font: {
+                                                                        size: 14,
+                                                                        weight: 600
+                                                                    },
+                                                                    padding: {
+                                                                        bottom: 8
+                                                                    }
+                                                                }
+                                                            }),
+                                                            scales: {
+                                                                x: {
+                                                                    ticks: {
+                                                                        autoSkip: false,
+                                                                        minRotation: 45,
+                                                                        maxRotation: 45,
+                                                                        font: {
+                                                                            size: 13,
+                                                                            weight: '600'
+                                                                        }
+                                                                    },
+                                                                    grid: {
+                                                                        display: false
+                                                                    }
+                                                                },
+                                                                y: {
+                                                                    ticks: {
+                                                                        callback: function(t) {
+                                                                            return truncate(this.getLabelForValue(t), 28);
+                                                                        },
+                                                                        maxTicksLimit: 8
+                                                                    },
+                                                                    grid: {
+                                                                        display: false
+                                                                    }
+                                                                }
+                                                            }
+                                                        })
+                                                    });
+                                                }
+                                            })();
+                                    <?php endif; ?>
+                                });
+                            </script>
+                        </div>
                         <?php return; ?>
                     <?php endif; ?>
                     <?php
@@ -2037,7 +4089,7 @@ if ($page === 'users') {
                             <p class="text-sm text-gray-600 mb-4">Hier kun je kaarten toevoegen, wijzigen en verwijderen voor de pagina onder de tab "Wat doen we". De eerste kaart wordt als brede intro bovenaan getoond; de rest komt in de rij met kaarten.</p>
                         <?php endif; ?>
 
-                        <?php if ($editPage): ?>
+                        <?php if ($editPage && $canManagePages): ?>
                             <a href="admin.php?page=<?php echo urlencode($pageKey); ?>" class="btn btn-secondary mb-6">
                                 <i class="fa-solid fa-arrow-left"></i> Terug
                             </a>
@@ -2087,7 +4139,7 @@ if ($page === 'users') {
                                 <div>
                                     <label class="form-label">Afbeelding (optioneel)</label>
                                     <input type="hidden" name="existing_image" value="<?php echo htmlspecialchars($editPage['image'] ?? ''); ?>" />
-                                    <input type="file" name="image" accept="image/*" class="form-input" />
+                                    <div class="admin-upload-widget" data-name="image" data-accept="image/*"></div>
                                     <?php if (!empty($editPage['image'])): ?>
                                         <p class="text-sm mt-2 text-gray-600">Huidige afbeelding: <?php echo htmlspecialchars($editPage['image']); ?></p>
                                         <label class="form-checkbox mt-2 inline-flex items-center gap-2">
@@ -2129,7 +4181,7 @@ if ($page === 'users') {
                                     </button>
                                 </div>
                             </form>
-                        <?php else: ?>
+                        <?php elseif ($canManagePages): ?>
                             <form method="POST" enctype="multipart/form-data" class="bg-white p-6 shadow-md space-y-4 mb-6 js-content-preview-form">
                                 <h3 class="font-semibold text-lg">Nieuw <?php echo htmlspecialchars($itemLabel); ?></h3>
                                 <input type="hidden" name="page_action" value="create_page">
@@ -2171,7 +4223,7 @@ if ($page === 'users') {
 
                                 <div>
                                     <label class="form-label">Afbeelding (optioneel)</label>
-                                    <input type="file" name="image" accept="image/*" class="form-input" />
+                                    <div class="admin-upload-widget" data-name="image" data-accept="image/*"></div>
                                 </div>
 
 
@@ -2262,29 +4314,31 @@ if ($page === 'users') {
                                                             </a>
                                                         <?php endif; ?>
                                                         <div class="admin-row-actions-stack flex flex-col gap-1">
-                                                            <div class="flex gap-1">
-                                                                <form method="POST">
-                                                                    <input type="hidden" name="page_action" value="reorder_page">
-                                                                    <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
-                                                                    <input type="hidden" name="id" value="<?php echo (int)$it['id']; ?>">
-                                                                    <input type="hidden" name="direction" value="up">
-                                                                    <button type="submit" class="btn btn-secondary btn-sm" <?php echo $isFirst ? 'disabled' : ''; ?> title="Omhoog">
-                                                                        <i class="fa-solid fa-arrow-up"></i>
-                                                                    </button>
-                                                                </form>
-                                                                <form method="POST">
-                                                                    <input type="hidden" name="page_action" value="reorder_page">
-                                                                    <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
-                                                                    <input type="hidden" name="id" value="<?php echo (int)$it['id']; ?>">
-                                                                    <input type="hidden" name="direction" value="down">
-                                                                    <button type="submit" class="btn btn-secondary btn-sm" <?php echo $isLast ? 'disabled' : ''; ?> title="Omlaag">
-                                                                        <i class="fa-solid fa-arrow-down"></i>
-                                                                    </button>
-                                                                </form>
-                                                            </div>
-                                                            <a href="admin.php?edit_page=<?php echo (int)$it['id']; ?>&page=<?php echo urlencode($pageKey); ?>" class="btn btn-secondary btn-sm">
-                                                                <i class="fa-solid fa-pencil"></i> Bewerk
-                                                            </a>
+                                                            <?php if ($canManagePages): ?>
+                                                                <div class="flex gap-1">
+                                                                    <form method="POST">
+                                                                        <input type="hidden" name="page_action" value="reorder_page">
+                                                                        <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
+                                                                        <input type="hidden" name="id" value="<?php echo (int)$it['id']; ?>">
+                                                                        <input type="hidden" name="direction" value="up">
+                                                                        <button type="submit" class="btn btn-secondary btn-sm" <?php echo $isFirst ? 'disabled' : ''; ?> title="Omhoog">
+                                                                            <i class="fa-solid fa-arrow-up"></i>
+                                                                        </button>
+                                                                    </form>
+                                                                    <form method="POST">
+                                                                        <input type="hidden" name="page_action" value="reorder_page">
+                                                                        <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey); ?>">
+                                                                        <input type="hidden" name="id" value="<?php echo (int)$it['id']; ?>">
+                                                                        <input type="hidden" name="direction" value="down">
+                                                                        <button type="submit" class="btn btn-secondary btn-sm" <?php echo $isLast ? 'disabled' : ''; ?> title="Omlaag">
+                                                                            <i class="fa-solid fa-arrow-down"></i>
+                                                                        </button>
+                                                                    </form>
+                                                                </div>
+                                                                <a href="admin.php?edit_page=<?php echo (int)$it['id']; ?>&page=<?php echo urlencode($pageKey); ?>" class="btn btn-secondary btn-sm">
+                                                                    <i class="fa-solid fa-pencil"></i> Bewerk
+                                                                </a>
+                                                            <?php endif; ?>
                                                             <?php if ($canDeletePages): ?>
                                                                 <form method="POST" onsubmit="return confirm('Verwijder dit item?');" class="admin-inline-form">
                                                                     <input type="hidden" name="page_action" value="delete_page">
@@ -2330,7 +4384,7 @@ if ($page === 'users') {
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div class="form-group">
                                     <label class="form-label">Vervang Banner 1</label>
-                                    <input type="file" name="banner1" accept="image/*" class="form-input" />
+                                    <div class="admin-upload-widget" data-name="banner1" data-accept="image/*"></div>
                                     <label class="form-checkbox mt-2 inline-flex items-center gap-2">
                                         <input type="checkbox" name="remove_banner1" value="1">
                                         Verwijder huidige banner 1
@@ -2339,7 +4393,7 @@ if ($page === 'users') {
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">Vervang Banner 2</label>
-                                    <input type="file" name="banner2" accept="image/*" class="form-input" />
+                                    <div class="admin-upload-widget" data-name="banner2" data-accept="image/*"></div>
                                     <label class="form-checkbox mt-2 inline-flex items-center gap-2">
                                         <input type="checkbox" name="remove_banner2" value="1">
                                         Verwijder huidige banner 2
@@ -2444,24 +4498,55 @@ if ($page === 'users') {
 
             function getFieldValue(form, fieldName) {
                 const input = getFieldInput(form, fieldName);
-                if (!input) return '';
 
-                if (input.tagName === 'TEXTAREA') {
-                    if (window.tinymce && Array.isArray(window.tinymce.editors)) {
-                        for (const editor of window.tinymce.editors) {
-                            if (!editor) continue;
-                            const sameElement = editor.targetElm === input;
-                            const sameName = editor.targetElm && editor.targetElm.name === input.name;
-                            const sameId = editor.id && input.id && editor.id === input.id;
-                            if (sameElement || sameName || sameId) {
-                                return editor.getContent();
+                // EERST: Controleer of textarea/input hidden is
+                if (input) {
+                    const style = window.getComputedStyle(input);
+                    const isHidden = style.display === 'none' || !input.offsetParent;
+
+                    if (isHidden) {
+                        console.log('[getFieldValue] Field', fieldName, 'is HIDDEN - zoekend contenteditable...');
+
+                        // 1. Check volgende sibling
+                        let sibling = input.nextElementSibling;
+                        while (sibling && sibling.nextElementSibling && sibling !== input.nextElementSibling.nextElementSibling.nextElementSibling) {
+                            if (sibling.contentEditable === 'true' || sibling.getAttribute('contenteditable') === 'true') {
+                                const value = sibling.textContent || sibling.innerText || '';
+                                console.log('[getFieldValue] ✓ Gevonden in nextSibling DIV:', fieldName, ':', value.substring(0, 50));
+                                return value;
+                            }
+                            sibling = sibling.nextElementSibling;
+                        }
+
+                        // 2. Check parent children
+                        const parent = input.parentElement;
+                        if (parent) {
+                            const allDivs = parent.querySelectorAll('[contenteditable="true"]');
+                            if (allDivs.length > 0) {
+                                // Zoek ContentEditable DIV dicht bij deze textarea
+                                for (let div of allDivs) {
+                                    const value = div.textContent || div.innerText || '';
+                                    if (value && value.length > 0) {
+                                        console.log('[getFieldValue] ✓ Gevonden in parent DIV:', fieldName, ':', value.substring(0, 50));
+                                        return value;
+                                    }
+                                }
                             }
                         }
+
+                        // 3. Fallback: geen DIV gevonden
+                        console.log('[getFieldValue] ! Geen contenteditable DIV gevonden voor', fieldName);
+                        return '';
                     }
-                    return input.value || '';
+                } else {
+                    console.warn('[getFieldValue] Veld niet gevonden:', fieldName);
+                    return '';
                 }
 
-                return input.value || '';
+                // Textarea/input is VISIBLE - return value normaal
+                const value = input.value || '';
+                console.log('[getFieldValue]', fieldName, '(visible):', value.substring(0, 50) + (value.length > 50 ? '...' : ''));
+                return value;
             }
 
             function clearImagePreview() {
@@ -2518,8 +4603,10 @@ if ($page === 'users') {
             }
 
             function renderEventPreview(form) {
-                const titleHtml = getFieldValue(form, 'title').trim() || 'Preview titel';
-                const descriptionHtml = getFieldValue(form, 'description').trim() || '';
+                console.log('[renderEventPreview] Starting render...');
+                const titleRaw = getFieldValue(form, 'title').trim();
+                const titleHtml = titleRaw || 'Preview titel';
+                const descriptionRaw = getFieldValue(form, 'description').trim();
                 const startDate = getFieldValue(form, 'date').trim();
                 const endDate = getFieldValue(form, 'end_date').trim();
                 const startTime = formatTimeDisplay(getFieldValue(form, 'time').trim());
@@ -2534,11 +4621,15 @@ if ($page === 'users') {
                 const dateDisplay = formatDateDisplay(startDate);
                 const endDateDisplay = formatDateDisplay(endDate);
 
+                console.log('[renderEventPreview] Title:', titleHtml);
+                console.log('[renderEventPreview] Description:', descriptionRaw.substring(0, 50));
+                console.log('[renderEventPreview] Date:', startDate);
+
                 renderedEl.innerHTML = '' +
                     '<section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">' +
                     '<div class="flex-1">' +
                     '<span class="inline-block text-white text-sm font-medium px-4 py-1 mb-4" style="background-color:#ce0245;">Evenement</span>' +
-                    '<h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900">' + titleHtml + '</h2>' +
+                    '<h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900">' + escapeHtml(titleHtml) + '</h2>' +
                     '<div class="space-y-4">' +
                     '<div class="flex items-center space-x-3">' +
                     '<i class="fa-regular fa-calendar text-[#00811F] ml-[2px] text-3xl"></i>' +
@@ -2556,7 +4647,7 @@ if ($page === 'users') {
                     '</div>' +
                     '<div class="flex mb-6 space-x-3">' +
                     '<i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>' +
-                    '<div class="text-gray-700 pb-3"><strong> Wat:</strong><div class="mt-1">' + descriptionHtml + '</div></div>' +
+                    '<div class="text-gray-700 pb-3"><strong> Wat:</strong><div class="mt-1">' + (descriptionRaw ? escapeHtml(descriptionRaw) : '<em class="text-gray-500">Geen beschrijving ingevuld</em>') + '</div></div>' +
                     '</div>' +
                     '</div>' +
                     (hasEmbed ?
@@ -2648,6 +4739,43 @@ if ($page === 'users') {
                 }
             });
 
+            // Auto-save form values to localStorage
+            document.querySelectorAll('form.js-content-preview-form').forEach(function(form) {
+                const formId = (form.querySelector('[name="action"]')?.value || 'unknown') + '_' + (form.querySelector('[name="id"]')?.value || 'new');
+                const storageKey = 'formData_' + formId;
+
+                // Restore on load
+                const saved = localStorage.getItem(storageKey);
+                if (saved) {
+                    try {
+                        const data = JSON.parse(saved);
+                        console.log('[Form] Restoring:', storageKey, data);
+                        Object.keys(data).forEach(key => {
+                            const el = form.elements[key];
+                            if (el) {
+                                el.value = data[key];
+                                console.log('[Form] Restored', key, '=', data[key]);
+                            }
+                        });
+                    } catch (e) {
+                        console.error('[Form] Restore error:', e);
+                    }
+                }
+
+                // Save on input
+                form.addEventListener('input', function(e) {
+                    if (e.target.name && e.target.type !== 'hidden') {
+                        const data = {};
+                        form.querySelectorAll('[name]').forEach(el => {
+                            if (el.type !== 'hidden') {
+                                data[el.name] = el.value;
+                            }
+                        });
+                        localStorage.setItem(storageKey, JSON.stringify(data));
+                    }
+                });
+            });
+
             previewButtons.forEach(function(button) {
                 button.addEventListener('click', function() {
                     try {
@@ -2658,10 +4786,52 @@ if ($page === 'users') {
                             return;
                         }
 
+                        // DEBUG: Log ALL form fields om te zien welke zichtbaar zijn
+                        console.log('[Preview] ===== ALL FORM FIELDS =====');
+                        const allInputs = form.querySelectorAll('input, textarea, select, [contenteditable]');
+                        allInputs.forEach(el => {
+                            const isVisible = el.offsetParent !== null;
+                            const value = el.value || el.textContent || el.innerText || '';
+                            const style = window.getComputedStyle(el);
+                            console.log('[Preview]', el.name || el.id || el.tagName,
+                                '| visible:', isVisible,
+                                '| display:', style.display,
+                                '| value:', value.substring(0, 30));
+                        });
+                        console.log('[Preview] ===== END FIELDS =====');
+
+                        // Save all form values to localStorage before anything else
+                        const formElements = form.querySelectorAll('input, textarea, select');
+                        const formData = {};
+                        formElements.forEach(el => {
+                            if (el.name && el.type !== 'hidden') {
+                                if (el.type === 'checkbox' || el.type === 'radio') {
+                                    formData[el.name] = el.checked;
+                                } else {
+                                    formData[el.name] = el.value;
+                                }
+                            }
+                        });
+                        console.log('[Preview] Saved form data:', formData);
+                        localStorage.setItem('previewFormData', JSON.stringify(formData));
+
                         // Sync TinyMCE editors back naar textarea values
                         if (window.tinymce && typeof window.tinymce.triggerSave === 'function') {
+                            console.log('[Preview] Calling tinymce.triggerSave()');
                             window.tinymce.triggerSave();
+                        } else {
+                            console.log('[Preview] TinyMCE not available');
                         }
+
+                        // Re-read all form values AFTER sync in case TinyMCE changed them
+                        formElements.forEach(el => {
+                            if (el.name && el.type !== 'hidden') {
+                                if (el.type !== 'checkbox' && el.type !== 'radio') {
+                                    formData[el.name] = el.value;
+                                }
+                            }
+                        });
+                        console.log('[Preview] Form data after TinyMCE sync:', formData);
 
                         renderPreview(form);
 
@@ -2677,6 +4847,49 @@ if ($page === 'users') {
                         alert('Er is een fout opgetreden bij het tonen van de preview. Zie de console voor details.');
                     }
                 });
+            });
+        })();
+
+        (function() {
+            const selectAllBoxes = document.querySelectorAll('.js-permission-select-all');
+            if (!selectAllBoxes.length) return;
+
+            function findPermissionGroup(selectAllBox) {
+                const parent = selectAllBox.closest('.bg-gray-50, form');
+                return parent ? parent.querySelector('.js-permission-group') : null;
+            }
+
+            function syncSelectAll(selectAllBox) {
+                const group = findPermissionGroup(selectAllBox);
+                if (!group) return;
+
+                const boxes = group.querySelectorAll('input[type="checkbox"]');
+                const checkedCount = Array.from(boxes).filter(function(box) {
+                    return box.checked;
+                }).length;
+
+                selectAllBox.checked = boxes.length > 0 && checkedCount === boxes.length;
+                selectAllBox.indeterminate = checkedCount > 0 && checkedCount < boxes.length;
+            }
+
+            selectAllBoxes.forEach(function(selectAllBox) {
+                const group = findPermissionGroup(selectAllBox);
+                if (!group) return;
+
+                selectAllBox.addEventListener('change', function() {
+                    group.querySelectorAll('input[type="checkbox"]').forEach(function(box) {
+                        box.checked = selectAllBox.checked;
+                    });
+                    selectAllBox.indeterminate = false;
+                });
+
+                group.addEventListener('change', function(event) {
+                    if ((event.target.type || '').toLowerCase() === 'checkbox') {
+                        syncSelectAll(selectAllBox);
+                    }
+                });
+
+                syncSelectAll(selectAllBox);
             });
         })();
 

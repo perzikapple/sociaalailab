@@ -2,13 +2,7 @@
 session_start();
 ob_start(); // Start output buffering om debug output te voorkomen
 require 'db.php';
-
-// Include PHPMailer
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
-require 'vendor/phpmailer/src/Exception.php';
-require 'vendor/phpmailer/src/PHPMailer.php';
-require 'vendor/phpmailer/src/SMTP.php';
+require 'email_config.php'; // This includes PHPMailer 
 
 $message = '';
 $success = false;
@@ -27,46 +21,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$user) {
             $message = 'Deze email is niet geregistreerd.';
         } else {
-            // Generate a reset token (simple random string)
+            // Generate a reset token
             $token = bin2hex(random_bytes(32));
+            
+            // Store token in database with 1-hour expiration
+            $expiresAt = date('Y-m-d H:i:s', strtotime('+1 hour'));
+            $stmt = $pdo->prepare("INSERT INTO password_resets (email, token, expires_at) VALUES (?, ?, ?)");
+            $stmt->execute([$email, $token, $expiresAt]);
 
-            // For simplicity, store token in session with email (in production, use database)
-            $_SESSION['reset_token'] = $token;
-            $_SESSION['reset_email'] = $email;
-
-            // Send email using PHPMailer
-            $mail = new PHPMailer(true);
-
-            try {
-                $mail->SMTPDebug = 0; // Debug uitgeschakeld voor veiligheid
-                // Server settings - Elastic Email
-                $mail->isSMTP();
-                $mail->Host       = 'smtp.elasticemail.com'; // Elastic Email SMTP server
-                $mail->SMTPAuth   = true;
-                $mail->Username   = 'indybrinkman2006@gmail.com'; // Vervang met je Elastic Email username (meestal je email)
-                $mail->Password   = 'A9D9DCEB7DA750C8DDC4D599720EC836E1A9'; // Vervang met je Elastic Email SMTP password
-                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-                $mail->Port       = 2525; // Of 587 als 2525 niet werkt
-                // $mail->SMTPDebug  = 2; // Verwijder debug in productie
-
-                // Recipients
-                $mail->setFrom('indybrinkman2006@gmail.com', 'SociaalAI Lab');
-                $mail->addAddress($email);
-
-
-                // Content
-                $resetLink = "https://sociaalailab.nl/reset_password.php?token=" . $token; // Vervang localhost met je domein in productie
-                $mail->isHTML(false);
-                $mail->Subject = 'Wachtwoord reset - SociaalAI Lab';
-                $mail->Body    = "Klik op deze link om je wachtwoord te resetten: " . $resetLink . "\n\nAls je dit niet hebt aangevraagd, negeer deze email.";
-
-                $mail->send();
-                ob_clean(); // Clear any debug output from PHPMailer
+            // Send email using Brevo SMTP - use production URL for live server, localhost for dev
+            $isLocalhost = strpos($_SERVER['HTTP_HOST'], 'localhost') !== false || strpos($_SERVER['HTTP_HOST'], '127.0.0.1') !== false;
+            if ($isLocalhost) {
+                $resetLink = "http://" . $_SERVER['HTTP_HOST'] . "/reset_password.php?token=" . urlencode($token);
+            } else {
+                $resetLink = "https://sociaalailab.nl/reset_password.php?token=" . urlencode($token);
+            }
+            $emailSubject = 'Wachtwoord reset - SociaalAI Lab';
+            $emailBody = "Klik op deze link om je wachtwoord te resetten:\n\n" . $resetLink . "\n\nDeze link is 1 uur geldig.\n\nAls je dit niet hebt aangevraagd, negeer deze email.";
+            
+            $emailResult = sendEmail($email, $emailSubject, $emailBody, false);
+            
+            if ($emailResult['success']) {
+                ob_clean(); // Clear any debug output
                 $success = true;
                 $message = 'Er is een reset link naar je email gestuurd. Check ook je spam.';
-            } catch (Exception $e) {
-                ob_clean(); // Clear debug output on error too
-                $message = 'Er is een fout opgetreden bij het verzenden van de email: ' . $mail->ErrorInfo;
+            } else {
+                ob_clean(); // Clear debug output on error
+                $message = 'Error: ' . $emailResult['message'];
             }
         }
     }
