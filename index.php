@@ -285,7 +285,7 @@ include __DIR__ . '/navbar.php';
 ?>
 <section class="homepage-carousel-slide flex flex-col md:flex-row items-center gap-6 md:gap-8">
     <div class="flex-1">
-        <span class="inline-block bg-[#d12254] text-white text-sm font-medium px-4 py-1 mb-4">Evenement</span>
+        <span class="inline-block bg-[#00811F] text-white text-sm font-medium px-4 py-1 mb-4">Evenement</span>
         <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($event['title']); ?></h2>
         <div class="space-y-3">
             <div class="flex items-center space-x-3">
