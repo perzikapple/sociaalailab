@@ -5,12 +5,12 @@ require 'helpers.php';
 
 
 // Tel het totaal aantal aankomende evenementen
-$stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE COALESCE(end_date, date) >= CURDATE()");
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE approval_status = 'approved' AND COALESCE(end_date, date) >= CURDATE()");
 $stmt->execute();
 $totalUpcoming = $stmt->fetchColumn();
 
 // Tel het totaal aantal terugblikken (afgelopen evenementen)
-$stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE COALESCE(end_date, date) < CURDATE()");
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE approval_status = 'approved' AND COALESCE(end_date, date) < CURDATE()");
 $stmt->execute();
 $totalPast = $stmt->fetchColumn();
 
@@ -51,7 +51,7 @@ try {
         }
     }
 
-    $stmt = $pdo->prepare("SELECT * FROM events WHERE COALESCE(end_date, date) < CURDATE() ORDER BY date $sortOrder, time $sortOrder LIMIT :limit OFFSET :offset");
+    $stmt = $pdo->prepare("SELECT * FROM events WHERE approval_status = 'approved' AND COALESCE(end_date, date) < CURDATE() ORDER BY date $sortOrder, time $sortOrder LIMIT :limit OFFSET :offset");
     $stmt->bindValue(':limit', $itemsPerPage, PDO::PARAM_INT);
     $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
     $stmt->execute();
