@@ -141,8 +141,8 @@ include __DIR__ . '/navbar.php';
                             <div class="text-gray-700 pb-3 "><strong> Wat:</strong><div class="mt-1"><?php echo renderEditorBlock($event['description']); ?></div></div>
                         </div>
                     </div>
-                    <?php if (!empty($event['show_signup_button'])): ?>
-                    <a href="inschrijven.php?event_id=<?php echo (int)$event['id']; ?>" class="mt-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">
+                    <?php if (!empty($event['signup_embed'])): ?>
+                    <a href="<?php echo htmlspecialchars($event['signup_embed']); ?>" target="_blank" rel="noopener noreferrer" class="mt-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">
                         Inschrijven
                     </a>
                     <?php endif; ?>

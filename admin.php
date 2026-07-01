@@ -3,10 +3,16 @@ session_start();
 require 'db.php';
 require 'helpers.php';
 
+// Security check: redirect to login if not logged in
+if (!($_SESSION['can_access_admin'] ?? false)) {
+    header('Location: login.php');
+    exit;
+}
+
 $rolePermissions = [
     'administrator' => ['create_users', 'edit_users', 'delete_users', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images', 'approve_content', 'access_booking', 'view_audit'],
     'content_manager' => ['manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images', 'approve_content', 'access_booking'],
-    'onderzoeker' => ['access_booking', 'create_events', 'view_feedback'],
+    'onderzoeker' => ['access_booking', 'create_events', 'view_feedback', 'view_pages'],
     'viewer' => [],
 ];
 
@@ -35,43 +41,16 @@ if ($sessionRole === '') {
     $_SESSION['role'] = $sessionRole;
 }
 
-// Migration: map old roles to new roles
-$roleMap = [
-    'superadmin' => 'administrator',
-    'editor' => 'onderzoeker',
-    'booking_only' => 'onderzoeker',
-];
-if (isset($roleMap[$sessionRole])) {
-    $sessionRole = $roleMap[$sessionRole];
-    $_SESSION['role'] = $sessionRole;
-}
-
-$sessionPermissions = normalizeAccountPermissions($_SESSION['permissions'] ?? null);
-if ($sessionPermissions === null) {
-    $sessionPermissions = permissionsForRole($sessionRole, $rolePermissions);
-    $_SESSION['permissions'] = json_encode($sessionPermissions, JSON_UNESCAPED_SLASHES);
-}
-
-$canAccessAdmin = !empty($sessionPermissions);
-$_SESSION['can_access_admin'] = $canAccessAdmin;
-
-if (!$canAccessAdmin) {
-    header('Location: login.php');
-    exit;
-}
-
-// Onderzoekers can access admin panel but only for creating events (agenda), feedback, and booking
-if ($sessionRole === 'onderzoeker') {
-    if (!isset($_GET['page']) || !in_array($_GET['page'], ['agenda', 'feedback', 'booking'])) {
-        header('Location: admin.php?page=agenda');
-        exit;
-    }
-}
-
-$hasPermission = function ($permission) use (&$sessionPermissions) {
-    return in_array($permission, $sessionPermissions, true);
+// Simple permission helpers (fallback if missing earlier)
+$hasPermission = function ($permission) use ($sessionRole, $rolePermissions) {
+    if (!is_string($permission) || $permission === '') return false;
+    $perms = $rolePermissions[$sessionRole] ?? [];
+    return in_array($permission, $perms, true);
 };
 
+$isOnderzoeker = ($sessionRole === 'onderzoeker');
+
+// Migration: map old roles to new roles
 $hasAnyPermission = function ($permissions) use (&$hasPermission) {
     foreach ($permissions as $permission) {
         if ($hasPermission($permission)) {
@@ -79,6 +58,10 @@ $hasAnyPermission = function ($permissions) use (&$hasPermission) {
         }
     }
     return false;
+};
+
+$hasRole = function ($role) use (&$sessionRole) {
+    return $sessionRole === $role;
 };
 
 $adminPermissionOptions = [
@@ -306,10 +289,12 @@ function sanitizeEditorBlockInput($value)
 $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: 'images/banner_website_01.jpg';
 $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: 'images/banner_website_02.jpg';
 
+// Current user email
+$currentUser = $_SESSION['user'] ?? null;
+
 // Verwerk POST acties
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
-    $currentUser = $_SESSION['user'] ?? null; // email van ingelogde gebruiker (kan null zijn)
 
     $actionPermissionMap = [
         'create' => ($sessionRole === 'onderzoeker' ? 'create_events' : 'manage_events'),
@@ -344,12 +329,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $eventSummary = sanitizeEditorBlockInput($_POST['event_summary'] ?? '');
         $meerInfo = sanitizeEditorBlockInput($_POST['meer_info'] ?? '');
         $location = sanitizeEditorPlainText($_POST['location'] ?? '');
+        $hardwareRequest = sanitizeEditorBlockInput($_POST['hardware_request'] ?? '');
+        $staffPresent = sanitizeEditorBlockInput($_POST['staff_present'] ?? '');
         $targetAudience = sanitizeEditorPlainText($_POST['target_audience'] ?? '');
         $internalNotes = sanitizeEditorBlockInput($_POST['internal_notes'] ?? '');
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
         $signupEmbed = trim((string)($_POST['signup_embed'] ?? ''));
         $showOnHomepage = isset($_POST['show_on_homepage']) ? 1 : 0;
-        
+
         // Approval status based on role
         $approvalStatus = ($sessionRole === 'onderzoeker') ? 'pending' : 'approved';
 
@@ -376,8 +363,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         : null;
 
                     // voeg updated_at, updated_by, en approval gegevens toe bij insert
-                    $stmt = $pdo->prepare('INSERT INTO events (title, date, end_date, time, time_end, description, event_summary, meer_info, image, event_gallery, location, target_audience, internal_notes, show_signup_button, signup_embed, show_on_homepage, updated_at, updated_by, approval_status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)');
-                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $location ?: null, $targetAudience ?: null, $internalNotes ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser, $approvalStatus, $currentUser]);
+                    $stmt = $pdo->prepare('INSERT INTO events (title, date, end_date, time, time_end, description, event_summary, meer_info, image, event_gallery, location, hardware_request, staff_present, target_audience, internal_notes, show_signup_button, signup_embed, show_on_homepage, updated_at, updated_by, approval_status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)');
+                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $location ?: null, $hardwareRequest ?: null, $staffPresent ?: null, $targetAudience ?: null, $internalNotes ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser, $approvalStatus, $currentUser]);
                     $eventId = $pdo->lastInsertId();
                     // Audit log: event created
                     audit_log($pdo, 'create', 'events', $eventId, 'title: ' . $title, $currentUser);
@@ -397,6 +384,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $eventSummary = sanitizeEditorBlockInput($_POST['event_summary'] ?? '');
         $meerInfo = sanitizeEditorBlockInput($_POST['meer_info'] ?? '');
         $location = sanitizeEditorPlainText($_POST['location'] ?? '');
+        $hardwareRequest = sanitizeEditorBlockInput($_POST['hardware_request'] ?? '');
+        $staffPresent = sanitizeEditorBlockInput($_POST['staff_present'] ?? '');
         $targetAudience = sanitizeEditorPlainText($_POST['target_audience'] ?? '');
         $internalNotes = sanitizeEditorBlockInput($_POST['internal_notes'] ?? '');
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
@@ -448,8 +437,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         : null;
 
                     // update nu ook updated_at, updated_by, target_audience, en internal_notes
-                    $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, end_date=?, time=?, time_end=?, description=?, event_summary=?, meer_info=?, image=?, event_gallery=?, location=?, target_audience=?, internal_notes=?, show_signup_button=?, signup_embed=?, show_on_homepage=?, updated_at=NOW(), updated_by=? WHERE id=?');
-                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $location ?: null, $targetAudience ?: null, $internalNotes ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser, $id]);
+                    $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, end_date=?, time=?, time_end=?, description=?, event_summary=?, meer_info=?, image=?, event_gallery=?, location=?, hardware_request=?, staff_present=?, target_audience=?, internal_notes=?, show_signup_button=?, signup_embed=?, show_on_homepage=?, updated_at=NOW(), updated_by=? WHERE id=?');
+                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $location ?: null, $hardwareRequest ?: null, $staffPresent ?: null, $targetAudience ?: null, $internalNotes ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser, $id]);
                     // Audit log: event updated
                     audit_log($pdo, 'update', 'events', $id, 'title: ' . $title, $currentUser);
 
@@ -535,7 +524,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $direction = $_POST['direction'] ?? '';
 
         if ($id && ($direction === 'up' || $direction === 'down')) {
-            $currentUser = $_SESSION['user'] ?? null;
             $pdo->beginTransaction();
             try {
                 // Normaliseer sort_order als nodig
@@ -848,12 +836,114 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['optimize_data'] = $result;
             }
         }
+    } elseif ($action === 'get_approval_item' && !empty($_POST['item_id'])) {
+        // Return approval item as JSON - ALL fields
+        header('Content-Type: application/json');
+        $itemId = intval($_POST['item_id']);
+
+        try {
+            $stmt = $pdo->prepare(
+                'SELECT id, title, date, end_date, time, time_end, description, location, image, 
+                        created_by, target_audience, internal_notes, approval_status, approval_feedback,
+                    meer_info, event_summary, signup_embed, show_signup_button, show_on_homepage,
+                    hardware_request, staff_present
+                 FROM events WHERE id = ? AND approval_status = ?'
+            );
+            $stmt->execute([$itemId, 'pending']);
+            $item = $stmt->fetch();
+
+            if ($item) {
+                echo json_encode([
+                    'success' => true,
+                    'item' => $item
+                ]);
+            } else {
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'Item not found'
+                ]);
+            }
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'error' => $e->getMessage()
+            ]);
+        }
+        exit;
+    } elseif ($action === 'approve_with_review' && !empty($_POST['item_id'])) {
+        // Approve with edits from modal - update ALL fields
+        $itemId = intval($_POST['item_id']);
+        $title = sanitizeEditorBlockInput($_POST['approval_title'] ?? '');
+        $date = sanitizeEditorBlockInput($_POST['approval_date'] ?? '');
+        $end_date = sanitizeEditorBlockInput($_POST['approval_end_date'] ?? '');
+        $time = sanitizeEditorBlockInput($_POST['approval_time'] ?? '');
+        $time_end = sanitizeEditorBlockInput($_POST['approval_time_end'] ?? '');
+        $location = sanitizeEditorBlockInput($_POST['approval_location'] ?? '');
+        $hardware_request = sanitizeEditorBlockInput($_POST['approval_hardware_request'] ?? '');
+        $staff_present = sanitizeEditorBlockInput($_POST['approval_staff_present'] ?? '');
+        $description = sanitizeEditorBlockInput($_POST['approval_description'] ?? '');
+        $meer_info = sanitizeEditorBlockInput($_POST['approval_meer_info'] ?? '');
+        $event_summary = sanitizeEditorBlockInput($_POST['approval_event_summary'] ?? '');
+        $target_audience = sanitizeEditorBlockInput($_POST['approval_target_audience'] ?? '');
+        $internal_notes = sanitizeEditorBlockInput($_POST['approval_internal_notes'] ?? '');
+        $signup_embed = sanitizeEditorBlockInput($_POST['approval_signup_embed'] ?? '');
+        $show_signup_button = !empty($_POST['approval_show_signup_button']) ? '1' : '0';
+        $show_on_homepage = !empty($_POST['approval_show_on_homepage']) ? '1' : '0';
+        $feedback = sanitizeEditorBlockInput($_POST['approval_feedback'] ?? '');
+
+        try {
+            $stmt = $pdo->prepare('SELECT id, image FROM events WHERE id = ?');
+            $stmt->execute([$itemId]);
+            $event = $stmt->fetch();
+
+            if ($event) {
+                // Update with edited data - ALL fields
+                $stmt = $pdo->prepare(
+                    'UPDATE events SET 
+                        title = ?, date = ?, end_date = ?, time = ?, time_end = ?, 
+                        location = ?, hardware_request = ?, staff_present = ?, description = ?, meer_info = ?, event_summary = ?,
+                        target_audience = ?, internal_notes = ?, signup_embed = ?,
+                        show_signup_button = ?, show_on_homepage = ?,
+                        approval_status = ?, approved_by = ?, approval_feedback = ?
+                     WHERE id = ?'
+                );
+                $stmt->execute([
+                    $title,
+                    $date,
+                    $end_date ?? null,
+                    $time ?? null,
+                    $time_end ?? null,
+                    $location,
+                    $hardware_request ?: null,
+                    $staff_present ?: null,
+                    $description,
+                    $meer_info ?? null,
+                    $event_summary ?? null,
+                    $target_audience ?? null,
+                    $internal_notes ?? null,
+                    $signup_embed ?? null,
+                    $show_signup_button,
+                    $show_on_homepage,
+                    'approved',
+                    $currentUser,
+                    $feedback ?: null,
+                    $itemId
+                ]);
+                audit_log($pdo, 'approve', 'events', $itemId, 'Status changed to approved. Full event edited by admin.', $currentUser);
+                header('Location: admin.php?page=goedkeuren&ok=approve');
+                exit;
+            } else {
+                $message = 'Item niet gevonden.';
+            }
+        } catch (Exception $e) {
+            $message = 'Fout bij goedkeuren: ' . $e->getMessage();
+        }
     } elseif ($action === 'approve_item' && !empty($_POST['item_id'])) {
         $itemId = intval($_POST['item_id']);
         $stmt = $pdo->prepare('SELECT id FROM events WHERE id = ?');
         $stmt->execute([$itemId]);
         $event = $stmt->fetch();
-        
+
         if ($event) {
             $stmt = $pdo->prepare(
                 'UPDATE events SET approval_status = ?, approved_by = ?, approval_feedback = NULL 
@@ -867,32 +957,168 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = 'Item niet gevonden.';
         }
     } elseif ($action === 'reject_item' && !empty($_POST['item_id'])) {
+        // Reject with possible edits - also save edited fields for resubmission
         $itemId = intval($_POST['item_id']);
-        $feedback = sanitizeEditorBlockInput($_POST['feedback'] ?? '');
-        
-        $stmt = $pdo->prepare('SELECT id, title, created_by FROM events WHERE id = ?');
-        $stmt->execute([$itemId]);
-        $event = $stmt->fetch();
-        
-        if ($event) {
-            $stmt = $pdo->prepare(
-                'UPDATE events SET approval_status = ?, approved_by = ?, approval_feedback = ? 
-                 WHERE id = ?'
-            );
-            $stmt->execute(['rejected', $currentUser, $feedback, $itemId]);
-            audit_log($pdo, 'reject', 'events', $itemId, 'Status changed to rejected. Feedback: ' . substr($feedback, 0, 100), $currentUser);
-            
-            // Send email to requester
-            if (!empty($event['created_by'])) {
-                require_once 'email_config.php';
-                $emailBody = "Hallo,\n\nJe aanvraag voor het event \"" . $event['title'] . "\" is afgewezen.\n\nFeedback van de admin:\n" . $feedback . "\n\nJe kunt je aanvraag aanpassen en opnieuw indienen.\n\nMet vriendelijke groet,\nSociaalAI Lab";
-                sendEmail($event['created_by'], "Aanvraag afgewezen: " . $event['title'], $emailBody);
+        $title = sanitizeEditorBlockInput($_POST['approval_title'] ?? '');
+        $date = sanitizeEditorBlockInput($_POST['approval_date'] ?? '');
+        $end_date = sanitizeEditorBlockInput($_POST['approval_end_date'] ?? '');
+        $time = sanitizeEditorBlockInput($_POST['approval_time'] ?? '');
+        $time_end = sanitizeEditorBlockInput($_POST['approval_time_end'] ?? '');
+        $location = sanitizeEditorBlockInput($_POST['approval_location'] ?? '');
+        $hardware_request = sanitizeEditorBlockInput($_POST['approval_hardware_request'] ?? '');
+        $staff_present = sanitizeEditorBlockInput($_POST['approval_staff_present'] ?? '');
+        $description = sanitizeEditorBlockInput($_POST['approval_description'] ?? '');
+        $meer_info = sanitizeEditorBlockInput($_POST['approval_meer_info'] ?? '');
+        $event_summary = sanitizeEditorBlockInput($_POST['approval_event_summary'] ?? '');
+        $target_audience = sanitizeEditorBlockInput($_POST['approval_target_audience'] ?? '');
+        $internal_notes = sanitizeEditorBlockInput($_POST['approval_internal_notes'] ?? '');
+        $signup_embed = sanitizeEditorBlockInput($_POST['approval_signup_embed'] ?? '');
+        $show_signup_button = !empty($_POST['approval_show_signup_button']) ? '1' : '0';
+        $show_on_homepage = !empty($_POST['approval_show_on_homepage']) ? '1' : '0';
+        $feedback = sanitizeEditorBlockInput($_POST['approval_feedback'] ?? '');
+
+        try {
+            $stmt = $pdo->prepare('SELECT id FROM events WHERE id = ?');
+            $stmt->execute([$itemId]);
+            $event = $stmt->fetch();
+
+            if ($event) {
+                // Update status to rejected, but save edited fields for onderzoeker to see edits + feedback
+                $stmt = $pdo->prepare(
+                    'UPDATE events SET 
+                        title = ?, date = ?, end_date = ?, time = ?, time_end = ?, 
+                        location = ?, hardware_request = ?, staff_present = ?, description = ?, meer_info = ?, event_summary = ?,
+                        target_audience = ?, internal_notes = ?, signup_embed = ?,
+                        show_signup_button = ?, show_on_homepage = ?,
+                        approval_status = ?, approved_by = ?, approval_feedback = ? 
+                     WHERE id = ?'
+                );
+                $stmt->execute([
+                    $title,
+                    $date,
+                    $end_date ?: null,
+                    $time ?: null,
+                    $time_end ?: null,
+                    $location,
+                    $hardware_request ?: null,
+                    $staff_present ?: null,
+                    $description,
+                    $meer_info ?: null,
+                    $event_summary ?: null,
+                    $target_audience ?: null,
+                    $internal_notes ?: null,
+                    $signup_embed ?: null,
+                    $show_signup_button,
+                    $show_on_homepage,
+                    'rejected',
+                    $currentUser,
+                    $feedback,
+                    $itemId
+                ]);
+                audit_log($pdo, 'reject', 'events', $itemId, 'Status changed to rejected. Feedback: ' . substr($feedback, 0, 100), $currentUser);
+                header('Location: admin.php?page=goedkeuren&ok=reject');
+                exit;
+            } else {
+                $message = 'Item niet gevonden.';
             }
-            
-            header('Location: admin.php?page=goedkeuren&ok=reject');
-            exit;
+        } catch (Exception $e) {
+            $message = 'Fout bij afkeuren: ' . $e->getMessage();
+        }
+    } elseif ($action === 'get_request_details' && !empty($_POST['request_id'])) {
+        // Return request details as JSON for editing - ALL fields including feedback
+        header('Content-Type: application/json');
+        $requestId = intval($_POST['request_id']);
+
+        try {
+            $stmt = $pdo->prepare(
+                'SELECT id, title, date, end_date, time, time_end, description, location, image, 
+                        approval_status, approval_feedback, meer_info, event_summary, target_audience,
+                    internal_notes, signup_embed, show_signup_button, show_on_homepage,
+                    hardware_request, staff_present
+                 FROM events WHERE id = ? AND created_by = ?'
+            );
+            $stmt->execute([$requestId, $currentUser]);
+            $item = $stmt->fetch();
+
+            if ($item) {
+                echo json_encode([
+                    'success' => true,
+                    'item' => $item
+                ]);
+            } else {
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'Aanvraag niet gevonden'
+                ]);
+            }
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'error' => $e->getMessage()
+            ]);
+        }
+        exit;
+    } elseif ($action === 'resubmit_request' && !empty($_POST['request_id'])) {
+        // Handle resubmission of rejected request - update ALL fields
+        $requestId = intval($_POST['request_id']);
+        $title = sanitizeEditorBlockInput($_POST['edit_title'] ?? '');
+        $date = sanitizeEditorBlockInput($_POST['edit_date'] ?? '');
+        $end_date = sanitizeEditorBlockInput($_POST['edit_end_date'] ?? '');
+        $time = sanitizeEditorBlockInput($_POST['edit_time'] ?? '');
+        $time_end = sanitizeEditorBlockInput($_POST['edit_time_end'] ?? '');
+        $location = sanitizeEditorBlockInput($_POST['edit_location'] ?? '');
+        $hardware_request = sanitizeEditorBlockInput($_POST['edit_hardware_request'] ?? '');
+        $staff_present = sanitizeEditorBlockInput($_POST['edit_staff_present'] ?? '');
+        $description = sanitizeEditorBlockInput($_POST['edit_description'] ?? '');
+        $meer_info = sanitizeEditorBlockInput($_POST['edit_meer_info'] ?? '');
+        $event_summary = sanitizeEditorBlockInput($_POST['edit_event_summary'] ?? '');
+        $target_audience = sanitizeEditorBlockInput($_POST['edit_target_audience'] ?? '');
+        $signup_embed = sanitizeEditorBlockInput($_POST['edit_signup_embed'] ?? '');
+        $show_signup_button = !empty($_POST['edit_show_signup_button']) ? '1' : '0';
+        $show_on_homepage = !empty($_POST['edit_show_on_homepage']) ? '1' : '0';
+
+        // Verify ownership
+        $stmt = $pdo->prepare('SELECT id FROM events WHERE id = ? AND created_by = ?');
+        $stmt->execute([$requestId, $currentUser]);
+        $event = $stmt->fetch();
+
+        if ($event) {
+            try {
+                $stmt = $pdo->prepare(
+                    'UPDATE events SET 
+                        title = ?, date = ?, end_date = ?, time = ?, time_end = ?, 
+                        location = ?, hardware_request = ?, staff_present = ?, description = ?, meer_info = ?, event_summary = ?,
+                        target_audience = ?, signup_embed = ?, 
+                        show_signup_button = ?, show_on_homepage = ?,
+                        approval_status = "pending", approved_by = NULL, approval_feedback = NULL
+                     WHERE id = ?'
+                );
+                $stmt->execute([
+                    $title,
+                    $date,
+                    $end_date ?: null,
+                    $time ?: null,
+                    $time_end ?: null,
+                    $location,
+                    $hardware_request ?: null,
+                    $staff_present ?: null,
+                    $description,
+                    $meer_info ?: null,
+                    $event_summary ?: null,
+                    $target_audience ?: null,
+                    $signup_embed ?: null,
+                    $show_signup_button,
+                    $show_on_homepage,
+                    $requestId
+                ]);
+                audit_log($pdo, 'resubmit', 'events', $requestId, 'Request resubmitted by onderzoeker after rejection', $currentUser);
+                header('Location: admin.php?page=aanvragen&ok=resubmit');
+                exit;
+            } catch (Exception $e) {
+                $message = 'Fout bij opnieuw indienen: ' . $e->getMessage();
+            }
         } else {
-            $message = 'Item niet gevonden.';
+            $message = 'Aanvraag niet gevonden of geen toestemming.';
         }
     }
 }
@@ -1095,7 +1321,6 @@ if ($pageAction === 'create_page') {
     $direction = $_POST['direction'] ?? '';
 
     if ($id && $pageKey && ($direction === 'up' || $direction === 'down')) {
-        $currentUser = $_SESSION['user'] ?? null;
         $pdo->beginTransaction();
         try {
             $stmt = $pdo->prepare('SELECT id, sort_order, created_at FROM pages WHERE page_key = ? ORDER BY created_at ASC, id ASC');
@@ -1206,25 +1431,25 @@ $stmt->execute();
 $events = $stmt->fetchAll();
 ?>
 <?php
-// Welke admin pagina tonen (standaard index)
-$page = $_GET['page'] ?? 'agenda';
+// Welke admin pagina tonen (standaard dashboard)
+$page = $_GET['page'] ?? 'dashboard';
 
 $allowedPagesByPermission = [
     'banner' => 'manage_banners',
-    'agenda' => ['manage_events', 'delete_events'],
+    'agenda' => ['manage_events', 'delete_events', 'create_events'],
     'goedkeuren' => 'approve_content',
     'audit' => 'view_audit',
     'users' => ['create_users', 'edit_users', 'delete_users'],
-    'index' => ['manage_pages', 'delete_pages'],
-    'evenementen' => ['manage_pages', 'delete_pages'],
-    'terugblikken' => ['manage_pages', 'delete_pages'],
-    'over' => ['manage_pages', 'delete_pages'],
-    'wie-zijn-we' => ['manage_pages', 'delete_pages'],
-    'verantwoord-ai' => ['manage_pages', 'delete_pages'],
-    'contact' => ['manage_pages', 'delete_pages'],
-    'programma-kennis' => ['manage_pages', 'delete_pages'],
-    'programma-actie' => ['manage_pages', 'delete_pages'],
-    'programma-faciliteit' => ['manage_pages', 'delete_pages'],
+    'index' => ['manage_pages', 'delete_pages', 'view_pages'],
+    'evenementen' => ['manage_pages', 'delete_pages', 'view_pages'],
+    'terugblikken' => ['manage_pages', 'delete_pages', 'view_pages'],
+    'over' => ['manage_pages', 'delete_pages', 'view_pages'],
+    'wie-zijn-we' => ['manage_pages', 'delete_pages', 'view_pages'],
+    'verantwoord-ai' => ['manage_pages', 'delete_pages', 'view_pages'],
+    'contact' => ['manage_pages', 'delete_pages', 'view_pages'],
+    'programma-kennis' => ['manage_pages', 'delete_pages', 'view_pages'],
+    'programma-actie' => ['manage_pages', 'delete_pages', 'view_pages'],
+    'programma-faciliteit' => ['manage_pages', 'delete_pages', 'view_pages'],
 ];
 
 $canViewPage = function ($candidatePage) use (&$allowedPagesByPermission, &$hasPermission, &$hasAnyPermission) {
@@ -1362,8 +1587,113 @@ if ($page === 'users') {
             filter: grayscale(0.2);
         }
 
+        /* Approval modal lock: keep modal centered and block nav/sidebar interaction */
+        body.approval-modal-open {
+            overflow: hidden;
+        }
+
+        body.approval-modal-open .admin-header,
+        body.approval-modal-open .sidebar,
+        body.approval-modal-open .sidebar-toggle-btn {
+            pointer-events: none !important;
+            user-select: none !important;
+        }
+
+        #approval-modal {
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 20000 !important;
+            align-items: center !important;
+            justify-content: center !important;
+            pointer-events: auto !important;
+        }
+
+        #approval-modal>div {
+            margin: 0 auto;
+            transform-origin: center center;
+        }
+
+        #approval-modal .ck-editor__editable {
+            min-height: 120px;
+        }
+
         .ck-editor__editable {
             min-height: 100px;
+        }
+
+        .ck-editor__editable {
+            min-height: 100px;
+        }
+
+        /* Dashboard & Admin UI polish */
+        body.admin-page {
+            background: #f7fafc;
+            color: #0f172a;
+        }
+
+        .admin-header .admin-header-brand {
+            display: inline-flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .admin-header .admin-header-brand h1 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 10px;
+            padding: 18px;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+        }
+
+        .card h3 {
+            margin-top: 0;
+        }
+
+        .btn-primary {
+            background: #0b6fbf;
+            color: #fff;
+            border: 0;
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+
+        .btn-site {
+            background: var(--color-rdm);
+            color: #fff;
+            border: 0;
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+
+        .btn-secondary {
+            background: #ffffff;
+            color: #0f172a;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            padding: 7px 10px;
+            border-radius: 8px;
+        }
+
+        .btn {
+            font-weight: 600;
+        }
+
+        .admin-layout-grid {
+            gap: 24px;
+        }
+
+        /* Make main column full width when viewing dashboard */
+        body.dashboard-view .lg\:col-span-3 {
+            grid-column: 1 / -1;
+        }
+
+        /* Chart card title style */
+        .card canvas {
+            background: #fff;
         }
     </style>
     <script>
@@ -1389,7 +1719,8 @@ if ($page === 'users') {
             });
 
             // CKEditor for content fields - larger with more options
-            document.querySelectorAll('textarea:not([name="title"])').forEach(textarea => {
+            // EXCLUDE approval modal textarea (initialized manually when modal opens)
+            document.querySelectorAll('textarea:not([name="title"]):not([data-no-auto-init])').forEach(textarea => {
                 ClassicEditor.create(textarea, {
                     ...ckConfig,
                     toolbar: {
@@ -1401,7 +1732,7 @@ if ($page === 'users') {
     </script>
 </head>
 
-<body class="admin-page">
+<body class="admin-page <?php echo $page === 'dashboard' ? 'dashboard-view' : ''; ?>">
     <!-- Sidebar Toggle Button -->
     <button class="sidebar-toggle-btn" id="sidebarToggle">
         <i class="fa-solid fa-bars"></i>
@@ -1416,6 +1747,16 @@ if ($page === 'users') {
                 <?php if ($hasPermission('view_audit')): ?>
                     <a href="admin.php?page=audit" class="btn <?php echo $page === 'audit' ? 'btn-primary' : 'btn-secondary'; ?> text-sm">
                         <i class="fa-solid fa-clipboard-list"></i> Auditlogboek
+                    </a>
+                <?php endif; ?>
+                <?php if ($hasAnyPermission(['manage_events', 'view_audit', 'access_booking'])): ?>
+                    <a href="admin.php?page=dashboard" class="btn <?php echo $page === 'dashboard' ? 'btn-site' : 'btn-secondary'; ?> text-sm">
+                        <i class="fa-solid fa-chart-pie"></i> Dashboard
+                    </a>
+                <?php endif; ?>
+                <?php if (!empty($_SESSION['can_access_admin'])): ?>
+                    <a href="admin.php?page=agenda" class="btn btn-secondary text-sm">
+                        <i class="fa-solid fa-toolbox"></i> Admin Panel
                     </a>
                 <?php endif; ?>
                 <?php if ($hasPermission('access_booking')): ?>
@@ -1442,77 +1783,91 @@ if ($page === 'users') {
 
         <div class="admin-layout-grid grid grid-cols-1 lg:grid-cols-4 gap-6">
             <!-- Sidebar -->
-            <aside class="sidebar">
-                <div class="sidebar-header">
-                    <i class="fa-solid fa-bars"></i> Navigatie
-                </div>
-                <nav class="divide-y">
-                    <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Beheer</div>
-                    <?php if ($hasPermission('manage_banners')): ?>
-                        <a href="admin.php?page=banner" class="sidebar-link <?php echo $page === 'banner' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-image"></i> Banners
-                        </a>
-                    <?php endif; ?>
-                    <?php if ($hasAnyPermission(['manage_events', 'delete_events'])): ?>
-                        <a href="admin.php?page=agenda" class="sidebar-link <?php echo $page === 'agenda' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-calendar"></i> Agenda
-                        </a>
-                    <?php endif; ?>
-                    <?php if ($hasPermission('approve_content')): ?>
-                        <a href="admin.php?page=goedkeuren" class="sidebar-link <?php echo $page === 'goedkeuren' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-check-circle"></i> Goedkeuren
-                        </a>
-                    <?php endif; ?>
-                    <?php if ($hasAnyPermission(['create_users', 'edit_users', 'delete_users'])): ?>
-                        <a href="admin.php?page=users" class="sidebar-link <?php echo $page === 'users' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-users"></i> Gebruikers & Rechten
-                        </a>
-                    <?php endif; ?>
-                    <!-- Image Converter removed -->
+            <?php if ($page !== 'dashboard'): ?>
+                <aside class="sidebar">
+                    <div class="sidebar-header">
+                        <i class="fa-solid fa-bars"></i> Navigatie
+                    </div>
+                    <nav class="divide-y">
+                        <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Beheer</div>
+                        <?php if ($hasPermission('manage_banners')): ?>
+                            <a href="admin.php?page=banner" class="sidebar-link <?php echo $page === 'banner' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-image"></i> Banners
+                            </a>
+                        <?php endif; ?>
+                        <?php if ($hasAnyPermission(['manage_events', 'delete_events', 'create_events'])): ?>
+                            <a href="admin.php?page=agenda" class="sidebar-link <?php echo $page === 'agenda' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-calendar"></i> Agenda
+                            </a>
+                        <?php endif; ?>
+                        <?php /* Dashboard link removed from sidebar per request */ ?>
+                        <?php if ($hasPermission('approve_content')): ?>
+                            <a href="admin.php?page=goedkeuren" class="sidebar-link <?php echo $page === 'goedkeuren' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-check-circle"></i> Goedkeuren
+                            </a>
+                        <?php endif; ?>
+                        <?php if ($hasRole('onderzoeker')): ?>
+                            <a href="admin.php?page=aanvragen" class="sidebar-link <?php echo $page === 'aanvragen' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-paper-plane"></i> Mijn Aanvragen
+                            </a>
+                        <?php endif; ?>
+                        <?php if ($hasAnyPermission(['create_users', 'edit_users', 'delete_users'])): ?>
+                            <a href="admin.php?page=users" class="sidebar-link <?php echo $page === 'users' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-users"></i> Gebruikers & Rechten
+                            </a>
+                        <?php endif; ?>
+                        <!-- Image Converter removed -->
 
-                    <?php if ($hasAnyPermission(['manage_pages', 'delete_pages'])): ?>
-                        <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Pagina's</div>
-                        <a href="admin.php?page=index" class="sidebar-link <?php echo $page === 'index' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-house"></i> Homepage
-                        </a>
-                        <a href="admin.php?page=evenementen" class="sidebar-link <?php echo $page === 'evenementen' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-calendar-check"></i> Evenementen
-                        </a>
-                        <a href="admin.php?page=terugblikken" class="sidebar-link <?php echo $page === 'terugblikken' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-history"></i> Terugblikken
-                        </a>
-                        <a href="admin.php?page=over" class="sidebar-link <?php echo $page === 'over' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-info-circle"></i> Voor wie?
-                        </a>
-                        <a href="admin.php?page=wie-zijn-we" class="sidebar-link <?php echo $page === 'wie-zijn-we' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-people-group"></i> Wie zijn we?
-                        </a>
-                        <a href="admin.php?page=verantwoord-ai" class="sidebar-link <?php echo $page === 'verantwoord-ai' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-shield"></i> Verantwoord AI
-                        </a>
-                        <a href="admin.php?page=contact" class="sidebar-link <?php echo $page === 'contact' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-envelope"></i> Contact
-                        </a>
+                        <?php if ($hasAnyPermission(['manage_pages', 'delete_pages', 'view_pages'])): ?>
+                            <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Pagina's</div>
+                            <a href="admin.php?page=index" class="sidebar-link <?php echo $page === 'index' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-house"></i> Homepage
+                            </a>
+                            <a href="admin.php?page=evenementen" class="sidebar-link <?php echo $page === 'evenementen' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-calendar-check"></i> Evenementen
+                            </a>
+                            <a href="admin.php?page=terugblikken" class="sidebar-link <?php echo $page === 'terugblikken' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-history"></i> Terugblikken
+                            </a>
+                            <a href="admin.php?page=over" class="sidebar-link <?php echo $page === 'over' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-info-circle"></i> Voor wie?
+                            </a>
+                            <a href="admin.php?page=wie-zijn-we" class="sidebar-link <?php echo $page === 'wie-zijn-we' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-people-group"></i> Wie zijn we?
+                            </a>
+                            <a href="admin.php?page=verantwoord-ai" class="sidebar-link <?php echo $page === 'verantwoord-ai' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-shield"></i> Verantwoord AI
+                            </a>
+                            <a href="admin.php?page=contact" class="sidebar-link <?php echo $page === 'contact' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-envelope"></i> Contact
+                            </a>
 
-                        <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Wat doen we</div>
-                        <a href="admin.php?page=programma-kennis" class="sidebar-link <?php echo $page === 'programma-kennis' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-brain"></i> Kennis & Vaardigheden
-                        </a>
-                        <a href="admin.php?page=programma-actie" class="sidebar-link <?php echo $page === 'programma-actie' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-rocket"></i> Actie, onderzoek & ontwerp
-                        </a>
-                        <a href="admin.php?page=programma-faciliteit" class="sidebar-link <?php echo $page === 'programma-faciliteit' ? 'active' : ''; ?>">
-                            <i class="fa-solid fa-building"></i> Faciliteit van het Lab
-                        </a>
-                    <?php endif; ?>
-                </nav>
-            </aside>
+                            <div class="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700">Wat doen we</div>
+                            <a href="admin.php?page=programma-kennis" class="sidebar-link <?php echo $page === 'programma-kennis' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-brain"></i> Kennis & Vaardigheden
+                            </a>
+                            <a href="admin.php?page=programma-actie" class="sidebar-link <?php echo $page === 'programma-actie' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-rocket"></i> Actie, onderzoek & ontwerp
+                            </a>
+                            <a href="admin.php?page=programma-faciliteit" class="sidebar-link <?php echo $page === 'programma-faciliteit' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-building"></i> Faciliteit van het Lab
+                            </a>
+                        <?php endif; ?>
+                    </nav>
+                </aside>
+            <?php endif; ?>
 
             <div class="lg:col-span-3 <?php echo $isEditorReadOnlyPage ? 'admin-readonly-scope' : ''; ?>">
 
                 <?php if ($isEditorReadOnlyPage): ?>
                     <div class="alert alert-error" style="background:#f3f4f6; color:#1f2937; border-left-color:#9ca3af;">
                         <i class="fa-solid fa-eye"></i> Alleen-lezen modus: is dit een fout? Neem contact op met een beheerder om je rechten te controleren.
+                    </div>
+                <?php endif; ?>
+
+                <?php if ($isOnderzoeker): ?>
+                    <div class="alert alert-info" style="background:#dbeafe; color:#1e3a8a; border-left-color:#3b82f6; border-left-width:4px; border-radius:4px;">
+                        <i class="fa-solid fa-info-circle"></i> <strong>Modus Onderzoeker:</strong> Je kan inhoud bekijken en wijzigen, maar alle wijzigingen moeten worden goedgekeurd door een beheerder of content manager voordat ze live gaan.
                     </div>
                 <?php endif; ?>
 
@@ -1575,6 +1930,18 @@ if ($page === 'users') {
                                 <div>
                                     <label class="form-label">Plaats</label>
                                     <input name="location" class="form-input admin-input-surface admin-input-h-48" value="<?php echo htmlspecialchars($editEvent['location'] ?? ''); ?>" />
+                                </div>
+
+                                <div>
+                                    <label class="form-label">Hardware (optioneel)</label>
+                                    <textarea name="hardware_request" rows="3" class="form-textarea" placeholder="Bijv. 2x VR bril, 1x Speaker"><?php echo htmlspecialchars($editEvent['hardware_request'] ?? ''); ?></textarea>
+                                    <p class="text-xs text-gray-500 mt-2">Wordt meegenomen naar Booking en zichtbaar bij goedkeuring.</p>
+                                </div>
+
+                                <div>
+                                    <label class="form-label">Wie van SociaalAI Lab zijn erbij? (optioneel)</label>
+                                    <textarea name="staff_present" rows="3" class="form-textarea" placeholder="Bijv. Naam 1, Naam 2"><?php echo htmlspecialchars($editEvent['staff_present'] ?? ''); ?></textarea>
+                                    <p class="text-xs text-gray-500 mt-2">Mag leeg blijven.</p>
                                 </div>
 
                                 <div>
@@ -1702,36 +2069,48 @@ if ($page === 'users') {
                                 <div class="grid grid-cols-3 gap-4">
                                     <div>
                                         <label class="form-label">Wanneer (datum)</label>
-                                        <input type="date" name="date" required class="form-input" />
+                                        <input type="date" name="date" required class="form-input" value="<?php echo htmlspecialchars($_POST['date'] ?? ''); ?>" />
                                         <div class="mt-2">
                                             <label class="form-checkbox">
-                                                <input type="checkbox" id="add-end-date-create" name="add_end_date" />
+                                                <input type="checkbox" id="add-end-date-create" name="add_end_date" <?php echo !empty($_POST['end_date']) ? 'checked' : ''; ?> />
                                                 Einddatum toevoegen
                                             </label>
-                                            <div id="end-date-container-create" class="admin-mt-8 admin-hidden">
+                                            <div id="end-date-container-create" class="admin-mt-8 <?php echo empty($_POST['end_date']) ? 'admin-hidden' : ''; ?>">
                                                 <label class="form-label">Einddatum <span class="text-xs text-gray-500">(optioneel)</span></label>
-                                                <input type="date" name="end_date" class="form-input" />
+                                                <input type="date" name="end_date" class="form-input" value="<?php echo htmlspecialchars($_POST['end_date'] ?? ''); ?>" />
                                             </div>
                                         </div>
                                     </div>
                                     <div>
                                         <label class="form-label">Starttijd</label>
-                                        <input type="time" name="time" class="form-input" value="<?php echo htmlspecialchars($editEvent['time'] ?? ''); ?>" />
+                                        <input type="time" name="time" class="form-input" value="<?php echo htmlspecialchars($_POST['time'] ?? ''); ?>" />
                                         <div class="mt-2">
                                             <label class="form-checkbox">
-                                                <input type="checkbox" id="add-end-time-create" name="add_end_time" />
+                                                <input type="checkbox" id="add-end-time-create" name="add_end_time" <?php echo !empty($_POST['time_end']) ? 'checked' : ''; ?> />
                                                 Eindtijd toevoegen
                                             </label>
-                                            <div id="end-time-container-create" class="admin-mt-8 admin-hidden">
+                                            <div id="end-time-container-create" class="admin-mt-8 <?php echo empty($_POST['time_end']) ? 'admin-hidden' : ''; ?>">
                                                 <label class="form-label">Eindtijd <span class="text-xs text-gray-500">(optioneel)</span></label>
-                                                <input type="time" name="time_end" class="form-input" value="<?php echo htmlspecialchars($editEvent['time_end'] ?? ''); ?>" />
+                                                <input type="time" name="time_end" class="form-input" value="<?php echo htmlspecialchars($_POST['time_end'] ?? ''); ?>" />
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 <div>
                                     <label class="form-label">Plaats</label>
-                                    <input name="location" class="form-input admin-input-surface" />
+                                    <input name="location" class="form-input admin-input-surface" value="<?php echo htmlspecialchars($_POST['location'] ?? ''); ?>" />
+                                </div>
+
+                                <div>
+                                    <label class="form-label">Hardware (optioneel)</label>
+                                    <textarea name="hardware_request" rows="3" class="form-textarea" placeholder="Bijv. 2x VR bril, 1x Speaker"><?php echo htmlspecialchars($_POST['hardware_request'] ?? ''); ?></textarea>
+                                    <p class="text-xs text-gray-500 mt-2">Wordt meegenomen naar Booking en zichtbaar bij goedkeuring.</p>
+                                </div>
+
+                                <div>
+                                    <label class="form-label">Wie van SociaalAI Lab zijn erbij? (optioneel)</label>
+                                    <textarea name="staff_present" rows="3" class="form-textarea" placeholder="Bijv. Naam 1, Naam 2"><?php echo htmlspecialchars($_POST['staff_present'] ?? ''); ?></textarea>
+                                    <p class="text-xs text-gray-500 mt-2">Mag leeg blijven.</p>
                                 </div>
 
                                 <div>
@@ -1741,13 +2120,13 @@ if ($page === 'users') {
 
                                 <div>
                                     <label class="form-label">Meer info tekst (optioneel)</label>
-                                    <textarea name="meer_info" rows="5" class="form-textarea"><?php echo htmlspecialchars($_POST['meer_info'] ?? ''); ?></textarea>
+                                    <textarea name="meer_info" rows="5" class="form-textarea"></textarea>
                                     <p class="text-xs text-gray-500 mt-2">Deze tekst wordt op de evenement detailpagina getoond boven de samenvatting.</p>
                                 </div>
 
                                 <div>
                                     <label class="form-label">Samenvatting na afloop (optioneel)</label>
-                                    <textarea name="event_summary" rows="5" class="form-textarea"><?php echo htmlspecialchars($_POST['event_summary'] ?? ''); ?></textarea>
+                                    <textarea name="event_summary" rows="5" class="form-textarea"></textarea>
                                     <p class="text-xs text-gray-500 mt-2">Deze samenvatting wordt op de evenement detailpagina getoond zodra deze is ingevuld.</p>
                                 </div>
 
@@ -1964,7 +2343,10 @@ if ($page === 'users') {
                                     document.getElementById('passwordNote').textContent = '(laat leeg om hetzelfde wachtwoord te behouden)';
                                     document.getElementById('userFormBtn').innerHTML = '<i class="fa-solid fa-save"></i> Opslaan';
                                     document.getElementById('userFormCancelBtn').classList.remove('hidden');
-                                    document.getElementById('userFormContainer').scrollIntoView({behavior: 'smooth', block: 'start'});
+                                    document.getElementById('userFormContainer').scrollIntoView({
+                                        behavior: 'smooth',
+                                        block: 'start'
+                                    });
                                 }
 
                                 function resetUserForm() {
@@ -2109,10 +2491,13 @@ if ($page === 'users') {
                         <p class="text-sm text-gray-600 mb-6">Beoordeel ingediende inhoud van onderzoekers.</p>
 
                         <?php
-                        // Fetch pending approval items
+                        // Fetch pending approval items - get ALL fields so we can display them
                         try {
                             $stmt = $pdo->prepare(
-                                "SELECT id, title, date, created_by, target_audience, internal_notes, approval_status, approval_feedback 
+                                "SELECT id, title, date, end_date, time, time_end, description, location, image, 
+                                        created_by, target_audience, internal_notes, approval_status, approval_feedback,
+                                    info_link, signup_embed, show_signup_button, created_at,
+                                    hardware_request, staff_present
                                  FROM events 
                                  WHERE approval_status = 'pending' 
                                  ORDER BY created_at DESC"
@@ -2137,11 +2522,11 @@ if ($page === 'users') {
                                             <div class="flex-1">
                                                 <h3 class="font-semibold text-lg text-gray-900"><?php echo htmlspecialchars($item['title'] ?? ''); ?></h3>
                                                 <p class="text-sm text-gray-600">
-                                                    <i class="fa-solid fa-calendar"></i> 
+                                                    <i class="fa-solid fa-calendar"></i>
                                                     <?php echo !empty($item['date']) ? (new DateTime($item['date']))->format('d-m-Y') : 'Geen datum'; ?>
                                                 </p>
                                                 <p class="text-sm text-gray-600">
-                                                    <i class="fa-solid fa-user"></i> 
+                                                    <i class="fa-solid fa-user"></i>
                                                     Ingediend door: <?php echo htmlspecialchars($item['created_by'] ?? 'Onbekend'); ?>
                                                 </p>
                                             </div>
@@ -2160,11 +2545,14 @@ if ($page === 'users') {
                                         <?php endif; ?>
 
                                         <div class="flex flex-wrap gap-2 items-center justify-end">
+                                            <button type="button" class="btn btn-info btn-sm" onclick="openApprovalModal(<?php echo (int)$item['id']; ?>, '<?php echo htmlspecialchars($item['title'] ?? '', ENT_QUOTES, 'UTF-8'); ?>')">
+                                                <i class="fa-solid fa-eye"></i> Details bekijken & Beoordelen
+                                            </button>
                                             <form method="POST" style="display:inline;">
                                                 <input type="hidden" name="action" value="approve_item">
                                                 <input type="hidden" name="item_id" value="<?php echo (int)$item['id']; ?>">
                                                 <button type="submit" class="btn btn-success btn-sm">
-                                                    <i class="fa-solid fa-thumbs-up"></i> Goedkeuren
+                                                    <i class="fa-solid fa-thumbs-up"></i> Direct goedkeuren
                                                 </button>
                                             </form>
                                             <button type="button" class="btn btn-error btn-sm" onclick="openRejectForm(<?php echo (int)$item['id']; ?>)">
@@ -2176,12 +2564,12 @@ if ($page === 'users') {
                                         <form id="reject-form-<?php echo (int)$item['id']; ?>" method="POST" class="mt-4 p-4 bg-white border border-red-200 rounded hidden">
                                             <input type="hidden" name="action" value="reject_item">
                                             <input type="hidden" name="item_id" value="<?php echo (int)$item['id']; ?>">
-                                            
+
                                             <div class="mb-3">
                                                 <label class="form-label">Terugkoppeling (waarom wordt dit afgewezen?):</label>
                                                 <textarea name="feedback" class="form-textarea" rows="3" placeholder="Uw feedback..." required></textarea>
                                             </div>
-                                            
+
                                             <div class="flex gap-2">
                                                 <button type="submit" class="btn btn-error btn-sm">
                                                     <i class="fa-solid fa-paper-plane"></i> Afkeuren
@@ -2197,10 +2585,369 @@ if ($page === 'users') {
                         <?php endif; ?>
                     </div>
 
+                    <!-- Approval Details Modal -->
+                    <div id="approval-modal" class="hidden" style="position: fixed; inset: 0; z-index: 20000; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; padding: 1rem; opacity: 0; transition: opacity 0.3s ease; pointer-events: auto;">
+                        <div style="background: white; border-radius: 12px; width: 100%; max-width: 900px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,.3); transform: scale(0.95); transition: transform 0.3s ease; margin: 0 auto;">
+                            <!-- Header -->
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1.5rem; border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; background: white; z-index: 10;">
+                                <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0;" id="approval-modal-title">Details & Beoordeling</h2>
+                                <button type="button" onclick="closeApprovalModal()" class="btn btn-error btn-sm" style="font-size: 0.875rem;">
+                                    <i class="fa-solid fa-xmark"></i> Sluiten
+                                </button>
+                            </div>
+
+                            <!-- Content -->
+                            <div style="padding: 1.5rem;">
+                                <form method="POST" id="approval-form">
+                                    <input type="hidden" name="action" value="approve_with_review">
+                                    <input type="hidden" name="item_id" id="approval-item-id">
+
+                                    <!-- Event Details (Preview) -->
+                                    <div style="background: #f9fafb; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                                        <h3 style="font-weight: 700; margin-top: 0; margin-bottom: 1rem; color: #111827;">📋 Event Details (Bewerkbaar)</h3>
+
+                                        <!-- Titel -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Titel:</strong></label>
+                                            <input type="text" name="approval_title" id="approval-title-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                        </div>
+
+                                        <!-- Datum, Einddatum, Starttijd, Eindtijd -->
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+                                            <div>
+                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Startdatum:</strong></label>
+                                                <input type="date" name="approval_date" id="approval-date-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                            </div>
+                                            <div>
+                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Einddatum:</strong></label>
+                                                <input type="date" name="approval_end_date" id="approval-end-date-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                            </div>
+                                            <div>
+                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Starttijd:</strong></label>
+                                                <input type="time" name="approval_time" id="approval-time-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                            </div>
+                                            <div>
+                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Eindtijd:</strong></label>
+                                                <input type="time" name="approval_time_end" id="approval-time-end-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                            </div>
+                                        </div>
+
+                                        <!-- Locatie -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Locatie:</strong></label>
+                                            <input type="text" name="approval_location" id="approval-location-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                        </div>
+
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Hardware (optioneel):</strong></label>
+                                            <textarea name="approval_hardware_request" id="approval-hardware-request-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 70px; font-family: inherit;"></textarea>
+                                        </div>
+
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Wie van SociaalAI Lab zijn erbij? (optioneel):</strong></label>
+                                            <textarea name="approval_staff_present" id="approval-staff-present-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 70px; font-family: inherit;"></textarea>
+                                        </div>
+
+                                        <!-- Beschrijving (CKEditor) -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Beschrijving:</strong></label>
+                                            <textarea name="approval_description" id="approval-description-input" data-no-auto-init="true" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 100px; font-family: inherit; background: white; color: #111827; display: block; visibility: visible;">
+</textarea>
+                                        </div>
+
+                                        <!-- Meer info -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Meer info tekst (optioneel):</strong></label>
+                                            <textarea name="approval_meer_info" id="approval-meer-info-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 80px; font-family: inherit;"></textarea>
+                                            <small style="color: #6b7280;">Deze tekst wordt op de evenement detailpagina getoond boven de samenvatting.</small>
+                                        </div>
+
+                                        <!-- Event samenvatting -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Samenvatting na afloop (optioneel):</strong></label>
+                                            <textarea name="approval_event_summary" id="approval-event-summary-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 80px; font-family: inherit;"></textarea>
+                                            <small style="color: #6b7280;">Deze samenvatting wordt op de evenement detailpagina getoond zodra deze is ingevuld.</small>
+                                        </div>
+
+                                        <!-- Doelgroep -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Doelgroep (optioneel):</strong></label>
+                                            <input type="text" name="approval_target_audience" id="approval-target-audience-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;" placeholder="bijv. Scholieren, Docenten, Researchers">
+                                            <small style="color: #6b7280;">Alleen zichtbaar voor goedkeuring, niet op de publieke pagina.</small>
+                                        </div>
+
+                                        <!-- Opmerkingen voor goedkeuring -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Opmerkingen voor goedkeuring (optioneel):</strong></label>
+                                            <textarea name="approval_internal_notes" id="approval-internal-notes-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 60px; font-family: inherit;" placeholder="Bijv. aanvullende informatie voor goedkeuring"></textarea>
+                                            <small style="color: #6b7280;">Alleen zichtbaar voor administratoren, niet op de publieke pagina.</small>
+                                        </div>
+
+                                        <!-- Signup link -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Aanmelder.nl link (optioneel):</strong></label>
+                                            <input type="url" name="approval_signup_embed" id="approval-signup-embed-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;" placeholder="https://aanmelder.nl/subscribe/...">
+                                        </div>
+
+                                        <!-- Checkboxes -->
+                                        <div style="margin-bottom: 1rem; display: flex; gap: 2rem;">
+                                            <label style="display: flex; align-items: center; gap: 0.5rem; color: #111827; font-size: 0.875rem; cursor: pointer;">
+                                                <input type="checkbox" name="approval_show_signup_button" id="approval-show-signup-button" checked style="width: 1rem; height: 1rem; cursor: pointer;">
+                                                <strong>Toon inschrijf knop</strong>
+                                            </label>
+                                            <label style="display: flex; align-items: center; gap: 0.5rem; color: #111827; font-size: 0.875rem; cursor: pointer;">
+                                                <input type="checkbox" name="approval_show_on_homepage" id="approval-show-on-homepage" checked style="width: 1rem; height: 1rem; cursor: pointer;">
+                                                <strong>Toon op homepage</strong>
+                                            </label>
+                                        </div>
+
+                                        <!-- Afbeelding -->
+                                        <div id="approval-image-container" style="margin-top: 1rem; display: none;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.5rem 0; display: block;"><strong>Afbeelding:</strong></label>
+                                            <img id="approval-image" src="" alt="Event afbeelding" style="max-width: 100%; max-height: 300px; border-radius: 8px; object-fit: cover; margin-bottom: 0.5rem;">
+                                            <input type="file" name="approval_image" id="approval-image-input" class="form-input" accept="image/*" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                            <input type="hidden" name="approval_existing_image" id="approval-existing-image">
+                                            <small style="color: #6b7280;">Laat leeg om huidige afbeelding te behouden</small>
+                                        </div>
+                                    </div>
+
+                                    <!-- Feedback Section -->
+                                    <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                                        <h3 style="font-weight: 700; margin-top: 0; margin-bottom: 1rem; color: #92400e;">💬 Terugkoppeling Toevoegen</h3>
+                                        <textarea name="approval_feedback" id="approval-feedback" data-no-auto-init="true" class="form-textarea" rows="4" placeholder="Voeg hier feedback/opmerkingen toe..." style="width: 100%; padding: 0.75rem; border: 1px solid #d4a574; border-radius: 4px; font-family: inherit;"></textarea>
+                                    </div>
+
+                                    <!-- Actions -->
+                                    <div style="display: flex; gap: 1rem; justify-content: flex-end; padding-top: 1rem; border-top: 1px solid #e5e7eb;">
+                                        <button type="button" onclick="closeApprovalModal()" class="btn btn-secondary">
+                                            <i class="fa-solid fa-times"></i> Annuleren
+                                        </button>
+                                        <button type="button" onclick="submitApprovalWithFeedback('reject')" class="btn btn-error">
+                                            <i class="fa-solid fa-thumbs-down"></i> Afkeuren
+                                        </button>
+                                        <button type="button" onclick="submitApprovalWithFeedback('approve')" class="btn btn-success">
+                                            <i class="fa-solid fa-check-circle"></i> Goedkeuren
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <script>
+                        function openApprovalModal(itemId, itemTitle) {
+                            const modal = document.getElementById('approval-modal');
+                            const formData = new FormData();
+                            formData.append('action', 'get_approval_item');
+                            formData.append('item_id', itemId);
+
+                            fetch('admin.php', {
+                                    method: 'POST',
+                                    body: formData
+                                })
+                                .then(r => r.json())
+                                .then(data => {
+                                    if (!(data && data.success && data.item)) {
+                                        alert('Kon item niet laden: ' + (data && data.error ? data.error : 'Onbekende fout'));
+                                        return;
+                                    }
+
+                                    const item = data.item;
+                                    document.getElementById('approval-item-id').value = itemId;
+                                    document.getElementById('approval-modal-title').textContent = 'Details & Beoordeling - ' + itemTitle;
+
+                                    // Basic fields
+                                    document.getElementById('approval-title-input').value = item.title || '';
+                                    if (item.date) {
+                                        const d = new Date(item.date);
+                                        document.getElementById('approval-date-input').value = d.toISOString().split('T')[0];
+                                    } else {
+                                        document.getElementById('approval-date-input').value = '';
+                                    }
+                                    if (item.end_date) {
+                                        const d2 = new Date(item.end_date);
+                                        document.getElementById('approval-end-date-input').value = d2.toISOString().split('T')[0];
+                                    } else {
+                                        document.getElementById('approval-end-date-input').value = '';
+                                    }
+
+                                    document.getElementById('approval-time-input').value = item.time || '';
+                                    document.getElementById('approval-time-end-input').value = item.time_end || '';
+                                    document.getElementById('approval-location-input').value = item.location || '';
+                                    document.getElementById('approval-hardware-request-input').value = item.hardware_request || '';
+                                    document.getElementById('approval-staff-present-input').value = item.staff_present || '';
+                                    document.getElementById('approval-meer-info-input').value = item.meer_info || '';
+                                    document.getElementById('approval-event-summary-input').value = item.event_summary || '';
+                                    document.getElementById('approval-target-audience-input').value = item.target_audience || '';
+                                    document.getElementById('approval-internal-notes-input').value = item.internal_notes || '';
+                                    document.getElementById('approval-signup-embed-input').value = item.signup_embed || '';
+
+                                    document.getElementById('approval-show-signup-button').checked = item.show_signup_button !== '0' && item.show_signup_button !== false;
+                                    document.getElementById('approval-show-on-homepage').checked = item.show_on_homepage !== '0' && item.show_on_homepage !== false;
+
+                                    // Description: prefer CKEditor instance if present
+                                    const descriptionInput = document.getElementById('approval-description-input');
+                                    try {
+                                        if (descriptionInput && descriptionInput.ckeditorInstance) {
+                                            descriptionInput.ckeditorInstance.setData(item.description || '');
+                                        } else if (descriptionInput) {
+                                            ClassicEditor.create(descriptionInput, {
+                                                toolbar: {
+                                                    items: ['undo', 'redo', '|', 'bold', 'italic', 'underline', '|', 'bulletedList', 'numberedList', '|', 'link', 'insertTable', '|', 'blockQuote']
+                                                },
+                                                link: {
+                                                    addTargetToExternalLinks: true
+                                                }
+                                            }).then(editor => {
+                                                descriptionInput.ckeditorInstance = editor;
+                                                descriptionInput.style.display = 'none';
+                                                editor.setData(item.description || '');
+                                            }).catch(() => {
+                                                // fallback: set textarea value
+                                                descriptionInput.value = item.description || '';
+                                            });
+                                        }
+                                    } catch (e) {
+                                        if (descriptionInput) descriptionInput.value = item.description || '';
+                                    }
+
+                                    document.getElementById('approval-feedback').value = '';
+                                    document.getElementById('approval-existing-image').value = item.image || '';
+
+                                    const imageContainer = document.getElementById('approval-image-container');
+                                    if (item.image) {
+                                        const imageElem = document.getElementById('approval-image');
+                                        imageElem.src = 'uploads/' + item.image;
+                                        imageContainer.style.display = 'block';
+                                    } else {
+                                        imageContainer.style.display = 'none';
+                                    }
+
+                                    // Show modal with animation
+                                    modal.classList.remove('hidden');
+                                    modal.style.display = 'flex';
+                                    document.body.classList.add('approval-modal-open');
+                                    setTimeout(() => {
+                                        modal.style.opacity = '1';
+                                        modal.querySelector('div').style.transform = 'scale(1)';
+                                    }, 10);
+                                })
+                                .catch(err => {
+                                    alert('Fout bij laden van gegevens: ' + err.message);
+                                });
+                        }
+
+                        function closeApprovalModal() {
+                            const modal = document.getElementById('approval-modal');
+                            modal.style.opacity = '0';
+                            modal.querySelector('div').style.transform = 'scale(0.95)';
+                            setTimeout(() => {
+                                modal.classList.add('hidden');
+                                modal.style.display = 'none';
+                                document.body.classList.remove('approval-modal-open');
+                            }, 300);
+                        }
+
+                        function submitApprovalWithFeedback(action) {
+                            const form = document.getElementById('approval-form');
+                            const feedbackInput = document.getElementById('approval-feedback');
+                            let feedback = feedbackInput.value || '';
+                            const itemId = document.getElementById('approval-item-id').value;
+                            const descriptionInput = document.getElementById('approval-description-input');
+
+                            // If feedback field has a CKEditor instance, use its data.
+                            if (feedbackInput && feedbackInput.ckeditorInstance) {
+                                feedback = feedbackInput.ckeditorInstance.getData() || '';
+                            }
+
+                            if (action === 'reject' && !feedback.trim()) {
+                                alert('Voeg feedback in voordat je afkeurt!');
+                                return;
+                            }
+
+                            // Get description from CKEditor if available, otherwise from textarea
+                            let descriptionValue = descriptionInput ? descriptionInput.value : '';
+
+                            // Controleer CKEditor 5 instance
+                            if (descriptionInput.ckeditorInstance) {
+                                descriptionValue = descriptionInput.ckeditorInstance.getData();
+                                console.log('[submitApproval] CKEditor content gelezen:', descriptionValue.substring(0, 100));
+                            }
+                            // Controleer oude CKEDITOR (v4)
+                            else if (window.CKEDITOR && window.CKEDITOR.instances && window.CKEDITOR.instances['approval-description-input']) {
+                                descriptionValue = window.CKEDITOR.instances['approval-description-input'].getData();
+                                console.log('[submitApproval] CKEDITOR v4 content gelezen:', descriptionValue.substring(0, 100));
+                            } else {
+                                console.log('[submitApproval] Geen CKEditor, textarea value gebruikt:', descriptionValue.substring(0, 100));
+                            }
+
+                            // Close modal first
+                            closeApprovalModal();
+
+                            // Create a form and submit it directly (not via fetch)
+                            const submitForm = document.createElement('form');
+                            submitForm.method = 'POST';
+                            submitForm.action = 'admin.php';
+
+                            // Add all fields
+                            const fields = {
+                                'action': action === 'reject' ? 'reject_item' : 'approve_with_review',
+                                'item_id': itemId,
+                                'approval_title': document.getElementById('approval-title-input').value,
+                                'approval_date': document.getElementById('approval-date-input').value,
+                                'approval_end_date': document.getElementById('approval-end-date-input').value,
+                                'approval_time': document.getElementById('approval-time-input').value,
+                                'approval_time_end': document.getElementById('approval-time-end-input').value,
+                                'approval_location': document.getElementById('approval-location-input').value,
+                                'approval_hardware_request': document.getElementById('approval-hardware-request-input').value,
+                                'approval_staff_present': document.getElementById('approval-staff-present-input').value,
+                                'approval_description': descriptionValue,
+                                'approval_meer_info': document.getElementById('approval-meer-info-input').value,
+                                'approval_event_summary': document.getElementById('approval-event-summary-input').value,
+                                'approval_target_audience': document.getElementById('approval-target-audience-input').value,
+                                'approval_internal_notes': document.getElementById('approval-internal-notes-input').value,
+                                'approval_signup_embed': document.getElementById('approval-signup-embed-input').value,
+                                'approval_show_signup_button': document.getElementById('approval-show-signup-button').checked ? '1' : '0',
+                                'approval_show_on_homepage': document.getElementById('approval-show-on-homepage').checked ? '1' : '0',
+                                'approval_feedback': feedback
+                            };
+
+                            Object.keys(fields).forEach(key => {
+                                const input = document.createElement('input');
+                                input.type = 'hidden';
+                                input.name = key;
+                                input.value = fields[key];
+                                submitForm.appendChild(input);
+                            });
+
+                            document.body.appendChild(submitForm);
+                            submitForm.submit();
+                        }
+
+                        // Close modal when clicking outside
+                        document.addEventListener('click', function(e) {
+                            const modal = document.getElementById('approval-modal');
+                            if (modal && e.target === modal) {
+                                closeApprovalModal();
+                            }
+                        });
+
+                        // Close modal on ESC key
+                        document.addEventListener('keydown', function(e) {
+                            if (e.key === 'Escape') {
+                                const modal = document.getElementById('approval-modal');
+                                if (modal && !modal.classList.contains('hidden')) {
+                                    closeApprovalModal();
+                                }
+                            }
+                        });
+                    </script>
+
                     <script>
                         function openRejectForm(itemId) {
                             document.getElementById('reject-form-' + itemId).classList.remove('hidden');
                         }
+
                         function closeRejectForm(itemId) {
                             document.getElementById('reject-form-' + itemId).classList.add('hidden');
                         }
@@ -2340,11 +3087,945 @@ if ($page === 'users') {
                         <?php endif; ?>
                     </div>
 
+                <?php elseif ($page === 'aanvragen'): ?>
+                    <!-- Mijn Aanvragen (Requests) Page for Onderzoekers -->
+                    <div class="card p-6">
+                        <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
+                            <i class="fa-solid fa-paper-plane text-2xl text-[#00811F]"></i>
+                            <h2 class="text-2xl font-bold">Mijn Aanvragen</h2>
+                        </div>
+
+                        <?php
+                        // Get rejected items for current user
+                        $stmt = $pdo->prepare(
+                            'SELECT id, title, date, location, description, image, approval_status, approval_feedback, created_at
+                             FROM events 
+                             WHERE created_by = ? AND approval_status IN ("rejected", "pending")
+                             ORDER BY created_at DESC'
+                        );
+                        $stmt->execute([$currentUser]);
+                        $myRequests = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                        ?>
+
+                        <?php if (empty($myRequests)): ?>
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fa-solid fa-inbox text-4xl mb-2"></i>
+                                <p>Geen aangevraagde items of ze zijn allemaal goedgekeurd.</p>
+                            </div>
+                        <?php else: ?>
+                            <div class="space-y-4">
+                                <?php foreach ($myRequests as $request): ?>
+                                    <div class="border border-gray-200 rounded-lg p-4 <?php echo $request['approval_status'] === 'rejected' ? 'bg-red-50' : 'bg-yellow-50'; ?>">
+                                        <div class="flex items-start justify-between mb-3">
+                                            <div class="flex-1">
+                                                <h3 class="text-lg font-bold"><?php echo htmlspecialchars($request['title']); ?></h3>
+                                                <p class="text-sm text-gray-600">
+                                                    <i class="fa-solid fa-calendar"></i> <?php echo date('d-m-Y', strtotime($request['date'])); ?>
+                                                    <?php if (!empty($request['location'])): ?>
+                                                        | <i class="fa-solid fa-map-pin"></i> <?php echo htmlspecialchars($request['location']); ?>
+                                                    <?php endif; ?>
+                                                </p>
+                                            </div>
+                                            <span class="badge <?php echo $request['approval_status'] === 'rejected' ? 'bg-red-500' : 'bg-yellow-500'; ?>">
+                                                <?php echo ucfirst($request['approval_status']); ?>
+                                            </span>
+                                        </div>
+
+                                        <!-- Show rejection reason if rejected -->
+                                        <?php if ($request['approval_status'] === 'rejected' && !empty($request['approval_feedback'])): ?>
+                                            <div class="bg-red-100 border border-red-300 rounded p-3 mb-3">
+                                                <p class="text-sm font-semibold text-red-700 mb-1">
+                                                    <i class="fa-solid fa-exclamation-circle"></i> Reden van afkeuring:
+                                                </p>
+                                                <p class="text-sm text-red-900"><?php echo nl2br(htmlspecialchars($request['approval_feedback'])); ?></p>
+                                            </div>
+                                        <?php endif; ?>
+
+                                        <!-- Description preview -->
+                                        <p class="text-sm text-gray-700 mb-3">
+                                            <?php
+                                            $desc = strip_tags($request['description']);
+                                            echo htmlspecialchars(substr($desc, 0, 150)) . (strlen($desc) > 150 ? '...' : '');
+                                            ?>
+                                        </p>
+
+                                        <!-- Edit button -->
+                                        <?php if ($request['approval_status'] === 'rejected'): ?>
+                                            <button type="button" class="btn btn-primary btn-sm" onclick="openEditRequestModal(<?php echo (int)$request['id']; ?>, '<?php echo htmlspecialchars($request['title'], ENT_QUOTES); ?>')">
+                                                <i class="fa-solid fa-pencil"></i> Aanpassen & Opnieuw Indienen
+                                            </button>
+                                        <?php elseif ($request['approval_status'] === 'pending'): ?>
+                                            <span class="text-sm text-yellow-700">
+                                                <i class="fa-solid fa-hourglass"></i> In afwachting van beoordeling...
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Edit Request Modal -->
+                    <div id="edit-request-modal" class="hidden" style="position: fixed; inset: 0; z-index: 9998; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; padding: 1rem; opacity: 0; transition: opacity 0.3s ease;">
+                        <div style="background: white; border-radius: 12px; width: 100%; max-width: 900px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,.3); transform: scale(0.95); transition: transform 0.3s ease;">
+                            <!-- Header -->
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1.5rem; border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; background: white; z-index: 10;">
+                                <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0;" id="edit-request-title">Aanvraag Aanpassen</h2>
+                                <button type="button" onclick="closeEditRequestModal()" class="btn btn-error btn-sm" style="font-size: 0.875rem;">
+                                    <i class="fa-solid fa-xmark"></i> Sluiten
+                                </button>
+                            </div>
+
+                            <!-- Content -->
+                            <div style="padding: 1.5rem;">
+                                <form method="POST" id="edit-request-form" enctype="multipart/form-data">
+                                    <input type="hidden" name="action" value="resubmit_request">
+                                    <input type="hidden" name="request_id" id="edit-request-id">
+
+                                    <!-- Admin Feedback Section -->
+                                    <div id="feedback-section" style="background: #fee2e2; border-left: 4px solid #ef4444; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; display: none;">
+                                        <h3 style="font-weight: 700; margin-top: 0; margin-bottom: 0.5rem; color: #991b1b;">⚠️ Feedback van Beheerder</h3>
+                                        <p id="feedback-text" style="margin: 0; color: #7f1d1d; white-space: pre-wrap; line-height: 1.5;"></p>
+                                    </div>
+
+                                    <!-- Event Details -->
+                                    <div style="background: #f9fafb; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                                        <h3 style="font-weight: 700; margin-top: 0; margin-bottom: 1rem; color: #111827;">📋 Event Details</h3>
+
+                                        <!-- Titel -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Titel:</strong></label>
+                                            <input type="text" name="edit_title" id="edit-title-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                        </div>
+
+                                        <!-- Datum, Einddatum, Starttijd, Eindtijd -->
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+                                            <div>
+                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Startdatum:</strong></label>
+                                                <input type="date" name="edit_date" id="edit-date-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                            </div>
+                                            <div>
+                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Einddatum:</strong></label>
+                                                <input type="date" name="edit_end_date" id="edit-end-date-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                            </div>
+                                            <div>
+                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Starttijd:</strong></label>
+                                                <input type="time" name="edit_time" id="edit-time-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                            </div>
+                                            <div>
+                                                <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Eindtijd:</strong></label>
+                                                <input type="time" name="edit_time_end" id="edit-time-end-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                            </div>
+                                        </div>
+
+                                        <!-- Locatie -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Locatie:</strong></label>
+                                            <input type="text" name="edit_location" id="edit-location-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                        </div>
+
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Hardware (optioneel):</strong></label>
+                                            <textarea name="edit_hardware_request" id="edit-hardware-request-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 70px; font-family: inherit;"></textarea>
+                                        </div>
+
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Wie van SociaalAI Lab zijn erbij? (optioneel):</strong></label>
+                                            <textarea name="edit_staff_present" id="edit-staff-present-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 70px; font-family: inherit;"></textarea>
+                                        </div>
+
+                                        <!-- Beschrijving -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Beschrijving:</strong></label>
+                                            <textarea name="edit_description" id="edit-description-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 100px; font-family: inherit;"></textarea>
+                                        </div>
+
+                                        <!-- Meer info -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Meer info tekst (optioneel):</strong></label>
+                                            <textarea name="edit_meer_info" id="edit-meer-info-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 80px; font-family: inherit;"></textarea>
+                                        </div>
+
+                                        <!-- Samenvatting -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Samenvatting na afloop (optioneel):</strong></label>
+                                            <textarea name="edit_event_summary" id="edit-event-summary-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 80px; font-family: inherit;"></textarea>
+                                        </div>
+
+                                        <!-- Doelgroep -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Doelgroep (optioneel):</strong></label>
+                                            <input type="text" name="edit_target_audience" id="edit-target-audience-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;" placeholder="bijv. Scholieren, Docenten, Researchers">
+                                        </div>
+
+                                        <!-- Signup link -->
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Aanmelder.nl link (optioneel):</strong></label>
+                                            <input type="url" name="edit_signup_embed" id="edit-signup-embed-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;" placeholder="https://aanmelder.nl/subscribe/...">
+                                        </div>
+
+                                        <!-- Checkboxes -->
+                                        <div style="margin-bottom: 1rem; display: flex; gap: 2rem;">
+                                            <label style="display: flex; align-items: center; gap: 0.5rem; color: #111827; font-size: 0.875rem; cursor: pointer;">
+                                                <input type="checkbox" name="edit_show_signup_button" id="edit-show-signup-button" checked style="width: 1rem; height: 1rem; cursor: pointer;">
+                                                <strong>Toon inschrijf knop</strong>
+                                            </label>
+                                            <label style="display: flex; align-items: center; gap: 0.5rem; color: #111827; font-size: 0.875rem; cursor: pointer;">
+                                                <input type="checkbox" name="edit_show_on_homepage" id="edit-show-on-homepage" checked style="width: 1rem; height: 1rem; cursor: pointer;">
+                                                <strong>Toon op homepage</strong>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Actions -->
+                                    <div style="display: flex; gap: 1rem; justify-content: flex-end; padding-top: 1rem; border-top: 1px solid #e5e7eb;">
+                                        <button type="button" onclick="closeEditRequestModal()" class="btn btn-secondary">
+                                            <i class="fa-solid fa-times"></i> Annuleren
+                                        </button>
+                                        <button type="submit" class="btn btn-success">
+                                            <i class="fa-solid fa-check-circle"></i> Opnieuw Indienen
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <script>
+                        function openEditRequestModal(requestId, requestTitle) {
+                            const modal = document.getElementById('edit-request-modal');
+                            const formData = new FormData();
+                            formData.append('action', 'get_request_details');
+                            formData.append('request_id', requestId);
+
+                            fetch('admin.php', {
+                                    method: 'POST',
+                                    body: formData
+                                })
+                                .then(r => r.json())
+                                .then(data => {
+                                    if (!(data && data.success && data.item)) {
+                                        alert('Kon aanvraag niet laden');
+                                        return;
+                                    }
+
+                                    const item = data.item;
+                                    document.getElementById('edit-request-id').value = requestId;
+                                    document.getElementById('edit-request-title').textContent = 'Aanvraag Aanpassen - ' + requestTitle;
+
+                                    document.getElementById('edit-title-input').value = item.title || '';
+                                    if (item.date) {
+                                        const d = new Date(item.date);
+                                        document.getElementById('edit-date-input').value = d.toISOString().split('T')[0];
+                                    } else {
+                                        document.getElementById('edit-date-input').value = '';
+                                    }
+                                    if (item.end_date) {
+                                        const d2 = new Date(item.end_date);
+                                        document.getElementById('edit-end-date-input').value = d2.toISOString().split('T')[0];
+                                    } else {
+                                        document.getElementById('edit-end-date-input').value = '';
+                                    }
+
+                                    document.getElementById('edit-time-input').value = item.time || '';
+                                    document.getElementById('edit-time-end-input').value = item.time_end || '';
+                                    document.getElementById('edit-location-input').value = item.location || '';
+                                    document.getElementById('edit-hardware-request-input').value = item.hardware_request || '';
+                                    document.getElementById('edit-staff-present-input').value = item.staff_present || '';
+                                    document.getElementById('edit-description-input').value = item.description || '';
+                                    document.getElementById('edit-meer-info-input').value = item.meer_info || '';
+                                    document.getElementById('edit-event-summary-input').value = item.event_summary || '';
+                                    document.getElementById('edit-target-audience-input').value = item.target_audience || '';
+                                    document.getElementById('edit-signup-embed-input').value = item.signup_embed || '';
+
+                                    document.getElementById('edit-show-signup-button').checked = item.show_signup_button !== '0' && item.show_signup_button !== false;
+                                    document.getElementById('edit-show-on-homepage').checked = item.show_on_homepage !== '0' && item.show_on_homepage !== false;
+
+                                    const feedbackSection = document.getElementById('feedback-section');
+                                    if (item.approval_feedback) {
+                                        document.getElementById('feedback-text').textContent = item.approval_feedback;
+                                        feedbackSection.style.display = 'block';
+                                    } else {
+                                        feedbackSection.style.display = 'none';
+                                    }
+
+                                    modal.classList.remove('hidden');
+                                    modal.style.display = 'flex';
+                                    setTimeout(() => {
+                                        modal.style.opacity = '1';
+                                        modal.querySelector('div').style.transform = 'scale(1)';
+                                    }, 10);
+                                })
+                                .catch(err => alert('Fout: ' + err.message));
+                        }
+
+                        function closeEditRequestModal() {
+                            const modal = document.getElementById('edit-request-modal');
+                            modal.style.opacity = '0';
+                            modal.querySelector('div').style.transform = 'scale(0.95)';
+                            setTimeout(() => {
+                                modal.classList.add('hidden');
+                                modal.style.display = 'none';
+                            }, 300);
+                        }
+
+                        document.addEventListener('keydown', function(e) {
+                            if (e.key === 'Escape') {
+                                const modal = document.getElementById('edit-request-modal');
+                                if (modal && !modal.classList.contains('hidden')) {
+                                    closeEditRequestModal();
+                                }
+                            }
+                        });
+                    </script>
+
                 <?php elseif ($page != 'banner'): ?>
-                    <?php if ($page === 'image-converter'): ?>
-                        <div class="card">
-                            <h2>Image Converter (verwijderd)</h2>
-                            <p>De Image Converter is verwijderd uit deze installatie.</p>
+                    <?php if ($page === 'dashboard'): ?>
+                        <?php
+                        // Minimal dashboard aggregations — safe queries with fallbacks
+                        try {
+                            $totalEvents = (int) $pdo->query("SELECT COUNT(*) FROM events")->fetchColumn();
+                        } catch (Exception $e) {
+                            $totalEvents = 0;
+                        }
+                        try {
+                            $stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE COALESCE(end_date, date) >= CURDATE()");
+                            $stmt->execute();
+                            $totalUpcoming = (int) $stmt->fetchColumn();
+                        } catch (Exception $e) {
+                            $totalUpcoming = 0;
+                        }
+                        try {
+                            $stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE COALESCE(end_date, date) < CURDATE()");
+                            $stmt->execute();
+                            $totalPast = (int) $stmt->fetchColumn();
+                        } catch (Exception $e) {
+                            $totalPast = 0;
+                        }
+                        // Registrations
+                        try {
+                            $totalRegs = (int) $pdo->query("SELECT COUNT(*) FROM inschrijven")->fetchColumn();
+                            $topRegsStmt = $pdo->prepare("SELECT event_id, event_title, COUNT(*) AS cnt FROM inschrijven GROUP BY event_id, event_title ORDER BY cnt DESC LIMIT 5");
+                            $topRegsStmt->execute();
+                            $topRegs = $topRegsStmt->fetchAll(PDO::FETCH_ASSOC);
+                        } catch (Exception $e) {
+                            $totalRegs = 0;
+                            $topRegs = [];
+                        }
+                        // Bookings
+                        try {
+                            $totalBookings = (int) $pdo->query("SELECT COUNT(*) FROM bookings")->fetchColumn();
+                            $bookingsByLocStmt = $pdo->prepare("SELECT COALESCE(location_description, CONCAT('loc-', location_id)) AS loc, COUNT(*) AS cnt FROM bookings GROUP BY loc ORDER BY cnt DESC LIMIT 8");
+                            $bookingsByLocStmt->execute();
+                            $bookingsByLoc = $bookingsByLocStmt->fetchAll(PDO::FETCH_ASSOC);
+                        } catch (Exception $e) {
+                            $totalBookings = 0;
+                            $bookingsByLoc = [];
+                        }
+                        // Partners (from pages.meta partner keys)
+                        $partners = [];
+                        try {
+                            $pages = $pdo->query("SELECT meta FROM pages")->fetchAll(PDO::FETCH_COLUMN);
+                            foreach ($pages as $meta) {
+                                if (!$meta) continue;
+                                $arr = json_decode($meta, true);
+                                if (!is_array($arr)) continue;
+                                if (!empty($arr['partner'])) {
+                                    $p = trim((string)$arr['partner']);
+                                    if ($p !== '') $partners[] = $p;
+                                }
+                            }
+                        } catch (Exception $e) {
+                            // ignore
+                        }
+                        $partnerCounts = [];
+                        foreach ($partners as $p) $partnerCounts[$p] = ($partnerCounts[$p] ?? 0) + 1;
+                        arsort($partnerCounts);
+                        $topPartners = array_slice($partnerCounts, 0, 8, true);
+
+                        // Simple KPI calculations
+                        $kpi = [
+                            'occupancy_rate' => null,
+                            'codesign_percent' => null,
+                            'companies_percent' => null,
+                        ];
+                        try {
+                            // occupancy: bookings in last 30 days / (days * distinct locations) * 100
+                            $days = 30;
+                            $startDate = date('Y-m-d', strtotime('-' . ($days - 1) . ' days'));
+                            $endDate = date('Y-m-d');
+                            $stmt = $pdo->prepare("SELECT COUNT(*) FROM bookings WHERE booking_date BETWEEN ? AND ?");
+                            $stmt->execute([$startDate, $endDate]);
+                            $bookingsLast30 = (int)$stmt->fetchColumn();
+                            $locCount = (int)$pdo->query("SELECT COUNT(DISTINCT location_id) FROM bookings WHERE location_id IS NOT NULL")->fetchColumn();
+                            if ($locCount > 0) {
+                                $slotsBase = $days * $locCount; // simplistic slots base
+                                $kpi['occupancy_rate'] = round(($bookingsLast30 / max(1, $slotsBase)) * 100, 1);
+                            }
+                        } catch (Exception $e) {
+                            // leave null
+                        }
+
+                        try {
+                            // co-design share: events in last 90 days mentioning co-design
+                            $daysCo = 90;
+                            $startCo = date('Y-m-d', strtotime('-' . ($daysCo - 1) . ' days'));
+                            $stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE COALESCE(end_date, date) >= ? AND (title LIKE ? OR description LIKE ?)");
+                            $stmt->execute([$startCo, '%co-design%', '%co-design%']);
+                            $coCount = (int)$stmt->fetchColumn();
+                            $totalRecent = 0;
+                            $stmt2 = $pdo->prepare("SELECT COUNT(*) FROM events WHERE COALESCE(end_date, date) >= ?");
+                            if ($stmt2->execute([$startCo])) {
+                                $totalRecent = (int)$stmt2->fetchColumn();
+                            }
+                            if ($totalRecent > 0) {
+                                $kpi['codesign_percent'] = round(($coCount / $totalRecent) * 100, 1);
+                            }
+                        } catch (Exception $e) {
+                            // ignore
+                        }
+
+                        try {
+                            // companies percent from partner names heuristics (bv, ltd, bedrijf, stichting, vereniging)
+                            $companyKeywords = ['bv', 'ltd', 'company', 'bedrijf', 'inc', 'gmbh'];
+                            $orgKeywords = ['stichting', 'vereniging', 'non-profit', 'ngo', 'organisatie'];
+                            $company = 0;
+                            $org = 0;
+                            $totalP = 0;
+                            foreach ($partnerCounts as $name => $cnt) {
+                                $totalP += $cnt;
+                                $lower = strtolower($name);
+                                $isCompany = false;
+                                $isOrg = false;
+                                foreach ($companyKeywords as $kw) if (strpos($lower, $kw) !== false) $isCompany = true;
+                                foreach ($orgKeywords as $kw) if (strpos($lower, $kw) !== false) $isOrg = true;
+                                if ($isCompany) $company += $cnt;
+                                elseif ($isOrg) $org += $cnt;
+                            }
+                            if ($totalP > 0) {
+                                $kpi['companies_percent'] = round(($company / $totalP) * 100, 1);
+                            }
+                        } catch (Exception $e) {
+                            // ignore
+                        }
+                        ?>
+                        <div class="card p-6">
+                            <div class="flex items-center gap-2 mb-4 pb-4 border-b-2 border-gray-200">
+                                <i class="fa-solid fa-chart-pie text-2xl text-[#00811F]"></i>
+                                <h2 class="text-2xl font-bold">Dashboard — Overzicht & Monitoring</h2>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                                <a href="agenda.php" class="kpi-card">
+                                    <div class="kpi-title">Totaal evenementen</div>
+                                    <div class="kpi-value"><?php echo $totalEvents; ?></div>
+                                    <div class="kpi-meta">Aankomend: <?php echo $totalUpcoming; ?> — Terugblik: <?php echo $totalPast; ?></div>
+                                </a>
+                                <a href="inschrijven.php" class="kpi-card">
+                                    <div class="kpi-title">Inschrijvingen (totaal)</div>
+                                    <div class="kpi-value"><?php echo $totalRegs; ?></div>
+                                    <div class="kpi-meta">Top geregistreerde events hieronder</div>
+                                </a>
+                                <a href="booking.php" class="kpi-card">
+                                    <div class="kpi-title">Bookings (totaal)</div>
+                                    <div class="kpi-value"><?php echo $totalBookings; ?></div>
+                                    <div class="kpi-meta">Verdeling per locatie</div>
+                                </a>
+                                <a href="terugblikken.php" class="kpi-card">
+                                    <div class="kpi-title">Top partners</div>
+                                    <div class="kpi-value"><?php echo count($partnerCounts); ?></div>
+                                    <div class="kpi-meta">Partners uit pagina-meta</div>
+                                </a>
+                            </div>
+
+                            <div class="dashboard-grid">
+                                <div class="chart-card">
+                                    <h3 class="font-semibold mb-2">Top geregistreerde events</h3>
+                                    <?php if (empty($topRegs)): ?>
+                                        <div class="text-sm text-gray-600">Geen registratiegegevens beschikbaar.</div>
+                                    <?php else: ?>
+                                        <canvas id="chartTopRegs"></canvas>
+                                    <?php endif; ?>
+                                </div>
+
+                                <div class="chart-card">
+                                    <h3 class="font-semibold mb-2">Bookings per locatie (top)</h3>
+                                    <?php if (empty($bookingsByLoc)): ?>
+                                        <div class="text-sm text-gray-600">Geen bookings data.</div>
+                                    <?php else: ?>
+                                        <canvas id="chartBookingsByLoc"></canvas>
+                                    <?php endif; ?>
+                                </div>
+
+                                <div class="chart-card">
+                                    <h3 class="font-semibold mb-2">Partner netwerk (top)</h3>
+                                    <?php if (empty($topPartners)): ?>
+                                        <div class="text-sm text-gray-600">Geen partner-gegevens gevonden in pagina-meta.</div>
+                                    <?php else: ?>
+                                        <canvas id="chartTopPartners"></canvas>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <div class="mt-6 text-sm text-gray-600">
+                                <strong>Impact per doelstelling</strong>: kolommen en scores tonen we zodra score-velden beschikbaar zijn in de dataset.
+                                <br>
+                                <strong>Kern-KPI's (schatting)</strong>:
+                                <ul class="mt-2 text-sm">
+                                    <li>Bezettingsgraad (laatste 30d): <strong><?php echo is_null($kpi['occupancy_rate']) ? 'n.v.t.' : ($kpi['occupancy_rate'] . '%'); ?></strong></li>
+                                    <li>Co-design activiteiten (laatste 90d): <strong><?php echo is_null($kpi['codesign_percent']) ? 'n.v.t.' : ($kpi['codesign_percent'] . '%'); ?></strong></li>
+                                    <li>Partners: aandeel bedrijven (heuristiek): <strong><?php echo is_null($kpi['companies_percent']) ? 'n.v.t.' : ($kpi['companies_percent'] . '%'); ?></strong></li>
+                                </ul>
+                            </div>
+
+                            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+                            <style>
+                                /* Compact chart heights for dashboard */
+                                #chartTopRegs,
+                                #chartBookingsByLoc {
+                                    height: 200px !important;
+                                }
+
+                                /* Per-canvas height hints to keep charts compact and consistent */
+                                #chartTopRegs {
+                                    height: 260px !important;
+                                }
+
+                                #chartBookingsByLoc {
+                                    height: 220px !important;
+                                }
+
+                                #chartTopPartners {
+                                    height: 200px !important;
+                                }
+
+                                /* .chart-wrapper moved to admin-styles.css */
+
+                                .chart-container {
+                                    position: relative;
+                                    width: 100%;
+                                    max-width: 820px;
+                                    /* keep charts from stretching too wide */
+                                    margin: 0 auto;
+                                    padding: 12px 0;
+                                }
+
+                                /* Excel-like canvas styling: white background and subtle border */
+                                .card canvas {
+                                    background: #fff;
+                                    box-shadow: none;
+                                    border: 1px solid rgba(0, 0, 0, 0.06);
+                                    display: block;
+                                    margin: 0 auto;
+                                    max-width: 100%;
+                                }
+                            </style>
+                            <script>
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    const truncate = function(label, maxLen = 28) {
+                                        if (!label) return '';
+                                        const s = String(label);
+                                        return s.length > maxLen ? s.substr(0, maxLen - 1) + '…' : s;
+                                    };
+
+                                    const baseOptions = (maxTicks = 6) => {
+                                        const w = Math.max(window.innerWidth || 1024, 320);
+                                        const isMobile = w < 640;
+                                        const fontSize = isMobile ? 11 : (w < 1024 ? 12 : 13);
+                                        const titleSize = isMobile ? 15 : 18;
+
+                                        return {
+                                            responsive: true,
+                                            maintainAspectRatio: false,
+                                            aspectRatio: isMobile ? 1.0 : (w < 1024 ? 1.2 : 1.8),
+                                            animation: {
+                                                duration: 600,
+                                                easing: 'easeOutQuart'
+                                            },
+                                            plugins: {
+                                                legend: {
+                                                    display: true,
+                                                    position: 'top',
+                                                    labels: {
+                                                        color: '#374151',
+                                                        font: {
+                                                            size: isMobile ? 12 : 13,
+                                                            weight: 600
+                                                        }
+                                                    }
+                                                },
+                                                tooltip: {
+                                                    enabled: true,
+                                                    backgroundColor: 'rgba(17,24,39,0.95)',
+                                                    titleFont: {
+                                                        size: titleSize,
+                                                        weight: 700
+                                                    },
+                                                    bodyFont: {
+                                                        size: fontSize + 1,
+                                                        weight: 500
+                                                    },
+                                                    padding: 10,
+                                                    cornerRadius: 8,
+                                                    displayColors: false,
+                                                    callbacks: {
+                                                        label: function(ctx) {
+                                                            const v = ctx.raw;
+                                                            return (typeof v === 'number') ? v.toString() : String(v);
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            layout: {
+                                                padding: {
+                                                    top: 12,
+                                                    right: 8,
+                                                    left: 8,
+                                                    bottom: 8
+                                                }
+                                            },
+                                            scales: {
+                                                x: {
+                                                    grid: {
+                                                        display: false
+                                                    },
+                                                    ticks: {
+                                                        color: '#374151',
+                                                        font: {
+                                                            size: Math.max(12, fontSize)
+                                                        },
+                                                        callback: function(t) {
+                                                            return truncate(this.getLabelForValue(t), isMobile ? 18 : 40);
+                                                        },
+                                                        maxRotation: 45,
+                                                        minRotation: 45,
+                                                        autoSkip: false,
+                                                        maxTicksLimit: maxTicks
+                                                    }
+                                                },
+                                                y: {
+                                                    grid: {
+                                                        color: 'rgba(0,0,0,0.06)',
+                                                        drawBorder: false
+                                                    },
+                                                    beginAtZero: true,
+                                                    ticks: {
+                                                        color: '#374151',
+                                                        font: {
+                                                            size: Math.max(12, fontSize)
+                                                        },
+                                                        precision: 0
+                                                    },
+                                                    title: {
+                                                        display: true,
+                                                        text: 'Aantal',
+                                                        color: '#6b7280',
+                                                        font: {
+                                                            size: Math.max(12, fontSize),
+                                                            weight: 600
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            fonts: {
+                                                family: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial'
+                                            }
+                                        };
+                                    };
+
+                                    // improved plugin to draw values on bars with responsive font and overlap avoidance
+                                    const valueLabelsPlugin = {
+                                        id: 'valueLabels',
+                                        afterDatasetsDraw(chart) {
+                                            const ctx = chart.ctx;
+                                            const scaleFactor = Math.max(1, Math.min(chart.width / 800, 1.6));
+                                            const baseFontSize = Math.round(12 * scaleFactor);
+                                            ctx.font = baseFontSize + 'px system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial';
+                                            ctx.fillStyle = '#111827';
+
+                                            chart.data.datasets.forEach((dataset, dsIndex) => {
+                                                const meta = chart.getDatasetMeta(dsIndex);
+                                                if (!meta || !meta.data) return;
+                                                meta.data.forEach((el, index) => {
+                                                    const val = dataset.data[index];
+                                                    if (val === null || typeof val === 'undefined') return;
+
+                                                    const pos = el.tooltipPosition();
+                                                    ctx.save();
+                                                    const isHorizontal = chart.options.indexAxis === 'y';
+
+                                                    // Only render labels when there is space (avoid overlap on very small bars)
+                                                    const box = el.getProps(['base', 'x', 'y', 'width', 'height'], true);
+                                                    const minSize = 18 * scaleFactor; // minimum pixel height/width to show label
+                                                    const canShow = isHorizontal ? Math.abs(box.width) > minSize : Math.abs(box.height) > minSize;
+                                                    if (!canShow) {
+                                                        ctx.restore();
+                                                        return;
+                                                    }
+
+                                                    if (isHorizontal) {
+                                                        ctx.textAlign = 'left';
+                                                        ctx.textBaseline = 'middle';
+                                                        ctx.fillText(String(val), pos.x + 8, pos.y);
+                                                    } else {
+                                                        ctx.textAlign = 'center';
+                                                        ctx.textBaseline = 'bottom';
+                                                        ctx.fillText(String(val), pos.x, pos.y - 6);
+                                                    }
+                                                    ctx.restore();
+                                                });
+                                            });
+                                        }
+                                    };
+                                    // register locally to avoid global mutation (Chart.js auto-registration not guaranteed)
+                                    if (typeof Chart !== 'undefined' && Chart.register) Chart.register(valueLabelsPlugin);
+
+                                    // Top regs
+                                    <?php if (!empty($topRegs)): ?>
+                                            (function() {
+                                                const labels = <?php echo json_encode(array_map(function ($r) {
+                                                                    return $r['event_title'] ?: ('Event ' + $r['event_id']);
+                                                                }, $topRegs)); ?>;
+                                                const data = <?php echo json_encode(array_map(function ($r) {
+                                                                    return (int)$r['cnt'];
+                                                                }, $topRegs)); ?>;
+                                                const ctx = document.getElementById('chartTopRegs');
+                                                if (ctx) {
+                                                    // Use a consistent blue palette for a professional look
+                                                    const primaryBlue = '#2f6fbf';
+                                                    const ctx2 = ctx.getContext('2d');
+                                                    const grad = ctx2.createLinearGradient(0, 0, 0, ctx2.canvas.height || 200);
+                                                    grad.addColorStop(0, '#7fb3ff');
+                                                    grad.addColorStop(1, primaryBlue);
+                                                    const bg = labels.map(() => grad);
+                                                    const w = Math.max(window.innerWidth || 1024, 320);
+                                                    const isMobile = w < 640;
+                                                    const titleSize = isMobile ? 15 : 18;
+                                                    new Chart(ctx.getContext('2d'), {
+                                                        type: 'bar',
+                                                        data: {
+                                                            labels: labels.map(l => truncate(l, 28)),
+                                                            datasets: [{
+                                                                label: 'Inschrijvingen',
+                                                                data: data,
+                                                                backgroundColor: bg,
+                                                                borderRadius: 12,
+                                                                borderColor: 'rgba(47,111,191,0.12)',
+                                                                borderWidth: 1,
+                                                                borderSkipped: false,
+                                                                barPercentage: 0.65,
+                                                                categoryPercentage: 0.75
+                                                            }]
+                                                        },
+                                                        options: Object.assign({}, baseOptions(5), {
+                                                            plugins: Object.assign({}, {
+                                                                valueLabels: {}
+                                                            }, {
+                                                                title: {
+                                                                    display: true,
+                                                                    text: 'Inschrijvingen',
+                                                                    align: 'center',
+                                                                    font: {
+                                                                        size: titleSize,
+                                                                        weight: 700
+                                                                    },
+                                                                    padding: {
+                                                                        bottom: 8
+                                                                    }
+                                                                }
+                                                            }),
+                                                            scales: {
+                                                                x: {
+                                                                    ticks: {
+                                                                        autoSkip: false,
+                                                                        minRotation: 45,
+                                                                        maxRotation: 45,
+                                                                        font: {
+                                                                            size: 13,
+                                                                            weight: '600'
+                                                                        }
+                                                                    },
+                                                                    grid: {
+                                                                        display: false
+                                                                    }
+                                                                },
+                                                                y: {
+                                                                    beginAtZero: true,
+                                                                    grid: {
+                                                                        color: 'rgba(0,0,0,0.06)'
+                                                                    }
+                                                                }
+                                                            }
+                                                        })
+                                                    });
+                                                }
+                                            })();
+                                    <?php endif; ?>
+
+                                    // Bookings by location
+                                    <?php if (!empty($bookingsByLoc)): ?>
+                                            (function() {
+                                                const labels = <?php echo json_encode(array_map(function ($b) {
+                                                                    return $b['loc'];
+                                                                }, $bookingsByLoc)); ?>;
+                                                const data = <?php echo json_encode(array_map(function ($b) {
+                                                                    return (int)$b['cnt'];
+                                                                }, $bookingsByLoc)); ?>;
+                                                const ctx = document.getElementById('chartBookingsByLoc');
+                                                if (ctx) {
+                                                    const primaryBlue = '#2f6fbf';
+                                                    const ctx2 = ctx.getContext('2d');
+                                                    const grad = ctx2.createLinearGradient(0, 0, 0, ctx2.canvas.height || 200);
+                                                    grad.addColorStop(0, '#7fb3ff');
+                                                    grad.addColorStop(1, primaryBlue);
+                                                    new Chart(ctx2, {
+                                                        type: 'bar',
+                                                        data: {
+                                                            labels: labels.map(l => truncate(l, 28)),
+                                                            datasets: [{
+                                                                label: 'Bookings',
+                                                                data: data,
+                                                                backgroundColor: grad,
+                                                                borderRadius: 12,
+                                                                borderColor: 'rgba(47,111,191,0.12)',
+                                                                borderWidth: 1,
+                                                                borderSkipped: false,
+                                                                barPercentage: 0.65,
+                                                                categoryPercentage: 0.75
+                                                            }]
+                                                        },
+                                                        options: Object.assign({}, baseOptions(5), {
+                                                            plugins: Object.assign({}, {
+                                                                valueLabels: {}
+                                                            }, {
+                                                                title: {
+                                                                    display: true,
+                                                                    text: 'Bookings per locatie',
+                                                                    align: 'center',
+                                                                    font: {
+                                                                        size: 14,
+                                                                        weight: 600
+                                                                    },
+                                                                    padding: {
+                                                                        bottom: 8
+                                                                    }
+                                                                }
+                                                            }),
+                                                            scales: {
+                                                                x: {
+                                                                    ticks: {
+                                                                        autoSkip: false,
+                                                                        minRotation: 45,
+                                                                        maxRotation: 45,
+                                                                        font: {
+                                                                            size: 13,
+                                                                            weight: '600'
+                                                                        }
+                                                                    },
+                                                                    grid: {
+                                                                        display: false
+                                                                    }
+                                                                },
+                                                                y: {
+                                                                    beginAtZero: true,
+                                                                    grid: {
+                                                                        color: 'rgba(0,0,0,0.06)'
+                                                                    }
+                                                                }
+                                                            }
+                                                        })
+                                                    });
+                                                }
+                                            })();
+                                    <?php endif; ?>
+
+                                    // Top partners (horizontal, sorted)
+                                    <?php if (!empty($topPartners)): ?>
+                                            (function() {
+                                                let labels = <?php echo json_encode(array_keys($topPartners)); ?>;
+                                                let data = <?php echo json_encode(array_values($topPartners)); ?>;
+                                                // pair and sort descending by value
+                                                const paired = labels.map((l, i) => ({
+                                                    label: l,
+                                                    value: data[i]
+                                                }));
+                                                paired.sort((a, b) => b.value - a.value);
+                                                labels = paired.map(p => truncate(p.label, 32));
+                                                data = paired.map(p => p.value);
+                                                const ctx = document.getElementById('chartTopPartners');
+                                                if (ctx) {
+                                                    const primaryBlue = '#2f6fbf';
+                                                    const ctx2 = ctx.getContext('2d');
+                                                    const grad = ctx2.createLinearGradient(0, 0, ctx2.canvas.width || 300, 0);
+                                                    grad.addColorStop(0, '#7fb3ff');
+                                                    grad.addColorStop(1, primaryBlue);
+                                                    // make partners vertical (indexAxis: 'x') for consistent vertical charts across devices
+                                                    new Chart(ctx2, {
+                                                        type: 'bar',
+                                                        data: {
+                                                            labels: labels,
+                                                            datasets: [{
+                                                                label: 'Partner mentions',
+                                                                data: data,
+                                                                backgroundColor: grad,
+                                                                borderRadius: 12,
+                                                                borderColor: 'rgba(47,111,191,0.12)',
+                                                                borderWidth: 1,
+                                                                borderSkipped: false,
+                                                                barPercentage: 0.65,
+                                                                categoryPercentage: 0.75
+                                                            }]
+                                                        },
+                                                        options: Object.assign({}, baseOptions(6), {
+                                                            plugins: Object.assign({}, {
+                                                                valueLabels: {}
+                                                            }, {
+                                                                title: {
+                                                                    display: true,
+                                                                    text: 'Top partners',
+                                                                    align: 'center',
+                                                                    font: {
+                                                                        size: 14,
+                                                                        weight: 600
+                                                                    },
+                                                                    padding: {
+                                                                        bottom: 8
+                                                                    }
+                                                                }
+                                                            }),
+                                                            scales: {
+                                                                x: {
+                                                                    ticks: {
+                                                                        autoSkip: false,
+                                                                        minRotation: 45,
+                                                                        maxRotation: 45,
+                                                                        font: {
+                                                                            size: 13,
+                                                                            weight: '600'
+                                                                        }
+                                                                    },
+                                                                    grid: {
+                                                                        display: false
+                                                                    }
+                                                                },
+                                                                y: {
+                                                                    ticks: {
+                                                                        callback: function(t) {
+                                                                            return truncate(this.getLabelForValue(t), 28);
+                                                                        },
+                                                                        maxTicksLimit: 8
+                                                                    },
+                                                                    grid: {
+                                                                        display: false
+                                                                    }
+                                                                }
+                                                            }
+                                                        })
+                                                    });
+                                                }
+                                            })();
+                                    <?php endif; ?>
+                                });
+                            </script>
                         </div>
                         <?php return; ?>
                     <?php endif; ?>
@@ -2817,24 +4498,55 @@ if ($page === 'users') {
 
             function getFieldValue(form, fieldName) {
                 const input = getFieldInput(form, fieldName);
-                if (!input) return '';
 
-                if (input.tagName === 'TEXTAREA') {
-                    if (window.tinymce && Array.isArray(window.tinymce.editors)) {
-                        for (const editor of window.tinymce.editors) {
-                            if (!editor) continue;
-                            const sameElement = editor.targetElm === input;
-                            const sameName = editor.targetElm && editor.targetElm.name === input.name;
-                            const sameId = editor.id && input.id && editor.id === input.id;
-                            if (sameElement || sameName || sameId) {
-                                return editor.getContent();
+                // EERST: Controleer of textarea/input hidden is
+                if (input) {
+                    const style = window.getComputedStyle(input);
+                    const isHidden = style.display === 'none' || !input.offsetParent;
+
+                    if (isHidden) {
+                        console.log('[getFieldValue] Field', fieldName, 'is HIDDEN - zoekend contenteditable...');
+
+                        // 1. Check volgende sibling
+                        let sibling = input.nextElementSibling;
+                        while (sibling && sibling.nextElementSibling && sibling !== input.nextElementSibling.nextElementSibling.nextElementSibling) {
+                            if (sibling.contentEditable === 'true' || sibling.getAttribute('contenteditable') === 'true') {
+                                const value = sibling.textContent || sibling.innerText || '';
+                                console.log('[getFieldValue] ✓ Gevonden in nextSibling DIV:', fieldName, ':', value.substring(0, 50));
+                                return value;
+                            }
+                            sibling = sibling.nextElementSibling;
+                        }
+
+                        // 2. Check parent children
+                        const parent = input.parentElement;
+                        if (parent) {
+                            const allDivs = parent.querySelectorAll('[contenteditable="true"]');
+                            if (allDivs.length > 0) {
+                                // Zoek ContentEditable DIV dicht bij deze textarea
+                                for (let div of allDivs) {
+                                    const value = div.textContent || div.innerText || '';
+                                    if (value && value.length > 0) {
+                                        console.log('[getFieldValue] ✓ Gevonden in parent DIV:', fieldName, ':', value.substring(0, 50));
+                                        return value;
+                                    }
+                                }
                             }
                         }
+
+                        // 3. Fallback: geen DIV gevonden
+                        console.log('[getFieldValue] ! Geen contenteditable DIV gevonden voor', fieldName);
+                        return '';
                     }
-                    return input.value || '';
+                } else {
+                    console.warn('[getFieldValue] Veld niet gevonden:', fieldName);
+                    return '';
                 }
 
-                return input.value || '';
+                // Textarea/input is VISIBLE - return value normaal
+                const value = input.value || '';
+                console.log('[getFieldValue]', fieldName, '(visible):', value.substring(0, 50) + (value.length > 50 ? '...' : ''));
+                return value;
             }
 
             function clearImagePreview() {
@@ -2891,8 +4603,10 @@ if ($page === 'users') {
             }
 
             function renderEventPreview(form) {
-                const titleHtml = getFieldValue(form, 'title').trim() || 'Preview titel';
-                const descriptionHtml = getFieldValue(form, 'description').trim() || '';
+                console.log('[renderEventPreview] Starting render...');
+                const titleRaw = getFieldValue(form, 'title').trim();
+                const titleHtml = titleRaw || 'Preview titel';
+                const descriptionRaw = getFieldValue(form, 'description').trim();
                 const startDate = getFieldValue(form, 'date').trim();
                 const endDate = getFieldValue(form, 'end_date').trim();
                 const startTime = formatTimeDisplay(getFieldValue(form, 'time').trim());
@@ -2907,11 +4621,15 @@ if ($page === 'users') {
                 const dateDisplay = formatDateDisplay(startDate);
                 const endDateDisplay = formatDateDisplay(endDate);
 
+                console.log('[renderEventPreview] Title:', titleHtml);
+                console.log('[renderEventPreview] Description:', descriptionRaw.substring(0, 50));
+                console.log('[renderEventPreview] Date:', startDate);
+
                 renderedEl.innerHTML = '' +
                     '<section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">' +
                     '<div class="flex-1">' +
                     '<span class="inline-block text-white text-sm font-medium px-4 py-1 mb-4" style="background-color:#ce0245;">Evenement</span>' +
-                    '<h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900">' + titleHtml + '</h2>' +
+                    '<h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900">' + escapeHtml(titleHtml) + '</h2>' +
                     '<div class="space-y-4">' +
                     '<div class="flex items-center space-x-3">' +
                     '<i class="fa-regular fa-calendar text-[#00811F] ml-[2px] text-3xl"></i>' +
@@ -2929,7 +4647,7 @@ if ($page === 'users') {
                     '</div>' +
                     '<div class="flex mb-6 space-x-3">' +
                     '<i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>' +
-                    '<div class="text-gray-700 pb-3"><strong> Wat:</strong><div class="mt-1">' + descriptionHtml + '</div></div>' +
+                    '<div class="text-gray-700 pb-3"><strong> Wat:</strong><div class="mt-1">' + (descriptionRaw ? escapeHtml(descriptionRaw) : '<em class="text-gray-500">Geen beschrijving ingevuld</em>') + '</div></div>' +
                     '</div>' +
                     '</div>' +
                     (hasEmbed ?
@@ -3021,6 +4739,43 @@ if ($page === 'users') {
                 }
             });
 
+            // Auto-save form values to localStorage
+            document.querySelectorAll('form.js-content-preview-form').forEach(function(form) {
+                const formId = (form.querySelector('[name="action"]')?.value || 'unknown') + '_' + (form.querySelector('[name="id"]')?.value || 'new');
+                const storageKey = 'formData_' + formId;
+
+                // Restore on load
+                const saved = localStorage.getItem(storageKey);
+                if (saved) {
+                    try {
+                        const data = JSON.parse(saved);
+                        console.log('[Form] Restoring:', storageKey, data);
+                        Object.keys(data).forEach(key => {
+                            const el = form.elements[key];
+                            if (el) {
+                                el.value = data[key];
+                                console.log('[Form] Restored', key, '=', data[key]);
+                            }
+                        });
+                    } catch (e) {
+                        console.error('[Form] Restore error:', e);
+                    }
+                }
+
+                // Save on input
+                form.addEventListener('input', function(e) {
+                    if (e.target.name && e.target.type !== 'hidden') {
+                        const data = {};
+                        form.querySelectorAll('[name]').forEach(el => {
+                            if (el.type !== 'hidden') {
+                                data[el.name] = el.value;
+                            }
+                        });
+                        localStorage.setItem(storageKey, JSON.stringify(data));
+                    }
+                });
+            });
+
             previewButtons.forEach(function(button) {
                 button.addEventListener('click', function() {
                     try {
@@ -3031,10 +4786,52 @@ if ($page === 'users') {
                             return;
                         }
 
+                        // DEBUG: Log ALL form fields om te zien welke zichtbaar zijn
+                        console.log('[Preview] ===== ALL FORM FIELDS =====');
+                        const allInputs = form.querySelectorAll('input, textarea, select, [contenteditable]');
+                        allInputs.forEach(el => {
+                            const isVisible = el.offsetParent !== null;
+                            const value = el.value || el.textContent || el.innerText || '';
+                            const style = window.getComputedStyle(el);
+                            console.log('[Preview]', el.name || el.id || el.tagName,
+                                '| visible:', isVisible,
+                                '| display:', style.display,
+                                '| value:', value.substring(0, 30));
+                        });
+                        console.log('[Preview] ===== END FIELDS =====');
+
+                        // Save all form values to localStorage before anything else
+                        const formElements = form.querySelectorAll('input, textarea, select');
+                        const formData = {};
+                        formElements.forEach(el => {
+                            if (el.name && el.type !== 'hidden') {
+                                if (el.type === 'checkbox' || el.type === 'radio') {
+                                    formData[el.name] = el.checked;
+                                } else {
+                                    formData[el.name] = el.value;
+                                }
+                            }
+                        });
+                        console.log('[Preview] Saved form data:', formData);
+                        localStorage.setItem('previewFormData', JSON.stringify(formData));
+
                         // Sync TinyMCE editors back naar textarea values
                         if (window.tinymce && typeof window.tinymce.triggerSave === 'function') {
+                            console.log('[Preview] Calling tinymce.triggerSave()');
                             window.tinymce.triggerSave();
+                        } else {
+                            console.log('[Preview] TinyMCE not available');
                         }
+
+                        // Re-read all form values AFTER sync in case TinyMCE changed them
+                        formElements.forEach(el => {
+                            if (el.name && el.type !== 'hidden') {
+                                if (el.type !== 'checkbox' && el.type !== 'radio') {
+                                    formData[el.name] = el.value;
+                                }
+                            }
+                        });
+                        console.log('[Preview] Form data after TinyMCE sync:', formData);
 
                         renderPreview(form);
 
