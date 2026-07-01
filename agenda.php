@@ -5,12 +5,12 @@ require 'helpers.php';
 
 
 // Count the total upcoming evens
-$stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE COALESCE(end_date, date) >= CURDATE()");
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE approval_status = 'approved' AND COALESCE(end_date, date) >= CURDATE()");
 $stmt->execute();
 $totalUpcoming = $stmt->fetchColumn();
 
 // Count the total past events
-$stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE COALESCE(end_date, date) < CURDATE()");
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE approval_status = 'approved' AND COALESCE(end_date, date) < CURDATE()");
 $stmt->execute();
 $totalPast = $stmt->fetchColumn();
 
@@ -21,7 +21,7 @@ $banner2 = 'images/banner_website_02.jpg';
 try {
     $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: $banner1;
     $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: $banner2;
-    $stmt = $pdo->prepare("SELECT * FROM events WHERE COALESCE(end_date, date) >= CURDATE() ORDER BY date, time");
+    $stmt = $pdo->prepare("SELECT * FROM events WHERE approval_status = 'approved' AND COALESCE(end_date, date) >= CURDATE() ORDER BY date, time");
     $stmt->execute();
     $events = $stmt->fetchAll();
 } catch (Exception $e) {

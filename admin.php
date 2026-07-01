@@ -870,7 +870,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $itemId = intval($_POST['item_id']);
         $feedback = sanitizeEditorBlockInput($_POST['feedback'] ?? '');
         
-        $stmt = $pdo->prepare('SELECT id FROM events WHERE id = ?');
+        $stmt = $pdo->prepare('SELECT id, title, created_by FROM events WHERE id = ?');
         $stmt->execute([$itemId]);
         $event = $stmt->fetch();
         
@@ -881,6 +881,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             );
             $stmt->execute(['rejected', $currentUser, $feedback, $itemId]);
             audit_log($pdo, 'reject', 'events', $itemId, 'Status changed to rejected. Feedback: ' . substr($feedback, 0, 100), $currentUser);
+            
+            // Send email to requester
+            if (!empty($event['created_by'])) {
+                require_once 'email_config.php';
+                $emailBody = "Hallo,\n\nJe aanvraag voor het event \"" . $event['title'] . "\" is afgewezen.\n\nFeedback van de admin:\n" . $feedback . "\n\nJe kunt je aanvraag aanpassen en opnieuw indienen.\n\nMet vriendelijke groet,\nSociaalAI Lab";
+                sendEmail($event['created_by'], "Aanvraag afgewezen: " . $event['title'], $emailBody);
+            }
+            
             header('Location: admin.php?page=goedkeuren&ok=reject');
             exit;
         } else {
