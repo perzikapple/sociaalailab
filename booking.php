@@ -118,7 +118,7 @@ $stmt->execute();
 $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Also show approved agenda events in booking calendar/day view
-$stmt = $pdo->prepare("SELECT id, title, date, end_date, time, time_end, location, hardware_request, staff_present FROM events WHERE approval_status IN ('approved','pending')");
+$stmt = $pdo->prepare("SELECT id, title, date, end_date, time, time_end, location, hardware_request, staff_present FROM events WHERE approval_status = 'approved'");
 $stmt->execute();
 $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
 

@@ -75,7 +75,7 @@ include __DIR__ . '/navbar.php';
 
 <?php
 require 'db.php';
-$stmt = $pdo->prepare("SELECT * FROM events WHERE COALESCE(end_date, date) >= CURDATE() ORDER BY date, time");
+$stmt = $pdo->prepare("SELECT * FROM events WHERE approval_status = 'approved' AND COALESCE(end_date, date) >= CURDATE() ORDER BY date, time");
 $stmt->execute();
 $events = $stmt->fetchAll();
 foreach ($events as $event):
