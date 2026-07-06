@@ -35,7 +35,7 @@ try {
 <!doctype html>
 <html lang="nl">
 <head>
-        <link rel="icon" type="image/png" href="images/Pixels_icon.png">
+    <link rel="icon" type="image/png" href="images/Pixels_icon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="modulepreload" as="script" href="build/assets/app-CAiCLEjY.js"><link rel="stylesheet" href="style.css?v=<?php echo filemtime(__DIR__.'/style.css'); ?>"><script type="module" src="build/assets/app-CAiCLEjY.js"></script>    <title>Informatie SociaalAI Lab</title>
@@ -71,6 +71,16 @@ include __DIR__ . '/navbar.php';
         $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
         $hasImage = !empty($block['image']);
         $hasText = !empty($block['title']) || !empty($block['body']);
+// --- CODE OF CONDUCT CHECK ---
+        // We controleren nu op de titel óf dat het woord 'conduct' of 'coc' in de bestandsnaam van de afbeelding zit!
+        $isCoC = (
+            strpos(strtolower($block['title'] ?? ''), 'code of conduct') !== false || 
+            ($block['page_key'] ?? '') === 'code-of-conduct' ||
+            strpos(strtolower($block['image'] ?? ''), 'conduct') !== false ||
+            strpos(strtolower($block['image'] ?? ''), 'coc') !== false
+        );
+        // Pas dit pad aan naar waar jouw PDF daadwerkelijk staat:
+        $pdfUrl = 'images/code-of-conduct.pdf';
         
         // Bepaal of dit blok een nummer krijgt
         $isFirstBlock = ($blockIndex === 0);
@@ -108,12 +118,13 @@ include __DIR__ . '/navbar.php';
             $sectionStyle .= " gap: 1.5rem;";
         }
     ?>
-        <!-- Image-only blokken (geen tekst, geen nummer): full-width buiten section -->
         <?php if (!$hasText && $hasImage && !$shouldShowNumber): ?>
-            <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100vw !important; max-width: 100vw !important; height: auto; display: block; margin-left: calc(-50vw + 50%); position: relative; margin-top: 3rem; margin-bottom: 3rem;">
+            <?php if ($isCoC): ?><a href="<?php echo $pdfUrl; ?>" target="_blank" style="display: block; width: 100vw; text-decoration: none;"><?php endif; ?>
+                <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100vw !important; max-width: 100vw !important; height: auto; display: block; margin-left: calc(-50vw + 50%); position: relative; margin-top: 3rem; margin-bottom: 3rem; <?php echo $isCoC ? 'cursor: pointer; transition: opacity 0.2s;' : ''; ?>" class="<?php echo $isCoC ? 'hover:opacity-90' : ''; ?>">
+            <?php if ($isCoC): ?></a><?php endif; ?>
+            
         <?php else: ?>
         <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" style="<?php echo $sectionStyle; ?>">
-            <!-- Nummer links (als van toepassing) -->
             <?php if ($shouldShowNumber && $numberPosition === 'left' && $hasText): ?>
                 <div style="flex: 0 0 auto; width: 280px;">
                     <div style="font-size: 120px; font-weight: bold; color: #00811F; text-align: center; line-height: 1; display: flex; align-items: center; justify-content: center; min-height: 200px;">
@@ -122,14 +133,14 @@ include __DIR__ . '/navbar.php';
                 </div>
             <?php endif; ?>
             
-            <!-- Afbeelding links (alleen voor niet-nummered blokken) -->
             <?php if ($imagePosition === 'left' && $hasImage && !$shouldShowNumber): ?>
                 <div style="flex: 0 0 auto; max-width: 280px; width: 100%;">
-                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
+                    <?php if ($isCoC): ?><a href="<?php echo $pdfUrl; ?>" target="_blank" style="display: block; width: 100%; text-decoration: none;"><?php endif; ?>
+                        <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem; <?php echo $isCoC ? 'transition: transform 0.2s, opacity 0.2s;' : ''; ?>" class="<?php echo $isCoC ? 'hover:scale-[1.02] hover:opacity-90' : ''; ?>">
+                    <?php if ($isCoC): ?></a><?php endif; ?>
                 </div>
             <?php endif; ?>
 
-            <!-- Tekst -->
             <?php if ($hasText): ?>
                 <div style="<?php echo ($imagePosition !== 'normal' && $hasImage && !$shouldShowNumber) ? 'flex: 1 1 auto; min-width: 0;' : ''; ?>">
                     <?php if ($greenText !== '' && $greenTextPosition === 'above'): ?>
@@ -147,14 +158,14 @@ include __DIR__ . '/navbar.php';
                 </div>
             <?php endif; ?>
 
-            <!-- Afbeelding rechts (alleen voor niet-nummered blokken) -->
             <?php if ($imagePosition === 'right' && $hasImage && !$shouldShowNumber): ?>
                 <div style="flex: 0 0 auto; max-width: 280px; width: 100%;">
-                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
+                    <?php if ($isCoC): ?><a href="<?php echo $pdfUrl; ?>" target="_blank" style="display: block; width: 100%; text-decoration: none;"><?php endif; ?>
+                        <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem; <?php echo $isCoC ? 'transition: transform 0.2s, opacity 0.2s;' : ''; ?>" class="<?php echo $isCoC ? 'hover:scale-[1.02] hover:opacity-90' : ''; ?>">
+                    <?php if ($isCoC): ?></a><?php endif; ?>
                 </div>
             <?php endif; ?>
             
-            <!-- Nummer rechts (als van toepassing) -->
             <?php if ($shouldShowNumber && $numberPosition === 'right' && $hasText): ?>
                 <div style="flex: 0 0 auto; width: 280px;">
                     <div style="font-size: 120px; font-weight: bold; color: #00811F; text-align: center; line-height: 1; display: flex; align-items: center; justify-content: center; min-height: 200px;">
@@ -163,16 +174,17 @@ include __DIR__ . '/navbar.php';
                 </div>
             <?php endif; ?>
             
-            <!-- Afbeelding normaal (onder tekst) - alleen voor niet-nummered blokken -->
             <?php if ($hasImage && $imagePosition === 'normal' && !$shouldShowNumber): ?>
                 <div style="width: 100%;">
-                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
+                    <?php if ($isCoC): ?><a href="<?php echo $pdfUrl; ?>" target="_blank" style="display: block; width: 100%; text-decoration: none;"><?php endif; ?>
+                        <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem; <?php echo $isCoC ? 'transition: transform 0.2s, opacity 0.2s;' : ''; ?>" class="<?php echo $isCoC ? 'hover:scale-[1.01] hover:opacity-90' : ''; ?>">
+                    <?php if ($isCoC): ?></a><?php endif; ?>
                 </div>
             <?php endif; ?>
         </section>
         <?php endif; ?>
         
-        <?php
+    <?php
         // Verhoog tellers
         if ($shouldShowNumber) {
             $numberBlockIndex++;
@@ -180,6 +192,7 @@ include __DIR__ . '/navbar.php';
         $blockIndex++;
     endforeach; ?>
 </main>
+
 <?php include __DIR__ . '/footer.php'; ?>
 
 <script>
@@ -282,7 +295,6 @@ setInterval(() => {
   current = (current + 1) % banners.length;
   banners[current].classList.add('active');
 }, 10000);
-
 </script>
 
 </body>
