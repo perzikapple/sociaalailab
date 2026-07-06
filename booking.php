@@ -130,30 +130,41 @@ if (!empty($_SESSION['booking_message'])) {
 }
 
 /* STAFF ASSIGNMENT HANDLING - CHECK FIRST */
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_staff_assignment_id'])) {
+    $assignmentId = intval($_POST['delete_staff_assignment_id']);
+    if ($assignmentId > 0) {
+        $stmt = $pdo->prepare("DELETE FROM location_staff WHERE id = ? AND location_id = 1");
+        $stmt->execute([$assignmentId]);
+    }
+    header("Location: booking.php?view=$view&date=$selectedDate&selected_day=$selectedDay");
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['staff_dates'])) {
     $staffDates = trim($_POST['staff_dates']);
     $staffLocationId = $_POST['staff_location_id'] ?? 1;
-    $staffName = trim($_POST['staff_name']);
+    $staffNames = $_POST['staff_names'] ?? [];
     $startTime = trim($_POST['staff_start_time'] ?? null);
     $endTime = trim($_POST['staff_end_time'] ?? null);
     
-    // Auto-assign color based on staff name
-    $staffColor = getStaffColor($pdo, $staffName, $staffColorPalette);
-
-    if (!empty($staffDates) && !empty($staffName)) {
-        // Split dates by comma, newline, or semicolon
+    if (!empty($staffDates) && !empty($staffNames)) {
         $dateArray = preg_split('/[,;\n\r]+/', $staffDates, -1, PREG_SPLIT_NO_EMPTY);
-        // Trim dates but don't remove duplicates - allow same date multiple times with different times
         $dateArray = array_map('trim', $dateArray);
         
-        foreach ($dateArray as $dateStr) {
-            // Validate date format (YYYY-MM-DD)
-            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateStr)) {
-                $stmt = $pdo->prepare("
-                    INSERT INTO location_staff (staff_date, location_id, staff_name, color, start_time, end_time)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                ");
-                $stmt->execute([$dateStr, $staffLocationId, $staffName, $staffColor, $startTime ?: null, $endTime ?: null]);
+        foreach ($staffNames as $staffName) {
+            $staffName = trim($staffName);
+            if (empty($staffName)) continue;
+            
+            $staffColor = getStaffColor($pdo, $staffName, $staffColorPalette);
+            
+            foreach ($dateArray as $dateStr) {
+                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateStr)) {
+                    $stmt = $pdo->prepare("
+                        INSERT INTO location_staff (staff_date, location_id, staff_name, color, start_time, end_time)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    ");
+                    $stmt->execute([$dateStr, $staffLocationId, $staffName, $staffColor, $startTime ?: null, $endTime ?: null]);
+                }
             }
         }
     }
@@ -262,10 +273,16 @@ $stmt = $pdo->prepare("SELECT DISTINCT staff_name, color, COUNT(DISTINCT staff_d
 $stmt->execute();
 $allStaffAssignments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+/* LOAD ALL NAMES FROM ACCOUNTS FOR DROPDOWN */
+$allStaffNameList = $pdo->query("
+    SELECT DISTINCT TRIM(CONCAT(COALESCE(first_name,''),' ',COALESCE(last_name,''))) COLLATE utf8mb4_general_ci AS name
+    FROM accounts WHERE first_name IS NOT NULL AND first_name != '' ORDER BY name
+")->fetchAll(PDO::FETCH_COLUMN);
+
 /* LOAD STAFF ASSIGNMENTS FOR SELECTED DAY */
 $stmt = $pdo->prepare("SELECT * FROM location_staff WHERE staff_date = ?");
 /* LOAD STAFF DATA FOR SELECTED DAY AND MERGE TIME SLOTS */
-$stmt = $pdo->prepare("SELECT staff_name, start_time, end_time, color FROM location_staff WHERE staff_date = ? AND location_id = 1 ORDER BY start_time");
+$stmt = $pdo->prepare("SELECT id, staff_name, start_time, end_time, color FROM location_staff WHERE staff_date = ? AND location_id = 1 ORDER BY start_time");
 $stmt->execute([$selectedDay]);
 $staffData = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -481,6 +498,27 @@ $daysWithStaff = array_keys($staffByDate);
                             </div>
                         </div>
                     <?php endforeach; ?>
+                </div>
+
+                <div style="margin-top: 1.25rem;">
+                    <h4 style="margin-bottom: 1rem; color: #00811F;">Personeelsindeling verwijderen</h4>
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <?php foreach ($staffData as $assignment): ?>
+                            <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.75rem 1rem; background: #f5f8ff; border-radius: 10px; border: 1px solid #dfe8f3;">
+                                <div>
+                                    <span style="font-weight: 600; color: #00811F; display: block;"><?= htmlspecialchars($assignment['staff_name']) ?></span>
+                                    <span style="color: #666; font-size: 0.85rem;">
+                                        <?= $assignment['start_time'] ? substr($assignment['start_time'], 0, 5) : 'Hele dag' ?>
+                                        <?= $assignment['end_time'] ? ' - ' . substr($assignment['end_time'], 0, 5) : '' ?>
+                                    </span>
+                                </div>
+                                <form method="POST" style="margin: 0;">
+                                    <input type="hidden" name="delete_staff_assignment_id" value="<?= intval($assignment['id']) ?>">
+                                    <button type="submit" class="btn" style="padding: 0.6rem 1rem; font-size: 0.9rem; background: #ff6b6b; box-shadow: none;">Verwijderen</button>
+                                </form>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
                 </div>
             </div>
         <?php endif; ?>
@@ -956,6 +994,36 @@ document.getElementById('bookingForm').addEventListener('submit', function(e) {
      
      // Hardware is now optional - no validation needed
  });
+
+/* MULTI-SELECT STAFF DROPDOWN */
+function toggleStaffDropdown() {
+    const panel = document.getElementById('staffOptions');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+function updateStaffTags() {
+    const container = document.getElementById('staffTags');
+    const checked = document.querySelectorAll('#staffOptions input[type="checkbox"]:checked');
+    container.innerHTML = '';
+    if (checked.length === 0) {
+        container.innerHTML = '<span class="placeholder">Selecteer personeelsleden</span>';
+    } else {
+        checked.forEach(cb => {
+            const tag = document.createElement('span');
+            tag.className = 'staff-tag';
+            tag.textContent = cb.value;
+            container.appendChild(tag);
+        });
+    }
+}
+
+document.addEventListener('click', function(e) {
+    const ms = document.getElementById('staffMultiSelect');
+    if (ms && !ms.contains(e.target)) {
+        const panel = document.getElementById('staffOptions');
+        if (panel) panel.style.display = 'none';
+    }
+});
 </script>
 
 <!-- STAFF SECTION -->
@@ -965,26 +1033,31 @@ document.getElementById('bookingForm').addEventListener('submit', function(e) {
     <form method="POST">
         <input type="hidden" name="staff_location_id" value="1">
         
-        <input 
-            type="text" 
-            name="staff_name" 
-            placeholder="Naam van personeelslid"
-            required
-        >
+            <div class="multi-select" id="staffMultiSelect">
+                <div class="multi-select-trigger" onclick="event.stopPropagation(); toggleStaffDropdown()">
+                    <div class="multi-select-tags" id="staffTags">
+                        <span class="placeholder">Selecteer personeelsleden</span>
+                    </div>
+                    <span class="dropdown-arrow">&#9660;</span>
+                </div>
+                <div class="multi-select-options" id="staffOptions" style="display: none;">
+                    <?php foreach ($allStaffNameList as $name): ?>
+                        <label class="multi-option">
+                            <input type="checkbox" name="staff_names[]" value="<?= htmlspecialchars($name) ?>" onchange="updateStaffTags()">
+                            <span><?= htmlspecialchars($name) ?></span>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+            </div>
         
         <div class="row">
             <input type="time" name="staff_start_time" id="staff_start_time" placeholder="Start tijd (optioneel)">
             <input type="time" name="staff_end_time" id="staff_end_time" placeholder="Eind tijd (optioneel)">
         </div>
         
-        <textarea 
-            name="staff_dates" 
-            placeholder="2024-01-15&#10;2024-01-16&#10;2024-01-17&#10;&#10;of: 2024-01-15, 2024-01-16, 2024-01-17"
-            style="resize: vertical; min-height: 80px;"
-            required
-        ></textarea>
+        <input type="date" name="staff_dates" required>
         
-        <small style="color: #999; margin: -0.6rem 0 0 0; font-size: 0.85rem;">Formaat: YYYY-MM-DD (één per regel of gescheiden door komma)<br>Kleur wordt automatisch toegewezen!</small>
+        <small style="color: #999; margin: -0.6rem 0 0 0; font-size: 0.85rem;">Kleur wordt automatisch toegewezen!</small>
         
         <button type="submit" class="btn">Opslaan</button>
     </form>
