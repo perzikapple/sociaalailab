@@ -166,7 +166,7 @@ include __DIR__ . '/navbar.php';
             <?php if ($isLastBlock): ?>
                 <div class="w-full mt-6 pt-2 clear-both">
                     <a href="images/code-of-conduct.pdf" target="_blank" class="inline-block bg-[#00811F] text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:bg-opacity-90 transition duration-200">
-                        <i class="fa-solid fa-circle-info mr-2"></i> Meer info Code of Conduct
+                        <i class="fa-solid fa-circle-info mr-2"></i> Meer info
                     </a>
                 </div>
             <?php endif; ?>
