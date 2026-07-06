@@ -113,6 +113,17 @@ function findById($arr, $id) {
 }
 
 /* LOAD BOOKINGS FIRST */
+// Ensure database has `event_responsibility` column (safe, idempotent if permissions allow)
+try {
+    $col = $pdo->query("SHOW COLUMNS FROM bookings LIKE 'event_responsibility'")->fetch();
+    if (!$col) {
+        // Try to add the column; if user/db does not permit this will throw and be ignored
+        $pdo->exec("ALTER TABLE bookings ADD COLUMN event_responsibility TINYINT(1) NOT NULL DEFAULT 0");
+    }
+} catch (Exception $e) {
+    // Ignore - if DB user cannot alter table we'll still continue but won't store the field
+}
+
 $stmt = $pdo->prepare("SELECT * FROM bookings");
 $stmt->execute();
 $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -175,6 +186,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['booking_date'])) {
          $locationIds = [$locationIds];
      }
 
+     // Server-side validation: event responsibility must be accepted
+     $eventResponsibility = (isset($_POST['event_responsibility']) && ($_POST['event_responsibility'] === '1' || $_POST['event_responsibility'] === 'on')) ? 1 : 0;
+     if (!$eventResponsibility) {
+         $_SESSION['booking_message'] = 'You must accept responsibility for the event before submitting your booking.';
+         header("Location: booking.php?view=$view&date=$selectedDate");
+         exit;
+     }
+
+     // Detect whether DB has event_responsibility column
+     $hasEventResponsibilityColumn = false;
+     try {
+         $hasEventResponsibilityColumn = (bool)$pdo->query("SHOW COLUMNS FROM bookings LIKE 'event_responsibility'")->fetch();
+     } catch (Exception $e) {
+         $hasEventResponsibilityColumn = false;
+     }
+
      if (!empty($bookingDate) && !empty($bookingStartTime) && !empty($bookingEndTime) && !empty($locationIds)) {
          $hardwareJson = json_encode($_POST['hardware'] ?? []);
          $inserted = [];
@@ -214,17 +241,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['booking_date'])) {
              // Only use tafels_json if this is location_id 1 (Sociaal AI Lab Hillevliet)
              $tablesForBooking = ($locId == 1) ? $tablesJson : '[]';
 
-             $stmt = $pdo->prepare("INSERT INTO bookings (title, location_id, location_description, booking_date, start_time, end_time, hardware_ids, tables_ids) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-             $stmt->execute([
-                 $bookingTitle,
-                 $locId,
-                 $locationDescription,
-                 $bookingDate,
-                 $bookingStartTime,
-                 $bookingEndTime,
-                 $hardwareJson,
-                 $tablesForBooking
-             ]);
+             if ($hasEventResponsibilityColumn) {
+                 $stmt = $pdo->prepare("INSERT INTO bookings (title, location_id, location_description, booking_date, start_time, end_time, hardware_ids, tables_ids, event_responsibility) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                 $stmt->execute([
+                     $bookingTitle,
+                     $locId,
+                     $locationDescription,
+                     $bookingDate,
+                     $bookingStartTime,
+                     $bookingEndTime,
+                     $hardwareJson,
+                     $tablesForBooking,
+                     $eventResponsibility
+                 ]);
+             } else {
+                 // Fallback if column doesn't exist
+                 $stmt = $pdo->prepare("INSERT INTO bookings (title, location_id, location_description, booking_date, start_time, end_time, hardware_ids, tables_ids) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                 $stmt->execute([
+                     $bookingTitle,
+                     $locId,
+                     $locationDescription,
+                     $bookingDate,
+                     $bookingStartTime,
+                     $bookingEndTime,
+                     $hardwareJson,
+                     $tablesForBooking
+                 ]);
+                 // Note: responsibility flag not saved because DB lacks column
+             }
 
              $inserted[] = $locId;
          }
@@ -446,6 +490,13 @@ $daysWithStaff = array_keys($staffByDate);
                                 ?>
                                 </span>
                             <?php endif; endif; ?>
+                            <?php
+                            // Show Event Responsibility flag if available
+                            if (isset($b['event_responsibility'])):
+                                $accepted = !empty($b['event_responsibility']);
+                            ?>
+                                <br><span style="font-size: 0.9rem; color: #374151;"><strong>Event Responsibility Accepted:</strong> <?php echo $accepted ? '✅ Yes' : '❌ No'; ?></span>
+                            <?php endif; ?>
                         </span>
                     </div>
                 </div>
@@ -728,6 +779,22 @@ $daysWithStaff = array_keys($staffByDate);
              <!-- Hidden input voor tafels data -->
              <input type="hidden" name="tables_json" id="tables_json" value="[]">
 
+                <!-- Event Responsibility card (required) -->
+                <div style="margin: 1rem 0; padding: 1rem; border-radius: 12px; background: #fff; border: 1px solid rgba(0,0,0,0.06); box-shadow: 0 6px 18px rgba(2,6,23,0.04);">
+                    <div style="display:flex; gap:0.75rem; align-items:flex-start;">
+                        <div style="font-size:1.25rem; color:#00811F; line-height:1; margin-top:2px;"><i class="fa fa-info-circle" aria-hidden="true"></i></div>
+                        <div style="flex:1;">
+                            <div style="font-weight:700; margin-bottom:0.5rem;">Event Responsibility</div>
+                            <div style="font-size:0.95rem; color:#374151; margin-bottom:0.75rem;">The person submitting this booking is considered the primary organizer and is fully responsible for the event. By continuing, the organizer confirms that all provided information is accurate and accepts responsibility for guests, venue rules, damages, additional costs, and compliance with all applicable laws and regulations.</div>
+                            <label style="display:flex; align-items:center; gap:0.5rem; font-weight:600; color:#374151;">
+                                <input type="checkbox" id="event_responsibility" name="event_responsibility" value="1" required style="width:18px; height:18px;">
+                                <span style="font-weight:600;">I confirm that I am the organizer (or authorized to book on behalf of the organizer) and accept full responsibility for this event, including compliance with the venue's terms and conditions.</span>
+                            </label>
+                            <div id="responsibilityError" style="color:#b91c1c; font-weight:600; margin-top:0.5rem; display:none;">You must accept responsibility for the event before submitting your booking.</div>
+                        </div>
+                    </div>
+                </div>
+
              <button type="submit" class="btn" id="submitBtn">Boek nu</button>
         </form>
     </section>
@@ -956,6 +1023,31 @@ document.getElementById('bookingForm').addEventListener('submit', function(e) {
      
      // Hardware is now optional - no validation needed
  });
+ 
+// Additional client-side validation for Event Responsibility checkbox
+document.addEventListener('DOMContentLoaded', function() {
+    const bookingForm = document.getElementById('bookingForm');
+    if (!bookingForm) return;
+    bookingForm.addEventListener('submit', function(e) {
+        const checkbox = document.getElementById('event_responsibility');
+        const err = document.getElementById('responsibilityError');
+        if (checkbox && !checkbox.checked) {
+            e.preventDefault();
+            if (err) err.style.display = 'block';
+            checkbox.focus();
+            return false;
+        }
+        if (err) err.style.display = 'none';
+        return true;
+    });
+    const checkbox = document.getElementById('event_responsibility');
+    if (checkbox) {
+        checkbox.addEventListener('change', function() {
+            const err = document.getElementById('responsibilityError');
+            if (err) err.style.display = this.checked ? 'none' : 'none';
+        });
+    }
+});
 </script>
 
 <!-- STAFF SECTION -->
