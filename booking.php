@@ -1086,7 +1086,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
- });
 
 /* MULTI-SELECT STAFF DROPDOWN */
 function toggleStaffDropdown() {
