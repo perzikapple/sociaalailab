@@ -5,12 +5,12 @@ require 'helpers.php';
 
 
 // Tel het totaal aantal aankomende evenementen
-$stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE COALESCE(end_date, date) >= CURDATE()");
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE approval_status = 'approved' AND COALESCE(end_date, date) >= CURDATE()");
 $stmt->execute();
 $totalUpcoming = $stmt->fetchColumn();
 
 // Tel het totaal aantal terugblikken (afgelopen evenementen)
-$stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE COALESCE(end_date, date) < CURDATE()");
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE approval_status = 'approved' AND COALESCE(end_date, date) < CURDATE()");
 $stmt->execute();
 $totalPast = $stmt->fetchColumn();
 
@@ -51,7 +51,7 @@ try {
         }
     }
 
-    $stmt = $pdo->prepare("SELECT * FROM events WHERE COALESCE(end_date, date) < CURDATE() ORDER BY date $sortOrder, time $sortOrder LIMIT :limit OFFSET :offset");
+    $stmt = $pdo->prepare("SELECT * FROM events WHERE approval_status = 'approved' AND COALESCE(end_date, date) < CURDATE() ORDER BY date $sortOrder, time $sortOrder LIMIT :limit OFFSET :offset");
     $stmt->bindValue(':limit', $itemsPerPage, PDO::PARAM_INT);
     $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
     $stmt->execute();
@@ -241,7 +241,7 @@ include __DIR__ . '/navbar.php';
     ?>
     <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12">
         <div class="flex-1">
-            <span class="inline-block text-white text-sm font-medium px-4 py-1 mb-4" style="background-color:#ce0245;">Evenement</span>
+            <span class="inline-block text-white text-sm font-medium px-4 py-1 mb-4" style="background-color:#d12254;">Evenement</span>
             <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900"><?php echo renderEditorInline($event['title']); ?></h2>
             <div class="space-y-4">
                 <div class="flex items-center space-x-3">

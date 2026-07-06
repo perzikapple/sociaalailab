@@ -16,8 +16,8 @@ try {
     $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: $banner2;
 
     if ($eventId) {
-        $stmt = $pdo->prepare('SELECT * FROM events WHERE id = ? LIMIT 1');
-        $stmt->execute([$eventId]);
+        $stmt = $pdo->prepare('SELECT * FROM events WHERE id = ? AND approval_status = ? LIMIT 1');
+        $stmt->execute([$eventId, 'approved']);
         $event = $stmt->fetch();
     }
 } catch (Exception $e) {

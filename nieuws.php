@@ -286,7 +286,9 @@ include __DIR__ . '/navbar.php';
             <div class="flex items-center gap-4 mb-6 pb-6 border-b-2 border-gray-200">
                 <i class="fa-brands fa-linkedin text-4xl text-[#0A66C2]"></i>
                 <div>
-                    <h2 class="text-2xl font-bold text-gray-800">Nieuws</h2>
+               
+                     <h2 class="text-2xl font-bold text-gray-800" class="pink-text"><span>Nieuws</h2></span>
+                        
                     <p class="text-gray-600">Volg ons op LinkedIn voor alle recente activiteiten</p>
                 </div>
             </div>

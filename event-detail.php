@@ -17,9 +17,15 @@ $eventId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $event = null;
 
 if ($eventId > 0) {
-    $stmt = $pdo->prepare('SELECT * FROM events WHERE id = ? LIMIT 1');
-    $stmt->execute([$eventId]);
+    $stmt = $pdo->prepare('SELECT * FROM events WHERE id = ? AND approval_status = ? LIMIT 1');
+    $stmt->execute([$eventId, 'approved']);
     $event = $stmt->fetch();
+}
+
+// If event not found or not approved, redirect to events page
+if (!$event) {
+    header('Location: event.php');
+    exit;
 }
 
 $isPastEvent = false;

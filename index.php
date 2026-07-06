@@ -103,7 +103,7 @@ try {
         }
     }
     
-    $stmt = $pdo->prepare("SELECT * FROM events WHERE COALESCE(end_date, date) >= CURDATE() AND (show_on_homepage IS NULL OR show_on_homepage = 1) ORDER BY date, time LIMIT 8");
+    $stmt = $pdo->prepare("SELECT * FROM events WHERE approval_status = 'approved' AND COALESCE(end_date, date) >= CURDATE() AND (show_on_homepage IS NULL OR show_on_homepage = 1) ORDER BY date, time LIMIT 8");
     $stmt->execute();
     $events = $stmt->fetchAll();
 } catch (Exception $e) {
@@ -160,7 +160,7 @@ include __DIR__ . '/navbar.php';
     <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg mt- p-8 max-w-6xl mx-auto my-12" tabindex="0">
         <div class="flex-1">
             <?php if ($welcomeGreenText !== '' && $welcomeGreenTextPosition === 'above'): ?>
-                <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($welcomeGreenText)); ?></div>
+                <div class="pink_text"><?php echo nl2br(htmlspecialchars($welcomeGreenText)); ?></div>
             <?php endif; ?>
             <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900">
                 <?php echo htmlspecialchars($welcomeBlock['title']); ?></h2>
@@ -168,7 +168,7 @@ include __DIR__ . '/navbar.php';
                 <?php echo renderEditorBlock($welcomeBlock['body']); ?>
             </div>
             <?php if ($welcomeGreenText !== '' && $welcomeGreenTextPosition === 'below'): ?>
-                <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($welcomeGreenText)); ?></div>
+                <div class="pink_text"><?php echo nl2br(htmlspecialchars($welcomeGreenText)); ?></div>
             <?php endif; ?>
         </div>
     </section>
