@@ -71,16 +71,6 @@ include __DIR__ . '/navbar.php';
         $metaArr = $block['meta'] ? json_decode($block['meta'], true) : [];
         $hasImage = !empty($block['image']);
         $hasText = !empty($block['title']) || !empty($block['body']);
-// --- CODE OF CONDUCT CHECK ---
-        // We controleren nu op de titel óf dat het woord 'conduct' of 'coc' in de bestandsnaam van de afbeelding zit!
-        $isCoC = (
-            strpos(strtolower($block['title'] ?? ''), 'code of conduct') !== false || 
-            ($block['page_key'] ?? '') === 'code-of-conduct' ||
-            strpos(strtolower($block['image'] ?? ''), 'conduct') !== false ||
-            strpos(strtolower($block['image'] ?? ''), 'coc') !== false
-        );
-        // Pas dit pad aan naar waar jouw PDF daadwerkelijk staat:
-        $pdfUrl = 'images/code-of-conduct.pdf';
         
         // Bepaal of dit blok een nummer krijgt
         $isFirstBlock = ($blockIndex === 0);
@@ -119,10 +109,7 @@ include __DIR__ . '/navbar.php';
         }
     ?>
         <?php if (!$hasText && $hasImage && !$shouldShowNumber): ?>
-            <?php if ($isCoC): ?><a href="<?php echo $pdfUrl; ?>" target="_blank" style="display: block; width: 100vw; text-decoration: none;"><?php endif; ?>
-                <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100vw !important; max-width: 100vw !important; height: auto; display: block; margin-left: calc(-50vw + 50%); position: relative; margin-top: 3rem; margin-bottom: 3rem; <?php echo $isCoC ? 'cursor: pointer; transition: opacity 0.2s;' : ''; ?>" class="<?php echo $isCoC ? 'hover:opacity-90' : ''; ?>">
-            <?php if ($isCoC): ?></a><?php endif; ?>
-            
+            <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100vw !important; max-width: 100vw !important; height: auto; display: block; margin-left: calc(-50vw + 50%); position: relative; margin-top: 3rem; margin-bottom: 3rem;">
         <?php else: ?>
         <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" style="<?php echo $sectionStyle; ?>">
             <?php if ($shouldShowNumber && $numberPosition === 'left' && $hasText): ?>
@@ -135,9 +122,7 @@ include __DIR__ . '/navbar.php';
             
             <?php if ($imagePosition === 'left' && $hasImage && !$shouldShowNumber): ?>
                 <div style="flex: 0 0 auto; max-width: 280px; width: 100%;">
-                    <?php if ($isCoC): ?><a href="<?php echo $pdfUrl; ?>" target="_blank" style="display: block; width: 100%; text-decoration: none;"><?php endif; ?>
-                        <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem; <?php echo $isCoC ? 'transition: transform 0.2s, opacity 0.2s;' : ''; ?>" class="<?php echo $isCoC ? 'hover:scale-[1.02] hover:opacity-90' : ''; ?>">
-                    <?php if ($isCoC): ?></a><?php endif; ?>
+                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
                 </div>
             <?php endif; ?>
 
@@ -160,9 +145,7 @@ include __DIR__ . '/navbar.php';
 
             <?php if ($imagePosition === 'right' && $hasImage && !$shouldShowNumber): ?>
                 <div style="flex: 0 0 auto; max-width: 280px; width: 100%;">
-                    <?php if ($isCoC): ?><a href="<?php echo $pdfUrl; ?>" target="_blank" style="display: block; width: 100%; text-decoration: none;"><?php endif; ?>
-                        <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem; <?php echo $isCoC ? 'transition: transform 0.2s, opacity 0.2s;' : ''; ?>" class="<?php echo $isCoC ? 'hover:scale-[1.02] hover:opacity-90' : ''; ?>">
-                    <?php if ($isCoC): ?></a><?php endif; ?>
+                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
                 </div>
             <?php endif; ?>
             
@@ -176,15 +159,21 @@ include __DIR__ . '/navbar.php';
             
             <?php if ($hasImage && $imagePosition === 'normal' && !$shouldShowNumber): ?>
                 <div style="width: 100%;">
-                    <?php if ($isCoC): ?><a href="<?php echo $pdfUrl; ?>" target="_blank" style="display: block; width: 100%; text-decoration: none;"><?php endif; ?>
-                        <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem; <?php echo $isCoC ? 'transition: transform 0.2s, opacity 0.2s;' : ''; ?>" class="<?php echo $isCoC ? 'hover:scale-[1.01] hover:opacity-90' : ''; ?>">
-                    <?php if ($isCoC): ?></a><?php endif; ?>
+                    <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
+                </div>
+            <?php endif; ?>
+
+            <?php if ($isLastBlock): ?>
+                <div class="w-full mt-6 pt-2 clear-both">
+                    <a href="images/code-of-conduct.pdf" target="_blank" class="inline-block bg-[#00811F] text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:bg-opacity-90 transition duration-200">
+                        <i class="fa-solid fa-circle-info mr-2"></i> Meer info Code of Conduct
+                    </a>
                 </div>
             <?php endif; ?>
         </section>
         <?php endif; ?>
         
-    <?php
+        <?php
         // Verhoog tellers
         if ($shouldShowNumber) {
             $numberBlockIndex++;
@@ -192,7 +181,6 @@ include __DIR__ . '/navbar.php';
         $blockIndex++;
     endforeach; ?>
 </main>
-
 <?php include __DIR__ . '/footer.php'; ?>
 
 <script>
