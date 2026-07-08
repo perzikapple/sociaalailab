@@ -5,12 +5,18 @@ require 'helpers.php';
 
 $banner1 = 'images/banner_website_01.jpg';
 $banner2 = 'images/banner_website_02.jpg';
+$banner3 = null;
+$banner4 = null;
 
 try {
     $b1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn();
     $b2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn();
+    $b3 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner3'")->fetchColumn();
+    $b4 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner4'")->fetchColumn();
     if ($b1) $banner1 = $b1;
     if ($b2) $banner2 = $b2;
+    if ($b3) $banner3 = $b3;
+    if ($b4) $banner4 = $b4;
 } catch (Exception $e) {
 }
 

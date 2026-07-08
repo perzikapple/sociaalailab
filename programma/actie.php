@@ -6,12 +6,18 @@ require '../helpers.php';
 // Fallback banners
 $banner1 = '../images/banner_website_01.jpg';
 $banner2 = '../images/banner_website_02.jpg';
+$banner3 = null;
+$banner4 = null;
 
 try {
     $b1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn();
     $b2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn();
+    $b3 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner3'")->fetchColumn();
+    $b4 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner4'")->fetchColumn();
     if ($b1) $banner1 = (strpos($b1, 'images/') === 0) ? '../' . $b1 : $b1;
     if ($b2) $banner2 = (strpos($b2, 'images/') === 0) ? '../' . $b2 : $b2;
+    if ($b3) $banner3 = (strpos($b3, 'images/') === 0) ? '../' . $b3 : $b3;
+    if ($b4) $banner4 = (strpos($b4, 'images/') === 0) ? '../' . $b4 : $b4;
 } catch (Exception $e) {
     // Use fallbacks
 }
@@ -33,6 +39,12 @@ try {
 <div class="banner-wrapper">
     <img src="<?php echo htmlspecialchars($banner1); ?>" alt="Banner 1" class="banner active w-full object-cover h-60 md:h-96">
     <img src="<?php echo htmlspecialchars($banner2); ?>" alt="Banner 2" class="banner w-full object-cover h-60 md:h-96">
+    <?php if ($banner3): ?>
+    <img src="<?php echo htmlspecialchars($banner3); ?>" alt="Banner 3" class="banner w-full object-cover h-60 md:h-96">
+    <?php endif; ?>
+    <?php if ($banner4): ?>
+    <img src="<?php echo htmlspecialchars($banner4); ?>" alt="Banner 4" class="banner w-full object-cover h-60 md:h-96">
+    <?php endif; ?>
 </div>
 
 <?php

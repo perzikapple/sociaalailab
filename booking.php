@@ -114,7 +114,7 @@ $stmt->execute();
 $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Also show approved agenda events in booking calendar/day view
-$stmt = $pdo->prepare("SELECT id, title, date, end_date, time, time_end, location, hardware_request, staff_present FROM events WHERE approval_status IN ('approved','pending')");
+$stmt = $pdo->prepare("SELECT id, title, date, end_date, time, time_end, location, hardware_request, staff_present, description, meer_info FROM events WHERE approval_status IN ('approved','pending')");
 $stmt->execute();
 $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -372,7 +372,26 @@ $daysWithStaff = array_keys($staffByDate);
             <p style="color: #999; text-align: center; padding: 2rem;">Selecteer een dag om boekingen te zien</p>
         <?php else: ?>
             <?php foreach ($dayEvents as $e): ?>
-                <div class="booking" style="border-left-color:#2563eb;">
+                <?php
+                $eventPayload = [
+                    'title' => (string)($e['title'] ?? 'Ongetiteld event'),
+                    'location' => (string)($e['location'] ?? 'Locatie volgt'),
+                    'date' => (string)($e['date'] ?? ''),
+                    'end_date' => (string)($e['end_date'] ?? ''),
+                    'time' => (string)($e['time'] ?? ''),
+                    'time_end' => (string)($e['time_end'] ?? ''),
+                    'hardware_request' => (string)($e['hardware_request'] ?? ''),
+                    'staff_present' => (string)($e['staff_present'] ?? ''),
+                    'description' => (string)($e['description'] ?? ''),
+                    'meer_info' => (string)($e['meer_info'] ?? ''),
+                ];
+                $eventPayloadJson = htmlspecialchars(
+                    json_encode($eventPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                    ENT_QUOTES,
+                    'UTF-8'
+                );
+                ?>
+                <div class="booking booking-event" style="border-left-color:#2563eb;">
                     <div>
                         <strong><?= htmlspecialchars($e['title'] ?? 'Ongetiteld event') ?></strong><br>
                         <?= htmlspecialchars($e['location'] ?? 'Locatie volgt') ?><br>
@@ -385,6 +404,11 @@ $daysWithStaff = array_keys($staffByDate);
                         <?php if (!empty($e['staff_present'])): ?>
                             <br><span style="font-size: 0.85rem; color: #1f2937;"><strong>SociaalAI Lab erbij:</strong> <?= nl2br(htmlspecialchars($e['staff_present'])) ?></span>
                         <?php endif; ?>
+                        <div style="margin-top: 0.75rem;">
+                            <button type="button" class="event-info-btn js-event-info-btn" data-event="<?php echo $eventPayloadJson; ?>">
+                                Meer info
+                            </button>
+                        </div>
                     </div>
                 </div>
             <?php endforeach; ?>
@@ -662,6 +686,27 @@ $daysWithStaff = array_keys($staffByDate);
 
 </div>
 
+<div id="eventInfoModal" class="event-info-modal" aria-hidden="true">
+    <div class="event-info-dialog" role="dialog" aria-modal="true" aria-labelledby="eventInfoTitle">
+        <div class="event-info-header">
+            <h3 id="eventInfoTitle">Event informatie</h3>
+            <button type="button" class="close-btn" onclick="closeEventInfoModal()" aria-label="Sluiten">&times;</button>
+        </div>
+        <div class="event-info-body">
+            <p><strong>Titel:</strong> <span id="eventInfoFieldTitle">-</span></p>
+            <p><strong>Wanneer:</strong> <span id="eventInfoFieldDate">-</span></p>
+            <p><strong>Tijd:</strong> <span id="eventInfoFieldTime">-</span></p>
+            <p><strong>Locatie:</strong> <span id="eventInfoFieldLocation">-</span></p>
+            <p><strong>Hardware:</strong> <span id="eventInfoFieldHardware">-</span></p>
+            <p><strong>SociaalAI Lab erbij:</strong> <span id="eventInfoFieldStaff">-</span></p>
+            <p><strong>Omschrijving:</strong></p>
+            <div id="eventInfoFieldDescription" class="event-info-block">Geen omschrijving beschikbaar.</div>
+            <p><strong>Meer info:</strong></p>
+            <div id="eventInfoFieldMeerInfo" class="event-info-block">Geen extra informatie beschikbaar.</div>
+        </div>
+    </div>
+</div>
+
 <script>
 function selectDay(dateStr, month, year) {
     // Update URL to include selected_day parameter
@@ -852,6 +897,100 @@ function updateHardwareDisplay() {
     }
     document.getElementById('hardware_json').value = JSON.stringify(jsonData);
 }
+
+function formatEventDate(dateStr) {
+    if (!dateStr) return '-';
+    const date = new Date(dateStr + 'T00:00:00');
+    if (Number.isNaN(date.getTime())) return dateStr;
+    return date.toLocaleDateString('nl-NL', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    });
+}
+
+function setEventInfoText(id, value, fallback = '-') {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const text = normalizeEventText(value);
+    el.textContent = text !== '' ? text : fallback;
+}
+
+function setEventInfoMultiline(id, value, fallback) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const text = normalizeEventText(value);
+    el.textContent = text !== '' ? text : fallback;
+}
+
+function normalizeEventText(value) {
+    return (value || '')
+        .toString()
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/p>\s*<p>/gi, '\n\n')
+        .replace(/<[^>]*>/g, '')
+        .replace(/\r\n/g, '\n')
+        .trim();
+}
+
+function openEventInfoModal(eventData) {
+    const modal = document.getElementById('eventInfoModal');
+    if (!modal) return;
+
+    const dateStart = formatEventDate(eventData.date);
+    const dateEnd = eventData.end_date ? formatEventDate(eventData.end_date) : '';
+    const dateText = dateEnd && dateEnd !== dateStart ? `${dateStart} t/m ${dateEnd}` : dateStart;
+    const timeStart = (eventData.time || '').toString().slice(0, 5);
+    const timeEnd = (eventData.time_end || '').toString().slice(0, 5);
+    const timeText = timeStart ? `${timeStart}${timeEnd ? ' - ' + timeEnd : ''}` : 'Tijd volgt';
+
+    setEventInfoText('eventInfoFieldTitle', eventData.title, '-');
+    setEventInfoText('eventInfoFieldDate', dateText, '-');
+    setEventInfoText('eventInfoFieldTime', timeText, 'Tijd volgt');
+    setEventInfoText('eventInfoFieldLocation', eventData.location, 'Locatie volgt');
+    setEventInfoText('eventInfoFieldHardware', eventData.hardware_request, 'Geen hardware opgegeven');
+    setEventInfoText('eventInfoFieldStaff', eventData.staff_present, 'Niet ingevuld');
+    setEventInfoMultiline('eventInfoFieldDescription', eventData.description, 'Geen omschrijving beschikbaar.');
+    setEventInfoMultiline('eventInfoFieldMeerInfo', eventData.meer_info, 'Geen extra informatie beschikbaar.');
+
+    modal.classList.add('is-open');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeEventInfoModal() {
+    const modal = document.getElementById('eventInfoModal');
+    if (!modal) return;
+    modal.classList.remove('is-open');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+}
+
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.js-event-info-btn');
+    if (btn) {
+        const raw = btn.getAttribute('data-event');
+        if (!raw) return;
+        try {
+            const data = JSON.parse(raw);
+            openEventInfoModal(data);
+        } catch (err) {
+            console.error('Kon eventinfo niet laden:', err);
+        }
+        return;
+    }
+
+    const modal = document.getElementById('eventInfoModal');
+    if (modal && e.target === modal) {
+        closeEventInfoModal();
+    }
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeEventInfoModal();
+    }
+});
 
 // Prevent form submit if no hardware selected
 document.getElementById('bookingForm').addEventListener('submit', function(e) {

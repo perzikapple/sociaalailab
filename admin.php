@@ -205,6 +205,84 @@ function handleMultiUpload($fileField)
     return ['names' => $saved];
 }
 
+function handleDocumentUpload($fileField)
+{
+    if (empty($_FILES[$fileField]) || !isset($_FILES[$fileField]['name']) || !is_array($_FILES[$fileField]['name'])) {
+        return ['names' => []];
+    }
+
+    $allowedExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt'];
+    $saved = [];
+
+    if (!is_dir(__DIR__ . '/uploads')) {
+        mkdir(__DIR__ . '/uploads', 0755, true);
+    }
+
+    $count = count($_FILES[$fileField]['name']);
+    for ($i = 0; $i < $count; $i++) {
+        $name = $_FILES[$fileField]['name'][$i] ?? '';
+        if ($name === '') {
+            continue;
+        }
+
+        $tmp = $_FILES[$fileField]['tmp_name'][$i] ?? '';
+        $size = (int)($_FILES[$fileField]['size'][$i] ?? 0);
+        $error = (int)($_FILES[$fileField]['error'][$i] ?? UPLOAD_ERR_OK);
+
+        if ($error !== UPLOAD_ERR_OK) {
+            foreach ($saved as $fileName) {
+                $path = __DIR__ . '/uploads/' . $fileName;
+                if (file_exists($path)) {
+                    @unlink($path);
+                }
+            }
+            return ['error' => 'Een van de documenten kon niet worden geupload.'];
+        }
+
+        if ($size > 10 * 1024 * 1024) {
+            foreach ($saved as $fileName) {
+                $path = __DIR__ . '/uploads/' . $fileName;
+                if (file_exists($path)) {
+                    @unlink($path);
+                }
+            }
+            return ['error' => 'Document is groter dan 10MB.'];
+        }
+
+        $ext = strtolower((string)pathinfo($name, PATHINFO_EXTENSION));
+        if (!in_array($ext, $allowedExtensions, true)) {
+            foreach ($saved as $fileName) {
+                $path = __DIR__ . '/uploads/' . $fileName;
+                if (file_exists($path)) {
+                    @unlink($path);
+                }
+            }
+            return ['error' => 'Alleen PDF, Office-bestanden of TXT zijn toegestaan voor documenten.'];
+        }
+
+        $safeBase = preg_replace('/[^a-zA-Z0-9_-]/', '_', pathinfo($name, PATHINFO_FILENAME));
+        if ($safeBase === '' || $safeBase === null) {
+            $safeBase = 'document';
+        }
+
+        $storedName = time() . '_' . bin2hex(random_bytes(6)) . '_' . $safeBase . '.' . $ext;
+        $dest = __DIR__ . '/uploads/' . $storedName;
+        if (!move_uploaded_file($tmp, $dest)) {
+            foreach ($saved as $fileName) {
+                $path = __DIR__ . '/uploads/' . $fileName;
+                if (file_exists($path)) {
+                    @unlink($path);
+                }
+            }
+            return ['error' => 'Kon een document niet opslaan.'];
+        }
+
+        $saved[] = $storedName;
+    }
+
+    return ['names' => $saved];
+}
+
 // Image optimizer function
 function optimizeImage($imagePath, $quality = 85)
 {
@@ -290,6 +368,28 @@ function decodeEventGallery($value)
     return $items;
 }
 
+function decodeEventDocuments($value)
+{
+    if (!is_string($value) || $value === '') {
+        return [];
+    }
+
+    $decoded = json_decode($value, true);
+    if (!is_array($decoded)) {
+        return [];
+    }
+
+    $items = [];
+    foreach ($decoded as $fileName) {
+        $fileName = trim((string)$fileName);
+        if ($fileName !== '') {
+            $items[] = $fileName;
+        }
+    }
+
+    return $items;
+}
+
 function sanitizeEditorText($value)
 {
     return sanitizeEditorPlainText($value);
@@ -308,6 +408,8 @@ function sanitizeEditorBlockInput($value)
 // Fetch current banners
 $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: 'images/banner_website_01.jpg';
 $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: 'images/banner_website_02.jpg';
+$banner3 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner3'")->fetchColumn() ?: null;
+$banner4 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner4'")->fetchColumn() ?: null;
 
 // Current user email
 $currentUser = $_SESSION['user'] ?? null;
@@ -378,18 +480,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     $message = $galleryUpload['error'];
                 } else {
-                    $galleryJson = !empty($galleryUpload['names'])
-                        ? json_encode(array_values($galleryUpload['names']), JSON_UNESCAPED_SLASHES)
-                        : null;
+                    $documentUpload = handleDocumentUpload('event_documents');
+                    if (isset($documentUpload['error'])) {
+                        if (!empty($imageName) && file_exists(__DIR__ . '/uploads/' . $imageName)) {
+                            @unlink(__DIR__ . '/uploads/' . $imageName);
+                        }
+                        foreach ($galleryUpload['names'] ?? [] as $galleryFile) {
+                            $galleryPath = __DIR__ . '/uploads/' . $galleryFile;
+                            if (file_exists($galleryPath)) {
+                                @unlink($galleryPath);
+                            }
+                        }
+                        $message = $documentUpload['error'];
+                    } else {
+                        $galleryJson = !empty($galleryUpload['names'])
+                            ? json_encode(array_values($galleryUpload['names']), JSON_UNESCAPED_SLASHES)
+                            : null;
+                        $documentsJson = !empty($documentUpload['names'])
+                            ? json_encode(array_values($documentUpload['names']), JSON_UNESCAPED_SLASHES)
+                            : null;
 
-                    // voeg updated_at, updated_by, en approval gegevens toe bij insert
-                    $stmt = $pdo->prepare('INSERT INTO events (title, date, end_date, time, time_end, description, event_summary, meer_info, image, event_gallery, location, hardware_request, staff_present, target_audience, internal_notes, show_signup_button, signup_embed, show_on_homepage, updated_at, updated_by, approval_status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)');
-                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $location ?: null, $hardwareRequest ?: null, $staffPresent ?: null, $targetAudience ?: null, $internalNotes ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser, $approvalStatus, $currentUser]);
-                    $eventId = $pdo->lastInsertId();
-                    // Audit log: event created
-                    audit_log($pdo, 'create', 'events', $eventId, 'title: ' . $title, $currentUser);
-                    header('Location: admin.php?page=agenda&ok=create');
-                    exit;
+                        // voeg updated_at, updated_by, en approval gegevens toe bij insert
+                        $stmt = $pdo->prepare('INSERT INTO events (title, date, end_date, time, time_end, description, event_summary, meer_info, image, event_gallery, event_documents, location, hardware_request, staff_present, target_audience, internal_notes, show_signup_button, signup_embed, show_on_homepage, updated_at, updated_by, approval_status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)');
+                        $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $documentsJson, $location ?: null, $hardwareRequest ?: null, $staffPresent ?: null, $targetAudience ?: null, $internalNotes ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser, $approvalStatus, $currentUser]);
+                        $eventId = $pdo->lastInsertId();
+                        // Audit log: event created
+                        audit_log($pdo, 'create', 'events', $eventId, 'title: ' . $title, $currentUser);
+                        header('Location: admin.php?page=agenda&ok=create');
+                        exit;
+                    }
                 }
             }
         }
@@ -421,17 +540,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $title = ' ';
             }
             // check existing image
-            $stmt = $pdo->prepare('SELECT image, event_gallery FROM events WHERE id = ?');
+            $stmt = $pdo->prepare('SELECT image, event_gallery, event_documents FROM events WHERE id = ?');
             $stmt->execute([$id]);
             $row = $stmt->fetch();
             $oldImage = $row ? $row['image'] : null;
             $oldGallery = decodeEventGallery($row['event_gallery'] ?? null);
+            $oldDocuments = decodeEventDocuments($row['event_documents'] ?? null);
             $removeGallery = $_POST['remove_gallery_images'] ?? [];
             if (!is_array($removeGallery)) {
                 $removeGallery = [];
             }
             $removeGallery = array_values(array_intersect($oldGallery, array_map('strval', $removeGallery)));
             $keptGallery = array_values(array_diff($oldGallery, $removeGallery));
+            $removeDocuments = $_POST['remove_event_documents'] ?? [];
+            if (!is_array($removeDocuments)) {
+                $removeDocuments = [];
+            }
+            $removeDocuments = array_values(array_intersect($oldDocuments, array_map('strval', $removeDocuments)));
+            $keptDocuments = array_values(array_diff($oldDocuments, $removeDocuments));
 
             $upload = handleUpload('image');
             if (isset($upload['error'])) {
@@ -444,46 +570,69 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     $message = $galleryUpload['error'];
                 } else {
-
-                    if ($removeImage) {
-                        $imageName = null;
-                    } else {
-                        $imageName = $upload['name'] ?? $oldImage;
-                    }
-
-                    $galleryNames = array_values(array_merge($keptGallery, $galleryUpload['names'] ?? []));
-                    $galleryJson = !empty($galleryNames)
-                        ? json_encode($galleryNames, JSON_UNESCAPED_SLASHES)
-                        : null;
-
-                    // update nu ook updated_at, updated_by, target_audience, en internal_notes
-                    $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, end_date=?, time=?, time_end=?, description=?, event_summary=?, meer_info=?, image=?, event_gallery=?, location=?, hardware_request=?, staff_present=?, target_audience=?, internal_notes=?, show_signup_button=?, signup_embed=?, show_on_homepage=?, updated_at=NOW(), updated_by=? WHERE id=?');
-                    $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $location ?: null, $hardwareRequest ?: null, $staffPresent ?: null, $targetAudience ?: null, $internalNotes ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser, $id]);
-                    // Audit log: event updated
-                    audit_log($pdo, 'update', 'events', $id, 'title: ' . $title, $currentUser);
-
-                    // indien nieuwe upload en oud bestaat: verwijderen
-                    if (!empty($upload['name']) && $oldImage && file_exists(__DIR__ . '/uploads/' . $oldImage)) {
-                        @unlink(__DIR__ . '/uploads/' . $oldImage);
-                    }
-                    if ($removeImage && $oldImage && file_exists(__DIR__ . '/uploads/' . $oldImage)) {
-                        @unlink(__DIR__ . '/uploads/' . $oldImage);
-                    }
-                    foreach ($removeGallery as $galleryFile) {
-                        $galleryPath = __DIR__ . '/uploads/' . $galleryFile;
-                        if (file_exists($galleryPath)) {
-                            @unlink($galleryPath);
+                    $documentUpload = handleDocumentUpload('event_documents');
+                    if (isset($documentUpload['error'])) {
+                        if (!empty($upload['name']) && file_exists(__DIR__ . '/uploads/' . $upload['name'])) {
+                            @unlink(__DIR__ . '/uploads/' . $upload['name']);
                         }
+                        foreach ($galleryUpload['names'] ?? [] as $galleryFile) {
+                            $galleryPath = __DIR__ . '/uploads/' . $galleryFile;
+                            if (file_exists($galleryPath)) {
+                                @unlink($galleryPath);
+                            }
+                        }
+                        $message = $documentUpload['error'];
+                    } else {
+                        if ($removeImage) {
+                            $imageName = null;
+                        } else {
+                            $imageName = $upload['name'] ?? $oldImage;
+                        }
+
+                        $galleryNames = array_values(array_merge($keptGallery, $galleryUpload['names'] ?? []));
+                        $galleryJson = !empty($galleryNames)
+                            ? json_encode($galleryNames, JSON_UNESCAPED_SLASHES)
+                            : null;
+                        $documentNames = array_values(array_merge($keptDocuments, $documentUpload['names'] ?? []));
+                        $documentsJson = !empty($documentNames)
+                            ? json_encode($documentNames, JSON_UNESCAPED_SLASHES)
+                            : null;
+
+                        // update nu ook updated_at, updated_by, target_audience, en internal_notes
+                        $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, end_date=?, time=?, time_end=?, description=?, event_summary=?, meer_info=?, image=?, event_gallery=?, event_documents=?, location=?, hardware_request=?, staff_present=?, target_audience=?, internal_notes=?, show_signup_button=?, signup_embed=?, show_on_homepage=?, updated_at=NOW(), updated_by=? WHERE id=?');
+                        $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $documentsJson, $location ?: null, $hardwareRequest ?: null, $staffPresent ?: null, $targetAudience ?: null, $internalNotes ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser, $id]);
+                        // Audit log: event updated
+                        audit_log($pdo, 'update', 'events', $id, 'title: ' . $title, $currentUser);
+
+                        // indien nieuwe upload en oud bestaat: verwijderen
+                        if (!empty($upload['name']) && $oldImage && file_exists(__DIR__ . '/uploads/' . $oldImage)) {
+                            @unlink(__DIR__ . '/uploads/' . $oldImage);
+                        }
+                        if ($removeImage && $oldImage && file_exists(__DIR__ . '/uploads/' . $oldImage)) {
+                            @unlink(__DIR__ . '/uploads/' . $oldImage);
+                        }
+                        foreach ($removeGallery as $galleryFile) {
+                            $galleryPath = __DIR__ . '/uploads/' . $galleryFile;
+                            if (file_exists($galleryPath)) {
+                                @unlink($galleryPath);
+                            }
+                        }
+                        foreach ($removeDocuments as $documentFile) {
+                            $documentPath = __DIR__ . '/uploads/' . $documentFile;
+                            if (file_exists($documentPath)) {
+                                @unlink($documentPath);
+                            }
+                        }
+                        header('Location: admin.php?page=agenda&ok=update');
+                        exit;
                     }
-                    header('Location: admin.php?page=agenda&ok=update');
-                    exit;
                 }
             }
         }
     } elseif ($action === 'delete' && !empty($_POST['id'])) {
         $id = (int)$_POST['id'];
         // haal image op en delete
-        $stmt = $pdo->prepare('SELECT image, event_gallery FROM events WHERE id = ?');
+        $stmt = $pdo->prepare('SELECT image, event_gallery, event_documents FROM events WHERE id = ?');
         $stmt->execute([$id]);
         $row = $stmt->fetch();
         if ($row) {
@@ -494,6 +643,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $galleryPath = __DIR__ . '/uploads/' . $galleryFile;
                 if (file_exists($galleryPath)) {
                     @unlink($galleryPath);
+                }
+            }
+            foreach (decodeEventDocuments($row['event_documents'] ?? null) as $documentFile) {
+                $documentPath = __DIR__ . '/uploads/' . $documentFile;
+                if (file_exists($documentPath)) {
+                    @unlink($documentPath);
                 }
             }
             $stmt = $pdo->prepare('DELETE FROM events WHERE id = ?');
@@ -512,7 +667,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $deletedCount = 0;
         foreach ($ids as $id) {
-            $stmt = $pdo->prepare('SELECT image, event_gallery FROM events WHERE id = ?');
+            $stmt = $pdo->prepare('SELECT image, event_gallery, event_documents FROM events WHERE id = ?');
             $stmt->execute([$id]);
             $row = $stmt->fetch();
             if ($row && $row['image'] && file_exists(__DIR__ . '/uploads/' . $row['image'])) {
@@ -523,6 +678,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $galleryPath = __DIR__ . '/uploads/' . $galleryFile;
                     if (file_exists($galleryPath)) {
                         @unlink($galleryPath);
+                    }
+                }
+            }
+            if ($row) {
+                foreach (decodeEventDocuments($row['event_documents'] ?? null) as $documentFile) {
+                    $documentPath = __DIR__ . '/uploads/' . $documentFile;
+                    if (file_exists($documentPath)) {
+                        @unlink($documentPath);
                     }
                 }
             }
@@ -632,9 +795,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action === 'update_banner') {
         $defaultBanner1 = 'images/banner_website_01.jpg';
         $defaultBanner2 = 'images/banner_website_02.jpg';
+        
+        // Handle banner 1
         $removeBanner1 = isset($_POST['remove_banner1']) ? 1 : 0;
-        $removeBanner2 = isset($_POST['remove_banner2']) ? 1 : 0;
-
         if ($removeBanner1) {
             if (strpos((string)$banner1, 'uploads/') === 0) {
                 $oldPath = __DIR__ . '/' . $banner1;
@@ -655,6 +818,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             audit_log($pdo, 'update', 'settings', null, 'banner1 set to ' . $path, $currentUser);
         }
 
+        // Handle banner 2
+        $removeBanner2 = isset($_POST['remove_banner2']) ? 1 : 0;
         if ($removeBanner2) {
             if (strpos((string)$banner2, 'uploads/') === 0) {
                 $oldPath = __DIR__ . '/' . $banner2;
@@ -674,15 +839,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $banner2 = $path;
             audit_log($pdo, 'update', 'settings', null, 'banner2 set to ' . $path, $currentUser);
         }
+
+        // Handle banner 3
+        $removeBanner3 = isset($_POST['remove_banner3']) ? 1 : 0;
+        if ($removeBanner3) {
+            if ($banner3 && strpos((string)$banner3, 'uploads/') === 0) {
+                $oldPath = __DIR__ . '/' . $banner3;
+                if (file_exists($oldPath)) {
+                    @unlink($oldPath);
+                }
+            }
+            $pdo->prepare("DELETE FROM settings WHERE setting_key = 'banner3'")->execute();
+            $banner3 = null;
+            audit_log($pdo, 'update', 'settings', null, 'banner3 removed', $currentUser);
+        }
+
+        $banner3_file = handleUpload('banner3');
+        if (!isset($banner3_file['error']) && !empty($banner3_file['name'])) {
+            $path = 'uploads/' . $banner3_file['name'];
+            $pdo->prepare("INSERT INTO settings (setting_key, setting_value) VALUES ('banner3', ?) ON DUPLICATE KEY UPDATE setting_value = ?")->execute([$path, $path]);
+            $banner3 = $path;
+            audit_log($pdo, 'update', 'settings', null, 'banner3 set to ' . $path, $currentUser);
+        }
+
+        // Handle banner 4
+        $removeBanner4 = isset($_POST['remove_banner4']) ? 1 : 0;
+        if ($removeBanner4) {
+            if ($banner4 && strpos((string)$banner4, 'uploads/') === 0) {
+                $oldPath = __DIR__ . '/' . $banner4;
+                if (file_exists($oldPath)) {
+                    @unlink($oldPath);
+                }
+            }
+            $pdo->prepare("DELETE FROM settings WHERE setting_key = 'banner4'")->execute();
+            $banner4 = null;
+            audit_log($pdo, 'update', 'settings', null, 'banner4 removed', $currentUser);
+        }
+
+        $banner4_file = handleUpload('banner4');
+        if (!isset($banner4_file['error']) && !empty($banner4_file['name'])) {
+            $path = 'uploads/' . $banner4_file['name'];
+            $pdo->prepare("INSERT INTO settings (setting_key, setting_value) VALUES ('banner4', ?) ON DUPLICATE KEY UPDATE setting_value = ?")->execute([$path, $path]);
+            $banner4 = $path;
+            audit_log($pdo, 'update', 'settings', null, 'banner4 set to ' . $path, $currentUser);
+        }
+
         $message = 'Banners bijgewerkt.';
     } elseif ($action === 'reset_banners') {
         $defaultBanner1 = 'images/banner_website_01.jpg';
         $defaultBanner2 = 'images/banner_website_02.jpg';
         $pdo->prepare("UPDATE settings SET setting_value = ? WHERE setting_key = 'banner1'")->execute([$defaultBanner1]);
         $pdo->prepare("UPDATE settings SET setting_value = ? WHERE setting_key = 'banner2'")->execute([$defaultBanner2]);
+        $pdo->prepare("DELETE FROM settings WHERE setting_key = 'banner3'")->execute();
+        $pdo->prepare("DELETE FROM settings WHERE setting_key = 'banner4'")->execute();
         audit_log($pdo, 'update', 'settings', null, 'banners reset to default', $currentUser);
         $banner1 = $defaultBanner1;
         $banner2 = $defaultBanner2;
+        $banner3 = null;
+        $banner4 = null;
         $message = 'Banners zijn teruggezet naar de standaard waarden.';
     } elseif ($action === 'create_user') {
         $newEmail = trim((string)($_POST['new_email'] ?? ''));
@@ -866,6 +1080,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'SELECT id, title, date, end_date, time, time_end, description, location, image, 
                         created_by, target_audience, internal_notes, approval_status, approval_feedback,
                     meer_info, event_summary, signup_embed, show_signup_button, show_on_homepage,
+                    event_documents,
                     hardware_request, staff_present
                  FROM events WHERE id = ? AND approval_status = ?'
             );
@@ -1024,6 +1239,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'SELECT id, title, date, end_date, time, time_end, description, location, image, 
                         approval_status, approval_feedback, meer_info, event_summary, target_audience,
                     internal_notes, signup_embed, show_signup_button, show_on_homepage,
+                    event_documents,
                     hardware_request, staff_present
                  FROM events WHERE id = ? AND created_by = ?'
             );
@@ -1063,22 +1279,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $meer_info = sanitizeEditorBlockInput($_POST['edit_meer_info'] ?? '');
         $event_summary = sanitizeEditorBlockInput($_POST['edit_event_summary'] ?? '');
         $target_audience = sanitizeEditorBlockInput($_POST['edit_target_audience'] ?? '');
+        $internal_notes = sanitizeEditorBlockInput($_POST['edit_internal_notes'] ?? '');
         $signup_embed = sanitizeEditorBlockInput($_POST['edit_signup_embed'] ?? '');
         $show_signup_button = !empty($_POST['edit_show_signup_button']) ? '1' : '0';
         $show_on_homepage = !empty($_POST['edit_show_on_homepage']) ? '1' : '0';
 
         // Verify ownership
-        $stmt = $pdo->prepare('SELECT id FROM events WHERE id = ? AND created_by = ?');
+        $stmt = $pdo->prepare('SELECT id, event_documents FROM events WHERE id = ? AND created_by = ?');
         $stmt->execute([$requestId, $currentUser]);
         $event = $stmt->fetch();
 
         if ($event) {
             try {
+                $oldDocuments = decodeEventDocuments($event['event_documents'] ?? null);
+                $removeDocuments = $_POST['edit_remove_event_documents'] ?? [];
+                if (!is_array($removeDocuments)) {
+                    $removeDocuments = [];
+                }
+                $removeDocuments = array_values(array_intersect($oldDocuments, array_map('strval', $removeDocuments)));
+                $keptDocuments = array_values(array_diff($oldDocuments, $removeDocuments));
+
+                $documentUpload = handleDocumentUpload('edit_event_documents');
+                if (isset($documentUpload['error'])) {
+                    $message = $documentUpload['error'];
+                } else {
+                    $documentNames = array_values(array_merge($keptDocuments, $documentUpload['names'] ?? []));
+                    $documentsJson = !empty($documentNames)
+                        ? json_encode($documentNames, JSON_UNESCAPED_SLASHES)
+                        : null;
+
                 $stmt = $pdo->prepare(
                     'UPDATE events SET 
                         title = ?, date = ?, end_date = ?, time = ?, time_end = ?, 
                         location = ?, hardware_request = ?, staff_present = ?, description = ?, meer_info = ?, event_summary = ?,
-                        target_audience = ?, signup_embed = ?, 
+                        target_audience = ?, internal_notes = ?, signup_embed = ?, event_documents = ?,
                         show_signup_button = ?, show_on_homepage = ?,
                         approval_status = "pending", approved_by = NULL, approval_feedback = NULL
                      WHERE id = ?'
@@ -1086,13 +1320,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->execute([
                     $title, $date, $end_date ?: null, $time ?: null, $time_end ?: null,
                     $location, $hardware_request ?: null, $staff_present ?: null, $description, $meer_info ?: null, $event_summary ?: null,
-                    $target_audience ?: null, $signup_embed ?: null,
+                    $target_audience ?: null, $internal_notes ?: null, $signup_embed ?: null, $documentsJson,
                     $show_signup_button, $show_on_homepage,
                     $requestId
                 ]);
+                foreach ($removeDocuments as $documentFile) {
+                    $documentPath = __DIR__ . '/uploads/' . $documentFile;
+                    if (file_exists($documentPath)) {
+                        @unlink($documentPath);
+                    }
+                }
                 audit_log($pdo, 'resubmit', 'events', $requestId, 'Request resubmitted by onderzoeker after rejection', $currentUser);
                 header('Location: admin.php?page=aanvragen&ok=resubmit');
                 exit;
+                }
             } catch (Exception $e) {
                 $message = 'Fout bij opnieuw indienen: ' . $e->getMessage();
             }
@@ -1408,6 +1649,36 @@ if (!empty($_GET['edit_page'])) {
 $stmt = $pdo->prepare('SELECT * FROM events ORDER BY CASE WHEN date >= CURDATE() THEN 0 ELSE 1 END, date ASC, time ASC, created_at ASC, id ASC');
 $stmt->execute();
 $events = $stmt->fetchAll();
+
+// Shared hardware catalog used for booking-like hardware selection in event forms
+$eventHardwareOptions = [
+    ['id' => 1, 'name' => 'PC (Workstation 9950X3D RTX5090 96GB RAM)', 'quantity' => 1],
+    ['id' => 2, 'name' => 'PC (Framework Max+ 395 128GB)', 'quantity' => 4],
+    ['id' => 3, 'name' => 'Robohond Unitree Go2 X', 'quantity' => 1],
+    ['id' => 4, 'name' => 'Robohond Unitree Go2 Pro', 'quantity' => 1],
+    ['id' => 5, 'name' => 'Tablet 8,7" Samsung Galaxy Tab A11', 'quantity' => 1],
+    ['id' => 6, 'name' => 'Tablet 11" Samsung Galaxy Tab A11', 'quantity' => 1],
+    ['id' => 7, 'name' => 'VR bril Oculus Quest 3 512GB', 'quantity' => 2],
+    ['id' => 8, 'name' => 'accu+zonnepaneel', 'quantity' => 1],
+    ['id' => 9, 'name' => 'labkar buiten', 'quantity' => 1],
+    ['id' => 10, 'name' => 'Wijkbot kar + afstandbediening', 'quantity' => 1],
+    ['id' => 11, 'name' => 'labkar binnen', 'quantity' => 3],
+    ['id' => 12, 'name' => 'speaker/microfoon Jabra Speak 2 75', 'quantity' => 1],
+    ['id' => 13, 'name' => 'speaker/microfoon Jabra Speak 2 55', 'quantity' => 2],
+    ['id' => 14, 'name' => 'Draadloze microfoon set van 2', 'quantity' => 1],
+    ['id' => 15, 'name' => 'WiFi Router ASUS TUF BE9400', 'quantity' => 1],
+    ['id' => 16, 'name' => 'laptop + muis + AC adapter', 'quantity' => 10],
+    ['id' => 17, 'name' => 'toetsenbord', 'quantity' => 3],
+    ['id' => 18, 'name' => 'muis', 'quantity' => 3],
+    ['id' => 19, 'name' => 'Raspberry Pi + AC adapter + HDMI kabel', 'quantity' => 6],
+    ['id' => 20, 'name' => 'Scherm 50" TCL 50Q6C', 'quantity' => 4],
+    ['id' => 21, 'name' => 'Scherm 27" Philips 27E2N2500 + beugel', 'quantity' => 6],
+    ['id' => 22, 'name' => 'Kensington Combinatie Ultra Laptop Slot x10', 'quantity' => 10],
+    ['id' => 23, 'name' => 'HDMI 8k kabel 2m', 'quantity' => 6],
+    ['id' => 24, 'name' => 'HDMI 8k kabel 5m', 'quantity' => 1],
+    ['id' => 25, 'name' => 'Banner Sociaalailab', 'quantity' => 1],
+    ['id' => 26, 'name' => 'Verwijsstandaard Sociaalailab', 'quantity' => 2],
+];
 ?>
 <?php
 // Welke admin pagina tonen (standaard dashboard)
@@ -1841,9 +2112,20 @@ if ($page === 'users') {
                                     <input name="location" class="form-input admin-input-surface admin-input-h-48" value="<?php echo htmlspecialchars($editEvent['location'] ?? ''); ?>" />
                                 </div>
 
-                                <div>
-                                    <label class="form-label">Hardware (optioneel)</label>
-                                    <textarea name="hardware_request" rows="3" class="form-textarea" placeholder="Bijv. 2x VR bril, 1x Speaker"><?php echo htmlspecialchars($editEvent['hardware_request'] ?? ''); ?></textarea>
+                                <div class="admin-event-hardware-picker" data-target="hardware-request-edit">
+                                    <label class="form-label">Apparatuur toevoegen (optioneel)</label>
+                                    <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap;">
+                                        <select class="form-input js-hardware-select" style="flex: 1; min-width: 260px;">
+                                            <option value="">-- Kies hardware --</option>
+                                            <?php foreach ($eventHardwareOptions as $hw): ?>
+                                                <option value="<?php echo (int)$hw['id']; ?>" data-name="<?php echo htmlspecialchars($hw['name'], ENT_QUOTES, 'UTF-8'); ?>" data-max="<?php echo (int)$hw['quantity']; ?>"><?php echo htmlspecialchars($hw['name']); ?> (max: <?php echo (int)$hw['quantity']; ?>)</option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <input type="number" class="form-input js-hardware-qty" min="1" value="1" style="width: 90px;">
+                                        <button type="button" class="btn btn-secondary js-add-hardware-btn" style="width: auto;">Voeg toe</button>
+                                    </div>
+                                    <div class="js-hardware-selected" style="display: flex; flex-wrap: wrap; gap: 0.6rem;"></div>
+                                    <textarea name="hardware_request" id="hardware-request-edit" rows="3" class="form-textarea admin-hidden" placeholder="Bijv. 2x VR bril, 1x Speaker"><?php echo htmlspecialchars($editEvent['hardware_request'] ?? ''); ?></textarea>
                                     <p class="text-xs text-gray-500 mt-2">Wordt meegenomen naar Booking en zichtbaar bij goedkeuring.</p>
                                 </div>
 
@@ -1877,8 +2159,8 @@ if ($page === 'users') {
                                 </div>
 
                                 <div>
-                                    <label class="form-label">Opmerkingen voor goedkeuring (optioneel)</label>
-                                    <textarea name="internal_notes" rows="3" class="form-textarea" placeholder="Bijv. aanvullende informatie voor goedkeuring"><?php echo htmlspecialchars($editEvent['internal_notes'] ?? ''); ?></textarea>
+                                    <label class="form-label">Meer info voor beoordeling (voeg ook het doel van het event toe)</label>
+                                    <textarea name="internal_notes" rows="3" class="form-textarea" placeholder="Beschrijf extra info voor beoordeling en het doel van dit event"><?php echo htmlspecialchars($editEvent['internal_notes'] ?? ''); ?></textarea>
                                     <p class="text-xs text-gray-500 mt-2">Alleen zichtbaar voor administratoren, niet op de publieke pagina.</p>
                                 </div>
 
@@ -1917,6 +2199,28 @@ if ($page === 'users') {
                                                     <img src="uploads/<?php echo htmlspecialchars($galleryImage); ?>" alt="Eventfoto" class="w-full h-24 object-cover rounded">
                                                     <span class="form-checkbox mt-2 inline-flex items-center gap-2">
                                                         <input type="checkbox" name="remove_gallery_images[]" value="<?php echo htmlspecialchars($galleryImage); ?>">
+                                                        Verwijder
+                                                    </span>
+                                                </label>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+
+                                <div>
+                                    <label class="form-label">Documenten voor beoordeling (optioneel)</label>
+                                    <input type="file" name="event_documents[]" class="form-input" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" multiple>
+                                    <p class="text-xs text-gray-500 mt-2">Alleen zichtbaar in de beoordelingsflow (Goedkeuren / Mijn Aanvragen).</p>
+                                    <?php $editDocuments = decodeEventDocuments($editEvent['event_documents'] ?? null); ?>
+                                    <?php if (!empty($editDocuments)): ?>
+                                        <div class="mt-3 space-y-2">
+                                            <?php foreach ($editDocuments as $documentFile): ?>
+                                                <label class="flex items-center justify-between border border-gray-200 rounded p-2 gap-3">
+                                                    <a href="uploads/<?php echo rawurlencode($documentFile); ?>" target="_blank" rel="noopener noreferrer" class="text-sm text-blue-700 underline break-all">
+                                                        <?php echo htmlspecialchars($documentFile); ?>
+                                                    </a>
+                                                    <span class="form-checkbox inline-flex items-center gap-2">
+                                                        <input type="checkbox" name="remove_event_documents[]" value="<?php echo htmlspecialchars($documentFile); ?>">
                                                         Verwijder
                                                     </span>
                                                 </label>
@@ -2010,9 +2314,20 @@ if ($page === 'users') {
                                     <input name="location" class="form-input admin-input-surface" value="<?php echo htmlspecialchars($_POST['location'] ?? ''); ?>" />
                                 </div>
 
-                                <div>
-                                    <label class="form-label">Hardware (optioneel)</label>
-                                    <textarea name="hardware_request" rows="3" class="form-textarea" placeholder="Bijv. 2x VR bril, 1x Speaker"><?php echo htmlspecialchars($_POST['hardware_request'] ?? ''); ?></textarea>
+                                <div class="admin-event-hardware-picker" data-target="hardware-request-create">
+                                    <label class="form-label">Apparatuur toevoegen (optioneel)</label>
+                                    <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap;">
+                                        <select class="form-input js-hardware-select" style="flex: 1; min-width: 260px;">
+                                            <option value="">-- Kies hardware --</option>
+                                            <?php foreach ($eventHardwareOptions as $hw): ?>
+                                                <option value="<?php echo (int)$hw['id']; ?>" data-name="<?php echo htmlspecialchars($hw['name'], ENT_QUOTES, 'UTF-8'); ?>" data-max="<?php echo (int)$hw['quantity']; ?>"><?php echo htmlspecialchars($hw['name']); ?> (max: <?php echo (int)$hw['quantity']; ?>)</option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <input type="number" class="form-input js-hardware-qty" min="1" value="1" style="width: 90px;">
+                                        <button type="button" class="btn btn-secondary js-add-hardware-btn" style="width: auto;">Voeg toe</button>
+                                    </div>
+                                    <div class="js-hardware-selected" style="display: flex; flex-wrap: wrap; gap: 0.6rem;"></div>
+                                    <textarea name="hardware_request" id="hardware-request-create" rows="3" class="form-textarea admin-hidden" placeholder="Bijv. 2x VR bril, 1x Speaker"><?php echo htmlspecialchars($_POST['hardware_request'] ?? ''); ?></textarea>
                                     <p class="text-xs text-gray-500 mt-2">Wordt meegenomen naar Booking en zichtbaar bij goedkeuring.</p>
                                 </div>
 
@@ -2046,8 +2361,8 @@ if ($page === 'users') {
                                 </div>
 
                                 <div>
-                                    <label class="form-label">Opmerkingen voor goedkeuring (optioneel)</label>
-                                    <textarea name="internal_notes" rows="3" class="form-textarea" placeholder="Bijv. aanvullende informatie voor goedkeuring"></textarea>
+                                    <label class="form-label">Meer info voor beoordeling (voeg ook het doel van het event toe)</label>
+                                    <textarea name="internal_notes" rows="3" class="form-textarea" placeholder="Beschrijf extra info voor beoordeling en het doel van dit event"></textarea>
                                     <p class="text-xs text-gray-500 mt-2">Alleen zichtbaar voor administratoren, niet op de publieke pagina.</p>
                                 </div>
 
@@ -2059,6 +2374,12 @@ if ($page === 'users') {
                                 <div>
                                     <label class="form-label">Foto's tijdens event (optioneel, meerdere bestanden)</label>
                                     <div class="admin-upload-widget" data-name="gallery_images[]" data-accept="image/*" data-multiple="true"></div>
+                                </div>
+
+                                <div>
+                                    <label class="form-label">Documenten voor beoordeling (optioneel)</label>
+                                    <input type="file" name="event_documents[]" class="form-input" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" multiple>
+                                    <p class="text-xs text-gray-500 mt-2">Alleen zichtbaar in de beoordelingsflow (Goedkeuren / Mijn Aanvragen).</p>
                                 </div>
                                 <!-- Meer info link veld verwijderd -->
 
@@ -2180,6 +2501,187 @@ if ($page === 'users') {
                                 </form>
                             <?php endif; ?>
                         </div>
+
+                        <script>
+                            (function() {
+                                function parseHardwareLine(line) {
+                                    const cleanLine = (line || '').trim();
+                                    if (cleanLine === '') {
+                                        return null;
+                                    }
+
+                                    const match = cleanLine.match(/^(\d+)\s*[xX×]\s+(.+)$/);
+                                    if (match) {
+                                        return {
+                                            qty: Math.max(1, parseInt(match[1], 10) || 1),
+                                            name: match[2].trim(),
+                                            custom: false,
+                                            line: cleanLine
+                                        };
+                                    }
+
+                                    return {
+                                        qty: 1,
+                                        name: cleanLine,
+                                        custom: true,
+                                        line: cleanLine
+                                    };
+                                }
+
+                                function createChip(item, onRemove) {
+                                    const chip = document.createElement('div');
+                                    chip.style.display = 'flex';
+                                    chip.style.alignItems = 'center';
+                                    chip.style.gap = '0.5rem';
+                                    chip.style.padding = '0.45rem 0.7rem';
+                                    chip.style.background = '#f0f5ff';
+                                    chip.style.border = '1px solid #dfe8f3';
+                                    chip.style.borderRadius = '8px';
+
+                                    const name = document.createElement('span');
+                                    name.style.fontWeight = '600';
+                                    name.style.color = '#00811F';
+                                    name.textContent = item.name;
+
+                                    const qty = document.createElement('span');
+                                    qty.style.background = '#00811F';
+                                    qty.style.color = '#fff';
+                                    qty.style.padding = '0.15rem 0.45rem';
+                                    qty.style.borderRadius = '999px';
+                                    qty.style.fontSize = '0.75rem';
+                                    qty.style.fontWeight = '700';
+                                    qty.textContent = item.qty + 'x';
+
+                                    const removeBtn = document.createElement('button');
+                                    removeBtn.type = 'button';
+                                    removeBtn.style.border = 'none';
+                                    removeBtn.style.background = 'transparent';
+                                    removeBtn.style.cursor = 'pointer';
+                                    removeBtn.style.color = '#dc2626';
+                                    removeBtn.style.fontSize = '1.1rem';
+                                    removeBtn.textContent = '×';
+                                    removeBtn.addEventListener('click', onRemove);
+
+                                    chip.appendChild(name);
+                                    chip.appendChild(qty);
+                                    chip.appendChild(removeBtn);
+                                    return chip;
+                                }
+
+                                function initHardwarePicker(wrapper) {
+                                    const targetId = wrapper.getAttribute('data-target');
+                                    if (!targetId) {
+                                        return;
+                                    }
+
+                                    const textarea = document.getElementById(targetId);
+                                    const select = wrapper.querySelector('.js-hardware-select');
+                                    const qtyInput = wrapper.querySelector('.js-hardware-qty');
+                                    const addBtn = wrapper.querySelector('.js-add-hardware-btn');
+                                    const selectedContainer = wrapper.querySelector('.js-hardware-selected');
+
+                                    if (!textarea || !select || !qtyInput || !addBtn || !selectedContainer) {
+                                        return;
+                                    }
+
+                                    const items = {};
+                                    let customCounter = 0;
+
+                                    function syncTextarea() {
+                                        const lines = Object.values(items).map(function(item) {
+                                            return item.custom ? item.line : (item.qty + 'x ' + item.name);
+                                        });
+                                        textarea.value = lines.join("\n");
+                                    }
+
+                                    function renderItems() {
+                                        selectedContainer.innerHTML = '';
+                                        Object.keys(items).forEach(function(key) {
+                                            const item = items[key];
+                                            selectedContainer.appendChild(createChip(item, function() {
+                                                delete items[key];
+                                                renderItems();
+                                                syncTextarea();
+                                            }));
+                                        });
+                                    }
+
+                                    function addSelectedHardware() {
+                                        const selectedOption = select.options[select.selectedIndex];
+                                        const id = select.value;
+                                        if (!id || !selectedOption) {
+                                            alert('Kies eerst een hardware item.');
+                                            return;
+                                        }
+
+                                        const qty = Math.max(1, parseInt(qtyInput.value, 10) || 1);
+                                        const max = Math.max(1, parseInt(selectedOption.getAttribute('data-max') || '1', 10));
+                                        if (qty > max) {
+                                            alert('Maximaal ' + max + ' beschikbaar van dit item.');
+                                            return;
+                                        }
+
+                                        items[id] = {
+                                            id: id,
+                                            name: selectedOption.getAttribute('data-name') || selectedOption.textContent,
+                                            qty: qty,
+                                            max: max,
+                                            custom: false,
+                                            line: ''
+                                        };
+
+                                        renderItems();
+                                        syncTextarea();
+
+                                        select.value = '';
+                                        qtyInput.value = '1';
+                                    }
+
+                                    addBtn.addEventListener('click', addSelectedHardware);
+
+                                    const initialLines = (textarea.value || '').split(/\r?\n/);
+                                    initialLines.forEach(function(line) {
+                                        const parsed = parseHardwareLine(line);
+                                        if (!parsed) {
+                                            return;
+                                        }
+
+                                        const option = Array.from(select.options).find(function(opt) {
+                                            return (opt.getAttribute('data-name') || '').trim().toLowerCase() === parsed.name.toLowerCase();
+                                        });
+
+                                        if (option && option.value) {
+                                            const max = Math.max(1, parseInt(option.getAttribute('data-max') || '1', 10));
+                                            items[option.value] = {
+                                                id: option.value,
+                                                name: option.getAttribute('data-name') || parsed.name,
+                                                qty: Math.min(parsed.qty, max),
+                                                max: max,
+                                                custom: false,
+                                                line: ''
+                                            };
+                                        } else {
+                                            const key = 'custom-' + (++customCounter);
+                                            items[key] = {
+                                                id: key,
+                                                name: parsed.name,
+                                                qty: parsed.qty,
+                                                max: parsed.qty,
+                                                custom: true,
+                                                line: parsed.line
+                                            };
+                                        }
+                                    });
+
+                                    renderItems();
+                                    syncTextarea();
+                                }
+
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    document.querySelectorAll('.admin-event-hardware-picker').forEach(initHardwarePicker);
+                                });
+                            })();
+                        </script>
                     </div>
 
                 <?php elseif ($page === 'users'): ?>
@@ -2405,7 +2907,7 @@ if ($page === 'users') {
                             $stmt = $pdo->prepare(
                                 "SELECT id, title, date, end_date, time, time_end, description, location, image, 
                                         created_by, target_audience, internal_notes, approval_status, approval_feedback,
-                                    info_link, signup_embed, show_signup_button, created_at,
+                                    info_link, signup_embed, show_signup_button, created_at, event_documents,
                                     hardware_request, staff_present
                                  FROM events 
                                  WHERE approval_status = 'pending' 
@@ -2453,41 +2955,18 @@ if ($page === 'users') {
                                             </div>
                                         <?php endif; ?>
 
+                                        <?php $pendingDocuments = decodeEventDocuments($item['event_documents'] ?? null); ?>
+                                        <?php if (!empty($pendingDocuments)): ?>
+                                            <div class="bg-white p-4 rounded mb-4 border border-yellow-100">
+                                                <p class="text-sm"><strong>Documenten voor beoordeling:</strong> <?php echo count($pendingDocuments); ?></p>
+                                            </div>
+                                        <?php endif; ?>
+
                                         <div class="flex flex-wrap gap-2 items-center justify-end">
                                             <button type="button" class="btn btn-info btn-sm" onclick="openApprovalModal(<?php echo (int)$item['id']; ?>, '<?php echo htmlspecialchars($item['title'] ?? '', ENT_QUOTES, 'UTF-8'); ?>')">
                                                 <i class="fa-solid fa-eye"></i> Details bekijken & Beoordelen
                                             </button>
-                                            <form method="POST" style="display:inline;">
-                                                <input type="hidden" name="action" value="approve_item">
-                                                <input type="hidden" name="item_id" value="<?php echo (int)$item['id']; ?>">
-                                                <button type="submit" class="btn btn-success btn-sm">
-                                                    <i class="fa-solid fa-thumbs-up"></i> Direct goedkeuren
-                                                </button>
-                                            </form>
-                                            <button type="button" class="btn btn-error btn-sm" onclick="openRejectForm(<?php echo (int)$item['id']; ?>)">
-                                                <i class="fa-solid fa-thumbs-down"></i> Afkeuren
-                                            </button>
                                         </div>
-
-                                        <!-- Hidden reject form -->
-                                        <form id="reject-form-<?php echo (int)$item['id']; ?>" method="POST" class="mt-4 p-4 bg-white border border-red-200 rounded hidden">
-                                            <input type="hidden" name="action" value="reject_item">
-                                            <input type="hidden" name="item_id" value="<?php echo (int)$item['id']; ?>">
-
-                                            <div class="mb-3">
-                                                <label class="form-label">Terugkoppeling (waarom wordt dit afgewezen?):</label>
-                                                <textarea name="feedback" class="form-textarea" rows="3" placeholder="Uw feedback..." required></textarea>
-                                            </div>
-
-                                            <div class="flex gap-2">
-                                                <button type="submit" class="btn btn-error btn-sm">
-                                                    <i class="fa-solid fa-paper-plane"></i> Afkeuren
-                                                </button>
-                                                <button type="button" class="btn btn-secondary btn-sm" onclick="closeRejectForm(<?php echo (int)$item['id']; ?>)">
-                                                    <i class="fa-solid fa-times"></i> Annuleren
-                                                </button>
-                                            </div>
-                                        </form>
                                     </div>
                                 <?php endforeach; ?>
                             </div>
@@ -2585,10 +3064,10 @@ if ($page === 'users') {
                                             <small style="color: #6b7280;">Alleen zichtbaar voor goedkeuring, niet op de publieke pagina.</small>
                                         </div>
 
-                                        <!-- Opmerkingen voor goedkeuring -->
+                                        <!-- Meer info voor beoordeling -->
                                         <div style="margin-bottom: 1rem;">
-                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Opmerkingen voor goedkeuring (optioneel):</strong></label>
-                                            <textarea name="approval_internal_notes" id="approval-internal-notes-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 60px; font-family: inherit;" placeholder="Bijv. aanvullende informatie voor goedkeuring"></textarea>
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Meer info voor beoordeling (voeg ook het doel van het event toe):</strong></label>
+                                            <textarea name="approval_internal_notes" id="approval-internal-notes-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 60px; font-family: inherit;" placeholder="Beschrijf extra info voor beoordeling en het doel van dit event"></textarea>
                                             <small style="color: #6b7280;">Alleen zichtbaar voor administratoren, niet op de publieke pagina.</small>
                                         </div>
 
@@ -2617,6 +3096,11 @@ if ($page === 'users') {
                                             <input type="file" name="approval_image" id="approval-image-input" class="form-input" accept="image/*" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
                                             <input type="hidden" name="approval_existing_image" id="approval-existing-image">
                                             <small style="color: #6b7280;">Laat leeg om huidige afbeelding te behouden</small>
+                                        </div>
+
+                                        <div id="approval-documents-container" style="margin-top: 1rem; display: none;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.5rem 0; display: block;"><strong>Documenten voor beoordeling:</strong></label>
+                                            <ul id="approval-documents-list" style="margin: 0; padding-left: 1rem;"></ul>
                                         </div>
                                     </div>
 
@@ -2743,6 +3227,42 @@ if ($page === 'users') {
                                     } else {
                                         imageContainer.style.display = 'none';
                                     }
+
+                                    const documentsContainer = document.getElementById('approval-documents-container');
+                                    const documentsList = document.getElementById('approval-documents-list');
+                                    documentsList.innerHTML = '';
+                                    let docs = [];
+                                    if (Array.isArray(item.event_documents)) {
+                                        docs = item.event_documents;
+                                    } else if (typeof item.event_documents === 'string' && item.event_documents.trim() !== '') {
+                                        try {
+                                            const parsed = JSON.parse(item.event_documents);
+                                            if (Array.isArray(parsed)) {
+                                                docs = parsed;
+                                            }
+                                        } catch (e) {
+                                            docs = [];
+                                        }
+                                    }
+
+                                    if (docs.length > 0) {
+                                        docs.forEach(doc => {
+                                            const li = document.createElement('li');
+                                            const a = document.createElement('a');
+                                            a.href = 'uploads/' + encodeURIComponent(doc);
+                                            a.target = '_blank';
+                                            a.rel = 'noopener noreferrer';
+                                            a.textContent = doc;
+                                            a.style.color = '#1d4ed8';
+                                            a.style.textDecoration = 'underline';
+                                            a.style.wordBreak = 'break-all';
+                                            li.appendChild(a);
+                                            documentsList.appendChild(li);
+                                        });
+                                        documentsContainer.style.display = 'block';
+                                    } else {
+                                        documentsContainer.style.display = 'none';
+                                    }
                                     
                                     // Show modal with animation
                                     modal.classList.remove('hidden');
@@ -2867,15 +3387,7 @@ if ($page === 'users') {
                         });
                     </script>
 
-                    <script>
-                        function openRejectForm(itemId) {
-                            document.getElementById('reject-form-' + itemId).classList.remove('hidden');
-                        }
 
-                        function closeRejectForm(itemId) {
-                            document.getElementById('reject-form-' + itemId).classList.add('hidden');
-                        }
-                    </script>
 
                 <?php elseif ($page === 'audit'): ?>
                     <div class="card p-6">
@@ -3022,7 +3534,7 @@ if ($page === 'users') {
                         <?php
                         // Get rejected items for current user
                         $stmt = $pdo->prepare(
-                            'SELECT id, title, date, location, description, image, approval_status, approval_feedback, created_at
+                            'SELECT id, title, date, location, description, image, event_documents, approval_status, approval_feedback, created_at
                              FROM events 
                              WHERE created_by = ? AND approval_status IN ("rejected", "pending")
                              ORDER BY created_at DESC'
@@ -3072,6 +3584,11 @@ if ($page === 'users') {
                                             echo htmlspecialchars(substr($desc, 0, 150)) . (strlen($desc) > 150 ? '...' : '');
                                             ?>
                                         </p>
+
+                                        <?php $requestDocuments = decodeEventDocuments($request['event_documents'] ?? null); ?>
+                                        <?php if (!empty($requestDocuments)): ?>
+                                            <p class="text-sm text-gray-700 mb-3"><strong>Documenten voor beoordeling:</strong> <?php echo count($requestDocuments); ?></p>
+                                        <?php endif; ?>
 
                                         <!-- Edit button -->
                                         <?php if ($request['approval_status'] === 'rejected'): ?>
@@ -3182,6 +3699,21 @@ if ($page === 'users') {
                                             <input type="text" name="edit_target_audience" id="edit-target-audience-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;" placeholder="bijv. Scholieren, Docenten, Researchers">
                                         </div>
 
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Meer info voor beoordeling (voeg ook het doel van het event toe):</strong></label>
+                                            <textarea name="edit_internal_notes" id="edit-internal-notes-input" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; min-height: 60px; font-family: inherit;" placeholder="Beschrijf extra info voor beoordeling en het doel van dit event"></textarea>
+                                            <small style="color: #6b7280;">Alleen zichtbaar voor administratoren, niet op de publieke pagina.</small>
+                                        </div>
+
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Documenten voor beoordeling (optioneel):</strong></label>
+                                            <input type="file" name="edit_event_documents[]" id="edit-event-documents-input" class="form-input" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" multiple style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                                            <small style="color: #6b7280;">Alleen zichtbaar in de beoordelingsflow.</small>
+                                            <div id="edit-documents-container" style="margin-top: 0.75rem; display: none;">
+                                                <div id="edit-documents-list" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+                                            </div>
+                                        </div>
+
                                         <!-- Signup link -->
                                         <div style="margin-bottom: 1rem;">
                                             <label style="font-size: 0.875rem; color: #6b7280; margin: 0 0 0.25rem 0; display: block;"><strong>Aanmelder.nl link (optioneel):</strong></label>
@@ -3257,7 +3789,62 @@ if ($page === 'users') {
                                     document.getElementById('edit-meer-info-input').value = item.meer_info || '';
                                     document.getElementById('edit-event-summary-input').value = item.event_summary || '';
                                     document.getElementById('edit-target-audience-input').value = item.target_audience || '';
+                                    document.getElementById('edit-internal-notes-input').value = item.internal_notes || '';
                                     document.getElementById('edit-signup-embed-input').value = item.signup_embed || '';
+
+                                    const editDocumentsContainer = document.getElementById('edit-documents-container');
+                                    const editDocumentsList = document.getElementById('edit-documents-list');
+                                    editDocumentsList.innerHTML = '';
+                                    let docs = [];
+                                    if (Array.isArray(item.event_documents)) {
+                                        docs = item.event_documents;
+                                    } else if (typeof item.event_documents === 'string' && item.event_documents.trim() !== '') {
+                                        try {
+                                            const parsed = JSON.parse(item.event_documents);
+                                            if (Array.isArray(parsed)) {
+                                                docs = parsed;
+                                            }
+                                        } catch (e) {
+                                            docs = [];
+                                        }
+                                    }
+
+                                    if (docs.length > 0) {
+                                        docs.forEach(doc => {
+                                            const row = document.createElement('label');
+                                            row.style.display = 'flex';
+                                            row.style.alignItems = 'center';
+                                            row.style.justifyContent = 'space-between';
+                                            row.style.gap = '0.5rem';
+                                            row.style.padding = '0.5rem';
+                                            row.style.border = '1px solid #d1d5db';
+                                            row.style.borderRadius = '4px';
+
+                                            const link = document.createElement('a');
+                                            link.href = 'uploads/' + encodeURIComponent(doc);
+                                            link.target = '_blank';
+                                            link.rel = 'noopener noreferrer';
+                                            link.textContent = doc;
+                                            link.style.color = '#1d4ed8';
+                                            link.style.textDecoration = 'underline';
+                                            link.style.wordBreak = 'break-all';
+
+                                            const removeWrap = document.createElement('span');
+                                            const checkbox = document.createElement('input');
+                                            checkbox.type = 'checkbox';
+                                            checkbox.name = 'edit_remove_event_documents[]';
+                                            checkbox.value = doc;
+                                            removeWrap.appendChild(checkbox);
+                                            removeWrap.appendChild(document.createTextNode(' Verwijder'));
+
+                                            row.appendChild(link);
+                                            row.appendChild(removeWrap);
+                                            editDocumentsList.appendChild(row);
+                                        });
+                                        editDocumentsContainer.style.display = 'block';
+                                    } else {
+                                        editDocumentsContainer.style.display = 'none';
+                                    }
                                     
                                     // Checkboxes
                                     document.getElementById('edit-show-signup-button').checked = item.show_signup_button !== '0' && item.show_signup_button !== false;
@@ -4043,6 +4630,18 @@ if ($page === 'users') {
                                 <p class="font-semibold mb-2">Banner 2</p>
                                 <img src="<?php echo htmlspecialchars($banner2); ?>" alt="Banner 2" class="w-full h-auto border rounded-lg shadow">
                             </div>
+                            <?php if ($banner3): ?>
+                            <div>
+                                <p class="font-semibold mb-2">Banner 3</p>
+                                <img src="<?php echo htmlspecialchars($banner3); ?>" alt="Banner 3" class="w-full h-auto border rounded-lg shadow">
+                            </div>
+                            <?php endif; ?>
+                            <?php if ($banner4): ?>
+                            <div>
+                                <p class="font-semibold mb-2">Banner 4</p>
+                                <img src="<?php echo htmlspecialchars($banner4); ?>" alt="Banner 4" class="w-full h-auto border rounded-lg shadow">
+                            </div>
+                            <?php endif; ?>
                         </div>
 
                         <form method="POST" enctype="multipart/form-data" class="space-y-4">
@@ -4064,6 +4663,24 @@ if ($page === 'users') {
                                     <label class="form-checkbox mt-2 inline-flex items-center gap-2">
                                         <input type="checkbox" name="remove_banner2" value="1">
                                         Verwijder huidige banner 2
+                                    </label>
+                                    <small class="text-gray-600">Aanbevolen formaat: 1920x600px</small>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Vervang Banner 3 (optioneel)</label>
+                                    <div class="admin-upload-widget" data-name="banner3" data-accept="image/*"></div>
+                                    <label class="form-checkbox mt-2 inline-flex items-center gap-2">
+                                        <input type="checkbox" name="remove_banner3" value="1">
+                                        Verwijder huidige banner 3
+                                    </label>
+                                    <small class="text-gray-600">Aanbevolen formaat: 1920x600px</small>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Vervang Banner 4 (optioneel)</label>
+                                    <div class="admin-upload-widget" data-name="banner4" data-accept="image/*"></div>
+                                    <label class="form-checkbox mt-2 inline-flex items-center gap-2">
+                                        <input type="checkbox" name="remove_banner4" value="1">
+                                        Verwijder huidige banner 4
                                     </label>
                                     <small class="text-gray-600">Aanbevolen formaat: 1920x600px</small>
                                 </div>

@@ -17,10 +17,14 @@ $totalPast = $stmt->fetchColumn();
 
 $banner1 = 'images/banner_website_01.jpg';
 $banner2 = 'images/banner_website_02.jpg';
+$banner3 = null;
+$banner4 = null;
 
 try {
     $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: $banner1;
     $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: $banner2;
+    $banner3 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner3'")->fetchColumn() ?: null;
+    $banner4 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner4'")->fetchColumn() ?: null;
     $stmt = $pdo->prepare("SELECT * FROM events WHERE COALESCE(end_date, date) >= CURDATE() ORDER BY date, time");
     $stmt->execute();
     $events = $stmt->fetchAll();
@@ -48,6 +52,16 @@ try {
     <div class="banner banner-2">
         <img class="" src="<?php echo htmlspecialchars($banner2); ?>">
     </div>
+    <?php if ($banner3): ?>
+    <div class="banner banner-3">
+        <img class="" src="<?php echo htmlspecialchars($banner3); ?>">
+    </div>
+    <?php endif; ?>
+    <?php if ($banner4): ?>
+    <div class="banner banner-4">
+        <img class="" src="<?php echo htmlspecialchars($banner4); ?>">
+    </div>
+    <?php endif; ?>
 </div>
 
 <?php

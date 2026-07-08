@@ -116,6 +116,9 @@ try {
     if (!in_array('event_gallery', $columns)) {
         $pdo->exec("ALTER TABLE events ADD COLUMN event_gallery TEXT DEFAULT NULL");
     }
+    if (!in_array('event_documents', $columns)) {
+        $pdo->exec("ALTER TABLE events ADD COLUMN event_documents TEXT DEFAULT NULL");
+    }
     if (!in_array('meer_info', $columns)) {
         $pdo->exec("ALTER TABLE events ADD COLUMN meer_info TEXT DEFAULT NULL");
     }

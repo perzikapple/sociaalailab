@@ -5,6 +5,8 @@ require 'helpers.php';
 
 $banner1 = 'images/banner_website_01.jpg';
 $banner2 = 'images/banner_website_02.jpg';
+$banner3 = null;
+$banner4 = null;
 $linkedinRssUrl = 'https://rss.app/feeds/dV7LODC8P6clPQvr.xml';
 
 function fetchHomepageLinkedInPosts(string $url, int $limit = 8): array
@@ -73,8 +75,12 @@ $linkedinPosts = fetchHomepageLinkedInPosts($linkedinRssUrl, 8);
 try {
     $b1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn();
     $b2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn();
+    $b3 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner3'")->fetchColumn();
+    $b4 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner4'")->fetchColumn();
     if ($b1) $banner1 = $b1;
     if ($b2) $banner2 = $b2;
+    if ($b3) $banner3 = $b3;
+    if ($b4) $banner4 = $b4;
 
     $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'index' ORDER BY (sort_order IS NULL OR sort_order = 0) ASC, sort_order ASC, created_at ASC, id ASC");
     $stmt->execute();
@@ -141,6 +147,16 @@ error_reporting(E_ALL);
     <div class="banner banner-2">
         <img class="" src="<?php echo htmlspecialchars($banner2); ?>">
     </div>
+    <?php if ($banner3): ?>
+    <div class="banner banner-3">
+        <img class="" src="<?php echo htmlspecialchars($banner3); ?>">
+    </div>
+    <?php endif; ?>
+    <?php if ($banner4): ?>
+    <div class="banner banner-4">
+        <img class="" src="<?php echo htmlspecialchars($banner4); ?>">
+    </div>
+    <?php endif; ?>
 </div>
 
 <?php
@@ -285,7 +301,7 @@ include __DIR__ . '/navbar.php';
 ?>
 <section class="homepage-carousel-slide flex flex-col md:flex-row items-center gap-6 md:gap-8">
     <div class="flex-1">
-        <span class="inline-block bg-[#00811F] text-white text-sm font-medium px-4 py-1 mb-4">Evenement</span>
+        <span class="event-accent-badge">Evenement</span>
         <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900"><?php echo htmlspecialchars($event['title']); ?></h2>
         <div class="space-y-3">
             <div class="flex items-center space-x-3">

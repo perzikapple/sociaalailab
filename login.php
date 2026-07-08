@@ -4,6 +4,8 @@ require 'db.php';
 
 $banner1 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner1'")->fetchColumn() ?: 'images/banner_website_01.jpg';
 $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: 'images/banner_website_02.jpg';
+$banner3 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner3'")->fetchColumn() ?: null;
+$banner4 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner4'")->fetchColumn() ?: null;
 
 $rolePermissions = [
     'administrator' => ['create_users', 'edit_users', 'delete_users', 'manage_banners', 'manage_events', 'manage_pages', 'delete_events', 'delete_pages', 'optimize_images', 'approve_content', 'access_booking', 'view_audit'],
@@ -93,6 +95,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="banner-wrapper relative">
         <img src="<?php echo htmlspecialchars($banner1); ?>" alt="Banner 1" class="banner active h-60 md:h-96 w-full object-cover">
         <img src="<?php echo htmlspecialchars($banner2); ?>" alt="Banner 2" class="banner h-60 md:h-96 w-full object-cover">
+        <?php if ($banner3): ?>
+        <img src="<?php echo htmlspecialchars($banner3); ?>" alt="Banner 3" class="banner h-60 md:h-96 w-full object-cover">
+        <?php endif; ?>
+        <?php if ($banner4): ?>
+        <img src="<?php echo htmlspecialchars($banner4); ?>" alt="Banner 4" class="banner h-60 md:h-96 w-full object-cover">
+        <?php endif; ?>
     </div>
 
     <?php
