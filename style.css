@@ -4481,3 +4481,17 @@ section:focus-visible,
         display: none;
     }
 }
+
+h2 span {
+    background-color: #d12254;
+    color: white;
+    font-size: 16px;
+    padding: 4px 8px; /* top/bottom, left/right */
+}
+
+.pink-text{
+    background-color: #d12254;
+    color: white;
+    font-size: 16px;
+    padding: 4px 8px; /* top/bottom, left/right 
+}

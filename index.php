@@ -109,7 +109,7 @@ try {
         }
     }
     
-    $stmt = $pdo->prepare("SELECT * FROM events WHERE COALESCE(end_date, date) >= CURDATE() AND (show_on_homepage IS NULL OR show_on_homepage = 1) ORDER BY date, time LIMIT 8");
+    $stmt = $pdo->prepare("SELECT * FROM events WHERE approval_status = 'approved' AND COALESCE(end_date, date) >= CURDATE() AND (show_on_homepage IS NULL OR show_on_homepage = 1) ORDER BY date, time LIMIT 8");
     $stmt->execute();
     $events = $stmt->fetchAll();
 } catch (Exception $e) {
@@ -176,7 +176,7 @@ include __DIR__ . '/navbar.php';
     <section class="flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg mt- p-8 max-w-6xl mx-auto my-12" tabindex="0">
         <div class="flex-1">
             <?php if ($welcomeGreenText !== '' && $welcomeGreenTextPosition === 'above'): ?>
-                <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($welcomeGreenText)); ?></div>
+                <div class="pink_text"><?php echo nl2br(htmlspecialchars($welcomeGreenText)); ?></div>
             <?php endif; ?>
             <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900">
                 <?php echo htmlspecialchars($welcomeBlock['title']); ?></h2>
@@ -184,7 +184,7 @@ include __DIR__ . '/navbar.php';
                 <?php echo renderEditorBlock($welcomeBlock['body']); ?>
             </div>
             <?php if ($welcomeGreenText !== '' && $welcomeGreenTextPosition === 'below'): ?>
-                <div class="green-highlight mb-3"><?php echo nl2br(htmlspecialchars($welcomeGreenText)); ?></div>
+                <div class="pink_text"><?php echo nl2br(htmlspecialchars($welcomeGreenText)); ?></div>
             <?php endif; ?>
         </div>
     </section>
@@ -330,10 +330,6 @@ include __DIR__ . '/navbar.php';
             <?php $signupEmbed = trim((string)($event['signup_embed'] ?? '')); ?>
             <?php if ($signupEmbed !== ''): ?>
                 <?php echo renderAanmelderEmbed($signupEmbed); ?>
-            <?php elseif (!empty($event['show_signup_button'])): ?>
-                <a href="inschrijven.php?event_id=<?php echo (int)$event['id']; ?>" class="inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">
-                    Inschrijven
-                </a>
             <?php endif; ?>
             <a href="event-detail.php?id=<?php echo (int)$event['id']; ?>" class="inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">
                 Meer info

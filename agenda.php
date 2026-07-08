@@ -5,12 +5,12 @@ require 'helpers.php';
 
 
 // Count the total upcoming evens
-$stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE COALESCE(end_date, date) >= CURDATE()");
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE approval_status = 'approved' AND COALESCE(end_date, date) >= CURDATE()");
 $stmt->execute();
 $totalUpcoming = $stmt->fetchColumn();
 
 // Count the total past events
-$stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE COALESCE(end_date, date) < CURDATE()");
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM events WHERE approval_status = 'approved' AND COALESCE(end_date, date) < CURDATE()");
 $stmt->execute();
 $totalPast = $stmt->fetchColumn();
 
@@ -25,7 +25,7 @@ try {
     $banner2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn() ?: $banner2;
     $banner3 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner3'")->fetchColumn() ?: null;
     $banner4 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner4'")->fetchColumn() ?: null;
-    $stmt = $pdo->prepare("SELECT * FROM events WHERE COALESCE(end_date, date) >= CURDATE() ORDER BY date, time");
+    $stmt = $pdo->prepare("SELECT * FROM events WHERE approval_status = 'approved' AND COALESCE(end_date, date) >= CURDATE() ORDER BY date, time");
     $stmt->execute();
     $events = $stmt->fetchAll();
 } catch (Exception $e) {
@@ -89,7 +89,7 @@ include __DIR__ . '/navbar.php';
 
 <?php
 require 'db.php';
-$stmt = $pdo->prepare("SELECT * FROM events WHERE COALESCE(end_date, date) >= CURDATE() ORDER BY date, time");
+$stmt = $pdo->prepare("SELECT * FROM events WHERE approval_status = 'approved' AND COALESCE(end_date, date) >= CURDATE() ORDER BY date, time");
 $stmt->execute();
 $events = $stmt->fetchAll();
 foreach ($events as $event):
@@ -110,7 +110,7 @@ foreach ($events as $event):
     ?>
     <section class="agenda-event-card flex flex-col md:flex-row items-center gap-10 bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" tabindex="0">
         <div class="flex-1">
-            <span class="inline-block text-white text-sm font-medium px-4 py-1 mb-4" style="background-color:#ce0245;">Evenement</span>
+            <span class="inline-block text-white text-sm font-medium px-4 py-1 mb-4" style="background-color:#d12254;">Evenement</span>
             <h2 class="text-2xl md:text-3xl font-semibold mb-4 text-gray-900"><?php echo renderEditorInline($event['title']); ?></h2>
             <div class="space-y-4">
                 <div class="flex items-center space-x-3">
@@ -139,10 +139,6 @@ foreach ($events as $event):
             <?php endif; ?>
             <?php if ($signupEmbed !== ''): ?>
             <?php echo renderAanmelderEmbed($signupEmbed); ?>
-            <?php elseif (!empty($event['show_signup_button'])): ?>
-            <a href="inschrijven.php?event_id=<?php echo (int)$event['id']; ?>" class="mt-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">
-                Inschrijven
-            </a>
             <?php endif; ?>
             <a href="event-detail.php?id=<?php echo (int)$event['id']; ?>" class="mt-4 ml-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">
                 Meer info

@@ -18,7 +18,7 @@ try {
     $stmt = $pdo->prepare("SELECT * FROM pages WHERE page_key = 'evenementen' ORDER BY (sort_order IS NULL OR sort_order = 0) ASC, sort_order ASC, created_at ASC, id ASC");
     $stmt->execute();
     $pageBlocks = $stmt->fetchAll();
-    $stmt = $pdo->prepare("SELECT * FROM events WHERE COALESCE(end_date, date) >= CURDATE() AND date <= DATE_ADD(CURDATE(), INTERVAL 14 DAY) ORDER BY date, time");
+    $stmt = $pdo->prepare("SELECT * FROM events WHERE approval_status = 'approved' AND COALESCE(end_date, date) >= CURDATE() AND date <= DATE_ADD(CURDATE(), INTERVAL 14 DAY) ORDER BY date, time");
     $stmt->execute();
     $events = $stmt->fetchAll();
 } catch (Exception $e) {
@@ -155,8 +155,8 @@ include __DIR__ . '/navbar.php';
                             <div class="text-gray-700 pb-3 "><strong> Wat:</strong><div class="mt-1"><?php echo renderEditorBlock($event['description']); ?></div></div>
                         </div>
                     </div>
-                    <?php if (!empty($event['show_signup_button'])): ?>
-                    <a href="inschrijven.php?event_id=<?php echo (int)$event['id']; ?>" class="mt-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">
+                    <?php if (!empty($event['signup_embed'])): ?>
+                    <a href="<?php echo htmlspecialchars($event['signup_embed']); ?>" target="_blank" rel="noopener noreferrer" class="mt-4 inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">
                         Inschrijven
                     </a>
                     <?php endif; ?>

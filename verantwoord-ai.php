@@ -41,7 +41,7 @@ try {
 <!doctype html>
 <html lang="nl">
 <head>
-        <link rel="icon" type="image/png" href="images/Pixels_icon.png">
+    <link rel="icon" type="image/png" href="images/Pixels_icon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="modulepreload" as="script" href="build/assets/app-CAiCLEjY.js"><link rel="stylesheet" href="style.css?v=<?php echo filemtime(__DIR__.'/style.css'); ?>"><script type="module" src="build/assets/app-CAiCLEjY.js"></script>    <title>Informatie SociaalAI Lab</title>
@@ -114,12 +114,10 @@ include __DIR__ . '/navbar.php';
             $sectionStyle .= " gap: 1.5rem;";
         }
     ?>
-        <!-- Image-only blokken (geen tekst, geen nummer): full-width buiten section -->
         <?php if (!$hasText && $hasImage && !$shouldShowNumber): ?>
             <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100vw !important; max-width: 100vw !important; height: auto; display: block; margin-left: calc(-50vw + 50%); position: relative; margin-top: 3rem; margin-bottom: 3rem;">
         <?php else: ?>
         <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12" style="<?php echo $sectionStyle; ?>">
-            <!-- Nummer links (als van toepassing) -->
             <?php if ($shouldShowNumber && $numberPosition === 'left' && $hasText): ?>
                 <div style="flex: 0 0 auto; width: 280px;">
                     <div style="font-size: 120px; font-weight: bold; color: #00811F; text-align: center; line-height: 1; display: flex; align-items: center; justify-content: center; min-height: 200px;">
@@ -128,14 +126,12 @@ include __DIR__ . '/navbar.php';
                 </div>
             <?php endif; ?>
             
-            <!-- Afbeelding links (alleen voor niet-nummered blokken) -->
             <?php if ($imagePosition === 'left' && $hasImage && !$shouldShowNumber): ?>
                 <div style="flex: 0 0 auto; max-width: 280px; width: 100%;">
                     <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
                 </div>
             <?php endif; ?>
 
-            <!-- Tekst -->
             <?php if ($hasText): ?>
                 <div style="<?php echo ($imagePosition !== 'normal' && $hasImage && !$shouldShowNumber) ? 'flex: 1 1 auto; min-width: 0;' : ''; ?>">
                     <?php if ($greenText !== '' && $greenTextPosition === 'above'): ?>
@@ -153,14 +149,12 @@ include __DIR__ . '/navbar.php';
                 </div>
             <?php endif; ?>
 
-            <!-- Afbeelding rechts (alleen voor niet-nummered blokken) -->
             <?php if ($imagePosition === 'right' && $hasImage && !$shouldShowNumber): ?>
                 <div style="flex: 0 0 auto; max-width: 280px; width: 100%;">
                     <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
                 </div>
             <?php endif; ?>
             
-            <!-- Nummer rechts (als van toepassing) -->
             <?php if ($shouldShowNumber && $numberPosition === 'right' && $hasText): ?>
                 <div style="flex: 0 0 auto; width: 280px;">
                     <div style="font-size: 120px; font-weight: bold; color: #00811F; text-align: center; line-height: 1; display: flex; align-items: center; justify-content: center; min-height: 200px;">
@@ -169,10 +163,17 @@ include __DIR__ . '/navbar.php';
                 </div>
             <?php endif; ?>
             
-            <!-- Afbeelding normaal (onder tekst) - alleen voor niet-nummered blokken -->
             <?php if ($hasImage && $imagePosition === 'normal' && !$shouldShowNumber): ?>
                 <div style="width: 100%;">
                     <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
+                </div>
+            <?php endif; ?>
+
+            <?php if ($isLastBlock): ?>
+                <div class="w-full mt-6 pt-2 clear-both">
+                    <a href="images/code-of-conduct.pdf" target="_blank" class="inline-block bg-[#00811F] text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:bg-opacity-90 transition duration-200">
+                        <i class="fa-solid fa-circle-info mr-2"></i> Meer info
+                    </a>
                 </div>
             <?php endif; ?>
         </section>
@@ -288,7 +289,6 @@ setInterval(() => {
   current = (current + 1) % banners.length;
   banners[current].classList.add('active');
 }, 10000);
-
 </script>
 
 </body>

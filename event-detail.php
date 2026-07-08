@@ -21,9 +21,15 @@ $eventId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $event = null;
 
 if ($eventId > 0) {
-    $stmt = $pdo->prepare('SELECT * FROM events WHERE id = ? LIMIT 1');
-    $stmt->execute([$eventId]);
+    $stmt = $pdo->prepare('SELECT * FROM events WHERE id = ? AND approval_status = ? LIMIT 1');
+    $stmt->execute([$eventId, 'approved']);
     $event = $stmt->fetch();
+}
+
+// If event not found or not approved, redirect to events page
+if (!$event) {
+    header('Location: event.php');
+    exit;
 }
 
 $isPastEvent = false;
@@ -269,8 +275,6 @@ include __DIR__ . '/navbar.php';
                 $signupEmbed = trim((string)($event['signup_embed'] ?? ''));
                 if ($signupEmbed !== '') {
                     echo renderAanmelderEmbed($signupEmbed);
-                } elseif (!empty($event['show_signup_button'])) {
-                    echo '<a href="inschrijven.php?event_id=' . (int)$event['id'] . '" class="inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">Inschrijven</a>';
                 }
                 ?>
                 <?php if (!empty($event['info_link'])): ?>

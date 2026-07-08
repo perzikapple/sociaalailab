@@ -600,6 +600,98 @@ input::placeholder {
     }
 }
 
+/* STAFF MULTI-SELECT */
+.multi-select {
+    position: relative;
+    width: 100%;
+    margin-bottom: 0.5rem;
+}
+
+.multi-select-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1rem;
+    border-radius: 10px;
+    border: 2px solid #dfe8f3;
+    background: #f9fafb;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-height: 48px;
+}
+
+.multi-select-trigger:hover {
+    border-color: #00811F;
+}
+
+.multi-select-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    flex: 1;
+}
+
+.multi-select-tags .placeholder {
+    color: #999;
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.staff-tag {
+    display: inline-block;
+    padding: 0.25rem 0.65rem;
+    background: linear-gradient(135deg, #f0f5ff 0%, #eef6ff 100%);
+    border: 2px solid #dfe8f3;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #00811F;
+}
+
+.dropdown-arrow {
+    color: #999;
+    font-size: 0.75rem;
+    margin-left: 0.5rem;
+}
+
+.multi-select-options {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: white;
+    border: 2px solid #dfe8f3;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+.multi-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.7rem 1rem;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #333;
+}
+
+.multi-option:hover {
+    background: #f0f5ff;
+}
+
+.multi-option input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #00811F;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
 /* MONTH CALENDAR */
 .calendar-header {
     display: flex;

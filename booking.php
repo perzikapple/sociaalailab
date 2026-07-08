@@ -64,14 +64,18 @@ $weekStart = (clone $selectedDateTime)->modify('monday this week');
 $weekEnd = (clone $weekStart)->modify('+6 days');
 
 $locations = [
-        ['id' => 1, 'name' => 'Grote Zaal 1', 'color' => '#00811F'],
-        ['id' => 2, 'name' => 'Grote Zaal 2', 'color' => '#00811F'],
-        ['id' => 3, 'name' => 'Grote Zaal 3', 'color' => '#00811F'],
+        ['id' => 1, 'name' => 'Sociaal AI Lab Hillevliet', 'color' => '#00811F'],
+        ['id' => 2, 'name' => 'Labkar', 'color' => '#0066CC'],
+        ['id' => 999, 'name' => 'Extern (overig)', 'color' => '#FF9500'],
+];
 
-        ['id' => 4, 'name' => 'Workshop 1', 'color' => '#0066CC'],
-        ['id' => 5, 'name' => 'Workshop 2', 'color' => '#0066CC'],
-
-        ['id' => 999, 'name' => 'Extern', 'color' => '#FF9500'],
+$tables = [
+    'gt1' => 'Grote tafel 1',
+    'gt2' => 'Grote tafel 2',
+    'gt3' => 'Grote tafel 3',
+    'kt1' => 'Kleine tafel 1',
+    'kt2' => 'Kleine tafel 2',
+    'kt3' => 'Kleine tafel 3',
 ];
 
 $hardware = [
@@ -109,12 +113,23 @@ function findById($arr, $id) {
 }
 
 /* LOAD BOOKINGS FIRST */
+// Ensure database has `event_responsibility` column (safe, idempotent if permissions allow)
+try {
+    $col = $pdo->query("SHOW COLUMNS FROM bookings LIKE 'event_responsibility'")->fetch();
+    if (!$col) {
+        // Try to add the column; if user/db does not permit this will throw and be ignored
+        $pdo->exec("ALTER TABLE bookings ADD COLUMN event_responsibility TINYINT(1) NOT NULL DEFAULT 0");
+    }
+} catch (Exception $e) {
+    // Ignore - if DB user cannot alter table we'll still continue but won't store the field
+}
+
 $stmt = $pdo->prepare("SELECT * FROM bookings");
 $stmt->execute();
 $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Also show approved agenda events in booking calendar/day view
-$stmt = $pdo->prepare("SELECT id, title, date, end_date, time, time_end, location, hardware_request, staff_present, description, meer_info FROM events WHERE approval_status IN ('approved','pending')");
+$stmt = $pdo->prepare("SELECT id, title, date, end_date, time, time_end, location, hardware_request, staff_present, description, meer_info FROM events WHERE approval_status = 'approved'");
 $stmt->execute();
 $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -126,30 +141,41 @@ if (!empty($_SESSION['booking_message'])) {
 }
 
 /* STAFF ASSIGNMENT HANDLING - CHECK FIRST */
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_staff_assignment_id'])) {
+    $assignmentId = intval($_POST['delete_staff_assignment_id']);
+    if ($assignmentId > 0) {
+        $stmt = $pdo->prepare("DELETE FROM location_staff WHERE id = ? AND location_id = 1");
+        $stmt->execute([$assignmentId]);
+    }
+    header("Location: booking.php?view=$view&date=$selectedDate&selected_day=$selectedDay");
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['staff_dates'])) {
     $staffDates = trim($_POST['staff_dates']);
     $staffLocationId = $_POST['staff_location_id'] ?? 1;
-    $staffName = trim($_POST['staff_name']);
+    $staffNames = $_POST['staff_names'] ?? [];
     $startTime = trim($_POST['staff_start_time'] ?? null);
     $endTime = trim($_POST['staff_end_time'] ?? null);
     
-    // Auto-assign color based on staff name
-    $staffColor = getStaffColor($pdo, $staffName, $staffColorPalette);
-
-    if (!empty($staffDates) && !empty($staffName)) {
-        // Split dates by comma, newline, or semicolon
+    if (!empty($staffDates) && !empty($staffNames)) {
         $dateArray = preg_split('/[,;\n\r]+/', $staffDates, -1, PREG_SPLIT_NO_EMPTY);
-        // Trim dates but don't remove duplicates - allow same date multiple times with different times
         $dateArray = array_map('trim', $dateArray);
         
-        foreach ($dateArray as $dateStr) {
-            // Validate date format (YYYY-MM-DD)
-            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateStr)) {
-                $stmt = $pdo->prepare("
-                    INSERT INTO location_staff (staff_date, location_id, staff_name, color, start_time, end_time)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                ");
-                $stmt->execute([$dateStr, $staffLocationId, $staffName, $staffColor, $startTime ?: null, $endTime ?: null]);
+        foreach ($staffNames as $staffName) {
+            $staffName = trim($staffName);
+            if (empty($staffName)) continue;
+            
+            $staffColor = getStaffColor($pdo, $staffName, $staffColorPalette);
+            
+            foreach ($dateArray as $dateStr) {
+                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateStr)) {
+                    $stmt = $pdo->prepare("
+                        INSERT INTO location_staff (staff_date, location_id, staff_name, color, start_time, end_time)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    ");
+                    $stmt->execute([$dateStr, $staffLocationId, $staffName, $staffColor, $startTime ?: null, $endTime ?: null]);
+                }
             }
         }
     }
@@ -160,101 +186,147 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['staff_dates'])) {
 
 /* BOOKING INSERT - support multiple locations selection */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['booking_date'])) {
-    $bookingDate = $_POST['booking_date'] ?? null;
-    $bookingStartTime = $_POST['start_time'] ?? null;
-    $bookingEndTime = $_POST['end_time'] ?? null;
-    $locationIds = $_POST['location_ids'] ?? [];
-    // allow single location submitted as scalar for backwards compatibility
-    if (!is_array($locationIds) && !empty($locationIds)) {
-        $locationIds = [$locationIds];
-    }
+     $bookingDate = $_POST['booking_date'] ?? null;
+     $bookingStartTime = $_POST['start_time'] ?? null;
+     $bookingEndTime = $_POST['end_time'] ?? null;
+     $bookingTitle = $_POST['booking_title'] ?? null;
+     $locationIds = $_POST['location_ids'] ?? [];
+     $tablesJson = $_POST['tables_json'] ?? '[]';
+     // allow single location submitted as scalar for backwards compatibility
+     if (!is_array($locationIds) && !empty($locationIds)) {
+         $locationIds = [$locationIds];
+     }
 
-    if (!empty($bookingDate) && !empty($bookingStartTime) && !empty($bookingEndTime) && !empty($locationIds)) {
-        $hardwareJson = json_encode($_POST['hardware'] ?? []);
-        $inserted = [];
-        $skipped = [];
+     // Server-side validation: event responsibility must be accepted
+     $eventResponsibility = (isset($_POST['event_responsibility']) && ($_POST['event_responsibility'] === '1' || $_POST['event_responsibility'] === 'on')) ? 1 : 0;
+     if (!$eventResponsibility) {
+         $_SESSION['booking_message'] = 'You must accept responsibility for the event before submitting your booking.';
+         header("Location: booking.php?view=$view&date=$selectedDate");
+         exit;
+     }
 
-        foreach ($locationIds as $locId) {
-            $locId = intval($locId);
-            if ($locId === 0) continue;
+     // Detect whether DB has event_responsibility column
+     $hasEventResponsibilityColumn = false;
+     try {
+         $hasEventResponsibilityColumn = (bool)$pdo->query("SHOW COLUMNS FROM bookings LIKE 'event_responsibility'")->fetch();
+     } catch (Exception $e) {
+         $hasEventResponsibilityColumn = false;
+     }
 
-            $locationDescription = $locId == 999 ? ($_POST['location_description'] ?? '') : null;
+     if (!empty($bookingDate) && !empty($bookingStartTime) && !empty($bookingEndTime) && !empty($locationIds)) {
+         $hardwareJson = json_encode($_POST['hardware'] ?? []);
+         $inserted = [];
+         $skipped = [];
 
-            // Check for conflicting bookings for this location
-            $conflict = false;
-            foreach ($bookings as $b) {
-                if ($b['booking_date'] === $bookingDate && $b['location_id'] == $locId) {
-                    // Externe bookings (999) conflicteren niet met elkaar
-                    if ($locId == 999) continue;
+         foreach ($locationIds as $locId) {
+             $locId = intval($locId);
+             if ($locId === 0) continue;
 
-                    $bStart = (int)substr($b['start_time'], 0, 2);
-                    $bEnd = (int)substr($b['end_time'], 0, 2);
-                    $newStart = (int)substr($bookingStartTime, 0, 2);
-                    $newEnd = (int)substr($bookingEndTime, 0, 2);
+             $locationDescription = $locId == 999 ? ($_POST['location_description'] ?? '') : null;
 
-                    if ($newStart < $bEnd && $newEnd > $bStart) {
-                        $conflict = true;
-                        break;
-                    }
-                }
-            }
+             // Check for conflicting bookings for this location
+             $conflict = false;
+             foreach ($bookings as $b) {
+                 if ($b['booking_date'] === $bookingDate && $b['location_id'] == $locId) {
+                     // Externe bookings (999) conflicteren niet met elkaar
+                     if ($locId == 999) continue;
 
-            if ($conflict) {
-                $skipped[] = $locId;
-                continue;
-            }
+                     $bStart = (int)substr($b['start_time'], 0, 2);
+                     $bEnd = (int)substr($b['end_time'], 0, 2);
+                     $newStart = (int)substr($bookingStartTime, 0, 2);
+                     $newEnd = (int)substr($bookingEndTime, 0, 2);
 
-            $hardwareJson = $_POST['hardware_json'] ?? '[]';
-            $stmt = $pdo->prepare("INSERT INTO bookings (location_id, location_description, booking_date, start_time, end_time, hardware_ids) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->execute([
-                $locId,
-                $locationDescription,
-                $bookingDate,
-                $bookingStartTime,
-                $bookingEndTime,
-                $hardwareJson
-            ]);
+                     if ($newStart < $bEnd && $newEnd > $bStart) {
+                         $conflict = true;
+                         break;
+                     }
+                 }
+             }
 
-            $inserted[] = $locId;
-        }
+             if ($conflict) {
+                 $skipped[] = $locId;
+                 continue;
+             }
 
-        // prepare a user-friendly message and store in session so it survives the redirect
-        $msgParts = [];
-        if (!empty($inserted)) {
-            $names = [];
-            foreach ($inserted as $id) {
-                $loc = findById($locations, $id);
-                $names[] = $loc ? $loc['name'] : "#{$id}";
-            }
-            $msgParts[] = "Geboekt: " . implode(', ', $names);
-        }
-        if (!empty($skipped)) {
-            $names = [];
-            foreach ($skipped as $id) {
-                $loc = findById($locations, $id);
-                $names[] = $loc ? $loc['name'] : "#{$id}";
-            }
-            $msgParts[] = "Kon niet boeken (conflict): " . implode(', ', $names);
-        }
+             $hardwareJson = $_POST['hardware_json'] ?? '[]';
+             // Only use tafels_json if this is location_id 1 (Sociaal AI Lab Hillevliet)
+             $tablesForBooking = ($locId == 1) ? $tablesJson : '[]';
 
-        if (!empty($msgParts)) {
-            $_SESSION['booking_message'] = implode(' | ', $msgParts);
-        }
+             if ($hasEventResponsibilityColumn) {
+                 $stmt = $pdo->prepare("INSERT INTO bookings (title, location_id, location_description, booking_date, start_time, end_time, hardware_ids, tables_ids, event_responsibility) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                 $stmt->execute([
+                     $bookingTitle,
+                     $locId,
+                     $locationDescription,
+                     $bookingDate,
+                     $bookingStartTime,
+                     $bookingEndTime,
+                     $hardwareJson,
+                     $tablesForBooking,
+                     $eventResponsibility
+                 ]);
+             } else {
+                 // Fallback if column doesn't exist
+                 $stmt = $pdo->prepare("INSERT INTO bookings (title, location_id, location_description, booking_date, start_time, end_time, hardware_ids, tables_ids) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                 $stmt->execute([
+                     $bookingTitle,
+                     $locId,
+                     $locationDescription,
+                     $bookingDate,
+                     $bookingStartTime,
+                     $bookingEndTime,
+                     $hardwareJson,
+                     $tablesForBooking
+                 ]);
+                 // Note: responsibility flag not saved because DB lacks column
+             }
 
-        header("Location: booking.php?view=$view&date=$selectedDate");
-        exit;
-    }
-}
+             $inserted[] = $locId;
+         }
+
+         // prepare a user-friendly message and store in session so it survives the redirect
+         $msgParts = [];
+         if (!empty($inserted)) {
+             $names = [];
+             foreach ($inserted as $id) {
+                 $loc = findById($locations, $id);
+                 $names[] = $loc ? $loc['name'] : "#{$id}";
+             }
+             $msgParts[] = "Geboekt: " . implode(', ', $names);
+         }
+         if (!empty($skipped)) {
+             $names = [];
+             foreach ($skipped as $id) {
+                 $loc = findById($locations, $id);
+                 $names[] = $loc ? $loc['name'] : "#{$id}";
+             }
+             $msgParts[] = "Kon niet boeken (conflict): " . implode(', ', $names);
+         }
+
+         if (!empty($msgParts)) {
+             $_SESSION['booking_message'] = implode(' | ', $msgParts);
+         }
+
+         header("Location: booking.php?view=$view&date=$selectedDate");
+         exit;
+     }
+ }
 
 /* LOAD ALL STAFF ASSIGNMENTS FOR DISPLAY */
 $stmt = $pdo->prepare("SELECT DISTINCT staff_name, color, COUNT(DISTINCT staff_date) as num_dates FROM location_staff WHERE location_id = 1 GROUP BY staff_name, color ORDER BY staff_name");
 $stmt->execute();
 $allStaffAssignments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+/* LOAD ALL NAMES FROM ACCOUNTS FOR DROPDOWN */
+$allStaffNameList = $pdo->query("
+    SELECT DISTINCT TRIM(CONCAT(COALESCE(first_name,''),' ',COALESCE(last_name,''))) COLLATE utf8mb4_general_ci AS name
+    FROM accounts WHERE first_name IS NOT NULL AND first_name != '' ORDER BY name
+")->fetchAll(PDO::FETCH_COLUMN);
+
 /* LOAD STAFF ASSIGNMENTS FOR SELECTED DAY */
 $stmt = $pdo->prepare("SELECT * FROM location_staff WHERE staff_date = ?");
 /* LOAD STAFF DATA FOR SELECTED DAY AND MERGE TIME SLOTS */
-$stmt = $pdo->prepare("SELECT staff_name, start_time, end_time, color FROM location_staff WHERE staff_date = ? AND location_id = 1 ORDER BY start_time");
+$stmt = $pdo->prepare("SELECT id, staff_name, start_time, end_time, color FROM location_staff WHERE staff_date = ? AND location_id = 1 ORDER BY start_time");
 $stmt->execute([$selectedDay]);
 $staffData = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -412,15 +484,32 @@ $daysWithStaff = array_keys($staffByDate);
                     </div>
                 </div>
             <?php endforeach; ?>
-            <?php foreach ($dayBookings as $b): ?>
-                <?php $loc = findById($locations, $b['location_id']); ?>
-                <div class="booking">
-                    <div>
-                        <strong><?= htmlspecialchars($b['title'] ?? 'Ongetiteld') ?></strong><br>
-                        <?= htmlspecialchars($b['location_id'] == 999 ? ($b['location_description'] ?? 'Extern') : $loc['name']) ?><br>
-                        <span style="font-size: 0.9rem; color: #666;">
-                            <?= substr($b['start_time'], 0, 5) ?> - <?= substr($b['end_time'], 0, 5) ?>
-                            <?php 
+             <?php foreach ($dayBookings as $b): ?>
+                 <?php $loc = findById($locations, $b['location_id']); ?>
+                 <div class="booking">
+                     <div>
+                         <strong><?= htmlspecialchars($b['title'] ?? 'Ongetiteld') ?></strong><br>
+                         <?php if ($b['location_id'] == 999): ?>
+                             Extern (overig)<?php if (!empty($b['location_description'])): ?> - <?= htmlspecialchars($b['location_description']) ?><?php endif; ?>
+                         <?php else: ?>
+                             <?= htmlspecialchars($loc['name']) ?>
+                         <?php endif; ?><br>
+                         <span style="font-size: 0.9rem; color: #666;">
+                             <?= substr($b['start_time'], 0, 5) ?> - <?= substr($b['end_time'], 0, 5) ?>
+                            <?php
+                            // Show tables if this is Sociaal AI Lab Hillevliet
+                            if ($b['location_id'] == 1 && !empty($b['tables_ids'])):
+                                $tablesList = json_decode($b['tables_ids'], true);
+                                if (!empty($tablesList)):
+                                    $tableNames = [];
+                                    foreach ($tablesList as $tableId) {
+                                        $tableNames[] = $tables[$tableId] ?? $tableId;
+                                    }
+                            ?>
+                                <br><span style="font-size: 0.85rem; color: #0066CC;"><strong>Tafels:</strong> <?= implode(', ', $tableNames) ?></span>
+                            <?php endif; endif; ?>
+
+                            <?php
                             if ($b['hardware_ids']): 
                                 $hwList = json_decode($b['hardware_ids'], true);
                                 if (!empty($hwList)):
@@ -442,6 +531,13 @@ $daysWithStaff = array_keys($staffByDate);
                                 ?>
                                 </span>
                             <?php endif; endif; ?>
+                            <?php
+                            // Show Event Responsibility flag if available
+                            if (isset($b['event_responsibility'])):
+                                $accepted = !empty($b['event_responsibility']);
+                            ?>
+                                <br><span style="font-size: 0.9rem; color: #374151;"><strong>Event Responsibility Accepted:</strong> <?php echo $accepted ? '✅ Yes' : '❌ No'; ?></span>
+                            <?php endif; ?>
                         </span>
                     </div>
                 </div>
@@ -477,6 +573,27 @@ $daysWithStaff = array_keys($staffByDate);
                             </div>
                         </div>
                     <?php endforeach; ?>
+                </div>
+
+                <div style="margin-top: 1.25rem;">
+                    <h4 style="margin-bottom: 1rem; color: #00811F;">Personeelsindeling verwijderen</h4>
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <?php foreach ($staffData as $assignment): ?>
+                            <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.75rem 1rem; background: #f5f8ff; border-radius: 10px; border: 1px solid #dfe8f3;">
+                                <div>
+                                    <span style="font-weight: 600; color: #00811F; display: block;"><?= htmlspecialchars($assignment['staff_name']) ?></span>
+                                    <span style="color: #666; font-size: 0.85rem;">
+                                        <?= $assignment['start_time'] ? substr($assignment['start_time'], 0, 5) : 'Hele dag' ?>
+                                        <?= $assignment['end_time'] ? ' - ' . substr($assignment['end_time'], 0, 5) : '' ?>
+                                    </span>
+                                </div>
+                                <form method="POST" style="margin: 0;">
+                                    <input type="hidden" name="delete_staff_assignment_id" value="<?= intval($assignment['id']) ?>">
+                                    <button type="submit" class="btn" style="padding: 0.6rem 1rem; font-size: 0.9rem; background: #ff6b6b; box-shadow: none;">Verwijderen</button>
+                                </form>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
                 </div>
             </div>
         <?php endif; ?>
@@ -636,11 +753,11 @@ $daysWithStaff = array_keys($staffByDate);
             <input type="date" name="booking_date" id="booking_date" required>
 
             <div style="margin-bottom: 1.2rem;">
-                <label style="display: block; margin-bottom: 0.75rem; font-weight: 600; color: #00811F;">Kies één of meerdere ruimtes:</label>
+                <label style="display: block; margin-bottom: 0.75rem; font-weight: 600; color: #00811F;">Selecteer locatie(s):</label>
                 <div class="location-buttons">
                     <?php foreach ($locations as $l): ?>
                         <label class="location-button" style="cursor: pointer;">
-                            <input type="checkbox" name="location_ids[]" value="<?= $l['id'] ?>" onchange="toggleLocationDescription()">
+                            <input type="checkbox" name="location_ids[]" value="<?= $l['id'] ?>" onchange="toggleLocationDescription(); toggleTableSelection()">
                             <span style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; background: #f9fafb; border: 2px solid #dfe8f3; border-radius: 10px; font-weight: 500; color: #333; transition: all 0.3s ease;">
                                 <div style="width: 12px; height: 12px; border-radius: 3px; border: 2px solid #dfe8f3; background: white;"></div>
                                 <?= htmlspecialchars($l['name']) ?>
@@ -648,6 +765,47 @@ $daysWithStaff = array_keys($staffByDate);
                         </label>
                     <?php endforeach; ?>
                 </div>
+            </div>
+
+            <!-- Tafelselectie voor Sociaal AI Lab Hillevliet -->
+            <div id="table_selection" style="display:none; margin-bottom: 1.2rem; padding: 1rem; background: #f9fafb; border-radius: 10px; border: 2px solid #dfe8f3;">
+                <label style="display: block; margin-bottom: 0.75rem; font-weight: 600; color: #00811F;">Selecteer tafel(s) in Sociaal AI Lab Hillevliet:</label>
+                
+                <fieldset style="margin-bottom: 1rem; padding: 0.75rem; border: 1px solid #dfe8f3; border-radius: 8px; background: white;">
+                    <legend style="font-weight: 600; color: #333; padding: 0 0.5rem;">Grote tafels</legend>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" name="tables[]" value="gt1" style="cursor: pointer;">
+                            <span>Grote tafel 1</span>
+                        </label>
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" name="tables[]" value="gt2" style="cursor: pointer;">
+                            <span>Grote tafel 2</span>
+                        </label>
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" name="tables[]" value="gt3" style="cursor: pointer;">
+                            <span>Grote tafel 3</span>
+                        </label>
+                    </div>
+                </fieldset>
+
+                <fieldset style="padding: 0.75rem; border: 1px solid #dfe8f3; border-radius: 8px; background: white;">
+                    <legend style="font-weight: 600; color: #333; padding: 0 0.5rem;">Kleine tafels</legend>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" name="tables[]" value="kt1" style="cursor: pointer;">
+                            <span>Kleine tafel 1</span>
+                        </label>
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" name="tables[]" value="kt2" style="cursor: pointer;">
+                            <span>Kleine tafel 2</span>
+                        </label>
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" name="tables[]" value="kt3" style="cursor: pointer;">
+                            <span>Kleine tafel 3</span>
+                        </label>
+                    </div>
+                </fieldset>
             </div>
 
             <input type="text" name="location_description" id="location_description" placeholder="Waar/wat is de externe locatie?" style="display:none;">
@@ -677,10 +835,29 @@ $daysWithStaff = array_keys($staffByDate);
                 </div>
             </div>
 
-            <!-- Hidden input voor hardware data -->
-            <input type="hidden" name="hardware_json" id="hardware_json" value="[]">
+             <!-- Hidden input voor hardware data -->
+             <input type="hidden" name="hardware_json" id="hardware_json" value="[]">
+             
+             <!-- Hidden input voor tafels data -->
+             <input type="hidden" name="tables_json" id="tables_json" value="[]">
 
-            <button type="submit" class="btn" id="submitBtn">Boek nu</button>
+                <!-- Event Responsibility card (required) -->
+                <div style="margin: 1rem 0; padding: 1rem; border-radius: 12px; background: #fff; border: 1px solid rgba(0,0,0,0.06); box-shadow: 0 6px 18px rgba(2,6,23,0.04);">
+                    <div style="display:flex; gap:0.75rem; align-items:flex-start;">
+                        <div style="font-size:1.25rem; color:#00811F; line-height:1; margin-top:2px;"><i class="fa fa-info-circle" aria-hidden="true"></i></div>
+                        <div style="flex:1;">
+                            <div style="font-weight:700; margin-bottom:0.5rem;">Event Responsibility</div>
+                            <div style="font-size:0.95rem; color:#374151; margin-bottom:0.75rem;">The person submitting this booking is considered the primary organizer and is fully responsible for the event. By continuing, the organizer confirms that all provided information is accurate and accepts responsibility for guests, venue rules, damages, additional costs, and compliance with all applicable laws and regulations.</div>
+                            <label style="display:flex; align-items:center; gap:0.5rem; font-weight:600; color:#374151;">
+                                <input type="checkbox" id="event_responsibility" name="event_responsibility" value="1" required style="width:18px; height:18px;">
+                                <span style="font-weight:600;">I confirm that I am the organizer (or authorized to book on behalf of the organizer) and accept full responsibility for this event, including compliance with the venue's terms and conditions.</span>
+                            </label>
+                            <div id="responsibilityError" style="color:#b91c1c; font-weight:600; margin-top:0.5rem; display:none;">You must accept responsibility for the event before submitting your booking.</div>
+                        </div>
+                    </div>
+                </div>
+
+             <button type="submit" class="btn" id="submitBtn">Boek nu</button>
         </form>
     </section>
 
@@ -743,22 +920,43 @@ function checkIfPastDate(dateStr) {
 
 // Toggle location description field based on whether extern (999) is selected
 function toggleLocationDescription() {
-    const checkboxes = document.querySelectorAll('input[name="location_ids[]"]');
-    const descriptionField = document.getElementById('location_description');
-    let externSelected = false;
-    checkboxes.forEach(cb => {
-        if (cb.checked && cb.value === '999') externSelected = true;
-    });
+     const checkboxes = document.querySelectorAll('input[name="location_ids[]"]');
+     const descriptionField = document.getElementById('location_description');
+     let externSelected = false;
+     checkboxes.forEach(cb => {
+         if (cb.checked && cb.value === '999') externSelected = true;
+     });
 
-    if (externSelected) {
-        descriptionField.style.display = 'block';
-        descriptionField.required = true;
-    } else {
-        descriptionField.style.display = 'none';
-        descriptionField.required = false;
-        descriptionField.value = '';
-    }
-}
+     if (externSelected) {
+         descriptionField.style.display = 'block';
+         descriptionField.required = true;
+     } else {
+         descriptionField.style.display = 'none';
+         descriptionField.required = false;
+         descriptionField.value = '';
+     }
+ }
+
+ // Toggle table selection based on whether Sociaal AI Lab Hillevliet (id=1) is selected
+ function toggleTableSelection() {
+     const checkboxes = document.querySelectorAll('input[name="location_ids[]"]');
+     const tableSelection = document.getElementById('table_selection');
+     let hillevlietSelected = false;
+     checkboxes.forEach(cb => {
+         if (cb.checked && cb.value === '1') hillevlietSelected = true;
+     });
+
+     if (hillevlietSelected) {
+         tableSelection.style.display = 'block';
+     } else {
+         tableSelection.style.display = 'none';
+         // Clear table selections if Hillevliet is deselected
+         const tableCheckboxes = document.querySelectorAll('input[name="tables[]"]');
+         tableCheckboxes.forEach(cb => {
+             cb.checked = false;
+         });
+     }
+ }
 
 // Initialize form with selected day if present
 document.addEventListener('DOMContentLoaded', function() {
@@ -772,6 +970,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize location description field visibility
     toggleLocationDescription();
+    toggleTableSelection();
     
     // Listen for date field changes to enable/disable submit button
     const dateInput = document.getElementById('booking_date');
@@ -994,10 +1193,66 @@ document.addEventListener('keydown', function(e) {
 
 // Prevent form submit if no hardware selected
 document.getElementById('bookingForm').addEventListener('submit', function(e) {
-    if (Object.keys(selectedHardware).length === 0) {
-        alert('Voeg minstens één hardware item toe');
-        e.preventDefault();
-        return false;
+     // Save selected tables before submission
+     const tableCheckboxes = document.querySelectorAll('input[name="tables[]"]:checked');
+     const selectedTables = Array.from(tableCheckboxes).map(cb => cb.value);
+     document.getElementById('tables_json').value = JSON.stringify(selectedTables);
+     
+     // Hardware is now optional - no validation needed
+ });
+ 
+// Additional client-side validation for Event Responsibility checkbox
+document.addEventListener('DOMContentLoaded', function() {
+    const bookingForm = document.getElementById('bookingForm');
+    if (!bookingForm) return;
+    bookingForm.addEventListener('submit', function(e) {
+        const checkbox = document.getElementById('event_responsibility');
+        const err = document.getElementById('responsibilityError');
+        if (checkbox && !checkbox.checked) {
+            e.preventDefault();
+            if (err) err.style.display = 'block';
+            checkbox.focus();
+            return false;
+        }
+        if (err) err.style.display = 'none';
+        return true;
+    });
+    const checkbox = document.getElementById('event_responsibility');
+    if (checkbox) {
+        checkbox.addEventListener('change', function() {
+            const err = document.getElementById('responsibilityError');
+            if (err) err.style.display = this.checked ? 'none' : 'none';
+        });
+    }
+});
+
+/* MULTI-SELECT STAFF DROPDOWN */
+function toggleStaffDropdown() {
+    const panel = document.getElementById('staffOptions');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+function updateStaffTags() {
+    const container = document.getElementById('staffTags');
+    const checked = document.querySelectorAll('#staffOptions input[type="checkbox"]:checked');
+    container.innerHTML = '';
+    if (checked.length === 0) {
+        container.innerHTML = '<span class="placeholder">Selecteer personeelsleden</span>';
+    } else {
+        checked.forEach(cb => {
+            const tag = document.createElement('span');
+            tag.className = 'staff-tag';
+            tag.textContent = cb.value;
+            container.appendChild(tag);
+        });
+    }
+}
+
+document.addEventListener('click', function(e) {
+    const ms = document.getElementById('staffMultiSelect');
+    if (ms && !ms.contains(e.target)) {
+        const panel = document.getElementById('staffOptions');
+        if (panel) panel.style.display = 'none';
     }
 });
 </script>
@@ -1009,26 +1264,31 @@ document.getElementById('bookingForm').addEventListener('submit', function(e) {
     <form method="POST">
         <input type="hidden" name="staff_location_id" value="1">
         
-        <input 
-            type="text" 
-            name="staff_name" 
-            placeholder="Naam van personeelslid"
-            required
-        >
+            <div class="multi-select" id="staffMultiSelect">
+                <div class="multi-select-trigger" onclick="event.stopPropagation(); toggleStaffDropdown()">
+                    <div class="multi-select-tags" id="staffTags">
+                        <span class="placeholder">Selecteer personeelsleden</span>
+                    </div>
+                    <span class="dropdown-arrow">&#9660;</span>
+                </div>
+                <div class="multi-select-options" id="staffOptions" style="display: none;">
+                    <?php foreach ($allStaffNameList as $name): ?>
+                        <label class="multi-option">
+                            <input type="checkbox" name="staff_names[]" value="<?= htmlspecialchars($name) ?>" onchange="updateStaffTags()">
+                            <span><?= htmlspecialchars($name) ?></span>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+            </div>
         
         <div class="row">
             <input type="time" name="staff_start_time" id="staff_start_time" placeholder="Start tijd (optioneel)">
             <input type="time" name="staff_end_time" id="staff_end_time" placeholder="Eind tijd (optioneel)">
         </div>
         
-        <textarea 
-            name="staff_dates" 
-            placeholder="2024-01-15&#10;2024-01-16&#10;2024-01-17&#10;&#10;of: 2024-01-15, 2024-01-16, 2024-01-17"
-            style="resize: vertical; min-height: 80px;"
-            required
-        ></textarea>
+        <input type="date" name="staff_dates" required>
         
-        <small style="color: #999; margin: -0.6rem 0 0 0; font-size: 0.85rem;">Formaat: YYYY-MM-DD (één per regel of gescheiden door komma)<br>Kleur wordt automatisch toegewezen!</small>
+        <small style="color: #999; margin: -0.6rem 0 0 0; font-size: 0.85rem;">Kleur wordt automatisch toegewezen!</small>
         
         <button type="submit" class="btn">Opslaan</button>
     </form>
