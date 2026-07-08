@@ -1005,10 +1005,6 @@ input::placeholder {
     cursor: not-allowed;
 }
 
-.time-slot.past .time,
-.time-slot.past .status {
-}
-
 .time-slot.selected {
     background: linear-gradient(135deg, #d4e8ff 0%, #d4e8ff 100%);
     border: 2px solid #00811F;
