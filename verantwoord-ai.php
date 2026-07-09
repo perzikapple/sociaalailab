@@ -67,7 +67,7 @@ $navPrefix = '';
 include __DIR__ . '/navbar.php';
 ?>
 
-<main>
+<main class="verantwoord-ai-page">
     <?php
     $totalBlocks = count($pageBlocks);
     $blockIndex = 0;

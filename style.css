@@ -4289,6 +4289,22 @@ section {
     .mobile-hide-no-image {
         display: none;
     }
+
+    .verantwoord-ai-page>section.bg-white {
+        flex-direction: column !important;
+        gap: 1.25rem !important;
+        padding: 1.25rem !important;
+    }
+
+    .verantwoord-ai-page>section.bg-white>div[style*="width: 280px"] {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .verantwoord-ai-page>section.bg-white>div[style*="font-size: 120px"] {
+        font-size: 84px !important;
+        min-height: 120px !important;
+    }
 }
 
 .text-padding[style*="flex-direction: row"] {
