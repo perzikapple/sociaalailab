@@ -314,19 +314,17 @@ include __DIR__ . '/navbar.php';
                 <?php $loc = $event['location'] ?: 'Rotterdam - Hillevliet 90'; ?>
                 <p class="text-gray-700 ml-1"><strong>Waar:</strong> <a href="<?php echo googleMapsDirectionsUrl($loc); ?>" target="_blank" rel="noopener noreferrer" class="underline hover:text-[#00811F]"><?php echo htmlspecialchars($loc); ?></a></p>
             </div>
-            <div class="flex mb-4 space-x-3">
+            <div class="flex mb-2 space-x-3">
                 <i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>
-                <div class="text-gray-700 pb-1">
-                    <strong> Wat:</strong> <?php echo renderEditorBlock($event['description']); ?>
-                    <?php if ($hasValidImage): ?>
-                    <div class="homepage-event-mobile-image">
-                        <div class="image-template-wrap">
-                            <img src="uploads/<?php echo htmlspecialchars($eventImageName); ?>" alt="<?php echo htmlspecialchars(strip_tags((string)$event['title'])); ?>" class="image-template-photo">
-                        </div>
-                    </div>
-                    <?php endif; ?>
+                <p class="text-gray-700 pb-1"><strong> Wat:</strong> <?php echo renderEditorBlock($event['description']); ?></p>
+            </div>
+            <?php if ($hasValidImage): ?>
+            <div class="homepage-event-mobile-image">
+                <div class="image-template-wrap">
+                    <img src="uploads/<?php echo htmlspecialchars($eventImageName); ?>" alt="<?php echo htmlspecialchars(strip_tags((string)$event['title'])); ?>" class="image-template-photo">
                 </div>
             </div>
+            <?php endif; ?>
         </div>
         <div class="mt-4 flex flex-wrap gap-3">
             <?php $signupEmbed = trim((string)($event['signup_embed'] ?? '')); ?>

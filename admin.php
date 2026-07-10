@@ -5173,13 +5173,12 @@ if ($page === 'users') {
                     '<i class="fa-solid fa-location-dot text-[#00811F] ml-1 text-3xl"></i>' +
                     '<p class="text-gray-700 ml-1"><strong>Waar:</strong> <a href="' + escapeHtml(mapUrl) + '" target="_blank" rel="noopener noreferrer" class="underline hover:text-[#00811F]">' + escapeHtml(location) + '</a></p>' +
                     '</div>' +
-                    '<div class="flex mb-6 space-x-3">' +
+                    '<div class="flex mb-2 space-x-3">' +
                     '<i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>' +
-                    '<div class="text-gray-700 pb-3"><strong> Wat:</strong><div class="mt-1">' + (descriptionRaw ? escapeHtml(descriptionRaw) : '<em class="text-gray-500">Geen beschrijving ingevuld</em>') + '</div>' +
+                    '<div class="text-gray-700 pb-1"><strong> Wat:</strong><div class="mt-1">' + (descriptionRaw ? escapeHtml(descriptionRaw) : '<em class="text-gray-500">Geen beschrijving ingevuld</em>') + '</div></div>' +
+                    '</div>' +
+                    '</div>' +
                     (imageSrc ? '<div class="mobile-image mb-4"><img src="' + escapeHtml(imageSrc) + '" alt="" class="image-template-photo" style="object-fit: contain;"></div>' : '') +
-                    '</div>' +
-                    '</div>' +
-                    '</div>' +
                     (hasEmbed ?
                         '<div class="mt-4 rounded-md border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-600">Aanmelder.nl embed wordt na opslaan getoond.</div>' :
                         (hasSignup ?

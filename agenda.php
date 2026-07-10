@@ -127,18 +127,16 @@ foreach ($events as $event):
                     <i class="fa-solid fa-location-dot text-[#00811F] ml-1 text-3xl"></i>
                     <p class="text-gray-700 ml-1 "><strong>Waar:</strong> <a href="<?php echo htmlspecialchars($mapsLocationUrl); ?>" target="_blank" rel="noopener noreferrer" class="underline hover:text-[#00811F]"><?php echo htmlspecialchars($loc); ?></a></p>
                 </div>
-                <div class="flex mb-6 space-x-3">
+                <div class="flex mb-2 space-x-3">
                     <i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>
-                    <div class="text-gray-700 pb-3 ">
-                        <strong> Wat:</strong><div class="mt-1"><?php echo renderEditorBlock($event['description']); ?></div>
-                        <?php if ($hasValidImage): ?>
-                        <div class="mobile-image mb-4">
-                            <img src="uploads/<?php echo htmlspecialchars($eventImageName); ?>" alt="<?php echo htmlspecialchars(strip_tags((string)$event['title'])); ?>" class="image-template-photo" style="object-fit: contain;">
-                        </div>
-                        <?php endif; ?>
-                    </div>
+                    <div class="text-gray-700 pb-1 "><strong> Wat:</strong><div class="mt-1"><?php echo renderEditorBlock($event['description']); ?></div></div>
                 </div>
             </div>
+            <?php if ($hasValidImage): ?>
+            <div class="mobile-image mb-4">
+                <img src="uploads/<?php echo htmlspecialchars($eventImageName); ?>" alt="<?php echo htmlspecialchars(strip_tags((string)$event['title'])); ?>" class="image-template-photo" style="object-fit: contain;">
+            </div>
+            <?php endif; ?>
             <?php if ($signupEmbed !== ''): ?>
             <?php echo renderAanmelderEmbed($signupEmbed); ?>
             <?php endif; ?>
