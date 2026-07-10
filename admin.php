@@ -5175,7 +5175,9 @@ if ($page === 'users') {
                     '</div>' +
                     '<div class="flex mb-6 space-x-3">' +
                     '<i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>' +
-                    '<div class="text-gray-700 pb-3"><strong> Wat:</strong><div class="mt-1">' + (descriptionRaw ? escapeHtml(descriptionRaw) : '<em class="text-gray-500">Geen beschrijving ingevuld</em>') + '</div></div>' +
+                    '<div class="text-gray-700 pb-3"><strong> Wat:</strong><div class="mt-1">' + (descriptionRaw ? escapeHtml(descriptionRaw) : '<em class="text-gray-500">Geen beschrijving ingevuld</em>') + '</div>' +
+                    (imageSrc ? '<div class="mobile-image mb-4"><img src="' + escapeHtml(imageSrc) + '" alt="" class="image-template-photo" style="object-fit: contain;"></div>' : '') +
+                    '</div>' +
                     '</div>' +
                     '</div>' +
                     (hasEmbed ?
@@ -5189,7 +5191,7 @@ if ($page === 'users') {
                         ''
                     ) +
                     '</div>' +
-                    (imageSrc ? '<div class="flex-1"><img src="' + escapeHtml(imageSrc) + '" alt="" class="w-full h-auto object-cover shadow-md"></div>' : '') +
+                    (imageSrc ? '<div class="flex-1 desktop-image"><img src="' + escapeHtml(imageSrc) + '" alt="" class="w-full h-auto object-cover shadow-md"></div>' : '') +
                     '</section>';
             }
 

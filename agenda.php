@@ -129,14 +129,16 @@ foreach ($events as $event):
                 </div>
                 <div class="flex mb-6 space-x-3">
                     <i class="fa-solid fa-bullseye text-[#00811F] text-3xl"></i>
-                    <div class="text-gray-700 pb-3 "><strong> Wat:</strong><div class="mt-1"><?php echo renderEditorBlock($event['description']); ?></div></div>
+                    <div class="text-gray-700 pb-3 ">
+                        <strong> Wat:</strong><div class="mt-1"><?php echo renderEditorBlock($event['description']); ?></div>
+                        <?php if ($hasValidImage): ?>
+                        <div class="mobile-image mb-4">
+                            <img src="uploads/<?php echo htmlspecialchars($eventImageName); ?>" alt="<?php echo htmlspecialchars(strip_tags((string)$event['title'])); ?>" class="image-template-photo" style="object-fit: contain;">
+                        </div>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
-            <?php if ($hasValidImage): ?>
-            <div class="mobile-image mb-4">
-                <img src="uploads/<?php echo htmlspecialchars($eventImageName); ?>" alt="<?php echo htmlspecialchars(strip_tags((string)$event['title'])); ?>" class="image-template-photo" style="object-fit: contain;">
-            </div>
-            <?php endif; ?>
             <?php if ($signupEmbed !== ''): ?>
             <?php echo renderAanmelderEmbed($signupEmbed); ?>
             <?php endif; ?>
