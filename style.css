@@ -4290,6 +4290,33 @@ section {
         display: none;
     }
 
+    .wie-zijn-we-page .wie-zijn-we-logo-card {
+        position: relative;
+        padding-right: 7.25rem !important;
+        min-height: 12rem;
+    }
+
+    .wie-zijn-we-page .wie-zijn-we-logo-card .wie-zijn-we-logo-wrap {
+        position: absolute;
+        top: 1.25rem;
+        right: 1.25rem;
+        width: 84px;
+        max-width: 84px;
+        margin: 0;
+        display: block !important;
+    }
+
+    .wie-zijn-we-page .wie-zijn-we-logo-card .wie-zijn-we-logo-wrap img {
+        width: 100% !important;
+        height: auto !important;
+        display: block;
+    }
+
+    .wie-zijn-we-page .wie-zijn-we-logo-card .wie-zijn-we-text {
+        width: 100%;
+        min-width: 0;
+    }
+
     .verantwoord-ai-page>section.bg-white {
         flex-direction: column !important;
         gap: 1.25rem !important;

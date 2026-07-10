@@ -59,7 +59,7 @@ $navPrefix = '';
 include __DIR__ . '/navbar.php';
 ?>
 
-<main>
+<main class="wie-zijn-we-page">
     <?php
     $index = 0;
     foreach ($pageBlocks as $block):
@@ -87,7 +87,7 @@ include __DIR__ . '/navbar.php';
         }
         $index++;
     ?>
-        <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12 text-padding" style="<?php echo $sectionStyle; ?>">
+        <section class="bg-white shadow-lg p-8 max-w-6xl mx-auto my-12 text-padding<?php echo ($imagePosition !== 'normal' && $hasText && $hasImage) ? ' wie-zijn-we-logo-card' : ''; ?>" style="<?php echo $sectionStyle; ?>">
             <?php if ($imagePosition === 'left' && $hasImage): ?>
                 <?php
                 $imageStyle = '';
@@ -97,13 +97,13 @@ include __DIR__ . '/navbar.php';
                     $imageStyle = 'display: flex; flex-direction: column; gap: 1.5rem;';
                 }
                 ?>
-                <div style="<?php echo $imageStyle; ?>">
+                <div class="wie-zijn-we-logo-wrap" style="<?php echo $imageStyle; ?>">
                     <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
                 </div>
             <?php endif; ?>
             
             <?php if ($hasText): ?>
-            <div style="<?php echo ($imagePosition !== 'normal' && $hasImage) ? 'flex: 1 1 auto; min-width: 0;' : ''; ?>">
+            <div class="wie-zijn-we-text" style="<?php echo ($imagePosition !== 'normal' && $hasImage) ? 'flex: 1 1 auto; min-width: 0;' : ''; ?>">
                 <?php if (!empty($block['title'])): ?>
                     <h3 class="font-bold text-2xl mb-3"><?php echo renderEditorInline($block['title']); ?></h3>
                 <?php endif; ?>
@@ -121,7 +121,7 @@ include __DIR__ . '/navbar.php';
                     $imageStyle = 'display: flex; flex-direction: column; gap: 1.5rem;';
                 }
                 ?>
-                <div style="<?php echo $imageStyle; ?>">
+                <div class="wie-zijn-we-logo-wrap" style="<?php echo $imageStyle; ?>">
                     <img src="uploads/<?php echo htmlspecialchars($block['image']); ?>" alt="<?php echo htmlspecialchars($block['title']); ?>" style="width: 100%; height: auto; border-radius: 0.5rem;">
                 </div>
             <?php endif; ?>
