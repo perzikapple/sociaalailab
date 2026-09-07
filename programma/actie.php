@@ -14,10 +14,10 @@ try {
     $b2 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner2'")->fetchColumn();
     $b3 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner3'")->fetchColumn();
     $b4 = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'banner4'")->fetchColumn();
-    if ($b1) $banner1 = (strpos($b1, 'images/') === 0) ? '../' . $b1 : $b1;
-    if ($b2) $banner2 = (strpos($b2, 'images/') === 0) ? '../' . $b2 : $b2;
-    if ($b3) $banner3 = (strpos($b3, 'images/') === 0) ? '../' . $b3 : $b3;
-    if ($b4) $banner4 = (strpos($b4, 'images/') === 0) ? '../' . $b4 : $b4;
+    if ($b1) $banner1 = (strpos($b1, 'images/') === 0 || strpos($b1, 'uploads/') === 0) ? '../' . $b1 : $b1;
+    if ($b2) $banner2 = (strpos($b2, 'images/') === 0 || strpos($b2, 'uploads/') === 0) ? '../' . $b2 : $b2;
+    if ($b3) $banner3 = (strpos($b3, 'images/') === 0 || strpos($b3, 'uploads/') === 0) ? '../' . $b3 : $b3;
+    if ($b4) $banner4 = (strpos($b4, 'images/') === 0 || strpos($b4, 'uploads/') === 0) ? '../' . $b4 : $b4;
 } catch (Exception $e) {
     // Use fallbacks
 }
