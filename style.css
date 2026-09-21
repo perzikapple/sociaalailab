@@ -4536,5 +4536,89 @@ h2 span {
     background-color: #d12254;
     color: white;
     font-size: 16px;
-    padding: 4px 8px; /* top/bottom, left/right 
+    padding: 4px 8px; /* top/bottom, left/right */
+}
+
+/* ---- Ons team page: horizontal photo-left cards (scoped, ons-team only) ---- */
+.ons-team-intro {
+    text-align: center;
+}
+
+.ons-team-page .team-card {
+    border-radius: var(--edge-radius-lg) !important;
+    overflow: hidden;
+    display: flex;
+    flex-direction: row;
+    min-height: 200px;
+    height: 100%;
+}
+
+.ons-team-page .team-photo {
+    width: 36%;
+    min-width: 36%;
+    height: 100%;
+    min-height: 200px;
+    object-fit: cover;
+    display: block;
+    background: #f6f6f6;
+    flex-shrink: 0;
+}
+
+.ons-team-page .team-photo-placeholder {
+    width: 36%;
+    min-width: 36%;
+    align-self: stretch;
+    flex-shrink: 0;
+    background: #e5e7eb;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.ons-team-page .team-card-body {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 1.2rem 1.4rem;
+}
+
+.ons-team-page .team-role {
+    color: #00811F;
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-top: 0.15rem;
+}
+
+.ons-team-page .team-bio {
+    font-size: 0.85rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.ons-team-page .team-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ons-team-page .team-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+}
+
+@media (max-width: 640px) {
+    .ons-team-page .team-card {
+        flex-direction: column;
+    }
+
+    .ons-team-page .team-photo,
+    .ons-team-page .team-photo-placeholder {
+        width: 100%;
+        min-width: 0;
+        height: auto;
+        min-height: 0;
+        aspect-ratio: 16 / 10;
+    }
 }

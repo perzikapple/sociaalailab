@@ -25,7 +25,13 @@ if (!isset($navPrefix)) {
             </li>
 
             <li><a href="<?php echo htmlspecialchars($navPrefix); ?>verantwoord-ai.php">Verantwoorde AI</a></li>
-            <li><a href="<?php echo htmlspecialchars($navPrefix); ?>wie-zijn-we.php">Wie zijn we?</a></li>
+            <li class="dropdown">
+                <button class="dropbtn">Wie zijn we?<span class="dropdown-caret" aria-hidden="true"></span></button>
+                <ul class="dropdown-content">
+                    <li><a href="<?php echo htmlspecialchars($navPrefix); ?>wie-zijn-we.php">Overzicht</a></li>
+                    <li><a href="<?php echo htmlspecialchars($navPrefix); ?>ons-team.php">Ons team</a></li>
+                </ul>
+            </li>
             <li><a href="<?php echo htmlspecialchars($navPrefix); ?>contact.php">Contact</a></li>
             <?php if (!empty($_SESSION['can_access_admin'])): ?>
                 <li><a href="<?php echo htmlspecialchars($navPrefix); ?>admin.php">Admin</a></li>

@@ -1418,6 +1418,11 @@ if ($pageAction === 'create_page') {
             $meta['info_link'] = $infoLink;
         }
 
+        $roleField = trim((string)($_POST['role'] ?? ''));
+        if ($roleField !== '') {
+            $meta['role'] = $roleField;
+        }
+
         // Extra velden voor contact pagina
         if ($pageKey === 'contact') {
             if (!empty($_POST['address'])) $meta['address'] = $_POST['address'];
@@ -1513,6 +1518,13 @@ if ($pageAction === 'create_page') {
             $meta['info_link'] = $infoLink;
         } else {
             unset($meta['info_link']);
+        }
+
+        $roleField = trim((string)($_POST['role'] ?? ''));
+        if ($roleField !== '') {
+            $meta['role'] = $roleField;
+        } else {
+            unset($meta['role']);
         }
 
         if ($pageKey === 'contact') {
@@ -1716,6 +1728,7 @@ $allowedPagesByPermission = [
     'terugblikken' => ['manage_pages', 'delete_pages', 'view_pages'],
     'over' => ['manage_pages', 'delete_pages', 'view_pages'],
     'wie-zijn-we' => ['manage_pages', 'delete_pages', 'view_pages'],
+    'ons-team' => ['manage_pages', 'delete_pages', 'view_pages'],
     'verantwoord-ai' => ['manage_pages', 'delete_pages', 'view_pages'],
     'contact' => ['manage_pages', 'delete_pages', 'view_pages'],
     'programma-kennis' => ['manage_pages', 'delete_pages', 'view_pages'],
@@ -2105,6 +2118,9 @@ if ($page === 'users') {
                             </a>
                             <a href="admin.php?page=wie-zijn-we" class="sidebar-link <?php echo $page === 'wie-zijn-we' ? 'active' : ''; ?>">
                                 <i class="fa-solid fa-people-group"></i> Wie zijn we?
+                            </a>
+                            <a href="admin.php?page=ons-team" class="sidebar-link <?php echo $page === 'ons-team' ? 'active' : ''; ?>">
+                                <i class="fa-solid fa-users"></i> Ons team
                             </a>
                             <a href="admin.php?page=verantwoord-ai" class="sidebar-link <?php echo $page === 'verantwoord-ai' ? 'active' : ''; ?>">
                                 <i class="fa-solid fa-shield"></i> Verantwoord AI
@@ -4535,6 +4551,7 @@ if ($page === 'users') {
                         'terugblikken' => 'Terugblikken',
                         'over' => 'Voor wie?',
                         'wie-zijn-we' => 'Wie zijn we?',
+                        'ons-team' => 'Ons team',
                         'verantwoord-ai' => 'Verantwoorde AI',
                         'contact' => 'Contact',
                         'programma-kennis' => 'Wat doen we: Kennis & vaardigheden',
@@ -4572,6 +4589,7 @@ if ($page === 'users') {
                         $currentImagePosition = 'normal';
                     }
                     $currentGreenText = $editMeta['green_text'] ?? ($editMeta['green_heading'] ?? '');
+                    $currentRole = $editMeta['role'] ?? '';
                     $currentGreenTextPosition = $editMeta['green_text_position'] ?? 'above';
                     if (!in_array($currentGreenTextPosition, ['above', 'below'], true)) {
                         $currentGreenTextPosition = 'above';
@@ -4660,6 +4678,17 @@ if ($page === 'users') {
                                 </div>
 
                                 <div>
+                                    <label class="form-label" for="role">Functie / rol (optioneel, gebruikt op Ons team):</label>
+                                    <input
+                                        type="text"
+                                        name="role"
+                                        id="role"
+                                        class="form-input"
+                                        value="<?php echo htmlspecialchars($currentRole); ?>"
+                                        placeholder="Bijv. Projectleider" />
+                                </div>
+
+                                <div>
                                     <label class="form-label">Foto positie</label>
                                     <select name="image_position" class="form-input">
                                         <option value="normal" <?php echo $currentImagePosition === 'normal' ? 'selected' : ''; ?>>Normaal (foto onder)</option>
@@ -4734,6 +4763,17 @@ if ($page === 'users') {
                                         class="form-input"
                                         value="<?php echo htmlspecialchars($_POST['info_link'] ?? ''); ?>"
                                         placeholder="https://voorbeeld.nl" />
+                                </div>
+
+                                <div>
+                                    <label class="form-label" for="role">Functie / rol (optioneel, gebruikt op Ons team):</label>
+                                    <input
+                                        type="text"
+                                        name="role"
+                                        id="role"
+                                        class="form-input"
+                                        value="<?php echo htmlspecialchars($_POST['role'] ?? ''); ?>"
+                                        placeholder="Bijv. Projectleider" />
                                 </div>
 
                                 <div>
