@@ -190,7 +190,7 @@ include __DIR__ . '/navbar.php';
                             <span><strong>Datum:</strong> <?php echo htmlspecialchars(formatEventDateDisplay($metaArr['date'])); ?></span>
                         <?php endif; ?>
                         <?php if (!empty($metaArr['time'])): ?>
-                            <span><strong>Tijd:</strong> <?php echo htmlspecialchars(formatEventTimeDisplay($metaArr['time'])); ?></span>
+                            <span><strong>Tijd:</strong> <?php echo htmlspecialchars(formatEventTimeDisplay($metaArr['time'])); ?> uur</span>
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>
@@ -256,7 +256,7 @@ include __DIR__ . '/navbar.php';
             <div class="space-y-4">
                 <div class="flex items-center space-x-3">
                     <i class="fa-regular fa-calendar text-[#00811F] ml-[2px]  text-3xl"></i>
-                    <p class="text-gray-700"><strong> Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?> <?php echo $timeDisplay ? '- ' . htmlspecialchars($timeDisplay) : ''; ?></p>
+                    <p class="text-gray-700"><strong> Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?> <?php echo $timeDisplay ? '- ' . htmlspecialchars($timeDisplay) . ' uur' : ''; ?></p>
                 </div>
                 <div class="flex items-center space-x-3">
                     <i class="fa-solid fa-location-dot text-[#00811F] ml-1 text-3xl"></i>

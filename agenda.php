@@ -120,7 +120,7 @@ foreach ($events as $event):
                 <?php if ($timeDisplay || $timeEndDisplay): ?>
                 <div class="flex items-center space-x-3">
                     <i class="fa-solid fa-clock text-[#00811F] ml-[2px] text-3xl"></i>
-                    <p class="text-gray-700"><strong>Hoelaat:</strong> <?php echo htmlspecialchars($timeDisplay); ?><?php if ($timeEndDisplay) { echo ' - ' . htmlspecialchars($timeEndDisplay); } ?></p>
+                    <p class="text-gray-700"><strong>Hoelaat:</strong> <?php echo htmlspecialchars($timeDisplay); ?><?php if ($timeEndDisplay) { echo ' - ' . htmlspecialchars($timeEndDisplay); } ?> uur</p>
                 </div>
                 <?php endif; ?>
                 <div class="flex items-center space-x-3">
