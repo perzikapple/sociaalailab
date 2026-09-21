@@ -307,7 +307,7 @@ include __DIR__ . '/navbar.php';
             <div class="flex items-center space-x-3">
                 <i class="fa-regular fa-calendar text-[#00811F] ml-[2px] text-3xl"></i>
                 <?php $dateDisplay = formatEventDateDisplay($event['date']); $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : ''; ?>
-                <p class="text-gray-700"><strong> Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?><?php if ($timeDisplay) echo ' - ' . htmlspecialchars($timeDisplay); ?></p>
+                <p class="text-gray-700"><strong> Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?><?php if ($timeDisplay) echo ' - ' . htmlspecialchars($timeDisplay) . ' uur'; ?></p>
             </div>
             <div class="flex items-center space-x-3">
                 <i class="fa-solid fa-location-dot text-[#00811F] ml-1 text-3xl"></i>
