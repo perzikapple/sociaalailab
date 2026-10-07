@@ -1,25 +1,15 @@
 <?php
-// Auto-detect if we're on localhost or production
-$isLocalhost = strpos($_SERVER['HTTP_HOST'] ?? 'localhost', 'localhost') !== false || 
-               strpos($_SERVER['HTTP_HOST'] ?? 'localhost', '127.0.0.1') !== false;
 
-if ($isLocalhost) {
-    // Local development
-    $host = "localhost";
-    $db   = "sociaalai";
-    $user = "root";
-    $pass = "";
-} else {
-    // Production (TransIP)
-    $host = "sociju-sociaalailab.db.transip.me";
-    $db   = "sociju_sociaalailab";
-    $user = "sociju_Sociaalailab";
-    $pass = "Techniekcollege12345#";
-}
+// Lokale ServBay database
+$host = "127.0.0.1";
+$port = "3306";
+$db   = "sociaalai";
+$user = "root";
+$pass = "ServBay.dev";
 
 try {
     $pdo = new PDO(
-        "mysql:host=$host;dbname=$db;charset=utf8mb4",
+        "mysql:host=$host;port=$port;dbname=$db;charset=utf8mb4",
         $user,
         $pass,
         [
@@ -28,7 +18,6 @@ try {
             PDO::ATTR_EMULATE_PREPARES => false,
         ]
     );
-
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS events (
             id INT AUTO_INCREMENT PRIMARY KEY,

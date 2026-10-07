@@ -613,6 +613,29 @@ main.dashboard-wide {
     background: #ffffff;
 }
 
+.admin-upload-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.65rem 1rem;
+    border: 1px solid #2e7d32;
+    border-radius: 10px;
+    background: #2e7d32;
+    color: #ffffff;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.admin-upload-btn:hover {
+    background: #1b5e20;
+}
+
+.admin-upload-btn:focus-visible {
+    outline: 3px solid rgba(46, 125, 50, 0.3);
+    outline-offset: 2px;
+}
+
 .admin-page textarea {
     resize: vertical;
     min-height: 140px;

@@ -451,6 +451,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $upload = handleUpload('image');
             if (isset($upload['error'])) {
                 $message = $upload['error'];
+            } elseif (empty($upload['name'])) {
+                $message = 'Een afbeelding is verplicht voor een evenement.';
             } else {
                 $imageName = $upload['name'] ?? null;
                 $galleryUpload = handleMultiUpload('gallery_images');
@@ -542,6 +544,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $upload = handleUpload('image');
             if (isset($upload['error'])) {
                 $message = $upload['error'];
+            } elseif (empty($upload['name']) && ($removeImage || empty($oldImage))) {
+                $message = 'Een afbeelding is verplicht voor een evenement.';
             } else {
                 $galleryUpload = handleMultiUpload('gallery_images');
                 if (isset($galleryUpload['error'])) {
@@ -563,11 +567,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                         $message = $documentUpload['error'];
                     } else {
-                        if ($removeImage) {
-                            $imageName = null;
-                        } else {
-                            $imageName = $upload['name'] ?? $oldImage;
-                        }
+                        $imageName = $upload['name'] ?? ($removeImage ? null : $oldImage);
 
                         $galleryNames = array_values(array_merge($keptGallery, $galleryUpload['names'] ?? []));
                         $galleryJson = !empty($galleryNames)
@@ -2272,20 +2272,9 @@ if ($page === 'users') {
                                 </div>
 
                                 <div>
-                                    <label class="form-label">Afbeelding (optioneel)</label>
+                                    <label class="form-label">Afbeelding (verplicht)</label>
                                     <input type="hidden" name="existing_image" value="<?php echo htmlspecialchars($editEvent['image'] ?? ''); ?>" />
-                                    <div id="upload-image-widget"></div>
-                                    <script>
-                                        document.addEventListener('DOMContentLoaded', function() {
-                                            createImageUploadWidget({
-                                                containerId: 'upload-image-widget',
-                                                inputName: 'image',
-                                                label: 'Kies een afbeelding (PNG/JPG, max 10MB)',
-                                                imageConverterUrl: null,
-                                                preview: true
-                                            });
-                                        });
-                                    </script>
+                                    <div class="admin-upload-widget" data-name="image" data-accept="image/*" data-required="true"></div>
                                     <?php if (!empty($editEvent['image'])): ?>
                                         <p class="text-sm mt-2 text-gray-600">Huidige: <?php echo htmlspecialchars($editEvent['image']); ?></p>
                                         <label class="form-checkbox mt-2 inline-flex items-center gap-2">
@@ -2474,8 +2463,8 @@ if ($page === 'users') {
                                 </div>
 
                                 <div>
-                                    <label class="form-label">Afbeelding (optioneel)</label>
-                                    <div class="admin-upload-widget" data-name="image" data-accept="image/*"></div>
+                                    <label class="form-label">Afbeelding (verplicht)</label>
+                                    <div class="admin-upload-widget" data-name="image" data-accept="image/*" data-required="true"></div>
                                 </div>
 
                                 <div>

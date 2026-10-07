@@ -6,6 +6,7 @@
         const name = el.dataset.name || 'image';
         const accept = el.dataset.accept || 'image/*';
         const multiple = el.dataset.multiple === 'true';
+        const required = el.dataset.required === 'true';
         // Create input
         const input = document.createElement('input');
         input.type = 'file';
@@ -13,6 +14,8 @@
         input.accept = accept;
         if (multiple) input.multiple = true;
         input.style.display = 'none';
+        const form = el.closest('form');
+        const removeImage = form && form.querySelector('input[name="remove_image"]');
         // Create visible button
         const btn = document.createElement('button');
         btn.type = 'button';
@@ -54,6 +57,18 @@
         el.appendChild(preview);
         el.appendChild(error);
         el.appendChild(converter);
+        if (required && form) {
+            form.addEventListener('submit', function (event) {
+                const existingImage = form.querySelector('input[name="existing_image"]');
+                const hasExistingImage = Boolean(existingImage && existingImage.value);
+                const isRemovingImage = Boolean(removeImage && removeImage.checked);
+                if (input.files.length || (hasExistingImage && !isRemovingImage)) return;
+
+                event.preventDefault();
+                error.textContent = 'Een afbeelding is verplicht voor een evenement.';
+                btn.focus();
+            }, true);
+        }
         // Logic
         btn.addEventListener('click', () => input.click());
         input.addEventListener('change', function () {
