@@ -348,12 +348,21 @@ if (!function_exists('normalizeDisplayText')) {
             }
         }
 
+        if (function_exists('iconv') && preg_match('/(?:Ã.|Â.|â€|ðŸ)/u', $value)) {
+            $converted = @iconv('UTF-8', 'Windows-1252', $value);
+            if ($converted !== false && preg_match('//u', $converted) === 1) {
+                $value = $converted;
+            }
+        }
+
         $value = strtr($value, [
             'Ã¶' => 'ö',
             'Ã«' => 'ë',
             'Ã¼' => 'ü',
             'Ã¯' => 'ï',
             'Ã©' => 'é',
+            'Ã±' => 'ñ',
+            'Ã§' => 'ç',
             'Ã¨' => 'è',
             'Ãª' => 'ê',
             'Ã¡' => 'á',
@@ -361,6 +370,8 @@ if (!function_exists('normalizeDisplayText')) {
             'Ã–' => 'Ö',
             'Ã‹' => 'Ë',
             'Ã‰' => 'É',
+            'Ã‘' => 'Ñ',
+            'Ã‡' => 'Ç',
             'â€™' => '’',
             'â€œ' => '“',
             'â€\x9d' => '”',
