@@ -239,7 +239,7 @@ include __DIR__ . '/navbar.php';
     <?php else: ?>
         <?php foreach ($events as $event): ?>
     <?php
-    $dateDisplay = formatEventDateDisplay($event['date']);
+    $dateDisplay = formatEventDateWithWeekdayDisplay($event['date']);
     $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : '';
     $dateTs = strtotime((string)$event['date']);
     $dayMonth = $dateTs ? date('d.m', $dateTs) : $dateDisplay;

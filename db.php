@@ -1,11 +1,35 @@
 <?php
 
-// Lokale ServBay database
-$host = "127.0.0.1";
-$port = "3306";
-$db   = "sociaalai";
-$user = "root";
-$pass = "ServBay.dev";
+// Bepaal automatisch of de website lokaal of live draait
+$currentHost = $_SERVER['HTTP_HOST'] ?? '';
+
+$isLocal =
+    str_contains($currentHost, 'sociaalailab.test') ||
+    str_contains($currentHost, 'localhost') ||
+    str_contains($currentHost, '127.0.0.1');
+
+if ($isLocal) {
+
+    // =========================
+    // LOKAAL - SERVBAY
+    // =========================
+    $host = "127.0.0.1";
+    $port = "3306";
+    $db   = "sociaalai";
+    $user = "root";
+    $pass = "ServBay.dev";
+
+} else {
+
+    // =========================
+    // LIVE - TRANSIP
+    // =========================
+    $host = "sociju-sociaalailab.db.transip.me";
+    $port = "3306";
+    $db   = "sociju_sociaalailab";
+    $user = "sociju_Sociaalailab";
+    $pass = "Techniekcollege12345#";
+}
 
 try {
     $pdo = new PDO(
@@ -18,6 +42,9 @@ try {
             PDO::ATTR_EMULATE_PREPARES => false,
         ]
     );
+
+    // VANAF HIER LAAT JE DE REST VAN JE HUIDIGE db.php STAAN
+
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS events (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -90,8 +117,11 @@ try {
     if (!in_array('end_date', $columns)) {
         $pdo->exec("ALTER TABLE events ADD COLUMN end_date DATE DEFAULT NULL");
     }
-    if (!in_array('info_link', $columns)) {
-        $pdo->exec("ALTER TABLE events ADD COLUMN info_link VARCHAR(255) DEFAULT NULL");
+    $infoLinkColumn = $pdo->query("SHOW COLUMNS FROM events LIKE 'info_link'")->fetch();
+    if (!$infoLinkColumn) {
+        $pdo->exec("ALTER TABLE events ADD COLUMN info_link TEXT NULL DEFAULT NULL");
+    } elseif ($infoLinkColumn['Null'] !== 'YES') {
+        $pdo->exec("ALTER TABLE events MODIFY info_link TEXT NULL DEFAULT NULL");
     }
     if (!in_array('signup_embed', $columns)) {
         $pdo->exec("ALTER TABLE events ADD COLUMN signup_embed TEXT DEFAULT NULL");

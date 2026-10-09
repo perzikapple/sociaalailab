@@ -142,7 +142,7 @@ include __DIR__ . '/navbar.php';
                     <div class="space-y-4">
                         <div class="flex items-center space-x-3">
                             <i class="fa-regular fa-calendar text-[#00811F] ml-[2px]  text-3xl"></i>
-                            <?php $dateDisplay = formatEventDateDisplay($event['date']); $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : ''; ?>
+                            <?php $dateDisplay = formatEventDateWithWeekdayDisplay($event['date']); $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : ''; ?>
                             <p class="text-gray-700"><strong> Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?><?php if ($timeDisplay) echo ' - ' . htmlspecialchars($timeDisplay); ?></p>
                         </div>
                         <div class="flex items-center space-x-3">

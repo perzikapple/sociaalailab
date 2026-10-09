@@ -15,6 +15,26 @@ if (!function_exists('formatEventDateDisplay')) {
     }
 }
 
+if (!function_exists('formatEventDateWithWeekdayDisplay')) {
+    function formatEventDateWithWeekdayDisplay($dateValue) {
+        if (empty($dateValue)) return '';
+
+        $dateString = (string)$dateValue;
+        $date = DateTimeImmutable::createFromFormat('!Y-m-d', $dateString);
+        if (!$date || $date->format('Y-m-d') !== $dateString) {
+            return formatEventDateDisplay($dateString);
+        }
+
+        $weekdaysNl = [
+            1 => 'maandag', 2 => 'dinsdag', 3 => 'woensdag', 4 => 'donderdag',
+            5 => 'vrijdag', 6 => 'zaterdag', 7 => 'zondag',
+        ];
+        $weekday = $weekdaysNl[(int)$date->format('N')];
+
+        return ucfirst($weekday) . ' ' . formatEventDateDisplay($dateString);
+    }
+}
+
 if (!function_exists('formatEventTimeDisplay')) {
     function formatEventTimeDisplay($timeValue) {
         if (empty($timeValue)) return '';

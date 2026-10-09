@@ -438,6 +438,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
         $signupEmbed = trim((string)($_POST['signup_embed'] ?? ''));
         $showOnHomepage = isset($_POST['show_on_homepage']) ? 1 : 0;
+        $infoLink = trim((string)($_POST['info_link'] ?? ''));
 
         // Approval status based on role
         $approvalStatus = ($sessionRole === 'onderzoeker') ? 'pending' : 'approved';
@@ -483,8 +484,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             : null;
 
                         // voeg updated_at, updated_by, en approval gegevens toe bij insert
-                        $stmt = $pdo->prepare('INSERT INTO events (title, date, end_date, time, time_end, description, event_summary, meer_info, image, event_gallery, event_documents, location, hardware_request, staff_present, target_audience, internal_notes, show_signup_button, signup_embed, show_on_homepage, updated_at, updated_by, approval_status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)');
-                        $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $documentsJson, $location ?: null, $hardwareRequest ?: null, $staffPresent ?: null, $targetAudience ?: null, $internalNotes ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser, $approvalStatus, $currentUser]);
+                        $stmt = $pdo->prepare('INSERT INTO events (title, date, end_date, time, time_end, description, event_summary, meer_info, info_link, image, event_gallery, event_documents, location, hardware_request, staff_present, target_audience, internal_notes, show_signup_button, signup_embed, show_on_homepage, updated_at, updated_by, approval_status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)');
+                        $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $infoLink ?: null, $imageName, $galleryJson, $documentsJson, $location ?: null, $hardwareRequest ?: null, $staffPresent ?: null, $targetAudience ?: null, $internalNotes ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser, $approvalStatus, $currentUser]);
                         $eventId = $pdo->lastInsertId();
                         // Audit log: event created
                         audit_log($pdo, 'create', 'events', $eventId, 'title: ' . $title, $currentUser);
@@ -512,7 +513,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $showSignupButton = isset($_POST['show_signup_button']) ? 1 : 0;
         $signupEmbed = trim((string)($_POST['signup_embed'] ?? ''));
         $showOnHomepage = isset($_POST['show_on_homepage']) ? 1 : 0;
-        // $infoLink verwijderd
+        $infoLink = trim((string)($_POST['info_link'] ?? ''));
         $removeImage = isset($_POST['remove_image']) ? 1 : 0;
 
         if ($date === '') {
@@ -579,8 +580,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             : null;
 
                         // update nu ook updated_at, updated_by, target_audience, en internal_notes
-                        $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, end_date=?, time=?, time_end=?, description=?, event_summary=?, meer_info=?, image=?, event_gallery=?, event_documents=?, location=?, hardware_request=?, staff_present=?, target_audience=?, internal_notes=?, show_signup_button=?, signup_embed=?, show_on_homepage=?, updated_at=NOW(), updated_by=? WHERE id=?');
-                        $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $imageName, $galleryJson, $documentsJson, $location ?: null, $hardwareRequest ?: null, $staffPresent ?: null, $targetAudience ?: null, $internalNotes ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser, $id]);
+                        $stmt = $pdo->prepare('UPDATE events SET title=?, date=?, end_date=?, time=?, time_end=?, description=?, event_summary=?, meer_info=?, info_link=?, image=?, event_gallery=?, event_documents=?, location=?, hardware_request=?, staff_present=?, target_audience=?, internal_notes=?, show_signup_button=?, signup_embed=?, show_on_homepage=?, updated_at=NOW(), updated_by=? WHERE id=?');
+                        $stmt->execute([$title, $date, $end_date, $time ?: null, $time_end ?: null, $description, $eventSummary ?: null, $meerInfo ?: null, $infoLink ?: null, $imageName, $galleryJson, $documentsJson, $location ?: null, $hardwareRequest ?: null, $staffPresent ?: null, $targetAudience ?: null, $internalNotes ?: null, $showSignupButton, $signupEmbed ?: null, $showOnHomepage, $currentUser, $id]);
                         // Audit log: event updated
                         audit_log($pdo, 'update', 'events', $id, 'title: ' . $title, $currentUser);
 
@@ -2254,6 +2255,11 @@ if ($page === 'users') {
                                 </div>
 
                                 <div>
+                                    <label class="form-label" for="event-info-link-edit">Informatielink (optioneel)</label>
+                                    <input type="url" name="info_link" id="event-info-link-edit" class="form-input" value="<?php echo htmlspecialchars($editEvent['info_link'] ?? ''); ?>" placeholder="https://..." />
+                                </div>
+
+                                <div>
                                     <label class="form-label">Samenvatting na afloop (optioneel)</label>
                                     <textarea name="event_summary" rows="5" class="form-textarea"><?php echo htmlspecialchars($editEvent['event_summary'] ?? ''); ?></textarea>
                                     <p class="text-xs text-gray-500 mt-2">Deze samenvatting wordt op de evenement detailpagina getoond zodra deze is ingevuld en het evenement voorbij is.</p>
@@ -2442,6 +2448,11 @@ if ($page === 'users') {
                                     <label class="form-label">Meer info tekst (optioneel)</label>
                                     <textarea name="meer_info" rows="5" class="form-textarea"></textarea>
                                     <p class="text-xs text-gray-500 mt-2">Deze tekst wordt op de evenement detailpagina getoond boven de samenvatting.</p>
+                                </div>
+
+                                <div>
+                                    <label class="form-label" for="event-info-link-create">Informatielink (optioneel)</label>
+                                    <input type="url" name="info_link" id="event-info-link-create" class="form-input" value="<?php echo htmlspecialchars($_POST['info_link'] ?? ''); ?>" placeholder="https://..." />
                                 </div>
 
                                 <div>

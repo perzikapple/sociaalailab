@@ -4424,6 +4424,140 @@ section:focus-visible,
     opacity: 0.35;
 }
 
+.festival-promo-modal,
+.festival-promo-modal[hidden] {
+    display: none;
+}
+
+.festival-promo-modal:not([hidden]) {
+    align-items: center;
+    background: rgba(17, 24, 39, 0.72);
+    display: flex;
+    inset: 0;
+    justify-content: center;
+    overflow-y: auto;
+    padding: 1rem;
+    position: fixed;
+    z-index: 10000;
+}
+
+.festival-promo-dialog {
+    background: #fff;
+    border-radius: 1rem;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.3);
+    max-width: 680px;
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+}
+
+.festival-promo-image {
+    display: block;
+    height: clamp(180px, 34vh, 300px);
+    object-fit: cover;
+    object-position: center;
+    width: 100%;
+}
+
+.festival-promo-close {
+    align-items: center;
+    background: rgba(17, 24, 39, 0.72);
+    border: 0;
+    border-radius: 9999px;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    font-size: 2rem;
+    height: 2.75rem;
+    justify-content: center;
+    line-height: 1;
+    position: absolute;
+    right: 0.8rem;
+    top: 0.8rem;
+    width: 2.75rem;
+}
+
+.festival-promo-close:hover,
+.festival-promo-close:focus-visible {
+    background: #00811F;
+}
+
+.festival-promo-content {
+    padding: 1.5rem 2rem 2rem;
+    text-align: center;
+}
+
+.festival-promo-date {
+    color: #00811F;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0 0 0.35rem;
+}
+
+.festival-promo-location {
+    color: #4b5563;
+    font-size: 0.95rem;
+    margin: 0 0 0.75rem;
+}
+
+.festival-promo-content h2 {
+    color: #1f2937;
+    font-size: clamp(1.5rem, 5vw, 2.25rem);
+    font-weight: 700;
+    line-height: 1.2;
+    margin: 0 0 1.25rem;
+}
+
+.festival-promo-teaser {
+    color: #4b5563;
+    line-height: 1.5;
+    margin: 0 auto 0.85rem;
+    max-width: 38rem;
+}
+
+.festival-promo-countdown {
+    color: #00811F;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0 0 1.1rem;
+}
+
+.festival-promo-link {
+    background: #00811F;
+    border-radius: 0.5rem;
+    color: #fff;
+    display: inline-flex;
+    font-weight: 700;
+    justify-content: center;
+    padding: 0.8rem 1.4rem;
+    text-decoration: none;
+}
+
+.festival-promo-link span {
+    margin-left: 0.4rem;
+}
+
+.festival-promo-link:hover,
+.festival-promo-link:focus-visible {
+    background: #006f19;
+}
+
+.festival-promo-calendar {
+    color: #00811F;
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin: 0.9rem auto 0;
+    text-decoration: underline;
+    text-underline-offset: 0.18em;
+    width: fit-content;
+}
+
+.festival-promo-calendar:hover,
+.festival-promo-calendar:focus-visible {
+    color: #005c16;
+}
+
 .homepage-news-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4505,6 +4639,18 @@ section:focus-visible,
 }
 
 @media (max-width: 640px) {
+    .festival-promo-modal:not([hidden]) {
+        padding: 0.75rem;
+    }
+
+    .festival-promo-image {
+        height: clamp(160px, 30vh, 230px);
+    }
+
+    .festival-promo-content {
+        padding: 1.25rem 1rem 1.5rem;
+    }
+
     .homepage-carousel-arrow {
         width: 42px;
         height: 42px;

@@ -8,6 +8,8 @@ $banner2 = 'images/banner_website_02.jpg';
 $banner3 = null;
 $banner4 = null;
 $linkedinRssUrl = 'https://rss.app/feeds/dV7LODC8P6clPQvr.xml';
+$festivalPopupImage = 'images/banner_website_02.jpg';
+$festivalEvent = null;
 
 function fetchHomepageLinkedInPosts(string $url, int $limit = 8): array
 {
@@ -120,6 +122,78 @@ try {
     $customBlocks = [];
     $events = [];
     $linkedinPosts = [];
+}
+
+try {
+    $stmt = $pdo->prepare("SELECT id, title, date, end_date, time, time_end, location, event_summary, description FROM events WHERE approval_status = 'approved' AND title LIKE ? AND MONTH(date) = 11 AND DAY(date) = 24 AND (COALESCE(end_date, date) > CURDATE() OR (COALESCE(end_date, date) = CURDATE() AND (time_end IS NULL OR time_end >= CURTIME()))) ORDER BY date, id");
+    $stmt->execute(['%Sociaal AI Lab Festival%']);
+    foreach ($stmt->fetchAll() as $festivalCandidate) {
+        $candidateTitle = strtolower(trim(preg_replace(
+            '/\s+/',
+            ' ',
+            strip_tags(html_entity_decode((string)$festivalCandidate['title'], ENT_QUOTES | ENT_HTML5, 'UTF-8'))
+        )));
+        if ($candidateTitle === 'sociaal ai lab festival') {
+            $festivalEvent = $festivalCandidate;
+            $festivalTimezone = new DateTimeZone('Europe/Amsterdam');
+            $festivalStartTime = trim((string)($festivalEvent['time'] ?? '')) ?: '00:00:00';
+            $festivalStart = DateTimeImmutable::createFromFormat(
+                '!Y-m-d H:i:s',
+                $festivalEvent['date'] . ' ' . $festivalStartTime,
+                $festivalTimezone
+            );
+            $festivalEnd = null;
+            if (!empty($festivalEvent['time_end'])) {
+                $festivalEndDate = !empty($festivalEvent['end_date']) ? $festivalEvent['end_date'] : $festivalEvent['date'];
+                $festivalEnd = DateTimeImmutable::createFromFormat(
+                    '!Y-m-d H:i:s',
+                    $festivalEndDate . ' ' . $festivalEvent['time_end'],
+                    $festivalTimezone
+                );
+            }
+            if ($festivalStart) {
+                $festivalEvent['start_timestamp'] = $festivalStart->getTimestamp();
+                $festivalEvent['start_utc'] = $festivalStart->setTimezone(new DateTimeZone('UTC'))->format('Ymd\THis\Z');
+            }
+            if (!$festivalEnd) {
+                $festivalEndDate = !empty($festivalEvent['end_date']) ? $festivalEvent['end_date'] : $festivalEvent['date'];
+                $festivalEnd = DateTimeImmutable::createFromFormat(
+                    '!Y-m-d H:i:s',
+                    $festivalEndDate . ' 23:59:59',
+                    $festivalTimezone
+                );
+            }
+            if ($festivalEnd) {
+                $festivalEvent['end_timestamp'] = $festivalEnd->getTimestamp();
+                $festivalEvent['end_utc'] = $festivalEnd->setTimezone(new DateTimeZone('UTC'))->format('Ymd\THis\Z');
+            }
+
+            $festivalTeaser = trim(html_entity_decode(
+                strip_tags((string)($festivalEvent['event_summary'] ?? '')),
+                ENT_QUOTES | ENT_HTML5,
+                'UTF-8'
+            ));
+            if ($festivalTeaser === '') {
+                $festivalTeaser = trim(html_entity_decode(
+                    strip_tags((string)($festivalEvent['description'] ?? '')),
+                    ENT_QUOTES | ENT_HTML5,
+                    'UTF-8'
+                ));
+            }
+            $festivalEvent['teaser'] = function_exists('mb_substr')
+                ? mb_substr($festivalTeaser, 0, 180, 'UTF-8')
+                : substr($festivalTeaser, 0, 180);
+            $teaserLength = function_exists('mb_strlen')
+                ? mb_strlen($festivalTeaser, 'UTF-8')
+                : strlen($festivalTeaser);
+            if ($teaserLength > 180) {
+                $festivalEvent['teaser'] .= '…';
+            }
+            break;
+        }
+    }
+} catch (Exception $e) {
+    $festivalEvent = null;
 }
 
 ini_set('display_errors', 1);
@@ -306,7 +380,7 @@ include __DIR__ . '/navbar.php';
         <div class="space-y-3">
             <div class="flex items-center space-x-3">
                 <i class="fa-regular fa-calendar text-[#00811F] ml-[2px] text-3xl"></i>
-                <?php $dateDisplay = formatEventDateDisplay($event['date']); $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : ''; ?>
+                <?php $dateDisplay = formatEventDateWithWeekdayDisplay($event['date']); $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : ''; ?>
                 <p class="text-gray-700"><strong> Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?><?php if ($timeDisplay) echo ' - ' . htmlspecialchars($timeDisplay) . ' uur'; ?></p>
             </div>
             <div class="flex items-center space-x-3">
@@ -425,6 +499,45 @@ include __DIR__ . '/navbar.php';
 
 </main>
 
+<?php if ($festivalEvent): ?>
+<div
+    class="festival-promo-modal"
+    id="festival-promo-modal"
+    data-start-timestamp="<?php echo (int)($festivalEvent['start_timestamp'] ?? 0); ?>"
+    data-end-timestamp="<?php echo (int)($festivalEvent['end_timestamp'] ?? 0); ?>"
+    data-start-utc="<?php echo htmlspecialchars($festivalEvent['start_utc'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+    data-end-utc="<?php echo htmlspecialchars($festivalEvent['end_utc'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+    data-event-date="<?php echo htmlspecialchars((string)$festivalEvent['date'], ENT_QUOTES, 'UTF-8'); ?>"
+    data-title="<?php echo htmlspecialchars(strip_tags((string)$festivalEvent['title']), ENT_QUOTES, 'UTF-8'); ?>"
+    data-location="<?php echo htmlspecialchars((string)($festivalEvent['location'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+    data-description="<?php echo htmlspecialchars($festivalEvent['teaser'], ENT_QUOTES, 'UTF-8'); ?>"
+    hidden
+>
+    <section class="festival-promo-dialog" role="dialog" aria-modal="true" aria-labelledby="festival-promo-title">
+        <button type="button" class="festival-promo-close" aria-label="Pop-up sluiten">&times;</button>
+        <img class="festival-promo-image" src="<?php echo htmlspecialchars($festivalPopupImage); ?>" alt="Bezoekers tijdens een bijeenkomst van Sociaal AI Lab Rotterdam">
+        <div class="festival-promo-content">
+            <p class="festival-promo-date">
+                📅 <?php echo htmlspecialchars(formatEventDateWithWeekdayDisplay($festivalEvent['date'])); ?>
+            </p>
+            <?php if (!empty($festivalEvent['time'])): ?>
+                <p class="festival-promo-location">🕒 Inloop: <?php echo htmlspecialchars(formatEventTimeDisplay($festivalEvent['time'])); ?><?php if (!empty($festivalEvent['time_end'])): ?> – <?php echo htmlspecialchars(formatEventTimeDisplay($festivalEvent['time_end'])); ?> uur<?php else: ?> uur<?php endif; ?></p>
+            <?php endif; ?>
+            <?php if (!empty($festivalEvent['location'])): ?>
+                <p class="festival-promo-location">📍 <?php echo htmlspecialchars((string)$festivalEvent['location']); ?></p>
+            <?php endif; ?>
+            <h2 id="festival-promo-title"><?php echo htmlspecialchars(strip_tags((string)$festivalEvent['title'])); ?></h2>
+            <?php if ($festivalEvent['teaser'] !== ''): ?>
+                <p class="festival-promo-teaser"><?php echo htmlspecialchars($festivalEvent['teaser']); ?></p>
+            <?php endif; ?>
+            <p class="festival-promo-countdown" id="festival-promo-countdown" aria-live="polite"></p>
+            <a class="festival-promo-link" href="event-detail.php?id=<?php echo (int)$festivalEvent['id']; ?>">Bekijk het festival <span aria-hidden="true">→</span></a>
+            <a class="festival-promo-calendar" href="#" id="festival-promo-calendar">+ Zet in agenda</a>
+        </div>
+    </section>
+</div>
+<?php endif; ?>
+
 <?php include __DIR__ . '/footer.php'; ?>
 
 <script>
@@ -510,6 +623,145 @@ include __DIR__ . '/navbar.php';
             mobileMenu.classList.toggle('open', !isHidden);
             mobileToggle.setAttribute('aria-expanded', (!isHidden).toString());
         });
+    })();
+
+    (function () {
+        const modal = document.getElementById('festival-promo-modal');
+        if (!modal) return;
+
+        const closeButton = modal.querySelector('.festival-promo-close');
+        const countdown = document.getElementById('festival-promo-countdown');
+        const calendarLink = document.getElementById('festival-promo-calendar');
+        const startTimestamp = Number(modal.dataset.startTimestamp) * 1000;
+        const endTimestamp = Number(modal.dataset.endTimestamp) * 1000;
+        const eventEndTimestamp = endTimestamp;
+        const previousOverflow = document.body.style.overflow;
+        const lastShownKey = 'sociaalAiFestivalPopupLastShown';
+        const dayMs = 24 * 60 * 60 * 1000;
+        let showTimer;
+        let countdownInterval;
+        let isVisible = false;
+
+        function closeModal() {
+            modal.hidden = true;
+            document.body.style.overflow = previousOverflow;
+            isVisible = false;
+            document.removeEventListener('keydown', onKeyDown);
+            window.clearInterval(countdownInterval);
+        }
+
+        function cancelPendingDisplay() {
+            window.clearTimeout(showTimer);
+            window.clearInterval(countdownInterval);
+            if (isVisible) {
+                modal.hidden = true;
+                document.body.style.overflow = previousOverflow;
+                isVisible = false;
+            }
+        }
+
+        function onKeyDown(event) {
+            if (event.key === 'Escape') closeModal();
+        }
+
+        function updateCountdown() {
+            const now = Date.now();
+            if (now >= eventEndTimestamp) {
+                modal.hidden = true;
+                document.body.style.overflow = previousOverflow;
+                window.clearInterval(countdownInterval);
+                return false;
+            }
+            if (now >= startTimestamp) {
+                countdown.textContent = 'Het festival is begonnen!';
+                return true;
+            }
+
+            const remainingMs = startTimestamp - now;
+            const remainingHours = Math.ceil(remainingMs / (60 * 60 * 1000));
+            const todayInAmsterdam = new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'Europe/Amsterdam',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            }).format(new Date(now));
+            if (todayInAmsterdam === modal.dataset.eventDate) {
+                countdown.textContent = 'Vandaag!';
+            } else if (remainingMs < 24 * 60 * 60 * 1000) {
+                countdown.textContent = 'Nog ' + remainingHours + ' uur';
+            } else {
+                const remainingDays = Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
+                countdown.textContent = 'Nog ' + remainingDays + (remainingDays === 1 ? ' dag' : ' dagen');
+            }
+            return true;
+        }
+
+        function escapeCalendarText(value) {
+            return String(value || '')
+                .replace(/\\/g, '\\\\')
+                .replace(/\r?\n/g, '\\n')
+                .replace(/,/g, '\\,')
+                .replace(/;/g, '\\;');
+        }
+
+        const startUtc = modal.dataset.startUtc;
+        const endUtc = modal.dataset.endUtc || (startUtc ? startUtc : '');
+        if (startUtc && calendarLink) {
+            const calendarDescription = escapeCalendarText(modal.dataset.description);
+            const calendarData = [
+                'BEGIN:VCALENDAR',
+                'VERSION:2.0',
+                'PRODID:-//Sociaal AI Lab Rotterdam//Festival//NL',
+                'BEGIN:VEVENT',
+                'UID:sociaal-ai-lab-festival-' + startUtc + '@sociaalailab.nl',
+                'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''),
+                'DTSTART:' + startUtc,
+                'DTEND:' + endUtc,
+                'SUMMARY:' + escapeCalendarText(modal.dataset.title),
+                'LOCATION:' + escapeCalendarText(modal.dataset.location),
+                'DESCRIPTION:' + calendarDescription,
+                'END:VEVENT',
+                'END:VCALENDAR'
+            ].join('\r\n');
+            const calendarBlob = new Blob([calendarData], { type: 'text/calendar;charset=utf-8' });
+            calendarLink.href = URL.createObjectURL(calendarBlob);
+            calendarLink.download = 'sociaal-ai-lab-festival.ics';
+        } else if (calendarLink) {
+            calendarLink.hidden = true;
+        }
+
+        if (!updateCountdown()) return;
+
+        let lastShownAt = 0;
+        try {
+            lastShownAt = Number(window.localStorage.getItem(lastShownKey)) || 0;
+        } catch (error) {
+            // Continue without repeat suppression when browser storage is unavailable.
+        }
+        if (lastShownAt && Date.now() - lastShownAt < dayMs) return;
+
+        function showModal() {
+            if (!modal.isConnected || !updateCountdown()) return;
+
+            try {
+                window.localStorage.setItem(lastShownKey, String(Date.now()));
+            } catch (error) {
+                // The popup still works if browser storage is unavailable.
+            }
+            closeButton.addEventListener('click', closeModal);
+            modal.addEventListener('click', function (event) {
+                if (event.target === modal) closeModal();
+            });
+            document.addEventListener('keydown', onKeyDown);
+            document.body.style.overflow = 'hidden';
+            modal.hidden = false;
+            isVisible = true;
+            closeButton.focus();
+            countdownInterval = window.setInterval(updateCountdown, 60 * 1000);
+        }
+
+        window.addEventListener('pagehide', cancelPendingDisplay, { once: true });
+        showTimer = window.setTimeout(showModal, 2000);
     })();
 
     (function () {

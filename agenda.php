@@ -95,7 +95,7 @@ $events = $stmt->fetchAll();
 foreach ($events as $event):
 ?>
     <?php
-    $dateDisplay = formatEventDateDisplay($event['date']);
+    $dateDisplay = formatEventDateWithWeekdayDisplay($event['date']);
     $endDateDisplay = !empty($event['end_date']) ? formatEventDateDisplay($event['end_date']) : null;
     $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : '';
     $timeEndDisplay = $event['time_end'] ? formatEventTimeDisplay($event['time_end']) : '';

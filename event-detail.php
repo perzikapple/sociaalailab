@@ -200,7 +200,7 @@ include __DIR__ . '/navbar.php';
             <a href="agenda.php#agenda-terugblik-switch" class="inline-flex items-center bg-[#00811F] text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-[#006f19] transition">Terug naar agenda</a>
         <?php else: ?>
             <?php
-                $dateDisplay = formatEventDateDisplay($event['date']);
+                $dateDisplay = formatEventDateWithWeekdayDisplay($event['date']);
                 $endDateDisplay = !empty($event['end_date']) ? formatEventDateDisplay($event['end_date']) : null;
                 $timeDisplay = !empty($event['time']) ? formatEventTimeDisplay($event['time']) : '';
                 $timeEndDisplay = !empty($event['time_end']) ? formatEventTimeDisplay($event['time_end']) : '';

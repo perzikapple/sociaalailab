@@ -103,7 +103,7 @@ include __DIR__ . '/navbar.php';
             <p class="text-gray-700 mb-8 text-base">
                 <?php echo renderEditorInline($event['title']); ?>
                 <?php if (!empty($event['date'])): ?>
-                    - <?php echo htmlspecialchars(formatEventDateDisplay($event['date'])); ?>
+                    - <?php echo htmlspecialchars(formatEventDateWithWeekdayDisplay($event['date'])); ?>
                 <?php endif; ?>
             </p>
 
