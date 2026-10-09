@@ -44,6 +44,61 @@ if (!function_exists('formatEventTimeDisplay')) {
     }
 }
 
+if (!function_exists('eventEditVersion')) {
+    function eventEditVersion(array $event) {
+        $versionFields = [
+            'id', 'title', 'date', 'end_date', 'time', 'time_end', 'description', 'event_summary',
+            'meer_info', 'info_link', 'image', 'event_gallery', 'event_documents', 'location',
+            'hardware_request', 'staff_present', 'target_audience', 'internal_notes',
+            'show_signup_button', 'signup_embed', 'show_on_homepage',
+        ];
+        $snapshot = [];
+        foreach ($versionFields as $field) {
+            $value = $event[$field] ?? null;
+            $snapshot[$field] = $value === null ? null : (string)$value;
+        }
+
+        if (empty($_SESSION['event_edit_version_key'])) {
+            $_SESSION['event_edit_version_key'] = bin2hex(random_bytes(32));
+        }
+
+        $serialized = json_encode($snapshot, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+        return hash_hmac('sha256', $serialized, $_SESSION['event_edit_version_key']);
+    }
+}
+
+if (!function_exists('beginVersionCheckedEventUpdate')) {
+    function beginVersionCheckedEventUpdate(PDO $pdo, int $eventId, $submittedVersion, ?string $approvalStatus = null, ?string $owner = null) {
+        $engineStmt = $pdo->prepare('SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?');
+        $engineStmt->execute(['events']);
+        if (strtoupper((string)$engineStmt->fetchColumn()) !== 'INNODB') {
+            return false;
+        }
+
+        $sql = 'SELECT * FROM events WHERE id = ?';
+        $parameters = [$eventId];
+        if ($approvalStatus !== null) {
+            $sql .= ' AND approval_status = ?';
+            $parameters[] = $approvalStatus;
+        }
+        if ($owner !== null) {
+            $sql .= ' AND created_by = ?';
+            $parameters[] = $owner;
+        }
+
+        $pdo->beginTransaction();
+        $stmt = $pdo->prepare($sql . ' FOR UPDATE');
+        $stmt->execute($parameters);
+        $event = $stmt->fetch();
+        if (!$event || !is_string($submittedVersion) || !hash_equals(eventEditVersion($event), $submittedVersion)) {
+            $pdo->rollBack();
+            return null;
+        }
+
+        return $event;
+    }
+}
+
 if (!function_exists('googleMapsDirectionsUrl')) {
     function googleMapsDirectionsUrl($destination) {
         if (empty($destination)) return '#';
