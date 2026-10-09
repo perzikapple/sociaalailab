@@ -380,8 +380,12 @@ include __DIR__ . '/navbar.php';
         <div class="space-y-3">
             <div class="flex items-center space-x-3">
                 <i class="fa-regular fa-calendar text-[#00811F] ml-[2px] text-3xl"></i>
-                <?php $dateDisplay = formatEventDateWithWeekdayDisplay($event['date']); $timeDisplay = $event['time'] ? formatEventTimeDisplay($event['time']) : ''; ?>
-                <p class="text-gray-700"><strong> Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?><?php if ($timeDisplay) echo ' - ' . htmlspecialchars($timeDisplay) . ' uur'; ?></p>
+                <?php
+                $dateDisplay = formatEventDateWithWeekdayDisplay($event['date']);
+                $timeDisplay = !empty($event['time']) ? formatEventTimeDisplay($event['time']) : '';
+                $endTimeDisplay = !empty($event['time_end']) ? formatEventTimeDisplay($event['time_end']) : '';
+                ?>
+                <p class="text-gray-700"><strong> Wanneer:</strong> <?php echo htmlspecialchars($dateDisplay); ?><?php if ($timeDisplay): ?> - <?php echo htmlspecialchars($timeDisplay); ?><?php if ($endTimeDisplay): ?> – <?php echo htmlspecialchars($endTimeDisplay); ?><?php endif; ?> uur<?php endif; ?></p>
             </div>
             <div class="flex items-center space-x-3">
                 <i class="fa-solid fa-location-dot text-[#00811F] ml-1 text-3xl"></i>
@@ -637,7 +641,7 @@ include __DIR__ . '/navbar.php';
         const eventEndTimestamp = endTimestamp;
         const previousOverflow = document.body.style.overflow;
         const lastShownKey = 'sociaalAiFestivalPopupLastShown';
-        const dayMs = 24 * 60 * 60 * 1000;
+        const cooldownMs = 6 * 60 * 60 * 1000;
         let showTimer;
         let countdownInterval;
         let isVisible = false;
@@ -738,7 +742,7 @@ include __DIR__ . '/navbar.php';
         } catch (error) {
             // Continue without repeat suppression when browser storage is unavailable.
         }
-        if (lastShownAt && Date.now() - lastShownAt < dayMs) return;
+        if (lastShownAt && Date.now() - lastShownAt < cooldownMs) return;
 
         function showModal() {
             if (!modal.isConnected || !updateCountdown()) return;
