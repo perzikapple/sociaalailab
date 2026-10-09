@@ -3274,6 +3274,29 @@ main>div.grid>div:hover {
     transform: scale(1.1);
 }
 
+.footer-address {
+    color: #000;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin: 0 auto 12px;
+}
+
+.footer-address strong,
+.footer-address a {
+    display: block;
+}
+
+.footer-address a {
+    color: #1b5e20;
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+}
+
+.footer-address a:hover,
+.footer-address a:focus-visible {
+    color: #00811F;
+}
+
 .partners-inline {
     margin-top: 20px;
     margin-bottom: 0;

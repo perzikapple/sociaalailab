@@ -7,18 +7,11 @@
     <option name="selectedModelId" value="auto" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="40eddd61-eef5-4b26-93ed-e0e08ad9a623" name="Changes" comment="Admin panel image button fix &amp; images zijn required">
+    <list default="true" id="40eddd61-eef5-4b26-93ed-e0e08ad9a623" name="Changes" comment="Pop up festival">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/admin.php" beforeDir="false" afterPath="$PROJECT_DIR$/admin.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/agenda.php" beforeDir="false" afterPath="$PROJECT_DIR$/agenda.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/db.php" beforeDir="false" afterPath="$PROJECT_DIR$/db.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/event-detail.php" beforeDir="false" afterPath="$PROJECT_DIR$/event-detail.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/event.php" beforeDir="false" afterPath="$PROJECT_DIR$/event.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers.php" beforeDir="false" afterPath="$PROJECT_DIR$/helpers.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/index.php" beforeDir="false" afterPath="$PROJECT_DIR$/index.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/inschrijven.php" beforeDir="false" afterPath="$PROJECT_DIR$/inschrijven.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/footer.php" beforeDir="false" afterPath="$PROJECT_DIR$/footer.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/style.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/terugblikken.php" beforeDir="false" afterPath="$PROJECT_DIR$/terugblikken.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -84,23 +77,23 @@
   </component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.0087681962487158" />
-      <entry key="MS500" value="1.6123374027364705" />
-      <entry key="S2" value="3.4292981370126308" />
-      <entry key="S5" value="5.846402417261101" />
-      <entry key="S10" value="8.621621716429752" />
-      <entry key="S30" value="12.243730888874435" />
-      <entry key="S60" value="13.521917586803616" />
-      <entry key="M2" value="14.24156687007174" />
-      <entry key="M5" value="15.776235387387434" />
-      <entry key="M10" value="20.558824804242953" />
-      <entry key="M15" value="24.828646022411412" />
-      <entry key="M30" value="32.21040748408561" />
-      <entry key="H1" value="37.73088638005668" />
-      <entry key="H2" value="41.115674089761754" />
-      <entry key="H4" value="42.99100864367601" />
-      <entry key="D1" value="44.655488919116884" />
-      <entry key="W1" value="44.95054172822846" />
+      <entry key="MS100" value="1.007369101469784" />
+      <entry key="MS500" value="1.5976483924597529" />
+      <entry key="S2" value="3.2638535677969833" />
+      <entry key="S5" value="4.158014073430911" />
+      <entry key="S10" value="4.548983588442448" />
+      <entry key="S30" value="4.842381256919189" />
+      <entry key="S60" value="4.920239603958311" />
+      <entry key="M2" value="4.959881448175485" />
+      <entry key="M5" value="5.0157091067638895" />
+      <entry key="M10" value="5.915184322795274" />
+      <entry key="M15" value="8.131514538154983" />
+      <entry key="M30" value="16.44636115957608" />
+      <entry key="H1" value="27.493532882641976" />
+      <entry key="H2" value="36.746184119068545" />
+      <entry key="H4" value="42.776387679329886" />
+      <entry key="D1" value="48.703417737488" />
+      <entry key="W1" value="49.81236535755786" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
@@ -122,23 +115,23 @@
       <entry key="W1" value="0.0" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="0.9678513448666082" />
-      <entry key="MS500" value="1.6011076805976097" />
-      <entry key="S2" value="3.423979125660711" />
-      <entry key="S5" value="5.841165811911833" />
-      <entry key="S10" value="8.616564625286868" />
-      <entry key="S30" value="12.240865169104028" />
-      <entry key="S60" value="13.520267266822298" />
-      <entry key="M2" value="14.240671198201868" />
-      <entry key="M5" value="15.775362815938545" />
-      <entry key="M10" value="20.55734180340599" />
-      <entry key="M15" value="24.827028402269065" />
-      <entry key="M30" value="32.20905555663395" />
-      <entry key="H1" value="37.73000773217827" />
-      <entry key="H2" value="41.115172711461355" />
-      <entry key="H4" value="42.99074077647141" />
-      <entry key="D1" value="44.65544173466293" />
-      <entry key="W1" value="44.950534923288785" />
+      <entry key="MS100" value="0.9798718432438543" />
+      <entry key="MS500" value="1.5885678225073117" />
+      <entry key="S2" value="3.2569304898482017" />
+      <entry key="S5" value="4.154000457586334" />
+      <entry key="S10" value="4.54668971366485" />
+      <entry key="S30" value="4.841543220544259" />
+      <entry key="S60" value="4.919810740196851" />
+      <entry key="M2" value="4.959664501774535" />
+      <entry key="M5" value="5.015619958214443" />
+      <entry key="M10" value="5.915073928066171" />
+      <entry key="M15" value="8.131280944762988" />
+      <entry key="M30" value="16.445866001071927" />
+      <entry key="H1" value="27.49300172551252" />
+      <entry key="H2" value="36.745793329700746" />
+      <entry key="H4" value="42.77615047218767" />
+      <entry key="D1" value="48.703371254113" />
+      <entry key="W1" value="49.81235852998428" />
     </decayedShown>
   </component>
   <component name="PhpDebugGeneral" listening_started="true" />
@@ -232,7 +225,7 @@
       <workItem from="1781700453349" duration="951000" />
       <workItem from="1791376912915" duration="747000" />
       <workItem from="1791377748884" duration="7072000" />
-      <workItem from="1791530096656" duration="1883000" />
+      <workItem from="1791530096656" duration="3683000" />
     </task>
     <task id="LOCAL-00001" summary="Merge branch 'main' of origin">
       <option name="closed" value="true" />
@@ -282,7 +275,15 @@
       <option name="project" value="LOCAL" />
       <updated>1791379719275</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="Pop up festival">
+      <option name="closed" value="true" />
+      <created>1791532905746</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1791532905747</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -296,7 +297,8 @@
     <MESSAGE value="Mobile en tablet admin panel veranderingen" />
     <MESSAGE value="locaties aanpassingen booking" />
     <MESSAGE value="Admin panel image button fix &amp; images zijn required" />
-    <option name="LAST_COMMIT_MESSAGE" value="Admin panel image button fix &amp; images zijn required" />
+    <MESSAGE value="Pop up festival" />
+    <option name="LAST_COMMIT_MESSAGE" value="Pop up festival" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>
