@@ -4662,17 +4662,77 @@ section:focus-visible,
     }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 800px) {
     .festival-promo-modal:not([hidden]) {
+        align-items: center;
+        box-sizing: border-box;
+        overflow-x: hidden;
         padding: 0.75rem;
     }
 
+    .festival-promo-dialog {
+        box-sizing: border-box;
+        max-height: calc(100vh - 1.5rem);
+        max-height: calc(100dvh - 1.5rem);
+        max-width: 100%;
+        min-width: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        width: 100%;
+    }
+
     .festival-promo-image {
-        height: clamp(160px, 30vh, 230px);
+        background: #f6f6f6;
+        height: auto;
+        max-height: min(30vh, 220px);
+        max-height: min(30dvh, 220px);
+        object-fit: contain;
+        object-position: center;
+        width: 100%;
+    }
+
+    .festival-promo-close {
+        margin-bottom: -2.75rem;
+        margin-left: auto;
+        margin-right: 0.8rem;
+        position: sticky;
+        top: 0.5rem;
+        z-index: 2;
     }
 
     .festival-promo-content {
-        padding: 1.25rem 1rem 1.5rem;
+        overflow-wrap: anywhere;
+    }
+}
+
+@media (max-width: 640px) {
+    .festival-promo-modal:not([hidden]) {
+        padding: 0.5rem;
+    }
+
+    .festival-promo-dialog {
+        max-height: calc(100vh - 1rem);
+        max-height: calc(100dvh - 1rem);
+    }
+
+    .festival-promo-image {
+        max-height: min(30vh, 200px);
+        max-height: min(30dvh, 200px);
+    }
+
+    .festival-promo-content {
+        padding: 1rem 0.85rem 1.25rem;
+    }
+
+    .festival-promo-content h2 {
+        margin-bottom: 0.85rem;
+    }
+
+    .festival-promo-link {
+        box-sizing: border-box;
+        max-width: 100%;
+        width: 100%;
     }
 
     .homepage-carousel-arrow {
@@ -4692,6 +4752,37 @@ section:focus-visible,
 
     .homepage-carousel-slide > .flex-1:last-child {
         display: none;
+    }
+}
+
+@media (max-width: 375px) {
+    .festival-promo-modal:not([hidden]) {
+        padding: 0.35rem;
+    }
+
+    .festival-promo-dialog {
+        max-height: calc(100vh - 0.7rem);
+        max-height: calc(100dvh - 0.7rem);
+    }
+
+    .festival-promo-content {
+        padding: 0.85rem 0.7rem 1rem;
+    }
+
+    .festival-promo-date,
+    .festival-promo-countdown {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 800px) and (orientation: landscape) and (max-height: 500px) {
+    .festival-promo-image {
+        max-height: min(22vh, 110px);
+        max-height: min(22dvh, 110px);
+    }
+
+    .festival-promo-content {
+        padding-bottom: 0.85rem;
     }
 }
 
