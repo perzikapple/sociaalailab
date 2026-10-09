@@ -4575,9 +4575,10 @@ section:focus-visible,
 }
 
 .homepage-news-card-img {
+    display: block;
     width: 100%;
-    height: 240px;
-    object-fit: cover;
+    height: clamp(280px, 25vw, 360px);
+    object-fit: contain;
     border-bottom: 1px solid #eee;
     background: #f6f6f6;
 }
@@ -4634,7 +4635,7 @@ section:focus-visible,
     }
 
     .homepage-news-card-img {
-        height: 160px;
+        height: clamp(220px, 40vw, 320px);
     }
 }
 

@@ -469,7 +469,7 @@ include __DIR__ . '/navbar.php';
                 <p class="homepage-news-card-summary">
                     <?php
                     $postText = (string)($post['text'] ?? '');
-                    $trimmedText = strlen($postText) > 180 ? substr($postText, 0, 180) . '...' : $postText;
+                    $trimmedText = editorPreviewText($postText, 180);
                     echo nl2br(htmlspecialchars($trimmedText));
                     ?>
                 </p>
